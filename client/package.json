@@ -1,0 +1,60 @@
+{
+  "name": "@openmemory/client",
+  "version": "0.3.0",
+  "description": "TypeScript client library for OpenMemory - zero-knowledge memory operations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "openmemory",
+    "zero-knowledge",
+    "encryption",
+    "lsh",
+    "vector-search",
+    "memory"
+  ],
+  "author": "OpenMemory Team",
+  "license": "MIT",
+  "dependencies": {
+    "@noble/hashes": "^2.0.1",
+    "argon2": "^0.31.0",
+    "bip39": "^3.1.0",
+    "onnxruntime-node": "^1.17.0",
+    "protobufjs": "^7.2.5",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
+    "viem": "^2.46.3"
+  },
+  "optionalDependencies": {
+    "keytar": "^7.9.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openmemory/openmemory.git",
+    "directory": "client"
+  }
+}

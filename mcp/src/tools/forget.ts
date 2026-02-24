@@ -1,0 +1,108 @@
+import { OpenMemory } from '@openmemory/client';
+import { FORGET_TOOL_DESCRIPTION } from '../prompts';
+
+export interface ForgetIntput {
+  fact_id?: string;
+  query?: string;
+  namespace?: string;
+}
+
+export interface ForgetOutput {
+  deleted_count: number;
+  fact_ids: string[];
+}
+
+export const forgetToolDefinition = {
+  name: 'openmemory_forget',
+  description: FORGET_TOOL_DESCRIPTION,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      fact_id: {
+        type: 'string',
+        description: 'The ID of the fact to forget',
+      },
+      query: {
+        type: 'string',
+        description: 'Or forget by semantic query',
+      },
+      namespace: {
+        type: 'string',
+        description: 'Optional namespace scope',
+      },
+    },
+  },
+};
+
+export async function handleForget(
+  client: OpenMemory,
+  args: unknown,
+  defaultNamespace: string
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  const input = args as ForgetIntput;
+
+  if (!input.fact_id && !input.query) {
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          deleted_count: 0,
+          fact_ids: [],
+          error: 'Either fact_id or query must be provided',
+        }),
+      }],
+    };
+  }
+
+  try {
+    const deletedIds: string[] = [];
+
+    if (input.fact_id) {
+      await client.forget(input.fact_id);
+      deletedIds.push(input.fact_id);
+    } else if (input.query) {
+      const results = await client.recall(input.query, 50);
+      const ns = input.namespace || defaultNamespace;
+
+      const toDelete = results.filter(r => {
+        if (ns !== 'default') {
+          return r.fact.metadata.tags?.includes(`namespace:${ns}`);
+        }
+        return true;
+      });
+
+      for (const r of toDelete) {
+        try {
+          await client.forget(r.fact.id);
+          deletedIds.push(r.fact.id);
+        } catch {
+          // Skip failures
+        }
+      }
+    }
+
+    const result: ForgetOutput = {
+      deleted_count: deletedIds.length,
+      fact_ids: deletedIds,
+    };
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify(result),
+      }],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          deleted_count: 0,
+          fact_ids: [],
+          error: `Failed to forget memories: ${message}`,
+        }),
+      }],
+    };
+  }
+}

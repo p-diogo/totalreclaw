@@ -1,0 +1,15 @@
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+sqlalchemy>=2.0.0
+asyncpg>=0.29.0
+protobuf>=4.25.0
+hkdf>=0.0.3
+python-dotenv>=1.0.0
+pydantic-settings>=2.0.0
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+httpx>=0.26.0
+python-json-logger>=2.0.0
+prometheus-client>=0.20.0
+alembic>=1.13.0
+psycopg2-binary>=2.9.0

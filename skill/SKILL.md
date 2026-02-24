@@ -1,0 +1,604 @@
+---
+name: openmemory
+description: "Zero-knowledge encrypted memory vault for AI agents — the password manager for AI memory. Full E2EE: server never sees plaintext."
+version: 0.1.0
+author: OpenMemory Team
+license: MIT
+homepage: https://github.com/p-diogo/openmemory-poc
+metadata:
+  openclaw:
+    requires:
+      env:
+        - OPENMEMORY_SERVER_URL
+        - OPENMEMORY_MASTER_PASSWORD
+      bins: []
+    primaryEnv: OPENMEMORY_SERVER_URL
+    emoji: "🧠"
+    os: ["macos", "linux", "windows"]
+    keywords:
+      - memory
+      - e2ee
+      - zero-knowledge
+      - encryption
+      - privacy
+      - agent-memory
+      - persistent-context
+---
+
+# OpenMemory Skill
+
+## Tools
+
+### openmemory_remember
+
+Store a new fact or preference in long-term memory.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| text | string | Yes | The fact or information to remember |
+| type | string | No | Type of memory: `fact`, `preference`, `decision`, `episodic`, or `goal`. Default: `fact` |
+| importance | integer | No | Importance score 1-10. Default: auto-detected by LLM |
+
+**Example:**
+```json
+{
+  "text": "User prefers TypeScript over JavaScript for new projects",
+  "type": "preference",
+  "importance": 7
+}
+```
+
+**Returns:**
+```json
+{
+  "factId": "01234567-89ab-cdef-0123-456789abcdef",
+  "status": "stored",
+  "importance": 7,
+  "encrypted": true
+}
+```
+
+---
+
+### openmemory_recall
+
+Search and retrieve relevant memories from long-term storage.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| query | string | Yes | Natural language query to search memories |
+| k | integer | No | Number of results to return. Default: 8, Max: 20 |
+
+**Example:**
+```json
+{
+  "query": "What programming languages does the user prefer?",
+  "k": 5
+}
+```
+
+**Returns:**
+```json
+{
+  "memories": [
+    {
+      "factId": "01234567-89ab-cdef-0123-456789abcdef",
+      "factText": "User prefers TypeScript over JavaScript for new projects",
+      "type": "preference",
+      "importance": 7,
+      "timestamp": "2026-02-22T10:30:00Z",
+      "relevanceScore": 0.95
+    }
+  ],
+  "totalCandidates": 47,
+  "searchLatencyMs": 42
+}
+```
+
+---
+
+### openmemory_forget
+
+Delete a specific fact from memory.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| factId | string | Yes | UUID of the fact to delete |
+
+**Example:**
+```json
+{
+  "factId": "01234567-89ab-cdef-0123-456789abcdef"
+}
+```
+
+**Returns:**
+```json
+{
+  "status": "deleted",
+  "factId": "01234567-89ab-cdef-0123-456789abcdef",
+  "tombstoneExpiry": "2026-03-24T00:00:00Z"
+}
+```
+
+---
+
+### openmemory_export
+
+Export all stored memories in plaintext format.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| format | string | No | Export format: `json` or `markdown`. Default: `json` |
+
+**Example:**
+```json
+{
+  "format": "json"
+}
+```
+
+**Returns (JSON format):**
+```json
+{
+  "exportVersion": "0.3",
+  "exportedAt": "2026-02-22T10:30:00Z",
+  "totalFacts": 127,
+  "facts": [
+    {
+      "id": "...",
+      "factText": "...",
+      "type": "preference",
+      "importance": 7,
+      "timestamp": "...",
+      "entities": [...],
+      "relations": [...]
+    }
+  ],
+  "graph": {
+    "entities": {...},
+    "relations": [...]
+  }
+}
+```
+
+**Returns (Markdown format):**
+```markdown
+# OpenMemory Export
+Exported: 2026-02-22T10:30:00Z
+Total Facts: 127
+
+## Preferences
+- User prefers TypeScript over JavaScript for new projects (importance: 7)
+
+## Decisions
+- User decided to use PostgreSQL for the main database (importance: 8)
+
+...
+```
+
+---
+
+## Description
+
+OpenMemory is a zero-knowledge encrypted memory vault for AI agents. Think of it as a "password manager for AI memory" that provides:
+
+1. **End-to-End Encryption** - All memories are encrypted client-side using AES-256-GCM. The server never sees plaintext data.
+
+2. **Portable Memory** - Export all data as plaintext with one command. No vendor lock-in.
+
+3. **Universal Compatibility** - Works across any MCP-compatible AI agent, not just OpenClaw.
+
+4. **Intelligent Extraction** - Automatically extracts atomic facts, preferences, decisions, and goals from conversations.
+
+5. **Smart Decay** - Important memories persist; trivial ones fade over time using a decay algorithm.
+
+6. **Graph-Based** - Maintains entity relationships for multi-hop reasoning.
+
+---
+
+## Instructions for the LLM
+
+### When to Use Each Tool
+
+#### openmemory_remember
+
+Use when:
+- The user explicitly asks you to remember something ("remember that...", "note that...", "don't forget...")
+- You detect a significant preference, decision, or fact that will be useful in future conversations
+- The user corrects or updates previous information about themselves
+- You observe important context about the user's work, projects, or preferences
+
+Do NOT use for:
+- Temporary information relevant only to the current conversation
+- Information the user explicitly says is temporary
+- Generic knowledge that isn't user-specific
+
+#### openmemory_recall
+
+Use when:
+- The user asks about their past preferences, decisions, or history
+- You need context about the user's projects, tools, or working style
+- The user asks "do you remember..." or "what did I tell you about..."
+- You're unsure about a user preference and want to check before making assumptions
+- Starting a new conversation to load relevant context
+
+Do NOT use for:
+- Every single message (use sparingly, max once per conversation start or when explicitly relevant)
+- General knowledge questions unrelated to the user
+
+#### openmemory_forget
+
+Use when:
+- The user explicitly asks you to forget something ("forget that...", "delete that memory...")
+- The user indicates information is outdated or incorrect and should be removed
+- The user requests a clean slate for a specific topic
+
+#### openmemory_export
+
+Use when:
+- The user asks to export, backup, or download their memory data
+- The user wants to see everything you know about them
+- The user is migrating to another system
+
+---
+
+### Best Practices
+
+1. **Atomic Facts Only**: Each memory should be a single, atomic piece of information.
+   - Good: "User prefers dark mode in all editors"
+   - Bad: "User likes dark mode, uses VS Code, and works at Google"
+
+2. **Importance Scoring**:
+   - 1-3: Trivial, unlikely to matter (small talk, pleasantries)
+   - 4-6: Useful context (tool preferences, working style)
+   - 7-8: Important (key decisions, major preferences)
+   - 9-10: Critical (core values, non-negotiables, safety info)
+
+3. **Search Before Storing**: Always recall similar memories before storing new ones to avoid duplicates.
+
+4. **Respect User Privacy**: Never store sensitive information (passwords, API keys, personal secrets) even if requested.
+
+5. **Prefer NOOP**: When in doubt about whether to store something, prefer not storing it. Memory pollution is worse than missing a minor fact.
+
+---
+
+## Extraction Prompts (Mem0-Style)
+
+OpenMemory uses a Mem0-style extraction pattern with four possible actions:
+
+### Actions
+
+| Action | Description | When to Use |
+|--------|-------------|-------------|
+| ADD | Store as new memory | No similar memory exists |
+| UPDATE | Modify existing memory | New info refines/clarifies existing |
+| DELETE | Remove existing memory | New info contradicts existing |
+| NOOP | Do nothing | Already captured or not worth storing |
+
+---
+
+### Pre-Compaction Extraction
+
+Triggered before OpenClaw's context compaction (typically every few hours in long sessions).
+
+**System Prompt:**
+
+```
+You are a memory extraction engine for an AI assistant. Your job is to analyze conversations and extract structured, atomic facts that should be remembered long-term.
+
+## Extraction Guidelines
+
+1. **Atomicity**: Each fact should be a single, atomic piece of information
+   - GOOD: "User prefers TypeScript over JavaScript for new projects"
+   - BAD: "User likes TypeScript, uses VS Code, and works at Google"
+
+2. **Types**:
+   - **fact**: Objective information about the user/world
+   - **preference**: User's likes, dislikes, or preferences
+   - **decision**: Choices the user has made
+   - **episodic**: Event-based memories (what happened when)
+   - **goal**: User's objectives or targets
+
+3. **Importance Scoring (1-10)**:
+   - 1-3: Trivial, unlikely to matter (small talk, pleasantries)
+   - 4-6: Useful context (tool preferences, working style)
+   - 7-8: Important (key decisions, major preferences)
+   - 9-10: Critical (core values, non-negotiables, safety info)
+
+4. **Confidence (0-1)**:
+   - How certain are you that this is accurate and worth storing?
+
+5. **Entities**: Extract named entities (people, projects, tools, concepts)
+   - Use stable IDs: hash of name+type (e.g., "typescript-tool")
+   - Types: person, project, tool, preference, concept, location, etc.
+
+6. **Relations**: Extract relationships between entities
+   - Common predicates: prefers, uses, works_on, decided_to_use, dislikes, etc.
+
+7. **Actions (Mem0 pattern)**:
+   - **ADD**: New fact, no conflict with existing memories
+   - **UPDATE**: Modifies or refines an existing fact (provide existingFactId)
+   - **DELETE**: Contradicts and replaces an existing fact
+   - **NOOP**: Not worth storing or already captured
+```
+
+**User Prompt Template:**
+
+```
+## Task: Pre-Compaction Memory Extraction
+
+You are reviewing the last 20 turns of conversation before they are compacted. Extract ALL valuable long-term memories.
+
+## Conversation History (last 20 turns):
+{{CONVERSATION_HISTORY}}
+
+## Existing Memories (for deduplication):
+{{EXISTING_MEMORIES}}
+
+## Instructions:
+1. Review each turn carefully for extractable information
+2. Extract atomic facts, preferences, decisions, episodic memories, and goals
+3. For each fact, determine if it's NEW (ADD), modifies existing (UPDATE), contradicts existing (DELETE), or is redundant (NOOP)
+4. Score importance based on long-term relevance
+5. Extract entities and relations
+
+## Output Format:
+Return a JSON object with:
+{
+  "facts": [
+    {
+      "factText": "string (max 512 chars)",
+      "type": "fact|preference|decision|episodic|goal",
+      "importance": 1-10,
+      "confidence": 0-1,
+      "action": "ADD|UPDATE|DELETE|NOOP",
+      "existingFactId": "string (if UPDATE/DELETE)",
+      "entities": [{"id": "...", "name": "...", "type": "..."}],
+      "relations": [{"subjectId": "...", "predicate": "...", "objectId": "...", "confidence": 0-1}]
+    }
+  ]
+}
+
+Focus on quality over quantity. Better to have 5 highly accurate facts than 20 noisy ones.
+```
+
+---
+
+### Post-Turn Extraction
+
+Triggered every N turns (configurable, default: 5) for lightweight extraction.
+
+**User Prompt Template:**
+
+```
+## Task: Quick Turn Extraction
+
+You are doing a lightweight extraction after a few turns. Focus ONLY on high-importance items.
+
+## Recent Turns (last 3):
+{{CONVERSATION_HISTORY}}
+
+## Existing Memories (top matches):
+{{EXISTING_MEMORIES}}
+
+## Instructions:
+1. Extract ONLY items with importance >= 7 (critical preferences, key decisions)
+2. Skip trivial information - this is a quick pass
+3. Use ADD/UPDATE/DELETE/NOOP appropriately
+4. Be aggressive about NOOP for low-value content
+
+## Output Format:
+Return a JSON object matching the extraction schema.
+
+Remember: Less is more. Only extract what truly matters.
+```
+
+---
+
+### Explicit Command Detection
+
+Detect when the user explicitly requests memory storage.
+
+**Trigger Patterns (regex + LLM classification):**
+
+```
+# Explicit memory commands
+"remember that..."
+"don't forget..."
+"note that..."
+"I prefer..."
+"for future reference..."
+"make a note..."
+"store this..."
+"keep in mind..."
+
+# Explicit forget commands
+"forget about..."
+"delete that memory..."
+"remove that from memory..."
+"stop remembering..."
+```
+
+**User Prompt Template:**
+
+```
+## Task: Explicit Memory Storage
+
+The user has explicitly requested to remember something. This is a HIGH PRIORITY extraction.
+
+## User's Explicit Request:
+{{USER_REQUEST}}
+
+## Conversation Context:
+{{CONVERSATION_CONTEXT}}
+
+## Instructions:
+1. Parse what the user wants remembered
+2. Boost importance by +1 (explicit requests matter more)
+3. Extract as atomic fact(s) with appropriate type
+4. Check against existing memories for UPDATE/DELETE
+5. Set confidence HIGH (user explicitly wants this stored)
+
+## Output Format:
+Return a JSON object matching the extraction schema.
+
+This is user-initiated storage - ensure accuracy and capture their intent precisely.
+```
+
+---
+
+### Deduplication Judge
+
+Used to determine ADD vs UPDATE vs DELETE vs NOOP for each extracted fact.
+
+**System Prompt:**
+
+```
+You are a memory deduplication judge. Your job is to determine if a new fact should be added as new, update an existing fact, delete/replace an existing fact, or be ignored as redundant.
+
+## Decision Rules:
+
+1. **ADD**: The fact is genuinely new information not covered by existing memories
+2. **UPDATE**: The fact refines, clarifies, or partially modifies an existing fact
+3. **DELETE**: The fact directly contradicts an existing fact and should replace it
+4. **NOOP**: The fact is already fully captured by existing memories
+
+Be strict about NOOP - if the information is essentially the same, mark it as NOOP.
+```
+
+**User Prompt Template:**
+
+```
+## New Fact to Evaluate:
+{{NEW_FACT}}
+
+## Similar Existing Facts:
+{{EXISTING_FACTS}}
+
+## Instructions:
+1. Compare the new fact against each existing fact
+2. Determine the appropriate action (ADD/UPDATE/DELETE/NOOP)
+3. If UPDATE or DELETE, identify which existing fact to modify
+4. Provide your confidence (0-1) and reasoning
+
+## Output Format:
+{
+  "decision": "ADD|UPDATE|DELETE|NOOP",
+  "existingFactId": "string (if UPDATE/DELETE)",
+  "confidence": 0-1,
+  "reasoning": "string"
+}
+```
+
+---
+
+## Configuration
+
+Default configuration values:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `serverUrl` | `http://127.0.0.1:8080` | OpenMemory server URL |
+| `autoExtractEveryTurns` | `5` | Turns between automatic extractions |
+| `minImportanceForAutoStore` | `6` | Minimum importance to auto-store |
+| `maxMemoriesInContext` | `8` | Maximum memories to inject into context |
+| `forgetThreshold` | `0.3` | Decay score threshold for eviction |
+| `decayHalfLifeDays` | `30` | Memory decay half-life in days |
+
+---
+
+## Privacy & Security
+
+- **Zero-Knowledge**: All encryption happens client-side. The server never sees plaintext.
+- **Master Password**: Never sent to the server. Used only for key derivation (Argon2id).
+- **Export Portability**: Full plaintext export available anytime.
+- **Tombstone Recovery**: Deleted memories can be recovered within 30 days.
+
+---
+
+## Lifecycle Hooks
+
+OpenMemory integrates with OpenClaw through three lifecycle hooks:
+
+| Hook | Priority | Description |
+|------|----------|-------------|
+| `before_agent_start` | 10 | Retrieve relevant memories before agent processes message |
+| `agent_end` | 90 | Extract and store facts after agent completes turn |
+| `pre_compaction` | 5 | Full memory flush before context compaction |
+
+---
+
+## Example Usage
+
+### Storing a preference
+
+```json
+// Tool call
+{
+  "tool": "openmemory_remember",
+  "params": {
+    "text": "User prefers functional programming over OOP",
+    "type": "preference",
+    "importance": 6
+  }
+}
+
+// Response
+{
+  "factId": "abc123",
+  "status": "stored"
+}
+```
+
+### Recalling memories
+
+```json
+// Tool call
+{
+  "tool": "openmemory_recall",
+  "params": {
+    "query": "programming preferences",
+    "k": 5
+  }
+}
+
+// Response
+{
+  "memories": [
+    {
+      "factId": "abc123",
+      "factText": "User prefers functional programming over OOP",
+      "type": "preference",
+      "importance": 6,
+      "relevanceScore": 0.92
+    }
+  ]
+}
+```
+
+### Forgetting a memory
+
+```json
+// Tool call
+{
+  "tool": "openmemory_forget",
+  "params": {
+    "factId": "abc123"
+  }
+}
+
+// Response
+{
+  "status": "deleted",
+  "factId": "abc123"
+}
+```

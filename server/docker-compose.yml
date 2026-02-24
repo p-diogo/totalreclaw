@@ -1,0 +1,172 @@
+# OpenMemory PoC Docker Compose
+#
+# IMPORTANT: All ports bound to 127.0.0.1 ONLY
+# This prevents external access during development
+#
+# Setup:
+#   1. Copy .env.example to .env
+#   2. Edit .env with your own POSTGRES_PASSWORD
+#   3. docker-compose up
+#
+# Usage:
+#   docker-compose up          # Start services
+#   docker-compose up -d       # Start in background
+#   docker-compose down        # Stop services
+#   docker-compose down -v     # Stop and remove volumes
+
+services:
+  # ============ OpenMemory Server ============
+  openmemory-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openmemory-poc
+    restart: unless-stopped
+
+    # Network security - localhost ONLY
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    env_file:
+      - .env
+
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8080
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    networks:
+      - openmemory-internal
+
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+
+  # ============ PostgreSQL Database ============
+  postgres:
+    image: postgres:16
+    container_name: openmemory-db
+    restart: unless-stopped
+
+    # Network security - localhost ONLY
+    ports:
+      - "127.0.0.1:5432:5432"
+
+    env_file:
+      - .env
+
+    volumes:
+      - openmemory-data:/var/lib/postgresql/data
+      - ./src/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-openmemory} -d ${POSTGRES_DB:-openmemory}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    networks:
+      - openmemory-internal
+
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+
+  # ============ Caddy Reverse Proxy ============
+  caddy:
+    image: caddy:2-alpine
+    container_name: openmemory-caddy
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+
+    depends_on:
+      openmemory-server:
+        condition: service_healthy
+
+    networks:
+      - openmemory-internal
+
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+
+  # ============ OpenClaw Test Instance (Optional) ============
+  # Only starts when explicitly requested:
+  #   docker-compose --profile testing up openclaw-test
+  #
+  # WARNING: OpenClaw is powerful. Run ONLY in Docker.
+  # See plans/2026-02-22-poc-implementation-plan.md for security requirements.
+  #
+  # openclaw-test:
+  #   image: openclaw/openclaw:latest  # Verify this exists first
+  #   container_name: openclaw-test
+  #
+  #   # Network security - localhost ONLY
+  #   ports:
+  #     - "127.0.0.1:8081:8080"
+  #
+  #   networks:
+  #     - openmemory-internal
+  #
+  #   # Security hardening
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   read_only: true
+  #   tmpfs:
+  #     - /tmp:size=100M,mode=1777
+  #     - /var/log:size=50M
+  #
+  #   # Minimal environment
+  #   environment:
+  #     - OPENCLAW_ENV=testing
+  #     - LOG_LEVEL=INFO
+  #
+  #   # Resource limits
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '2'
+  #         memory: 4G
+  #
+  #   # Only start when explicitly requested
+  #   profiles:
+  #     - testing
+
+# ============ Networks ============
+networks:
+  openmemory-internal:
+    driver: bridge
+    # Internal network - no external internet access
+    # internal: true  # Uncomment for full isolation
+
+# ============ Volumes ============
+volumes:
+  openmemory-data:
+    driver: local
+  caddy-data:
+    driver: local
+  caddy-config:
+    driver: local

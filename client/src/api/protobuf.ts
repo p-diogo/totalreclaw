@@ -1,0 +1,273 @@
+/**
+ * Protobuf Serialization
+ *
+ * Defines and handles Protocol Buffer serialization for API communication.
+ */
+
+import * as protobuf from 'protobufjs';
+import {
+  RegisterRequest,
+  RegisterResponse,
+  StoreRequest,
+  StoreResponse,
+  SearchRequest,
+  SearchResponse,
+  EncryptedFact,
+  EncryptedSearchResult,
+} from '../types';
+
+/**
+ * Protobuf schema definitions for OpenMemory API
+ */
+const PROTO_SCHEMA = `
+syntax = "proto3";
+
+package openmemory;
+
+// Registration
+message RegisterRequest {
+  string user_id = 1;
+  bytes auth_key_hash = 2;
+  bytes salt = 3;
+}
+
+message RegisterResponse {
+  bool success = 1;
+  string error_code = 2;
+  string error_message = 3;
+}
+
+// Storage
+message StoreRequest {
+  string user_id = 1;
+  bytes auth_proof = 2;
+  string fact_id = 3;
+  bytes encrypted_doc = 4;
+  bytes encrypted_embedding = 5;
+  repeated string blind_indices = 6;
+  double decay_score = 7;
+  int64 timestamp = 8;
+  bytes doc_iv = 9;
+  bytes doc_tag = 10;
+  bytes emb_iv = 11;
+  bytes emb_tag = 12;
+}
+
+message StoreResponse {
+  bool success = 1;
+  string error_code = 2;
+  int32 version = 3;
+}
+
+// Search
+message SearchRequest {
+  string user_id = 1;
+  bytes auth_proof = 2;
+  repeated string trapdoors = 3;
+  int32 max_candidates = 4;
+}
+
+message SearchResult {
+  string fact_id = 1;
+  bytes encrypted_doc = 2;
+  bytes encrypted_embedding = 3;
+  double decay_score = 4;
+  int64 timestamp = 5;
+  bytes doc_iv = 6;
+  bytes doc_tag = 7;
+  bytes emb_iv = 8;
+  bytes emb_tag = 9;
+}
+
+message SearchResponse {
+  bool success = 1;
+  string error_code = 2;
+  repeated SearchResult results = 3;
+  int32 total_candidates = 4;
+}
+
+// Health
+message HealthResponse {
+  string status = 1;
+  string version = 2;
+  string database = 3;
+}
+`;
+
+/**
+ * Protobuf serializer/deserializer for OpenMemory messages
+ */
+export class ProtobufSerializer {
+  private root: protobuf.Root | null = null;
+  private initialized: boolean = false;
+
+  /**
+   * Initialize the protobuf schema
+   */
+  async init(): Promise<void> {
+    if (this.initialized) return;
+
+    try {
+      this.root = protobuf.parse(PROTO_SCHEMA).root;
+      this.initialized = true;
+    } catch (error) {
+      throw new Error(
+        `Failed to parse protobuf schema: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Ensure the serializer is initialized
+   */
+  private ensureInitialized(): void {
+    if (!this.initialized || !this.root) {
+      throw new Error('ProtobufSerializer not initialized. Call init() first.');
+    }
+  }
+
+  /**
+   * Serialize a RegisterRequest
+   */
+  serializeRegisterRequest(req: RegisterRequest): Buffer {
+    this.ensureInitialized();
+    const MessageType = this.root!.lookupType('openmemory.RegisterRequest');
+
+    const message = MessageType.create({
+      user_id: req.userId,
+      auth_key_hash: req.authKeyHash,
+      salt: req.salt,
+    });
+
+    const buffer = MessageType.encode(message).finish();
+    return Buffer.from(buffer);
+  }
+
+  /**
+   * Deserialize a RegisterResponse
+   */
+  deserializeRegisterResponse(data: Buffer): RegisterResponse {
+    this.ensureInitialized();
+    const MessageType = this.root!.lookupType('openmemory.RegisterResponse');
+
+    const message = MessageType.decode(data);
+    const obj = MessageType.toObject(message, { bytes: Buffer });
+
+    return {
+      success: obj.success,
+      errorCode: obj.error_code || undefined,
+      errorMessage: obj.error_message || undefined,
+    };
+  }
+
+  /**
+   * Serialize a StoreRequest
+   */
+  serializeStoreRequest(req: StoreRequest): Buffer {
+    this.ensureInitialized();
+    const MessageType = this.root!.lookupType('openmemory.StoreRequest');
+
+    const message = MessageType.create({
+      user_id: req.userId,
+      auth_proof: req.authProof,
+      fact_id: req.fact.id,
+      encrypted_doc: req.fact.encryptedDoc,
+      encrypted_embedding: req.fact.encryptedEmbedding,
+      blind_indices: req.fact.blindIndices,
+      decay_score: req.fact.decayScore,
+      timestamp: req.fact.timestamp,
+      doc_iv: req.fact.docIv,
+      doc_tag: req.fact.docTag,
+      emb_iv: req.fact.embIv,
+      emb_tag: req.fact.embTag,
+    });
+
+    const buffer = MessageType.encode(message).finish();
+    return Buffer.from(buffer);
+  }
+
+  /**
+   * Deserialize a StoreResponse
+   */
+  deserializeStoreResponse(data: Buffer): StoreResponse {
+    this.ensureInitialized();
+    const MessageType = this.root!.lookupType('openmemory.StoreResponse');
+
+    const message = MessageType.decode(data);
+    const obj = MessageType.toObject(message, { bytes: Buffer });
+
+    return {
+      success: obj.success,
+      errorCode: obj.error_code || undefined,
+      version: obj.version || undefined,
+    };
+  }
+
+  /**
+   * Serialize a SearchRequest
+   */
+  serializeSearchRequest(req: SearchRequest): Buffer {
+    this.ensureInitialized();
+    const MessageType = this.root!.lookupType('openmemory.SearchRequest');
+
+    const message = MessageType.create({
+      user_id: req.userId,
+      auth_proof: req.authProof,
+      trapdoors: req.trapdoors,
+      max_candidates: req.maxCandidates,
+    });
+
+    const buffer = MessageType.encode(message).finish();
+    return Buffer.from(buffer);
+  }
+
+  /**
+   * Deserialize a SearchResponse
+   */
+  deserializeSearchResponse(data: Buffer): SearchResponse {
+    this.ensureInitialized();
+    const MessageType = this.root!.lookupType('openmemory.SearchResponse');
+
+    const message = MessageType.decode(data);
+    const obj = MessageType.toObject(message, { bytes: Buffer });
+
+    return {
+      success: obj.success,
+      errorCode: obj.error_code || undefined,
+      results: (obj.results || []).map((r: any) => ({
+        factId: r.fact_id,
+        encryptedDoc: Buffer.from(r.encrypted_doc),
+        encryptedEmbedding: Buffer.from(r.encrypted_embedding),
+        decayScore: r.decay_score,
+        timestamp: r.timestamp,
+        docIv: Buffer.from(r.doc_iv),
+        docTag: Buffer.from(r.doc_tag),
+        embIv: Buffer.from(r.emb_iv),
+        embTag: Buffer.from(r.emb_tag),
+      })),
+      totalCandidates: obj.total_candidates,
+    };
+  }
+
+  /**
+   * Deserialize a HealthResponse
+   */
+  deserializeHealthResponse(data: Buffer): { status: string; version: string; database: string } {
+    this.ensureInitialized();
+    const MessageType = this.root!.lookupType('openmemory.HealthResponse');
+
+    const message = MessageType.decode(data);
+    const obj = MessageType.toObject(message);
+
+    return {
+      status: obj.status,
+      version: obj.version,
+      database: obj.database,
+    };
+  }
+}
+
+/**
+ * Default serializer instance
+ */
+export const protobufSerializer = new ProtobufSerializer();

@@ -1,0 +1,147 @@
+{
+  "name": "openmemory",
+  "version": "0.1.0",
+  "description": "Zero-knowledge encrypted memory vault for AI agents — the password manager for AI memory. Full E2EE: server never sees plaintext.",
+  "author": "OpenMemory Team",
+  "license": "MIT",
+  "homepage": "https://github.com/p-diogo/openmemory-poc",
+  "repository": "https://github.com/p-diogo/openmemory-poc",
+  "keywords": [
+    "memory",
+    "e2ee",
+    "zero-knowledge",
+    "encryption",
+    "privacy",
+    "agent-memory",
+    "persistent-context"
+  ],
+  "openclaw": {
+    "minVersion": "0.1.0",
+    "maxVersion": "1.0.0",
+    "requires": {
+      "env": [
+        "OPENMEMORY_SERVER_URL",
+        "OPENMEMORY_MASTER_PASSWORD"
+      ],
+      "bins": []
+    },
+    "primaryEnv": "OPENMEMORY_SERVER_URL",
+    "emoji": "🧠",
+    "os": ["macos", "linux", "windows"],
+    "hooks": {
+      "before_agent_start": {
+        "priority": 10,
+        "description": "Retrieve relevant memories before agent processes message"
+      },
+      "agent_end": {
+        "priority": 90,
+        "description": "Extract and store facts after agent completes turn"
+      },
+      "pre_compaction": {
+        "priority": 5,
+        "description": "Full memory flush before context compaction"
+      }
+    },
+    "tools": [
+      {
+        "name": "openmemory_remember",
+        "description": "Store a new fact or preference in long-term memory",
+        "parameters": {
+          "text": {
+            "type": "string",
+            "required": true,
+            "description": "The fact or information to remember"
+          },
+          "type": {
+            "type": "string",
+            "required": false,
+            "enum": ["fact", "preference", "decision", "episodic", "goal"],
+            "default": "fact",
+            "description": "Type of memory"
+          },
+          "importance": {
+            "type": "integer",
+            "required": false,
+            "min": 1,
+            "max": 10,
+            "description": "Importance score 1-10. Default: auto-detected by LLM"
+          }
+        }
+      },
+      {
+        "name": "openmemory_recall",
+        "description": "Search and retrieve relevant memories from long-term storage",
+        "parameters": {
+          "query": {
+            "type": "string",
+            "required": true,
+            "description": "Natural language query to search memories"
+          },
+          "k": {
+            "type": "integer",
+            "required": false,
+            "default": 8,
+            "max": 20,
+            "description": "Number of results to return"
+          }
+        }
+      },
+      {
+        "name": "openmemory_forget",
+        "description": "Delete a specific fact from memory",
+        "parameters": {
+          "factId": {
+            "type": "string",
+            "required": true,
+            "description": "UUID of the fact to delete"
+          }
+        }
+      },
+      {
+        "name": "openmemory_export",
+        "description": "Export all stored memories in plaintext format",
+        "parameters": {
+          "format": {
+            "type": "string",
+            "required": false,
+            "enum": ["json", "markdown"],
+            "default": "json",
+            "description": "Export format"
+          }
+        }
+      }
+    ],
+    "config": {
+      "serverUrl": {
+        "type": "string",
+        "default": "http://127.0.0.1:8080",
+        "description": "OpenMemory server URL"
+      },
+      "autoExtractEveryTurns": {
+        "type": "number",
+        "default": 5,
+        "description": "Number of turns between automatic extractions"
+      },
+      "minImportanceForAutoStore": {
+        "type": "number",
+        "default": 6,
+        "description": "Minimum importance (1-10) to auto-store memories"
+      },
+      "maxMemoriesInContext": {
+        "type": "number",
+        "default": 8,
+        "description": "Maximum memories to inject into context"
+      },
+      "forgetThreshold": {
+        "type": "number",
+        "default": 0.3,
+        "description": "Decay score threshold for eviction"
+      },
+      "rerankerModel": {
+        "type": "string",
+        "default": "BAAI/bge-reranker-base",
+        "description": "ONNX reranker model for result reranking"
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+name: add-openmemory
+version: 0.3.0
+description: Add zero-knowledge encrypted memory to NanoClaw
+author: OpenMemory Team
+
+dependencies:
+  - name: nanoclaw
+    minVersion: 0.1.0
+    maxVersion: 1.0.0
+
+conflicts: []
+
+modifies:
+  - container/agent-runner/package.json
+  - container/agent-runner/src/index.ts
+
+adds:
+  - container/agent-runner/src/mcp/openmemory-mcp.ts
+  - container/agent-runner/src/mcp/tools/*.ts
+  - src/openmemory/hooks/*.ts
+  - src/openmemory/extraction/*.ts

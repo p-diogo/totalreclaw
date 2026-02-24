@@ -1,0 +1,1491 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "OpenMemory Server",
+        "description": "\n    Zero-knowledge encrypted memory vault API.\n\n    ## Authentication\n\n    All endpoints (except /register and /health) require authentication using\n    a Bearer token in the Authorization header:\n\n    ```\n    Authorization: Bearer <hex-encoded-auth-key>\n    ```\n\n    The auth_key is derived from the user's master password using HKDF-SHA256:\n    ```\n    auth_key = HKDF-SHA256(master_password, salt, \"openmemory-auth-v1\")\n    ```\n\n    ## Zero-Knowledge Design\n\n    - Server NEVER sees the master password\n    - Server NEVER sees the encryption key\n    - Server NEVER sees plaintext memories\n    - Server only stores encrypted blobs and blind indices\n    ",
+        "version": "0.3.1"
+    },
+    "paths": {
+        "/health": {
+            "get": {
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health Check",
+                "description": "Health check endpoint.\n\nReturns server status and database connectivity.\nUsed by Docker health checks and load balancers.",
+                "operationId": "health_check_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HealthResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ready": {
+            "get": {
+                "tags": [
+                    "health"
+                ],
+                "summary": "Readiness Check",
+                "description": "Readiness check for Kubernetes/container orchestration.\n\nReturns 200 only if database is connected.",
+                "operationId": "readiness_check_ready_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/register": {
+            "post": {
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register",
+                "description": "Register a new user.\n\nThe client sends:\n- auth_key_hash: SHA256(HKDF(master_password, salt, \"openmemory-auth-v1\"))\n- salt: Random 32 bytes used for HKDF derivation\n\nThe server:\n1. Generates a user_id (UUIDv7)\n2. Stores auth_key_hash and salt\n3. Returns user_id to client\n\nThe client must store user_id and salt locally (in OS keychain).\nThe master password is NEVER sent to the server.",
+                "operationId": "register_v1_register_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequestJSON"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RegisterResponseJSON"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/store": {
+            "post": {
+                "tags": [
+                    "storage"
+                ],
+                "summary": "Store",
+                "description": "Store encrypted facts.\n\nThe client sends:\n- user_id: User's UUID (must match authenticated user)\n- facts: List of encrypted facts with blind indices\n\nThe server:\n1. Validates user_id matches authenticated user\n2. Stores facts with encrypted_blob and blind_indices\n3. Returns list of stored fact IDs\n\nThe server NEVER decrypts the blob - it's stored as-is.",
+                "operationId": "store_v1_store_post",
+                "parameters": [
+                    {
+                        "name": "authorization",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Authorization"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreRequestJSON"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StoreResponseJSON"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/search": {
+            "post": {
+                "tags": [
+                    "search"
+                ],
+                "summary": "Search",
+                "description": "Search for facts using blind indices.\n\nThe client sends:\n- user_id: User's UUID (must match authenticated user)\n- trapdoors: List of blind trapdoors (SHA-256 hashes of LSH buckets + keywords)\n- max_candidates: Maximum number of candidates to return\n- min_decay_score: Filter by minimum decay score\n\nThe server:\n1. Validates user_id matches authenticated user\n2. Queries facts where blind_indices overlap with trapdoors\n3. Returns encrypted blobs for client-side re-ranking\n\nThe server NEVER sees the plaintext or knows what the search terms are.\nThe blind indices are one-way SHA-256 hashes.",
+                "operationId": "search_v1_search_post",
+                "parameters": [
+                    {
+                        "name": "authorization",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Authorization"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SearchRequestJSON"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SearchResponseJSON"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/facts/{fact_id}": {
+            "delete": {
+                "tags": [
+                    "search"
+                ],
+                "summary": "Delete Fact",
+                "description": "Soft delete a fact (create tombstone).\n\nThe fact is marked as inactive and a tombstone is created.\nTombstones are retained for 30 days for undo capability.",
+                "operationId": "delete_fact_v1_facts__fact_id__delete",
+                "parameters": [
+                    {
+                        "name": "fact_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Fact Id"
+                        }
+                    },
+                    {
+                        "name": "authorization",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Authorization"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeleteResponseJSON"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/export": {
+            "get": {
+                "tags": [
+                    "search"
+                ],
+                "summary": "Export Facts",
+                "description": "Export user facts with cursor-based pagination.\n\nReturns active facts for the authenticated user, paginated to prevent\nOOM on large accounts. Use the returned `cursor` value as the `cursor`\nquery parameter in the next request to fetch the next page.\n\nQuery parameters:\n- limit: Number of facts per page (default: 1000, max: 5000)\n- cursor: Last fact_id from previous page (omit for first page)",
+                "operationId": "export_facts_v1_export_get",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 5000,
+                            "minimum": 1,
+                            "description": "Number of facts per page",
+                            "default": 1000,
+                            "title": "Limit"
+                        },
+                        "description": "Number of facts per page"
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Last fact_id from previous page",
+                            "title": "Cursor"
+                        },
+                        "description": "Last fact_id from previous page"
+                    },
+                    {
+                        "name": "authorization",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Authorization"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExportResponseJSON"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account": {
+            "delete": {
+                "tags": [
+                    "account"
+                ],
+                "summary": "Delete Account",
+                "description": "Delete user account (GDPR compliance).\n\nSoft-deletes the user record and deactivates all facts.\nData is permanently purged after 30 days.\n\nTo request immediate purge, contact support.",
+                "operationId": "delete_account_v1_account_delete",
+                "parameters": [
+                    {
+                        "name": "authorization",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Authorization"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AccountDeletionResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sync": {
+            "get": {
+                "tags": [
+                    "sync"
+                ],
+                "summary": "Sync",
+                "description": "Delta sync endpoint for agent reconnection (v0.3.1b).\n\nReturns all facts for the authenticated user where sequence_id > since_sequence.\nUsed by agents after coming online to pull changes made by other agents.\n\nResponse includes:\n- facts: array of facts with all metadata\n- latest_sequence: current highest sequence_id for this user\n- has_more: true if more facts beyond limit (client should paginate)",
+                "operationId": "sync_v1_sync_get",
+                "parameters": [
+                    {
+                        "name": "since_sequence",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "description": "Return facts with sequence_id > this value",
+                            "default": 0,
+                            "title": "Since Sequence"
+                        },
+                        "description": "Return facts with sequence_id > this value"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 10000,
+                            "minimum": 1,
+                            "description": "Max facts to return",
+                            "default": 1000,
+                            "title": "Limit"
+                        },
+                        "description": "Max facts to return"
+                    },
+                    {
+                        "name": "authorization",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Authorization"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SyncResponseJSON"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/relay": {
+            "post": {
+                "tags": [
+                    "relay"
+                ],
+                "summary": "Relay User Operation",
+                "description": "Relay a signed UserOperation to the Pimlico bundler.\n\nThe client builds and signs the UserOp locally, then sends it here.\nThis server validates the target, applies rate limiting, and forwards\nto the bundler. The bundler handles on-chain signature verification.\n\nReturns the transaction hash on success.",
+                "operationId": "relay_user_operation_v1_relay_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RelayRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RelayResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics": {
+            "get": {
+                "summary": "Metrics",
+                "description": "Prometheus metrics endpoint.",
+                "operationId": "metrics_metrics_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/": {
+            "get": {
+                "summary": "Root",
+                "description": "Root endpoint - returns basic server info.",
+                "operationId": "root__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AccountDeletionResponse": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "title": "Success"
+                    },
+                    "message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Message"
+                    },
+                    "purge_scheduled_at": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Purge Scheduled At"
+                    },
+                    "error_code": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Code"
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "success"
+                ],
+                "title": "AccountDeletionResponse",
+                "description": "Account deletion response."
+            },
+            "DeleteResponseJSON": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "title": "Success"
+                    },
+                    "error_code": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Code"
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "success"
+                ],
+                "title": "DeleteResponseJSON",
+                "description": "JSON delete response."
+            },
+            "ExportResponseJSON": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "title": "Success"
+                    },
+                    "error_code": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Code"
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message"
+                    },
+                    "facts": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "additionalProperties": true,
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Facts"
+                    },
+                    "cursor": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Cursor"
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "title": "Has More",
+                        "default": false
+                    },
+                    "total_count": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Total Count"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "success"
+                ],
+                "title": "ExportResponseJSON",
+                "description": "JSON export response with cursor-based pagination."
+            },
+            "FactJSON": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id",
+                        "description": "UUIDv7 fact identifier"
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "title": "Timestamp",
+                        "description": "ISO 8601 timestamp"
+                    },
+                    "encrypted_blob": {
+                        "type": "string",
+                        "maxLength": 2097152,
+                        "title": "Encrypted Blob",
+                        "description": "Hex-encoded AES-256-GCM ciphertext"
+                    },
+                    "blind_indices": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "maxItems": 1000,
+                        "title": "Blind Indices",
+                        "description": "List of SHA-256 hashes for blind search"
+                    },
+                    "decay_score": {
+                        "type": "number",
+                        "maximum": 10.0,
+                        "minimum": 0.0,
+                        "title": "Decay Score",
+                        "description": "Importance score",
+                        "default": 1.0
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active",
+                        "description": "Whether fact is active",
+                        "default": true
+                    },
+                    "version": {
+                        "type": "integer",
+                        "minimum": 1.0,
+                        "title": "Version",
+                        "description": "Version for optimistic locking",
+                        "default": 1
+                    },
+                    "source": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "title": "Source",
+                        "description": "Origin: conversation | pre_compaction | explicit"
+                    },
+                    "content_fp": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Content Fp",
+                        "description": "HMAC-SHA256 content fingerprint for dedup"
+                    },
+                    "agent_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Agent Id",
+                        "description": "Identifier of the creating agent"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "timestamp",
+                    "encrypted_blob",
+                    "blind_indices",
+                    "source"
+                ],
+                "title": "FactJSON",
+                "description": "JSON representation of a fact."
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "HealthResponse": {
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
+                    "version": {
+                        "type": "string",
+                        "title": "Version"
+                    },
+                    "database": {
+                        "type": "string",
+                        "title": "Database"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "status",
+                    "version",
+                    "database"
+                ],
+                "title": "HealthResponse",
+                "description": "Health check response model."
+            },
+            "RegisterRequestJSON": {
+                "properties": {
+                    "auth_key_hash": {
+                        "type": "string",
+                        "title": "Auth Key Hash",
+                        "description": "Hex-encoded SHA256 of auth key"
+                    },
+                    "salt": {
+                        "type": "string",
+                        "title": "Salt",
+                        "description": "Hex-encoded 32-byte salt"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "auth_key_hash",
+                    "salt"
+                ],
+                "title": "RegisterRequestJSON",
+                "description": "JSON registration request."
+            },
+            "RegisterResponseJSON": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "title": "Success"
+                    },
+                    "user_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "User Id"
+                    },
+                    "error_code": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Code"
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "success"
+                ],
+                "title": "RegisterResponseJSON",
+                "description": "JSON registration response."
+            },
+            "RelayRequest": {
+                "properties": {
+                    "userOperation": {
+                        "$ref": "#/components/schemas/UserOperationPayload"
+                    },
+                    "target": {
+                        "type": "string",
+                        "title": "Target",
+                        "description": "Target contract address (must be EventfulDataEdge)"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "userOperation",
+                    "target"
+                ],
+                "title": "RelayRequest",
+                "description": "POST /relay request body."
+            },
+            "RelayResponse": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "title": "Success"
+                    },
+                    "transactionHash": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Transactionhash"
+                    },
+                    "userOpHash": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Userophash"
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "success"
+                ],
+                "title": "RelayResponse",
+                "description": "POST /relay response body."
+            },
+            "SearchRequestJSON": {
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "title": "User Id",
+                        "description": "User's UUID"
+                    },
+                    "trapdoors": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "maxItems": 1000,
+                        "title": "Trapdoors",
+                        "description": "Blind trapdoors (SHA-256 hashes)"
+                    },
+                    "max_candidates": {
+                        "type": "integer",
+                        "maximum": 10000.0,
+                        "minimum": 1.0,
+                        "title": "Max Candidates",
+                        "description": "Maximum candidates to return",
+                        "default": 3000
+                    },
+                    "min_decay_score": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "title": "Min Decay Score",
+                        "description": "Minimum decay score filter",
+                        "default": 0.0
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "user_id",
+                    "trapdoors"
+                ],
+                "title": "SearchRequestJSON",
+                "description": "JSON search request."
+            },
+            "SearchResponseJSON": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "title": "Success"
+                    },
+                    "error_code": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Code"
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message"
+                    },
+                    "results": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "$ref": "#/components/schemas/SearchResultJSON"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Results"
+                    },
+                    "total_candidates": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Total Candidates"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "success"
+                ],
+                "title": "SearchResponseJSON",
+                "description": "JSON search response."
+            },
+            "SearchResultJSON": {
+                "properties": {
+                    "fact_id": {
+                        "type": "string",
+                        "title": "Fact Id"
+                    },
+                    "encrypted_blob": {
+                        "type": "string",
+                        "title": "Encrypted Blob"
+                    },
+                    "decay_score": {
+                        "type": "number",
+                        "title": "Decay Score"
+                    },
+                    "timestamp": {
+                        "type": "integer",
+                        "title": "Timestamp"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "title": "Version"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "fact_id",
+                    "encrypted_blob",
+                    "decay_score",
+                    "timestamp",
+                    "version"
+                ],
+                "title": "SearchResultJSON",
+                "description": "JSON search result."
+            },
+            "StoreRequestJSON": {
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "title": "User Id",
+                        "description": "User's UUID"
+                    },
+                    "facts": {
+                        "items": {
+                            "$ref": "#/components/schemas/FactJSON"
+                        },
+                        "type": "array",
+                        "maxItems": 500,
+                        "title": "Facts",
+                        "description": "Facts to store"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "user_id",
+                    "facts"
+                ],
+                "title": "StoreRequestJSON",
+                "description": "JSON store request."
+            },
+            "StoreResponseJSON": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "title": "Success"
+                    },
+                    "ids": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ids"
+                    },
+                    "error_code": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Code"
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message"
+                    },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
+                    },
+                    "duplicate_ids": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Duplicate Ids"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "success"
+                ],
+                "title": "StoreResponseJSON",
+                "description": "JSON store response."
+            },
+            "SyncResponseJSON": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "title": "Success"
+                    },
+                    "facts": {
+                        "items": {
+                            "$ref": "#/components/schemas/SyncedFactJSON"
+                        },
+                        "type": "array",
+                        "title": "Facts",
+                        "default": []
+                    },
+                    "latest_sequence": {
+                        "type": "integer",
+                        "title": "Latest Sequence",
+                        "default": 0
+                    },
+                    "has_more": {
+                        "type": "boolean",
+                        "title": "Has More",
+                        "default": false
+                    },
+                    "error_code": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Code"
+                    },
+                    "error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Message"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "success"
+                ],
+                "title": "SyncResponseJSON",
+                "description": "Response from GET /sync."
+            },
+            "SyncedFactJSON": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "sequence_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Sequence Id"
+                    },
+                    "encrypted_blob": {
+                        "type": "string",
+                        "title": "Encrypted Blob"
+                    },
+                    "blind_indices": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Blind Indices"
+                    },
+                    "decay_score": {
+                        "type": "number",
+                        "title": "Decay Score"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "title": "Version"
+                    },
+                    "source": {
+                        "type": "string",
+                        "title": "Source"
+                    },
+                    "content_fp": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Content Fp"
+                    },
+                    "agent_id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Agent Id"
+                    },
+                    "created_at": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Created At"
+                    },
+                    "updated_at": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Updated At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "encrypted_blob",
+                    "blind_indices",
+                    "decay_score",
+                    "is_active",
+                    "version",
+                    "source"
+                ],
+                "title": "SyncedFactJSON",
+                "description": "A fact returned by the sync endpoint."
+            },
+            "UserOperationPayload": {
+                "properties": {
+                    "sender": {
+                        "type": "string",
+                        "title": "Sender"
+                    },
+                    "nonce": {
+                        "type": "string",
+                        "title": "Nonce"
+                    },
+                    "initCode": {
+                        "type": "string",
+                        "title": "Initcode",
+                        "default": "0x"
+                    },
+                    "callData": {
+                        "type": "string",
+                        "title": "Calldata"
+                    },
+                    "callGasLimit": {
+                        "type": "string",
+                        "title": "Callgaslimit",
+                        "default": "0x50000"
+                    },
+                    "verificationGasLimit": {
+                        "type": "string",
+                        "title": "Verificationgaslimit",
+                        "default": "0x60000"
+                    },
+                    "preVerificationGas": {
+                        "type": "string",
+                        "title": "Preverificationgas",
+                        "default": "0x10000"
+                    },
+                    "maxFeePerGas": {
+                        "type": "string",
+                        "title": "Maxfeepergas",
+                        "default": "0x0"
+                    },
+                    "maxPriorityFeePerGas": {
+                        "type": "string",
+                        "title": "Maxpriorityfeepergas",
+                        "default": "0x0"
+                    },
+                    "paymasterAndData": {
+                        "type": "string",
+                        "title": "Paymasteranddata",
+                        "default": "0x"
+                    },
+                    "signature": {
+                        "type": "string",
+                        "title": "Signature"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "sender",
+                    "nonce",
+                    "callData",
+                    "signature"
+                ],
+                "title": "UserOperationPayload",
+                "description": "The UserOperation JSON as produced by the client's buildUserOperation()."
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    },
+                    "input": {
+                        "title": "Input"
+                    },
+                    "ctx": {
+                        "type": "object",
+                        "title": "Context"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
+}
