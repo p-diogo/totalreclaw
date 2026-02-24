@@ -411,14 +411,17 @@ class Database:
         validated_trapdoors = validate_trapdoors(trapdoors) if trapdoors else []
 
         async with self.session() as session:
-            # Use parameterized array with cast — no f-string interpolation
+            # Use parameterized array with CAST() function — no f-string interpolation.
+            # NOTE: We use CAST(:trapdoors AS text[]) instead of :trapdoors::text[]
+            # because the :: cast syntax conflicts with SQLAlchemy's named-parameter
+            # parsing when using asyncpg (which uses positional $N parameters).
             query = text("""
                 SELECT id, encrypted_blob, decay_score, created_at, version
                 FROM facts
                 WHERE user_id = :user_id
                   AND is_active = true
                   AND decay_score >= :min_decay
-                  AND blind_indices && :trapdoors::text[]
+                  AND blind_indices && CAST(:trapdoors AS text[])
                 ORDER BY decay_score DESC
                 LIMIT :limit
             """)
