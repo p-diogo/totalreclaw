@@ -230,18 +230,50 @@ class Database:
             Created Fact object
         """
         async with self.session() as session:
-            fact = Fact(
-                id=fact_id,
-                user_id=user_id,
-                encrypted_blob=encrypted_blob,
-                blind_indices=blind_indices,
-                decay_score=decay_score,
-                source=source,
-                content_fp=content_fp,
-                agent_id=agent_id
+            # Use raw SQL INSERT to omit sequence_id, letting PostgreSQL's
+            # nextval('facts_sequence_id_seq') default fire properly.
+            # ORM session.add() would set sequence_id=None explicitly,
+            # which bypasses the server default.
+            result = await session.execute(
+                text("""
+                    INSERT INTO facts (id, user_id, encrypted_blob, blind_indices,
+                                       decay_score, source, content_fp, agent_id,
+                                       is_active, version)
+                    VALUES (:id, :user_id, :blob, :indices,
+                            :decay, :source, :content_fp, :agent_id,
+                            true, 1)
+                    RETURNING id, user_id, encrypted_blob, blind_indices,
+                              decay_score, is_active, version, source,
+                              created_at, updated_at, sequence_id,
+                              content_fp, agent_id
+                """),
+                {
+                    "id": fact_id,
+                    "user_id": user_id,
+                    "blob": encrypted_blob,
+                    "indices": blind_indices,
+                    "decay": decay_score,
+                    "source": source,
+                    "content_fp": content_fp,
+                    "agent_id": agent_id,
+                }
             )
-            session.add(fact)
-            await session.flush()
+            row = result.fetchone()
+            fact = Fact(
+                id=row.id,
+                user_id=row.user_id,
+                encrypted_blob=row.encrypted_blob,
+                blind_indices=row.blind_indices,
+                decay_score=row.decay_score,
+                is_active=row.is_active,
+                version=row.version,
+                source=row.source,
+                created_at=row.created_at,
+                updated_at=row.updated_at,
+            )
+            fact.sequence_id = row.sequence_id
+            fact.content_fp = row.content_fp
+            fact.agent_id = row.agent_id
             return fact
 
     async def find_fact_by_fingerprint(

@@ -16,13 +16,13 @@ Client (encrypt + LSH)  -->  Server (blind search)  -->  Client (decrypt + reran
 
 | Directory | Description | Stack |
 |-----------|-------------|-------|
-| `server/` | API server + PostgreSQL backend | Python, FastAPI, Pydantic |
+| `server/` | API server + PostgreSQL backend | Python, FastAPI, Protobuf |
 | `client/` | E2EE client library (encrypt, LSH, blind index, rerank) | TypeScript |
 | `skill/` | OpenClaw skill integration | TypeScript |
 | `skill-nanoclaw/` | NanoClaw skill integration | TypeScript |
 | `mcp/` | MCP server (Claude Desktop, etc.) | TypeScript |
-
-> **Note:** Phase 3 (Subgraph) code — including `contracts/` and `subgraph/` — is on the `feature/subgraph` branch.
+| `contracts/` | On-chain anchor contracts | Solidity, Hardhat |
+| `subgraph/` | The Graph Protocol indexer | TypeScript, AssemblyScript |
 
 ## Quick Start
 
@@ -53,6 +53,12 @@ cd skill-nanoclaw && npm test
 
 # MCP server
 cd mcp && npm test
+
+# Smart contracts
+cd contracts && npx hardhat test
+
+# Subgraph
+cd subgraph && npm test
 ```
 
 ## API
@@ -69,7 +75,7 @@ Full OpenAPI spec: [`server/openapi.json`](server/openapi.json)
 | `/v1/account` | DELETE | Delete vault and all associated data |
 | `/health` | GET | Health check |
 
-All payloads use JSON over HTTP (the canonical schema is defined in Protobuf, but the FastAPI handlers accept/return JSON via Pydantic models). Auth via `Authorization: Bearer <vault_token>`.
+All payloads use Protobuf over HTTP. Auth via `Authorization: Bearer <vault_token>`.
 
 ## PoC Testing Guide
 

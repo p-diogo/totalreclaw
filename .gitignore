@@ -1,72 +1,52 @@
 # Dependencies
 node_modules/
-.venv/
-venv/
-ENV/
+
+# Environment files (NEVER commit real secrets)
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
 
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
 *.py[cod]
 *$py.class
-*.so
-.Python
-.pytest_cache/
 *.egg-info/
+.venv/
+venv/
+
+# Testing
+.pytest_cache/
+coverage/
+.nyc_output/
+htmlcov/
 
 # Build artifacts
-dist/
 build/
-coverage/
-htmlcov/
-.coverage
-typechain-types/
+dist/
 
-# Environment and secrets
-.env
-!.env.example
-.env.local
-.env.*.local
-*.pem
-*.key
-credentials.json
-auth.json
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs and databases
-*.log
-logs/
+# Data files (too large / contain PII)
+testbed/v2-realworld-data/raw/
+testbed/v2-realworld-data/processed/
+testbed/benchmark_results/
+*.npy
 *.sqlite
-*.sqlite3
-*.db
+*.sql.gz
+*.zip
 
 # Backups
 backups/
 
-# Claude Code
-.claude/
+# IDE
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Hardhat
-cache/
-artifacts/
+# Logs
+*.log
 
-# The Graph
-generated/
-
-# Misc
-*.tgz
-*.tar.gz
-*.tmp
-*.bak
+# OS
+Thumbs.db

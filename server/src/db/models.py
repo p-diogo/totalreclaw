@@ -9,7 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, text
 
 
 class Base(DeclarativeBase):
@@ -92,7 +92,7 @@ class Fact(Base):
     # --- Added in v0.3.1b ---
     sequence_id: Mapped[Optional[int]] = mapped_column(
         BigInteger,
-        autoincrement=True,
+        server_default=text("nextval('facts_sequence_id_seq')"),
         nullable=True  # nullable for backward compat with existing rows
     )
     content_fp: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
