@@ -45,6 +45,8 @@ curl http://localhost:8080/health
 # Should return: {"status": "healthy", ...}
 ```
 
+> **Tip:** Set `DEBUG=true` in your `.env` file to enable the Swagger UI at `http://localhost:8080/docs` for interactive API exploration.
+
 ### Step 2: Install the OpenMemory skill in OpenClaw
 
 In your OpenClaw chat, type:
@@ -215,6 +217,12 @@ After testing, please share your thoughts on:
 ```bash
 docker-compose logs openmemory-server
 docker-compose logs postgres
+```
+
+**Port 80/443 conflict (Caddy):**
+Caddy starts by default on ports 80 and 443. If those ports are already in use by another service, either stop the conflicting service or start only the server and database:
+```bash
+docker-compose up -d openmemory-server postgres
 ```
 
 **Health check fails:**
