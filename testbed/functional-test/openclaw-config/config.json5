@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.2.22",
+    "lastTouchedAt": "2026-02-25T10:01:51.878Z"
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "zai/glm-5"
+      },
+      "models": {
+        "opencode/glm-5": {},
+        "zai/glm-5": {}
+      },
+      "compaction": {
+        "mode": "safeguard"
+      }
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "auth": {
+      "mode": "token",
+      "token": "e6a13aa43a07820b3a80755748a6c856fdb2cd9a8a6be0b6"
+    },
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "plugins": {
+    "slots": {
+      "memory": "openmemory"
+    },
+    "entries": {
+      "openmemory": {
+        "enabled": true
+      },
+      "memory-core": {
+        "enabled": false
+      },
+      "memory-lancedb": {
+        "enabled": false
+      }
+    }
+  }
+}

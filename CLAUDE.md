@@ -127,10 +127,11 @@
    - TASKS.md (understand current state)
    - CHANGELOG.md (understand recent changes)
 
-2. **UPDATE AS YOU WORK**:
-   - Claim tasks in TASKS.md (set `owner` and `status: in_progress`)
+2. **UPDATE AS YOU WORK** (real-time, not at the end):
+   - Claim tasks in TASKS.md (set `owner` and `status: in_progress`) BEFORE starting work
    - Log all changes in CHANGELOG.md with timestamp
    - Release tasks when done (`status: completed`)
+   - **This enables parallel agents** — if another agent is running concurrently, it checks TASKS.md to avoid conflicts
 
 3. **PERSIST STATE IN FILES** — Never keep state only in memory. If an agent crashes, another must be able to resume from TASKS.md.
 
@@ -138,7 +139,7 @@
 
 5. **COMMUNICATE VIA CHANGELOG** — If you need to leave a message for the next agent, put it in CHANGELOG.md.
 
-6. **WHENEVER POSSIBLE, ALWAYS LAUNCH AGENTS FOR TASKS TO SAVE CONTEXT** — Use the Task tool to delegate implementation work to subagents. This preserves the main conversation's context window for coordination. Launch multiple agents in parallel when tasks are independent. The main agent should coordinate, not implement.
+6. **ALWAYS DELEGATE TO SUBAGENTS — NEVER DO IMPLEMENTATION IN THE MAIN SESSION** — Use the Task tool to delegate ALL implementation work, research, and testing to subagents. The main session is ONLY for coordination, decision-making, and user communication. This is a hard rule, not a suggestion. Launch multiple agents in parallel when tasks are independent.
 
 ---
 

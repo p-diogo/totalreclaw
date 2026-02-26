@@ -1,0 +1,4 @@
+# Pipeline test artifacts
+test-credentials.json
+node_modules/
+package-lock.json

@@ -1,0 +1,55 @@
+# TESTING ONLY — Do not use these settings in production
+#
+# OpenClaw Agent Configuration for Functional Testing
+# This configuration enables OpenMemory integration for testing
+
+defaults:
+  memory:
+    # OpenMemory integration settings
+    openmemory:
+      enabled: true
+      serverUrl: http://openmemory-server:8080
+      # Auto-extract facts every N turns
+      autoExtractEveryTurns: 5
+      # Minimum importance score (1-10) for auto-storing memories
+      minImportanceForAutoStore: 6
+      # Maximum memories to include in context
+      maxMemoriesInContext: 8
+      # Encryption key — generate a real one for testing:
+      # Generate with: openssl rand -hex 32
+      encryptionKey: 85df7c758f0ada677feaa69681d845079fe6a7791abe79e445c23e375fa52698
+
+  # LLM Provider Configuration
+  model: glm-5
+  provider: zai
+
+# Test agent configuration
+agents:
+  - name: test-agent
+    description: Agent for functional testing of OpenMemory integration
+    systemPrompt: |
+      You are a test agent for validating OpenMemory integration.
+      You should:
+      1. Remember facts about the user across conversations
+      2. Reference previously stored memories when relevant
+      3. Extract important information for storage
+    memory:
+      openmemory:
+        enabled: true
+        autoExtractEveryTurns: 1  # Extract every turn for testing
+        minImportanceForAutoStore: 1  # Store everything for testing
+
+# Logging configuration
+logging:
+  level: debug
+  format: json
+
+# Security settings
+security:
+  # Disable rate limiting for testing
+  rateLimit:
+    enabled: false
+  # Allow all origins for testing
+  cors:
+    allowedOrigins:
+      - "*"

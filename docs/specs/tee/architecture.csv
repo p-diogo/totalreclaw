@@ -1,0 +1,10 @@
+Dimension,Crypto-Only (LSH v0.3),TEE Edition (v1.0),Winner for most users
+Privacy (vs provider),Perfect zero-knowledge (math),Perfect zero-knowledge (hardware),Tie
+Accuracy,93–96 % recall of plaintext,100 % of plaintext,TEE
+Latency (1 M items),110–140 ms,35–70 ms,TEE
+Implementation effort,3–5 developer days,12–18 developer days + infra setup,Crypto-Only
+Cost at 1 M memories,Standard VPS ($40/mo),Confidential VM ($180–250/mo),Crypto-Only
+Scalability,Excellent (inverted index),Excellent (but per-user enclave sharding needed),Crypto-Only
+Operational complexity,Zero new infra,Need Nitro/TDX orchestration,Crypto-Only
+Future-proof,Pure crypto (no hardware trust),Hardware trust (but mature in 2026),Crypto-Only
+When to choose,"Launch now, maximum privacy purists",When you want to claim “best possible accuracy”,—

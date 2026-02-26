@@ -12,12 +12,16 @@ node_modules/
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
 *.egg-info/
 .venv/
 venv/
+ENV/
 
 # Testing
 .pytest_cache/
+.coverage
 coverage/
 .nyc_output/
 htmlcov/
@@ -25,6 +29,7 @@ htmlcov/
 # Build artifacts
 build/
 dist/
+typechain-types/
 
 # Data files (too large / contain PII)
 testbed/v2-realworld-data/raw/
@@ -32,21 +37,70 @@ testbed/v2-realworld-data/processed/
 testbed/benchmark_results/
 *.npy
 *.sqlite
+*.sqlite3
 *.sql.gz
 *.zip
+*.parquet
+
+# Cloned repos inside functional test directories
+testbed/functional-test/openclaw/
+testbed/functional-test-nanoclaw/nanoclaw/
+
+# Generated test output
+testbed/output/
+testbed/reports/
+ombh/output/
+ombh/reports/
 
 # Backups
 backups/
 
+# Session plans and implementation details (private)
+plans/
+
 # IDE
-.DS_Store
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log
+logs/
 
-# OS
-Thumbs.db
+# Databases
+*.db
+
+# API keys and credentials
+credentials.json
+auth.json
+*.pem
+*.key
+testbed/config/api_keys.env
+
+# Claude Code
+.claude/
+
+# Hardhat / Solidity
+cache/
+artifacts/
+
+# The Graph
+generated/
+
+# Linter / formatter caches
+.ruff_cache/
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+*.tgz
+*.tar.gz
+*.tmp
+*.bak

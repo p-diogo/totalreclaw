@@ -1,0 +1,86 @@
+# Docker Compose for NanoClaw + OpenMemory functional test
+#
+# Services:
+#   postgres          — PostgreSQL 16 for OpenMemory server
+#   openmemory-server — FastAPI server (E2EE memory vault)
+#   nanoclaw-agent    — NanoClaw container with OpenMemory overlay (profile: agent)
+#
+# The nanoclaw-agent service uses profiles so it does NOT auto-start.
+# The test runner starts it explicitly via `docker run`.
+#
+# Ports use non-standard values (5433, 8090) to avoid conflicts
+# with the OpenClaw functional test stack.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: openmemory
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-test}
+      POSTGRES_DB: openmemory
+    volumes:
+      - nanoclaw-test-db:/var/lib/postgresql/data
+    networks:
+      - nanoclaw-test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openmemory -d openmemory"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "127.0.0.1:5433:5432"
+
+  openmemory-server:
+    build:
+      context: ../../server
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8090:8080"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://openmemory:${POSTGRES_PASSWORD:-test}@postgres:5432/openmemory
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - nanoclaw-test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=50M,mode=1777
+
+  # Template for agent containers. NOT auto-started.
+  # The test runner builds and runs this via `docker run`.
+  nanoclaw-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.nanoclaw-openmemory
+    profiles:
+      - agent
+    networks:
+      - nanoclaw-test
+    environment:
+      OPENMEMORY_SERVER_URL: http://openmemory-server:8080
+    volumes:
+      # Overlay: modified agent-runner source files
+      - ./nanoclaw-openmemory-overlay/agent-runner-src/index.ts:/app/src/index.ts:ro
+      - ./nanoclaw-openmemory-overlay/agent-runner-src/openmemory-mcp.ts:/app/src/openmemory-mcp.ts:ro
+      # Overlay: OpenMemory skill instructions
+      - ./nanoclaw-openmemory-overlay/skills/openmemory:/app/skills/openmemory:ro
+      # Persistent credentials volume
+      - nanoclaw-openmemory-credentials:/workspace/.openmemory
+    stdin_open: true
+
+networks:
+  nanoclaw-test:
+    driver: bridge
+
+volumes:
+  nanoclaw-test-db:
+  nanoclaw-openmemory-credentials:

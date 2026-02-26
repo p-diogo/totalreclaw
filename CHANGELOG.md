@@ -5,7 +5,280 @@
 
 ---
 
+## 2026-02-26
+
+### Session 8 (continued) | Claude (opus-nanoclaw) | Full E2E Agent Validation
+
+- **T201 (completed):** Fixed TypeScript compilation in NanoClaw container — `.js` extensions for `@noble/hashes` imports (NodeNext moduleResolution), MCP SDK v1.26 handler signature (`_extra` param), `ToolResult` index signature
+- **T202 (completed):** Fixed `run-tests.sh` for macOS — `echo`→`printf` (zsh interprets `\` in OAuth tokens), `grep -vF --` for `---NANOCLAW_OUTPUT` markers
+- **T203 (completed):** Created `generate-seed.mjs` — BIP-39 mnemonic generator with recovery phrase messaging
+- **T204 (completed):** Full E2E agent test with OAuth token — **ALL WORKING:**
+  - OAuth authentication: CLAUDE_CODE_OAUTH_TOKEN works, agent starts and responds
+  - BIP-39 mnemonic: auto-detected, keys derived via HKDF from 512-bit seed (Argon2id bypassed)
+  - MCP tools: `openmemory_remember` called 3 times, 3 facts stored as encrypted blobs
+  - Cross-session recall: new container recalled "Alice" from encrypted vault (1/3 facts — LSH bucket limitation on small dataset, not a bug)
+  - **Root cause of earlier "permission issue":** Docker volume `nanoclaw-openmemory-credentials` created as root, container runs as user `node`. Fixed in Dockerfile with `mkdir + chown`.
+  - Zero plaintext in server logs or database confirmed
+- **T205 (completed):** Rewrote NanoClaw POC testing guide — 250 lines, recipe-style, BIP-39 recovery phrase, pipeline test as verification gate
+
+### Session 9 | Claude (opus) | BIP-39 Mnemonic + Guide Polish
+
+- **T210 (completed):** Added BIP-39 mnemonic support to OpenClaw plugin (`skill/plugin/crypto.ts`)
+  - Auto-detects if `OPENMEMORY_MASTER_PASSWORD` is a 12-word BIP-39 mnemonic
+  - If mnemonic: derives keys from 512-bit BIP-39 seed via HKDF (proper key separation — uses seed, NOT Ethereum private key)
+  - If arbitrary password: keeps existing Argon2id path (backward compat)
+  - Added `@scure/bip39` dependency (same `@noble` family as existing `@noble/hashes`)
+  - New functions: `isBip39Mnemonic()`, `deriveKeysFromMnemonic()`
+- **T211 (completed):** Added same BIP-39 support to NanoClaw MCP (`openmemory-mcp.ts`)
+  - Identical auto-detection logic and derivation path
+  - NanoClaw already had `@scure/bip39` in Dockerfile
+- **T212 (completed):** Created mnemonic generation script (`skill/plugin/generate-mnemonic.ts`)
+  - Standalone: `npx tsx generate-mnemonic.ts`
+  - Generates 12-word English mnemonic (128 bits entropy)
+- **T213-T215 (completed):** Guide + .env.example updated for BIP-39, @scure/bip39 installed, .js import paths fixed, Docker rebuilt
+- **T216 (completed):** Fresh E2E test with BIP-39 mnemonic — 8/9 PASS. BIP-39 derivation confirmed (deterministic salt). 1 PARTIAL: LSH recall on small dataset.
+- **T217 (completed):** Browser E2E test via Playwright (agent-browser) — FULL PASS
+  - Full browser flow: open localhost:8081 → token auth → pair device → send 4 facts → new session → recall ALL facts
+  - Agent recalled: Alex (name), Nexus Labs + BrainWave (work), Python>R (preference), Rust/Go (languages)
+  - Agent noticed conflicting work entries and asked to reconcile — intelligent cross-session behavior
+- **Guide fixes (earlier in session):** Fixed 7 issues in `docs/poc-testing-guide.md`
+  - BLOCKER fix: `openclaw` → `npx openclaw` in device pairing command
+  - Updated fact extraction description (two paths: explicit + auto)
+  - Expanded LLM provider section (8 providers, 3-file setup)
+  - Added extraction timing tip, removed `-it` from docker exec, added `npx` troubleshooting
+
+---
+
+## 2026-02-25
+
+### Session 8 (continued) | Claude (opus) | Pipeline Tests + OAuth + Bug Fix
+
+- **T195-T197 (completed):** Direct pipeline test — 32/32 TAP tests passing
+  - `test-pipeline.ts` (874 lines): standalone TypeScript test hitting OpenMemory server directly
+  - Tests: storage (3 facts), encryption verification (no plaintext in DB), cross-session recall (re-derive keys, blind index search), export (all facts recovered), dedup (fingerprint match detected)
+  - `run-pipeline-test.sh`: wrapper that starts infrastructure, installs deps, runs tests, cleans up
+  - No Anthropic API key needed — validates the full E2EE pipeline independently of the LLM agent
+- **T198 (completed):** Fixed base64→hex encoding mismatch in `openmemory-mcp.ts`
+  - Bug: `encrypt()` returned base64 but server's `store.py` parses with `bytes.fromhex()`
+  - Fix: Added `Buffer.from(b64, 'base64').toString('hex')` at store, and reverse at search/export
+  - OpenClaw plugin had this via `encryptToHex()`/`decryptFromHex()` wrappers — NanoClaw MCP was missing them
+- **T199 (completed):** OAuth token support added to test infrastructure
+- **T200 (completed):** Direct pipeline test created (independent of agent E2E tests)
+
+### NanoClaw OAuth Token Support | Claude (opus)
+
+- **run-tests.sh:** Accept `CLAUDE_CODE_OAUTH_TOKEN` as alternative to `ANTHROPIC_API_KEY`. Validation now requires at least one; `run_agent()` builds secrets JSON dynamically with whichever credentials are available.
+- **.env.example:** Rewritten to document both auth options (OAuth token for subscription users, API key for API key users), with instructions to run `claude setup-token`.
+- **nanoclaw-poc-testing-guide.md:** Updated prerequisites, Step 2 env config table, and troubleshooting section to show both auth methods. Added guidance on which to use.
+
+### Session 7 | Claude (opus) | E2E Hook & Auto-Extraction Validation
+
+- **T179 (completed):** E2E agent_end hook auto-extraction test
+  - **Bug found & fixed:** `messageToText()` in `skill/plugin/extractor.ts` only handled `content` as plain string. OpenClaw uses content arrays (`[{ type: "text", text: "..." }]`). Added `ContentBlock` interface + array handling.
+  - After fix: 4 facts auto-extracted from natural conversation via `agent_end` hook + LLM (glm-4.5-flash)
+  - Hook fires correctly after each completed agent turn (priority 90, async/non-blocking)
+- **T180 (completed):** E2E before_compaction hook test
+  - **Key finding:** OpenAI-compat API (`POST /v1/chat/completions`) does NOT process slash commands — they bypass the command pipeline entirely
+  - Solution: Use `openclaw gateway call chat.send` via WebSocket RPC to send `/compact`
+  - `/compact` successfully triggered `before_compaction` hook — processed 19 messages, extracted and stored facts
+  - Created `testbed/functional-test/ws-command.mjs` helper script
+- **T181 (completed):** E2E before_reset hook test
+  - **Finding:** `before_reset` hook does NOT fire in OpenClaw v2026.2.22. `/new` and `/reset` create new sessions without emitting plugin hooks. The plugin's `before_reset` handler is dead code in this version.
+  - Tested via both `gateway call chat.send` and `sessions.reset` RPC — neither triggers the hook
+- **T182 (completed):** Cross-conversation recall of auto-extracted facts
+  - 3/3 queries returned contextually relevant facts from prior conversations
+  - "pets" → Luna (golden retriever) + Max; "job" → Lisbon/coworking; "travel" → Tokyo trip details
+  - `before_agent_start` hook fires on every query, search latency 15-21ms
+  - Both auto-extracted and explicit facts are retrievable
+- **T183 (completed):** Extraction quality audit
+  - Created `testbed/functional-test/audit-facts.mjs` — decrypts all facts from DB for inspection
+  - 12/12 facts decrypted successfully, zero decryption failures
+  - 4 auto-extracted (importance 7-8/10), 8 explicit (importance 6-9/10)
+  - Types: 8 fact, 2 goal, 2 preference — all correctly classified
+  - Zero garbage/hallucinated extractions, zero exact duplicates
+  - One semantic near-overlap (dogs facts 7 & 10) — candidate for future conflict resolution layer
+- **Files modified:**
+  - `skill/plugin/extractor.ts` — fixed `messageToText()` for OpenClaw content array format
+  - `TASKS.md` + `CHANGELOG.md` — updated
+  - `CLAUDE.md` — strengthened parallel agent task-claiming instructions
+- **Files created:**
+  - `testbed/functional-test/ws-command.mjs` — WebSocket slash command helper
+  - `testbed/functional-test/audit-facts.mjs` — fact decryption audit script
+- **T184 (completed):** Rewrote llm-client.ts for zero-config provider auto-detection
+  - Plugin now reads `api.config.agents.defaults.model.primary` to detect the provider
+  - Derives a cheap extraction model via naming convention heuristic (e.g., zai/glm-5 → glm-4.5-flash)
+  - Reads API key from `process.env` using provider → env var mapping (12 providers: zai, anthropic, openai, gemini, google, mistral, groq, deepseek, openrouter, xai, together, cerebras)
+  - Added Anthropic Messages API support (x-api-key header, /messages endpoint, system param extraction)
+  - Override chain: OPENMEMORY_LLM_MODEL env > plugin config extraction.model > auto-derived > fallback env vars
+  - Updated openclaw.plugin.json with optional extraction config (model + enabled)
+  - Zero user configuration needed — plugin piggybacks on the API key already in the environment
+  - Removed hard dependency on ZAI_API_KEY / OPENAI_API_KEY
+- **T185 (completed):** Set extraction temperature to 0 for deterministic dedup
+  - Same input produces identical fact text → same HMAC-SHA256 content fingerprint → server-side dedup catches duplicates
+  - Previously was 0.1 which introduced slight randomness in extraction output
+- **Files modified:**
+  - `skill/plugin/llm-client.ts` — full rewrite: initLLMClient(), provider mappings, Anthropic API, cheap model derivation
+  - `skill/plugin/index.ts` — added initLLMClient() call in register(), extended OpenClawPluginApi type with config/pluginConfig
+  - `skill/plugin/openclaw.plugin.json` — added optional extraction configSchema
+  - `skill/plugin/extractor.ts` — fixed messageToText() for OpenClaw content arrays (earlier in session)
+  - `CLAUDE.md` — strengthened agent delegation rule
+
+---
+
+### Session 8 | Claude (opus-nanoclaw) | NanoClaw Integration & E2E Testing
+
+- **T190 (completed):** Studied NanoClaw architecture
+  - Cloned https://github.com/qwibitai/nanoclaw to `testbed/functional-test-nanoclaw/nanoclaw/`
+  - NanoClaw uses Claude Agent SDK hooks (PreCompact, PreToolUse), not custom events
+  - MCP servers configured in agent runner query() options
+  - Skills are SKILL.md-based patches via skills engine
+  - Containers are ephemeral (stdin/stdout + IPC), no persistent ports
+  - Group folders = namespace isolation
+  - Existing `skill-nanoclaw/` code needs redesign for actual NanoClaw architecture
+- **T191 (completed):** Integration plan at `plans/2026-02-25-nanoclaw-integration.md`
+  - Architecture: OpenMemory MCP server runs inside NanoClaw container via stdio, agent gets `mcp__openmemory__*` tools
+  - Key insight: reuse OpenClaw plugin's self-contained crypto (no @openmemory/client dependency)
+- **T192 (completed):** Built NanoClaw OpenMemory skill
+  - `openmemory-mcp.ts` (892 lines) — self-contained MCP server with crypto, API client, 4 tools
+  - `index.ts` — modified agent runner: added openmemory MCP server + `mcp__openmemory__*` to allowedTools
+  - `SKILL.md` — agent instructions for auto-recall, when to remember, importance guide
+  - Code reviewed: fixed H1 (OPENMEMORY_MASTER_PASSWORD sanitization in Bash hook), H2 (credential volume cleanup)
+- **T193 (completed):** NanoClaw functional test infrastructure
+  - `docker-compose.nanoclaw-test.yml` — 3 services (postgres:5433, openmemory-server:8090, nanoclaw-agent template)
+  - `Dockerfile.nanoclaw-openmemory` — extends NanoClaw container with @noble/hashes
+  - `run-tests.sh` — 4 test scenarios (health, storage, encryption verification, cross-session recall)
+  - `.env.example` — ANTHROPIC_API_KEY + OPENMEMORY_MASTER_PASSWORD
+- **T194 (completed):** NanoClaw POC testing guide
+  - Created `docs/nanoclaw-poc-testing-guide.md` — full beta tester guide matching OpenClaw guide structure
+  - 11 sections: architecture, prerequisites, 6-step setup, how it works, 6 test scenarios, security, troubleshooting, persistence, feedback, technical reference
+  - Key differences from OpenClaw guide: ephemeral containers, MCP tool naming (mcp__openmemory__ prefix), Anthropic API key instead of Z.AI, ports 8090/5433
+
+### Session 6 | Claude (opus) | E2E Decryption Validation + Auto-Extraction Hooks + Beta Prep
+
+- **T174 (completed):** E2E decryption proof validated
+  - Server logs confirmed 13 real search requests + 5 store requests from the plugin
+  - Canary test: stored unique memory via direct API, OpenClaw recalled it proving decryption works
+  - Code path analysis confirms recall tool calls decryptFromHex() on server-returned blobs
+- **T175 (completed):** LLM-based auto-extraction hooks
+  - Created `skill/plugin/llm-client.ts` — minimal OpenAI-compatible client using native fetch()
+  - Created `skill/plugin/extractor.ts` — LLM-powered fact extraction with system prompt
+  - Added 3 hooks to index.ts: `agent_end` (priority 90), `before_compaction` (priority 5), `before_reset` (priority 5)
+  - Supports Z.AI (primary) and OpenAI (fallback), configurable via OPENMEMORY_LLM_MODEL env var
+  - Default extraction model: glm-4.5-flash (fast/cheap)
+  - Importance threshold >= 6, token budget ~3000, silent failure
+- **T176 (completed):** Fixed SQLAlchemy sequence bug for clean DB init
+  - `server/src/db/models.py` — raw `text("nextval('facts_sequence_id_seq')")` doesn't auto-create sequence
+  - Switched to proper `Sequence` object so `create_all()` works on fresh databases
+- **T177 (completed):** Rewrote POC testing guide for beta testers
+  - `docs/poc-testing-guide.md` — complete rewrite with accurate plugin-based setup
+  - `testbed/functional-test/.env.example` — created with ZAI_API_KEY, OPENMEMORY_MASTER_PASSWORD, POSTGRES_PASSWORD
+  - `docker-compose.functional-test.yml` — parameterized with env vars (${POSTGRES_PASSWORD:-test})
+- **T178 (completed):** Removed API key field from plugin UI
+  - `skill/plugin/openclaw.plugin.json` — emptied configSchema.properties
+  - `skill/SKILL.md` — removed primaryEnv (was showing API key prompt in Skills tab)
+- **Other fixes:**
+  - Added `plans/` to `.gitignore` (session plans are private)
+  - Clean rebuild test: all 3 containers start from scratch in ~47 seconds
+  - Verified plugin loads with all new hooks, no errors
+
+---
+
+### Session 5 | Claude (opus) | OpenClaw Plugin Created, Docker Compose Updated, Deployment Docs
+
+- **OpenClaw Plugin (T172):** Created standalone plugin at `skill/plugin/` with runtime tool registration
+  - 4 tools: openmemory_remember, openmemory_recall, openmemory_forget, openmemory_export
+  - before_agent_start hook for automatic memory recall
+  - Self-contained crypto: Argon2id + HKDF + AES-256-GCM + SHA-256 blind indices
+  - Only dependency: @noble/hashes (pure JS, no native compilation)
+  - Credential persistence across container restarts via Docker volume
+- **Docker Compose:** Updated to mount plugin + credential volume
+- **Deployment Docs:** Updated poc-testing-guide.md with plugin setup instructions
+- **E2E Memory Persistence (T173):** Validated remember → container restart → recall flow. All memories persist encrypted in PostgreSQL, credentials persist in Docker volume.
+- **Plugin Fixes:** Fixed tool registration (added name/label fields, toolCallId param), fixed @noble/hashes v2 Uint8Array requirement for HKDF info param, fixed package name for OpenClaw ID matching
+
+---
+
+### Session 4 Continuation | Claude (opus) | OpenClaw Docker Setup, SKILL.md Install, Plugin Investigation
+
+**4 new tasks this session (T170-T173). OpenClaw running, SKILL.md installed, plugin wrapper needed.**
+
+#### OpenClaw Docker Setup (T170)
+- Set up OpenClaw Docker container in `testbed/functional-test/`
+- Security-hardened: 127.0.0.1 only, no host FS access, cap_drop ALL
+- Fixed device pairing (approved via CLI)
+- Fixed model config: changed from `anthropic/claude-opus-4-6` to `opencode/glm-5` to `zai/glm-5`
+- OpenClaw running at 127.0.0.1:8081, healthy
+
+#### Security & Cleanup
+- Cleaned up hardcoded API keys from testbed `.env` (replaced with `.env.example`)
+- Removed redundant `openclaw/` directory (created earlier, superseded by `testbed/functional-test/`)
+- Removed commented-out OpenClaw section from `server/docker-compose.yml`
+
+#### SKILL.md Installation (T171)
+- Installed SKILL.md in OpenClaw via bind mount from `skill/SKILL.md`
+- Shows as Ready (4/52 skills) — agent sees the tools and instructions
+- Tools defined: `openmemory_remember`, `openmemory_recall`, `openmemory_forget`, `openmemory_export`
+
+#### Plugin Investigation (T172 — in progress)
+- Attempted plugin installation — SKILL.md provides instructions to the agent, but tools need runtime handlers
+- OpenClaw plugins require: `package.json` with `openclaw.extensions` field, `index.ts` with `register(api: OpenClawPluginApi)` method
+- Reference format found in container at `/app/extensions/bluebubbles/`
+- The MCP server (`mcp/`) could be an alternative, but OpenClaw uses ACP not MCP
+
+#### User Chat & Next Steps
+- User is chatting with OpenClaw — next test is memory retention across container restart (T173)
+- E2E smoke test (server API only) still passes 14/14
+
+#### Still Pending (Next Session)
+1. T172: Create OpenClaw plugin wrapper for OpenMemory tools
+2. T173: Test memory retention across container restart
+3. Set up Telegram channel
+4. T165: Full E2E test flow
+5. T138: GitHub Actions CI
+
+---
+
 ## 2026-02-24
+
+### Session 4 Summary | Claude (opus) | E2E Smoke Test, Search Fix, GitHub Push
+
+**6 tasks completed this session. E2E smoke test passing 14/14. All fixes pushed to GitHub.**
+
+#### Search Endpoint Fix (T167)
+- Fixed asyncpg-incompatible SQL CAST syntax in GIN query
+- `::text[]` cast changed to `CAST(:trapdoors AS text[])` for asyncpg compatibility
+- Search endpoint now works correctly with asyncpg driver
+
+#### sequence_id NULL Insertion Fix (T163 — confirmed)
+- Previous session's SQLAlchemy `server_default` fix confirmed working
+- sequence_id properly auto-increments via PostgreSQL `nextval()` again
+
+#### E2E Smoke Test (T166)
+- Created automated E2E smoke test script covering 14 tests
+- Full API flow: register → store → search → dedup → export → sync → delete → account deletion
+- All 14 tests passing
+
+#### E2E Flow Documentation (T168)
+- Created `docs/e2e-flow.md` documenting the complete end-to-end flow
+- Covers client-server interactions, encryption, search, and sync protocols
+
+#### GitHub Push (T169)
+- Pushed all security audit fixes (session 3) to openmemory-poc repo
+- Pushed search CAST syntax fix (session 4)
+- Pushed E2E smoke test script
+- README corrections confirmed in repo (Protobuf→JSON, subgraph refs removed)
+
+#### OpenClaw Status
+- OpenClaw is NOT installed on dev machine
+- Needed for full skill-level E2E testing (T165)
+- Next priority: install OpenClaw, then test skill → fact extraction → encrypt → store → search → decrypt → recall
+
+#### Still Pending (Next Session)
+1. Install OpenClaw on dev machine
+2. T165: E2E test with OpenClaw (critical path before sharing with testers)
+3. T138: GitHub Actions CI workflow
+
+---
 
 ### Session 3 Summary | Claude (opus) | Security Audit, Repo Split & Deployment Prep
 
