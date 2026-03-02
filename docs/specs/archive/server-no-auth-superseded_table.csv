@@ -1,5 +1,0 @@
-Method,Path,Request,Response,Description
-POST,/store,StoreRequest,"{ success: bool, ids: string[] }",Store new facts (or updates)
-POST,/search,SearchRequest,SearchResponse,Blind-index pre-filter → returns encrypted candidates
-POST,/update,StoreRequest,same as /store,For decay/eviction (new version)
-GET,/health,—,"{ status: ""ok"" }",Simple health
