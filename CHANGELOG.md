@@ -7,6 +7,24 @@
 
 ## 2026-03-02
 
+### Session 16 | Claude (opus) | Subgraph v2 Implementation
+
+**Branch:** `feature/subgraph`
+**Plan:** `docs/plans/2026-03-02-subgraph-v2-implementation.md`
+**Goal:** Replace centralized server with decentralized subgraph architecture.
+
+**Steps completed:**
+1. **T300: Local dev environment** — Docker Compose (PostgreSQL 16 + IPFS + Graph Node), dev.sh convenience script, subgraph.yaml network=hardhat, Hardhat localhost network config
+2. **T301: Inverted BlindIndex schema** — Replaced `blindIndices: [String!]!` array with separate `BlindIndex` entities for `hash_in` GraphQL queries. Entity renamed FactEntity→Fact. Added `@entity(immutable: true/false)` for Graph CLI v0.98.1 compat.
+3. **T302: Protobuf v2 decoder** — Added field decoders for content_fp(10), agent_id(11), sequence_id(12), encrypted_embedding(13). All existing fields preserved.
+4. **T303: Deploy contracts script** — Standalone `deploy-contracts.sh` for CI/manual use. Hardhat compile verified (3 Solidity contracts).
+5. **T305: Subgraph client library** — IN PROGRESS (subagent)
+6. **T306: Client hot cache** — IN PROGRESS (subagent)
+
+**Build verified:** `graph codegen` + `graph build` both succeed on the new schema + mapping.
+
+---
+
 ### Session 15 | Claude (opus) | Repository Restructure (3-Repo Split)
 
 **Goal:** Execute the 3-repo restructure plan. Split monorepo into product code + internal + website.

@@ -426,6 +426,29 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ---
 
+## Phase 13: Subgraph v2 Implementation — IN PROGRESS
+
+**Plan:** `docs/plans/2026-03-02-subgraph-v2-implementation.md`
+**Branch:** `feature/subgraph`
+**Goal:** Replace centralized server with decentralized subgraph architecture — on-chain storage via ERC-4337, Docker-based Graph Node for indexing, inverted BlindIndex schema for GraphQL search, client-side hot cache.
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T300 | Local dev environment (Docker + Hardhat) | completed | claude-opus | — | Docker Compose (PG + IPFS + Graph Node), dev.sh, subgraph.yaml network=hardhat |
+| T301 | Inverted BlindIndex schema + mapping rewrite | completed | claude-opus | — | Fact + BlindIndex entities, hash_in queries, @entity(immutable) |
+| T302 | Protobuf v2 decoder (fields 10-13) | completed | claude-opus | — | content_fp, agent_id, sequence_id, encrypted_embedding |
+| T303 | Verify contract deployment via dev.sh | in_progress | claude-opus | T300 | deploy-contracts.sh, Hardhat compile |
+| T304 | Verify subgraph indexing via GND | pending | — | T300, T301, T303 | verify-indexing.sh |
+| T305 | Subgraph client library (GraphQL queries) | in_progress | claude-opus | T304 | hash_in search, bulk download, delta sync |
+| T306 | Client hot cache (persistent encrypted) | in_progress | claude-opus | T305 | AES-256-GCM, top 30 facts, ~/.totalreclaw/cache.enc |
+| T307 | Plugin subgraph integration (store path) | pending | — | T302, T305 | UserOp + relay, opt-in via env var |
+| T308 | Plugin subgraph integration (search path) | pending | — | T305, T306 | GraphQL hash_in, hot cache auto-recall |
+| T309 | E2E validation (OMBH ingest + query) | pending | — | T307, T308 | 415 facts, 140 queries, recall@8 target |
+| T310 | Gas cost measurement + report | pending | — | T309 | Per-fact gas, extrapolation table |
+| T311 | Recovery flow (seed → full restore) | pending | — | T308 | Mnemonic → subgraph → decrypt → verify |
+
+---
+
 ## Notes for Next Agent
 
 - **ROADMAP is in `docs/ROADMAP.md`** -- For the big picture (PoC -> MVP -> Subgraph -> TEE).

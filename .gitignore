@@ -87,7 +87,7 @@ testbed/config/api_keys.env
 .claude/
 
 # Hardhat / Solidity
-cache/
+contracts/cache/
 artifacts/
 
 # The Graph
