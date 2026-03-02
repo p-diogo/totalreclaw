@@ -405,33 +405,59 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ---
 
+### Session 15 -- Repository Restructure (3-Repo Split)
+
+**Agent:** claude-opus
+**Goal:** Execute the 3-repo restructure plan (`plans/2026-02-28-repo-restructure.md`).
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T280 | Backup local openmemory directory | completed | claude-opus | -- | /tmp/openmemory-backup-20260302-003109.tar.gz (310MB) |
+| T281 | Sync local to remote (clone + rsync + push) | completed | claude-opus | T280 | 2418 files synced, commit a60e10f |
+| T282 | Rename GitHub repo openmemory-poc -> totalreclaw | completed | claude-opus | T281 | gh repo rename, redirect active |
+| T283 | Promote NanoClaw MCP to skill-nanoclaw/mcp/ | completed | claude-opus | T281 | totalreclaw-mcp.ts + agent-runner + SKILL.md + README |
+| T284 | Clean up main branch (remove non-product files) | completed | claude-opus | T283 | Removed ombh, testbed, archive, research, pitch, plans, website, historical docs |
+| T285 | Fix feature/subgraph branch (rebase onto main) | completed | claude-opus | T284 | Fast-forward rebase, contracts/ + subgraph/ present |
+| T286 | Create totalreclaw-internal repo | completed | claude-opus | T284 | Private, ombh + testbed + archive + research + pitch + plans + historical docs |
+| T287 | Create totalreclaw-website repo | completed | claude-opus | T284 | Private, index.html + indexv0.html + v2.html |
+| T288 | Tag v0.1.0 and v0.2.0 releases | completed | claude-opus | T284 | GitHub releases created |
+| T289 | Set up local clone at /code/totalreclaw/ | completed | claude-opus | T282 | + totalreclaw-internal + totalreclaw-website |
+| T290 | Update CLAUDE.md + README + all references | completed | claude-opus | T289 | 3-repo structure, openmemory-poc -> totalreclaw throughout |
+
+---
+
 ## Notes for Next Agent
 
-- **Plans are in `plans/`** — Each phase has a detailed implementation plan. Read the plan before starting work.
-- **ROADMAP is in `docs/ROADMAP.md`** — For the big picture (PoC -> MVP -> Subgraph -> TEE).
-- **Specs are in `docs/specs/`** — Organized by product: `totalreclaw/`, `subgraph/`, `tee/`, `archive/`.
+- **ROADMAP is in `docs/ROADMAP.md`** -- For the big picture (PoC -> MVP -> Subgraph -> TEE).
+- **Specs are in `docs/specs/`** -- Organized by product: `totalreclaw/`, `subgraph/`, `tee/`.
+- **Plans are in the `totalreclaw-internal` repo** -- `plans/` directory.
 
-### Current State (after Session 14)
+### Current State (after Session 15 -- Repo Restructure)
 
-- **Codebase rebranded** — OpenMemory → TotalReclaw across 319 files, 29 dirs renamed. HKDF protocol strings preserved for backward compat.
-- **PoC v2 is DONE and validated** — Full LSH + BM25/Cosine/RRF pipeline. 343 tests pass. bge-small-en-v1.5 embeddings (upgraded from MiniLM-L6-v2). LSH tuned to 32-bit x 20 tables + stemmed blind indices. Dynamic candidate pool sizing.
-- **Server observability** — `/v1/metrics` endpoint returns per-user fact_count, avg_candidates_per_search, max_candidates_hit_rate, p95_search_latency_ms. Search response includes `total_candidates_matched`.
-- **NanoClaw MCP fully synced** — All 6 improvements from Sessions 13-14 synced to NanoClaw (LSH, stemming, bge model, query prefix, dynamic pool, porter-stemmer).
-- **MCP auto-memory spec** — `docs/specs/totalreclaw/mcp-auto-memory.md` — Hybrid 6-layer approach for generic MCP hosts. Ready for implementation.
-- **5-Way Benchmark COMPLETE** — TotalReclaw v2 within 0.4% of LanceDB on semantic recall while maintaining zero-knowledge E2EE.
-- **LSH Tuning Spec**: `docs/specs/totalreclaw/lsh-tuning.md` — per-user LSH tuning NOT needed. Only candidate pool scales per user.
-- **Subgraph:** Code on `feature/subgraph` branch. Testnet deployment blocked on credentials.
-- **Test count:** 343 tests across server + plugin. 0 failures.
+- **3-Repo Structure** -- Product code in `totalreclaw`, benchmarks/testbed/archive in `totalreclaw-internal`, landing page in `totalreclaw-website`.
+- **GitHub repos:**
+  - `p-diogo/totalreclaw` (private) -- product code, 10 commits, v0.1.0 + v0.2.0 tags
+  - `p-diogo/totalreclaw-internal` (private) -- benchmarks, testbed, research, archive
+  - `p-diogo/totalreclaw-website` (private) -- landing page
+- **NanoClaw MCP promoted** -- Self-contained MCP server now at `skill-nanoclaw/mcp/totalreclaw-mcp.ts` (product code, not buried in testbed).
+- **feature/subgraph rebased** -- Now up to date with main, contracts/ and subgraph/ present.
+- **Local workspace:**
+  - `/Users/pdiogo/Documents/code/totalreclaw/` -- clone of product repo
+  - `/Users/pdiogo/Documents/code/totalreclaw-internal/` -- clone of internal repo
+  - `/Users/pdiogo/Documents/code/totalreclaw-website/` -- clone of website repo
+  - `/Users/pdiogo/Documents/code/openmemory/` -- PRESERVED original (source of truth backup)
+- **All openmemory-poc references updated** -- package.json URLs, SKILL.md homepage, skill.json, testing guides, READMEs.
 
 ### Key Technical References
 
-- **OpenClaw plugin:** `skill/plugin/` — 4 tools (remember, recall, forget, export), 3 hooks (before_agent_start, agent_end, before_compaction), auto-extraction via LLM, zero-config provider detection, bge-small-en-v1.5 local embeddings with query prefix, LSH + BM25/cosine/RRF reranking, dynamic candidate pool.
-- **NanoClaw MCP:** `testbed/functional-test-nanoclaw/nanoclaw-totalreclaw-overlay/agent-runner-src/totalreclaw-mcp.ts` — self-contained MCP server, fully synced with plugin (all 6 improvements).
-- **Server:** `server/` — FastAPI + PostgreSQL, HKDF auth, blind index GIN search, content fingerprint dedup, /sync, encrypted_embedding column, `/v1/metrics` observability, `total_candidates_matched` in search. 221 tests.
+- **OpenClaw plugin:** `skill/plugin/` -- 4 tools (remember, recall, forget, export), 3 hooks (before_agent_start, agent_end, before_compaction), auto-extraction via LLM, zero-config provider detection, bge-small-en-v1.5 local embeddings with query prefix, LSH + BM25/cosine/RRF reranking, dynamic candidate pool.
+- **NanoClaw MCP:** `skill-nanoclaw/mcp/totalreclaw-mcp.ts` -- self-contained MCP server, fully synced with plugin (all 6 improvements).
+- **Server:** `server/` -- FastAPI + PostgreSQL, HKDF auth, blind index GIN search, content fingerprint dedup, /sync, encrypted_embedding column, `/v1/metrics` observability, `total_candidates_matched` in search. 221 tests.
+- **Generic MCP:** `mcp/src/` -- MCP server for Claude Desktop and generic hosts.
 - **Crypto:** BIP-39 mnemonic auto-detection in plugin + NanoClaw. Same mnemonic derives encryption keys AND future Ethereum wallet.
 - **Hook status:** before_agent_start (works), agent_end (works), before_compaction (works via WebSocket RPC), before_reset (NOT supported in OpenClaw v2026.2.22).
 - **Zero-config LLM:** `skill/plugin/llm-client.ts` reads OpenClaw's api.config to auto-detect provider + model + API key. 12 providers supported.
-- **Docker test setups:**
+- **Docker test setups** (in totalreclaw-internal repo):
   - OpenClaw single-instance: `testbed/functional-test/`
   - NanoClaw: `testbed/functional-test-nanoclaw/`
   - 5-way benchmark: `ombh/docker-compose.benchmark.yml`
@@ -440,18 +466,18 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 | Priority | Task | Notes |
 |----------|------|-------|
-| **Next** | Implement MCP auto-memory | Spec ready at `docs/specs/totalreclaw/mcp-auto-memory.md`. Modify `mcp/src/` — add server instructions, enhanced tool descriptions, batch remember, memory context resource, prompt fallbacks. |
+| **Next** | Implement MCP auto-memory | Spec ready at `docs/specs/totalreclaw/mcp-auto-memory.md`. Modify `mcp/src/` -- add server instructions, enhanced tool descriptions, batch remember, memory context resource, prompt fallbacks. |
 | **Pending** | Re-run 5-way benchmark with bge-small-en-v1.5 | Validate if embedding upgrade improves recall further. Need to re-ingest + re-query all 5 systems. |
 | **Pending** | v2 benchmark improvements | Multi-session replay, LLM judge, etc. See spec. |
 | **Pending** | T138: GitHub Actions CI workflow | Basic pytest + npm test |
-| **Pending** | T086: Make totalreclaw-poc repo public | Needs @pdiogo action |
+| **Pending** | T086: Make totalreclaw repo public | Needs @pdiogo action |
 | **Pending** | Load testing at 1M memories | Validate <140ms p95 target |
-| ~~Done~~ | ~~Clean stale build artifacts~~ | Completed in Session 14. All packages rebuilt with @totalreclaw/* names. |
 
 ### Session History
 
+- **Session 15:** T280-T290 (3-repo restructure: sync, rename, cleanup, NanoClaw MCP promotion, internal/website repos, tagging, CLAUDE.md rewrite). 11 tasks completed.
 - **Session 14:** T270-T275 + T227-T228 (embedding upgrade bge-small-en-v1.5, dynamic pool sizing, server metrics, NanoClaw sync, MCP auto-memory spec, codebase rebrand, build artifact cleanup). 8 tasks completed.
-- **Session 13:** T260-T269 (5-way benchmark complete, retrieval gap diagnosis, LSH tuning 32-bit×20, stemmed indices, candidate pool 1200). 10 tasks completed.
+- **Session 13:** T260-T269 (5-way benchmark complete, retrieval gap diagnosis, LSH tuning 32-bit x 20, stemmed indices, candidate pool 1200). 10 tasks completed.
 - **Session 12:** T242-T248 (benchmark runner, Docker fixes, v1 instance, query regen, v2 spec). 7 tasks completed, 1 in progress.
 - **Session 11:** T230-T237, T240-T245, T250 (PoC v2 full pipeline + benchmark setup + local embeddings). 14 tasks completed.
 - **Session 10:** T220-T226 (landing page, repo cleanup, rebrand). 7 tasks completed.

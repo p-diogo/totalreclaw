@@ -1,7 +1,50 @@
-# OpenMemory - Change Log
+# TotalReclaw - Change Log
 
 > **All agents MUST update this file when making changes.**
 > **Format**: `YYYY-MM-DD HH:MM | Agent | Description`
+
+---
+
+## 2026-03-02
+
+### Session 15 | Claude (opus) | Repository Restructure (3-Repo Split)
+
+**Goal:** Execute the 3-repo restructure plan. Split monorepo into product code + internal + website.
+
+**Steps completed:**
+1. **Backup** -- Created /tmp/openmemory-backup-20260302-003109.tar.gz (310MB)
+2. **Sync to remote** -- rsync'd 2418 files from local /openmemory/ to cloned remote, pushed as single commit
+3. **Rename repo** -- `openmemory-poc` -> `totalreclaw` via `gh repo rename` (GitHub redirects active)
+4. **Promote NanoClaw MCP** -- Copied `totalreclaw-mcp.ts` + `index.ts` + `SKILL.md` from `testbed/functional-test-nanoclaw/` to `skill-nanoclaw/mcp/` (product code, not test harness)
+5. **Clean main branch** -- Removed 2248 files: ombh/, testbed/, archive/, research/, pitch/, plans/, website/, historical docs, pre-rebrand specs (docs/specs/openmemory/)
+6. **Fix feature/subgraph** -- Rebased onto main (was 8 commits behind, 0 ahead). Now has contracts/ + subgraph/.
+7. **Create totalreclaw-internal** -- Private repo with ombh, testbed, archive, research, pitch, plans, historical docs (2242 files)
+8. **Create totalreclaw-website** -- Private repo with index.html, indexv0.html, v2.html
+9. **Tag releases** -- v0.1.0 (PoC v1, at commit 6ee6581) and v0.2.0 (PoC v2, at HEAD). GitHub releases created.
+10. **Set up local clones** -- /code/totalreclaw/, /code/totalreclaw-internal/, /code/totalreclaw-website/
+11. **Update CLAUDE.md** -- Rewritten for 3-repo structure. README.md rewritten. All openmemory-poc refs updated.
+
+**Repos created:**
+- `p-diogo/totalreclaw` (private) -- 10 commits, product code only
+- `p-diogo/totalreclaw-internal` (private) -- benchmarks, testbed, research, archive, plans
+- `p-diogo/totalreclaw-website` (private) -- landing page
+
+**Files modified in product repo:**
+- `CLAUDE.md` -- Rewritten for 3-repo structure
+- `README.md` -- Rewritten with current PoC v2 status
+- `TASKS.md` -- Added Session 15 section + updated Notes for Next Agent
+- `CHANGELOG.md` -- This entry
+- `client/package.json` -- Repository URL updated
+- `client/README.md` -- Repository URL updated
+- `mcp/package.json` -- Repository URL updated
+- `skill/SKILL.md` -- Homepage URL updated
+- `skill/skill.json` -- Homepage + repository URLs updated
+- `skill/README.md` -- Clone URL updated
+- `docs/poc-testing-guide.md` -- Clone + cd paths updated
+- `docs/nanoclaw-poc-testing-guide.md` -- Clone + cd paths updated
+- `skill-nanoclaw/mcp/` -- NEW: promoted from testbed (totalreclaw-mcp.ts, nanoclaw-agent-runner.ts, SKILL.md, README.md)
+
+**Original /openmemory/ directory preserved** -- NOT modified or deleted. Still at `/Users/pdiogo/Documents/code/openmemory/`.
 
 ---
 
