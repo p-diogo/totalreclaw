@@ -1,17 +1,18 @@
 # TotalReclaw
 
-**Zero-knowledge encrypted memory vault for AI agents** — the "password manager for AI memory."
+**Zero-knowledge encrypted memory vault for AI agents** -- the "password manager for AI memory."
 
 ## Current Status
 
-**Phase 5 Complete** — PoC ready for benchmark validation. Core implementation finished with 526 tests passing.
+**PoC v2 Complete** -- Full E2EE search pipeline with LSH, embeddings, and hybrid reranking. 343 tests passing.
 
 | Component | Status | Tests |
 |-----------|--------|-------|
-| Server (FastAPI + PostgreSQL) | ✅ Complete | 133 |
-| Client (TypeScript, E2EE) | ✅ Complete | 87 |
-| OpenClaw Skill | ✅ Complete | 300 |
-| Benchmark Harness (OMBH) | ✅ Ready | - |
+| Server (FastAPI + PostgreSQL) | Complete | 221 |
+| Client (TypeScript, E2EE) | Complete | -- |
+| OpenClaw Plugin (PoC v2) | Complete | 38 + 32 + 52 |
+| NanoClaw MCP Server | Complete | 32 (TAP) |
+| Generic MCP Server | Complete | -- |
 
 ## Quick Start
 
@@ -43,35 +44,35 @@ npm test
 ```bash
 cd skill
 npm install
-openclaw skill install .
+openclaw plugins enable totalreclaw
 ```
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           CLIENT (OpenClaw Skill)                       │
-├─────────────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
-│  │ Fact Extract │→ │   Encrypt    │→ │ Generate LSH │→ │ Blind Index │ │
-│  │    (LLM)     │  │ (AES-256-GCM)│  │   Buckets    │  │  (SHA-256)  │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-                               │ HTTP + Protobuf
-                               ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        SERVER (FastAPI + PostgreSQL)                    │
-├─────────────────────────────────────────────────────────────────────────┤
-│  • facts (encrypted_ciphertext, blind_indices[], decay_score)          │
-│  • Search: blind_trapdoors → GIN index → encrypted candidates          │
-└─────────────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         CLIENT (Re-ranking)                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Decrypt candidates → BM25 + Cosine + RRF fusion → Top K results       │
-└─────────────────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------------------+
+|                           CLIENT (OpenClaw Skill)                       |
++-------------------------------------------------------------------------+
+|  +--------------+  +--------------+  +--------------+  +-------------+ |
+|  | Fact Extract |->|   Encrypt    |->| Generate LSH |->| Blind Index | |
+|  |    (LLM)     |  | (AES-256-GCM)|  |   Buckets    |  |  (SHA-256)  | |
+|  +--------------+  +--------------+  +--------------+  +-------------+ |
++-------------------------------------------------------------------------+
+                               | HTTP + JSON
+                               v
++-------------------------------------------------------------------------+
+|                        SERVER (FastAPI + PostgreSQL)                    |
++-------------------------------------------------------------------------+
+|  - facts (encrypted_ciphertext, blind_indices[], encrypted_embedding)  |
+|  - Search: blind_trapdoors -> GIN index -> encrypted candidates        |
++-------------------------------------------------------------------------+
+                               |
+                               v
++-------------------------------------------------------------------------+
+|                         CLIENT (Re-ranking)                             |
++-------------------------------------------------------------------------+
+|  Decrypt 400-5000 candidates -> BM25 + Cosine + RRF fusion -> Top K   |
++-------------------------------------------------------------------------+
 ```
 
 ## Key Features
@@ -79,58 +80,49 @@ openclaw skill install .
 | Feature | Description |
 |---------|-------------|
 | **E2EE with AES-256-GCM** | Server never sees plaintext facts or embeddings |
-| **LSH Blind Indices** | Search encrypted data using locality-sensitive hashing |
-| **Client-side Re-ranking** | BM25 + cosine similarity + RRF fusion |
+| **LSH Blind Indices** | Search encrypted data using locality-sensitive hashing (32-bit x 20 tables) |
+| **Local Embeddings** | bge-small-en-v1.5 ONNX model runs client-side (no API keys needed) |
+| **Client-side Re-ranking** | BM25 + cosine similarity + RRF fusion with stemmed blind indices |
+| **Dynamic Candidate Pool** | 400-5000 candidates based on fact count |
 | **Export/Import** | One-click plaintext export. No vendor lock-in. |
 | **MCP Server** | Works with Claude Desktop, OpenClaw, any MCP client |
-| **Argon2id KDF** | Memory-hard key derivation from master password |
+| **BIP-39 Mnemonic** | Same 12-word phrase derives encryption keys and future Ethereum wallet |
 
 ## Repository Structure
 
 ```
 totalreclaw/
-├── client/          # TypeScript client library (E2EE, LSH, search)
-├── server/          # Python/FastAPI server (PostgreSQL, protobuf API)
-├── skill/           # OpenClaw skill integration (MemOS-style hooks)
-├── mcp/             # Model Context Protocol server
-├── ombh/            # TotalReclaw Benchmark Harness
-├── docs/            # Documentation, PRD, and all specs
-│   ├── specs/totalreclaw/  # Core E2EE product specs
-│   ├── specs/subgraph/    # Decentralized storage specs
-│   ├── specs/tee/         # TEE product specs
-│   └── specs/archive/     # Superseded specs
-├── archive/         # Old prototypes (v02, v05, v06)
-├── testbed/         # Testing & validation data
-├── plans/           # Implementation plans
-└── research/        # Research notes
+├── server/          # FastAPI + PostgreSQL backend
+├── client/          # TypeScript client library (E2EE, LSH, embeddings)
+├── skill/           # OpenClaw plugin (PoC v2: embedding, LSH, reranker)
+├── skill-nanoclaw/  # NanoClaw skill package + self-contained MCP server
+├── mcp/             # Generic MCP server (for Claude Desktop, etc.)
+├── contracts/       # Solidity contracts (EventfulDataEdge, Paymaster)
+├── subgraph/        # Graph Node indexer (AssemblyScript mappings)
+├── database/        # Database schema
+├── tests/           # Integration tests
+└── docs/            # Specs, guides, PRD, roadmap
 ```
 
-## Validation Results
+## Benchmark Results
 
-LSH parameters validated on combined WhatsApp + Slack dataset (8,727 embeddings):
+5-way benchmark comparison (TotalReclaw v2 vs Mem0 vs QMD vs LanceDB vs TotalReclaw v1):
 
-| Metric | Result | Target |
-|--------|--------|--------|
-| Recall | 93.6% (P5: 84.4%) | ≥93% |
-| Query Latency | 9.71ms | <50ms |
-| Storage Overhead | 0.06x | ≤2.2x |
+| System | Overall Recall | Semantic Recall | Privacy |
+|--------|---------------|-----------------|---------|
+| TotalReclaw v2 (E2EE) | 24.3% | 24.3% | Zero-knowledge |
+| LanceDB (plaintext) | 24.7% | 24.7% | None |
+| TotalReclaw v1 (E2EE) | 16.4% | 16.4% | Zero-knowledge |
 
-**Validated Configuration**: `n_bits=64, n_tables=12, candidate_pool=3000`
+TotalReclaw v2 achieves within 0.4% of LanceDB's semantic recall while maintaining full zero-knowledge E2EE.
 
-## Performance Targets
-
-| Metric | Target |
-|--------|--------|
-| Search latency (p95) | <140ms for 1M memories |
-| Recall | ≥93% of true top-250 |
-| Storage overhead | ≤2.2x vs plaintext |
-
-## Repositories
+## Related Repositories
 
 | Repo | Description |
 |------|-------------|
-| [totalreclaw-poc](https://github.com/p-diogo/openmemory-poc) | Code (client, server, skill) |
-| [totalreclaw-specs](https://github.com/p-diogo/openmemory-specs) | Technical specifications & methodology |
+| [totalreclaw](https://github.com/p-diogo/totalreclaw) | Product code (this repo) |
+| [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal) | Benchmarks, testbed, research, archive |
+| [totalreclaw-website](https://github.com/p-diogo/totalreclaw-website) | Landing page |
 
 ## Documentation
 
@@ -145,28 +137,32 @@ LSH parameters validated on combined WhatsApp + Slack dataset (8,727 embeddings)
 
 ### Technical Specs
 
-- **[architecture.md](./docs/specs/totalreclaw/architecture.md)** — E2EE with LSH + Blind Buckets (zero-knowledge search)
-- **[server.md](./docs/specs/totalreclaw/server.md)** — Server PoC v0.3.1b (Auth + Dedup)
-- **[skill-openclaw.md](./docs/specs/totalreclaw/skill-openclaw.md)** — MemOS-style lifecycle hooks
-- **[benchmark.md](./docs/specs/totalreclaw/benchmark.md)** — Benchmark Harness (OMBH)
-- **[conflict-resolution.md](./docs/specs/totalreclaw/conflict-resolution.md)** — Multi-Agent Conflict Resolution v0.3.2
-- **[mcp-server.md](./docs/specs/totalreclaw/mcp-server.md)** — Generic MCP Server
-- **[skill-nanoclaw.md](./docs/specs/totalreclaw/skill-nanoclaw.md)** — NanoClaw Skill
+- **[architecture.md](./docs/specs/totalreclaw/architecture.md)** -- E2EE with LSH + Blind Buckets (zero-knowledge search)
+- **[server.md](./docs/specs/totalreclaw/server.md)** -- Server PoC v0.3.1b (Auth + Dedup)
+- **[skill-openclaw.md](./docs/specs/totalreclaw/skill-openclaw.md)** -- OpenClaw plugin integration
+- **[skill-nanoclaw.md](./docs/specs/totalreclaw/skill-nanoclaw.md)** -- NanoClaw MCP integration
+- **[mcp-server.md](./docs/specs/totalreclaw/mcp-server.md)** -- Generic MCP Server
+- **[mcp-auto-memory.md](./docs/specs/totalreclaw/mcp-auto-memory.md)** -- MCP Auto-Memory for generic hosts
+- **[benchmark.md](./docs/specs/totalreclaw/benchmark.md)** -- Benchmark Harness (OMBH)
+- **[conflict-resolution.md](./docs/specs/totalreclaw/conflict-resolution.md)** -- Multi-Agent Conflict Resolution v0.3.2
 
 ## Testing
 
 ```bash
+# Server tests (221 tests)
+cd server && pip install -r requirements.txt && python -m pytest tests/ -v
+
+# Plugin E2E tests (38 tests)
+cd skill/plugin && npm install && npm test
+
+# LSH tests (32 tests)
+cd skill/plugin && npx tsx lsh.test.ts
+
+# Reranker tests (52 tests)
+cd skill/plugin && npx tsx reranker.test.ts
+
 # Client tests
-cd client && npm test
-
-# Server tests  
-cd server && pytest tests/
-
-# Skill tests
-cd skill && npm test
-
-# Integration tests (Docker)
-cd testbed/functional-test && ./run-tests.sh
+cd client && npm install && npm test
 ```
 
 ## License

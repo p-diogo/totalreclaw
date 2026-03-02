@@ -363,8 +363,8 @@ The fact ID may be incorrect, or the memory may have been evicted due to decay.
 ### Setup
 
 ```bash
-git clone https://github.com/p-diogo/openmemory-poc
-cd totalreclaw-poc/skill
+git clone https://github.com/p-diogo/totalreclaw
+cd totalreclaw/skill
 npm install
 ```
 
@@ -411,4 +411,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 - [TotalReclaw Documentation](https://docs.totalreclaw.ai)
 - [Claw Hub Listing](https://clawhub.ai/skills/totalreclaw)
 - [OpenClaw](https://github.com/openclaw/openclaw)
-- [Issue Tracker](https://github.com/p-diogo/openmemory-poc/issues)
+- [Issue Tracker](https://github.com/p-diogo/totalreclaw/issues)

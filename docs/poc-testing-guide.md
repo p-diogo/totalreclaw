@@ -58,8 +58,8 @@ All ports are bound to `127.0.0.1` only. Nothing is exposed to the network.
 ### Step 1: Clone and prepare
 
 ```bash
-git clone https://github.com/p-diogo/openmemory-poc.git
-cd totalreclaw-poc
+git clone https://github.com/p-diogo/totalreclaw.git
+cd totalreclaw
 ```
 
 The OpenClaw container builds from source. You need the OpenClaw source tree at `testbed/functional-test/openclaw/`. If it is not already there, clone or symlink it:

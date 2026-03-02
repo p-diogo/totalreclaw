@@ -7,12 +7,12 @@
 
 ## Project Overview
 
-**TotalReclaw** is a zero-knowledge encrypted memory vault for AI agents — the "password manager for AI memory."
+**TotalReclaw** is a zero-knowledge encrypted memory vault for AI agents -- the "password manager for AI memory."
 
 ### Core Value Proposition
-1. **Encrypted** — Zero-knowledge E2EE. Server never sees plaintext.
-2. **Portable** — One-click plain-text export. No vendor lock-in.
-3. **Universal** — Works across OpenClaw, Claude Desktop, any MCP-compatible agent.
+1. **Encrypted** -- Zero-knowledge E2EE. Server never sees plaintext.
+2. **Portable** -- One-click plain-text export. No vendor lock-in.
+3. **Universal** -- Works across OpenClaw, Claude Desktop, any MCP-compatible agent.
 
 ### Target Users
 - Non-technical hosted OpenClaw users (memory locked to Railway/Vercel)
@@ -23,98 +23,80 @@
 ## Architecture (v0.3)
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           CLIENT (OpenClaw Skill)                       │
-├─────────────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
-│  │ Fact Extract │→ │   Encrypt    │→ │ Generate LSH │→ │ Blind Index │ │
-│  │    (LLM)     │  │  (AES-GCM)   │  │   Buckets    │  │  (SHA-256)  │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘ │
-│                              │                                          │
-│                              ▼                                          │
-│                    Protobuf over HTTP                                   │
-└─────────────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        SERVER (TotalReclaw PoC)                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│  PostgreSQL Tables:                                                     │
-│  • raw_events (immutable log, future DataEdge events)                  │
-│  • facts (mutable view with blind_indices, decay_score)                │
-│                                                                         │
-│  Search Flow:                                                           │
-│  blind_trapdoors → GIN index lookup → return encrypted candidates      │
-└─────────────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         CLIENT (Re-ranking)                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Decrypt 400-1200 candidates → BM25 + Cosine + RRF fusion → Top 8      │
-└─────────────────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------------------+
+|                           CLIENT (OpenClaw Skill)                       |
++-------------------------------------------------------------------------+
+|  +--------------+  +--------------+  +--------------+  +-------------+ |
+|  | Fact Extract |->|   Encrypt    |->| Generate LSH |->| Blind Index | |
+|  |    (LLM)     |  |  (AES-GCM)  |  |   Buckets    |  |  (SHA-256)  | |
+|  +--------------+  +--------------+  +--------------+  +-------------+ |
+|                              |                                          |
+|                              v                                          |
+|                    JSON over HTTP                                       |
++-------------------------------------------------------------------------+
+                               |
+                               v
++-------------------------------------------------------------------------+
+|                        SERVER (TotalReclaw)                             |
++-------------------------------------------------------------------------+
+|  PostgreSQL Tables:                                                     |
+|  - raw_events (immutable log, future DataEdge events)                  |
+|  - facts (mutable view with blind_indices, decay_score)                |
+|                                                                         |
+|  Search Flow:                                                           |
+|  blind_trapdoors -> GIN index lookup -> return encrypted candidates    |
++-------------------------------------------------------------------------+
+                               |
+                               v
++-------------------------------------------------------------------------+
+|                         CLIENT (Re-ranking)                             |
++-------------------------------------------------------------------------+
+|  Decrypt 400-5000 candidates -> BM25 + Cosine + RRF fusion -> Top 8   |
++-------------------------------------------------------------------------+
 ```
 
 ---
 
 ## Repository Structure
 
+This is the **product code** repository. Internal tooling (benchmarks, testbed, archive)
+lives in [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal).
+
 ```
 /totalreclaw
 ├── CLAUDE.md              # THIS FILE - Read first!
 ├── TASKS.md               # Live task tracking (todo, in-progress, blocked)
-├── CHANGELOG.md           # Complete change history
-├── plans/                 # Implementation plans (rename to *-complete.md when done)
+├── CHANGELOG.md           # Change history
 │
-├── docs/                  # All documentation and specs
-│   ├── prd.md             # Product Requirements Document
-│   ├── ROADMAP.md         # Phased roadmap
-│   ├── specs/
-│   │   ├── totalreclaw/    # Core E2EE product specs
-│   │   │   ├── architecture.md      # E2EE with LSH + Blind Buckets
-│   │   │   ├── server.md            # Server PoC v0.3.1b (Auth + Dedup)
-│   │   │   ├── skill-openclaw.md    # OpenClaw skill integration
-│   │   │   ├── skill-nanoclaw.md    # NanoClaw skill integration
-│   │   │   ├── mcp-server.md        # Generic MCP server
-│   │   │   ├── benchmark.md         # Benchmark Harness (OMBH)
-│   │   │   └── conflict-resolution.md # Multi-Agent Conflict Resolution v0.3.2
-│   │   ├── subgraph/     # Decentralized storage specs
-│   │   │   └── seed-to-subgraph.md  # Seed-to-Subgraph v1.0
-│   │   ├── tee/           # Trusted Execution Environment specs
-│   │   │   ├── architecture.md      # TEE vs E2EE comparison
-│   │   │   ├── tdx-saas.md          # TDX SaaS v0.4
-│   │   │   └── grok-tee-notes.md    # TEE edition notes
-│   │   └── archive/       # Superseded specs
-│   │       ├── server-no-auth-superseded.md
-│   │       ├── v02-saas-e2ee.md
-│   │       ├── v02-ts-e2ee-horizon.md
-│   │       ├── v03-prd-tdx-horizon.md
-│   │       ├── gtm-strategy.md
-│   │       └── landing-page.md
-│   └── *.md               # Other documentation files
+├── server/                # FastAPI + PostgreSQL backend
+├── client/                # TypeScript client library (E2EE, LSH, embeddings)
+├── skill/                 # OpenClaw plugin (PoC v2: embedding, LSH, reranker)
+├── skill-nanoclaw/        # NanoClaw skill package + MCP server
+│   ├── src/               # Hooks, extraction logic
+│   └── mcp/               # Self-contained MCP server (totalreclaw-mcp.ts)
+├── mcp/                   # Generic MCP server (for Claude Desktop, etc.)
+├── contracts/             # Solidity smart contracts (EventfulDataEdge, Paymaster)
+├── subgraph/              # Graph Node indexer (AssemblyScript mappings)
+├── database/              # Database schema (schema.sql)
+├── tests/                 # Integration tests
 │
-├── server/                # Server PoC (FastAPI + PostgreSQL)
-├── client/                # TypeScript client library
-├── skill/                 # OpenClaw skill
-├── mcp/                   # MCP server package
-├── skill-nanoclaw/        # NanoClaw skill package
-├── ombh/                  # Benchmark harness
-│
-├── archive/               # Archived prototypes
-│   └── prototypes/
-│       ├── v02/           # Old v0.2 prototype
-│       ├── v05/           # Old v0.5 prototype
-│       ├── v06/           # Old v0.6 prototype
-│       └── infrastructure/ # Old DB infrastructure
-│
-├── testbed/               # Testing & benchmarking
-│   ├── v2-realworld-data/ # WhatsApp data + processing scripts
-│   ├── baseline/          # Baseline algorithms (BM25, vector)
-│   └── src/               # Testbed source code
-│
-├── research/              # Research notes
-└── pitch/                 # Pitch materials
+└── docs/                  # Specs and guides
+    ├── specs/
+    │   ├── totalreclaw/   # Core product specs (architecture, server, skills, MCP)
+    │   ├── subgraph/      # Subgraph specs (seed-to-subgraph)
+    │   └── tee/           # TEE specs (architecture, TDX SaaS)
+    ├── deployment/        # Deployment guides (backup, Cloudflare)
+    ├── prd.md             # Product Requirements Document
+    ├── ROADMAP.md         # Phased roadmap
+    └── *.md               # E2E flow, testing guides, etc.
 ```
+
+## Related Repositories
+
+| Repo | Purpose | URL |
+|------|---------|-----|
+| `totalreclaw-internal` | Benchmarks, testbed, research, archive, plans | [github.com/p-diogo/totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal) |
+| `totalreclaw-website` | Landing page | [github.com/p-diogo/totalreclaw-website](https://github.com/p-diogo/totalreclaw-website) |
 
 ---
 
@@ -122,7 +104,7 @@
 
 ### MANDATORY for ALL Agents
 
-1. **READ FIRST** — At session start, read:
+1. **READ FIRST** -- At session start, read:
    - This file (CLAUDE.md)
    - TASKS.md (understand current state)
    - CHANGELOG.md (understand recent changes)
@@ -131,21 +113,18 @@
    - Claim tasks in TASKS.md (set `owner` and `status: in_progress`) BEFORE starting work
    - Log all changes in CHANGELOG.md with timestamp
    - Release tasks when done (`status: completed`)
-   - **This enables parallel agents** — if another agent is running concurrently, it checks TASKS.md to avoid conflicts
+   - **This enables parallel agents** -- if another agent is running concurrently, it checks TASKS.md to avoid conflicts
 
-3. **PERSIST STATE IN FILES** — Never keep state only in memory. If an agent crashes, another must be able to resume from TASKS.md.
+3. **PERSIST STATE IN FILES** -- Never keep state only in memory. If an agent crashes, another must be able to resume from TASKS.md.
 
-4. **PLANS IN /plans/** — All implementation plans go in `/plans/`. Rename to `XXXX-complete.md` when finished.
+4. **COMMUNICATE VIA CHANGELOG** -- If you need to leave a message for the next agent, put it in CHANGELOG.md.
 
-5. **COMMUNICATE VIA CHANGELOG** — If you need to leave a message for the next agent, put it in CHANGELOG.md.
+5. **ALWAYS DELEGATE TO SUBAGENTS -- NEVER DO IMPLEMENTATION IN THE MAIN SESSION** -- Use the Task tool to delegate ALL implementation work, research, and testing to subagents. The main session is ONLY for coordination, decision-making, and user communication. This is a hard rule, not a suggestion. Launch multiple agents in parallel when tasks are independent.
 
-6. **ALWAYS DELEGATE TO SUBAGENTS — NEVER DO IMPLEMENTATION IN THE MAIN SESSION** — Use the Task tool to delegate ALL implementation work, research, and testing to subagents. The main session is ONLY for coordination, decision-making, and user communication. This is a hard rule, not a suggestion. Launch multiple agents in parallel when tasks are independent.
-
-7. **COMPACTION PROTOCOL** — Whenever the user says "prepare for compaction" (or similar), you MUST:
+6. **COMPACTION PROTOCOL** -- Whenever the user says "prepare for compaction" (or similar), you MUST:
    - Update TASKS.md with current status of all in-progress work
    - Update CHANGELOG.md with everything done in the current session
-   - Update MEMORY.md with any new learnings
-   - This is mandatory because multiple agents work on this project in parallel — the files are the shared state.
+   - This is mandatory because multiple agents work on this project in parallel -- the files are the shared state.
 
 ---
 
@@ -153,7 +132,7 @@
 
 Specs are organized by product area under `docs/specs/`:
 
-### TotalReclaw (E2EE) — `docs/specs/totalreclaw/`
+### TotalReclaw (E2EE) -- `docs/specs/totalreclaw/`
 | Spec | File | Status |
 |------|------|--------|
 | E2EE Architecture (LSH + Blind Buckets) | `architecture.md` | Implemented, validated |
@@ -161,16 +140,18 @@ Specs are organized by product area under `docs/specs/`:
 | OpenClaw Skill | `skill-openclaw.md` | Implemented |
 | NanoClaw Skill | `skill-nanoclaw.md` | Implemented |
 | MCP Server | `mcp-server.md` | Implemented |
+| MCP Auto-Memory (Generic Hosts) | `mcp-auto-memory.md` | Spec complete |
 | Benchmark Harness (OMBH) | `benchmark.md` | Implemented |
+| Benchmark v2 Improvements | `benchmark-v2-improvements.md` | Spec complete |
 | LSH Tuning (Multi-Tenant SaaS) | `lsh-tuning.md` | Complete |
 | Conflict Resolution v0.3.2 | `conflict-resolution.md` | Draft spec |
 
-### Subgraph (Decentralized) — `docs/specs/subgraph/`
+### Subgraph (Decentralized) -- `docs/specs/subgraph/`
 | Spec | File | Status |
 |------|------|--------|
-| Seed-to-Subgraph v1.0 | `seed-to-subgraph.md` | Spec complete, not started |
+| Seed-to-Subgraph v1.0 | `seed-to-subgraph.md` | Spec complete, code done, deployment blocked |
 
-### TEE (Trusted Execution) — `docs/specs/tee/`
+### TEE (Trusted Execution) -- `docs/specs/tee/`
 | Spec | File | Status |
 |------|------|--------|
 | TEE vs E2EE Comparison | `architecture.md` | Analysis complete |
@@ -182,11 +163,11 @@ Specs are organized by product area under `docs/specs/`:
 
 | Gap | Severity | Status |
 |-----|----------|--------|
-| LSH parameters | HIGH | Validated — 98.1% Recall@8 on real data |
-| Authentication | HIGH | DONE — HKDF auth with SHA-256 key hashing |
+| LSH parameters | RESOLVED | 32-bit x 20 tables, 98.1% Recall@8 on real data |
+| Authentication | RESOLVED | HKDF auth with SHA-256 key hashing |
 | Conflict resolution (Layers 3-4) | MEDIUM | Spec'd in v0.3.2, not implemented |
 | Mem0 competitive benchmark | MEDIUM | Retrieval-only done, E2E deferred |
-| Load testing | MEDIUM | Not done — need to validate <140ms p95 |
+| Load testing | MEDIUM | Not done -- need to validate <140ms p95 |
 | Graceful shutdown | LOW | Not yet configured in uvicorn |
 
 ---
@@ -194,8 +175,8 @@ Specs are organized by product area under `docs/specs/`:
 ## Key Constraints
 
 - **Search latency**: <140ms p95 for 1M memories
-- **Recall**: ≥93% of true top-250
-- **Storage overhead**: ≤2.2× vs plaintext
+- **Recall**: >=93% of true top-250
+- **Storage overhead**: <=2.2x vs plaintext
 - **Zero-knowledge**: Server NEVER sees plaintext
 
 ---
@@ -203,17 +184,21 @@ Specs are organized by product area under `docs/specs/`:
 ## Commands
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Server
+pip install -r requirements.txt -r server/requirements.txt
+cd server && python -m pytest tests/ -v
 
-# Run tests
-pytest tests/
+# Client library
+cd client && npm install && npm test
 
-# Generate embeddings
-python testbed/v2-realworld-data/scripts/generate_embeddings.py
+# OpenClaw plugin
+cd skill/plugin && npm install && npm test
 
-# Parse WhatsApp data
-python testbed/v2-realworld-data/scripts/parse_whatsapp.py
+# MCP server
+cd mcp && npm install && npm run build
+
+# NanoClaw skill
+cd skill-nanoclaw && npm install
 ```
 
 ---
@@ -222,7 +207,8 @@ python testbed/v2-realworld-data/scripts/parse_whatsapp.py
 
 - **User**: @pdiogo
 - **Project started**: February 2026
-- **Current phase**: Phase 12 — MVP Polish & Ship (see TASKS.md)
+- **Current phase**: Phase 12 -- MVP Polish & Ship (see TASKS.md)
+- **Current version**: v0.2.0 (PoC v2)
 
 ---
 
@@ -232,24 +218,21 @@ If you're a new agent picking up this project:
 
 1. **READ FIRST**:
    - This file (CLAUDE.md)
-   - TASKS.md - see current status
-   - CHANGELOG.md - see what's been done
-   - `/plans/2026-02-22-poc-implementation-plan.md` - the implementation blueprint
+   - TASKS.md -- see current status
+   - CHANGELOG.md -- see what's been done
 
 2. **Current Phase**: Check TASKS.md for current phase
 
 3. **Key Files**:
-   - Tech specs: `/docs/specs/totalreclaw/` (core), `/docs/specs/subgraph/`, `/docs/specs/tee/`
-   - PRD: `/docs/prd.md`
-   - Roadmap: `/docs/ROADMAP.md`
-   - Data: `/testbed/v2-realworld-data/processed/`
-   - Validation: `/testbed/validation/`
-   - Plans: `/plans/`
+   - Tech specs: `docs/specs/totalreclaw/` (core), `docs/specs/subgraph/`, `docs/specs/tee/`
+   - PRD: `docs/prd.md`
+   - Roadmap: `docs/ROADMAP.md`
+   - Plans: In [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal) repo under `plans/`
+   - Benchmarks/testbed: In [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal) repo
 
 4. **Before Starting Work**:
    - Claim tasks in TASKS.md (set owner and status: in_progress)
    - Check if dependencies are complete
-   - Read the relevant plan in /plans/
 
 5. **After Completing Work**:
    - Mark tasks complete in TASKS.md

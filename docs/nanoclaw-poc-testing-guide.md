@@ -30,8 +30,8 @@ Auth is only needed for the full agent test (Step 5). The pipeline test in Step 
 ### 1. Clone both repos
 
 ```bash
-git clone https://github.com/p-diogo/openmemory-poc.git
-cd totalreclaw-poc/testbed/functional-test-nanoclaw
+git clone https://github.com/p-diogo/totalreclaw.git
+cd totalreclaw/testbed/functional-test-nanoclaw
 git clone https://github.com/qwibitai/nanoclaw.git nanoclaw
 ```
 

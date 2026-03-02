@@ -4,7 +4,7 @@ description: "Zero-knowledge encrypted memory vault for AI agents — the passwo
 version: 0.1.0
 author: TotalReclaw Team
 license: MIT
-homepage: https://github.com/p-diogo/openmemory-poc
+homepage: https://github.com/p-diogo/totalreclaw
 metadata:
   openclaw:
     requires:

@@ -297,4 +297,4 @@ MIT
 
 ## Contributing
 
-See the main [TotalReclaw repository](https://github.com/p-diogo/openmemory-poc) for contribution guidelines.
+See the main [TotalReclaw repository](https://github.com/p-diogo/totalreclaw) for contribution guidelines.
