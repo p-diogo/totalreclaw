@@ -1,8 +1,8 @@
-# OpenMemory Functional Testing Guide
+# TotalReclaw Functional Testing Guide
 
 ## Overview
 
-Functional tests validate the complete end-to-end flow between OpenClaw (AI agent) and OpenMemory (memory backend).
+Functional tests validate the complete end-to-end flow between OpenClaw (AI agent) and TotalReclaw (memory backend).
 
 **Difference from Integration Tests:**
 - Integration tests use **mock** OpenClaw context
@@ -18,7 +18,7 @@ Functional tests validate the complete end-to-end flow between OpenClaw (AI agen
 
 ```bash
 # 1. Navigate to functional test directory
-cd /Users/pdiogo/Documents/code/openmemory/testbed/functional-test
+cd /Users/pdiogo/Documents/code/totalreclaw/testbed/functional-test
 
 # 2. Clone OpenClaw (required - it's a separate project)
 git clone https://github.com/openclaw/openclaw.git openclaw
@@ -44,7 +44,7 @@ export ZAI_API_KEY=your_key_here
 
 ### Scenario 1: Health Check
 **What it tests:** Both services start and respond
-- OpenMemory server: `GET /health`
+- TotalReclaw server: `GET /health`
 - OpenClaw: Agent responds to ping
 
 ### Scenario 2: Basic Conversation
@@ -71,11 +71,11 @@ export ZAI_API_KEY=your_key_here
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Docker Network: openmemory-internal (no internet access)   │
+│  Docker Network: totalreclaw-internal (no internet access)   │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌─────────────────┐    ┌─────────────────┐                │
-│  │  OpenClaw       │    │  OpenMemory     │                │
+│  │  OpenClaw       │    │  TotalReclaw     │                │
 │  │  (port 8081)    │───▶│  Server         │                │
 │  │                 │    │  (port 8080)    │                │
 │  │  + Skill        │    │                 │                │
@@ -105,7 +105,7 @@ export ZAI_API_KEY=your_key_here
 ### Rule: Extend on Every New Feature
 
 **When to add new test scenarios:**
-- New tool added to skill (e.g., `openmemory_search_by_date`)
+- New tool added to skill (e.g., `totalreclaw_search_by_date`)
 - New lifecycle hook (e.g., `on_user_login`)
 - New server endpoint (e.g., `POST /batch-store`)
 - New encryption feature (e.g., key rotation)
@@ -145,7 +145,7 @@ run_scenario_5_key_rotation() {
 | "OpenClaw repo not found" | Run `git clone https://github.com/openclaw/openclaw.git openclaw` |
 | "ZAI_API_KEY not set" | Export your key: `export ZAI_API_KEY=...` |
 | "Port 8080 already in use" | Stop other services: `docker-compose down` |
-| "Health check timeout" | Check logs: `docker-compose logs openmemory-server` |
+| "Health check timeout" | Check logs: `docker-compose logs totalreclaw-server` |
 
 ## Files Reference
 

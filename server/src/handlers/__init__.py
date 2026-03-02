@@ -1,5 +1,5 @@
 """
-API handlers for OpenMemory Server.
+API handlers for TotalReclaw Server.
 """
 from .register import router as register_router
 from .store import router as store_router
@@ -8,6 +8,7 @@ from .health import router as health_router
 from .account import router as account_router
 from .sync import router as sync_router
 from .relay import relay_router
+from .observability import router as observability_router
 
 __all__ = [
     "register_router",
@@ -17,4 +18,5 @@ __all__ = [
     "account_router",
     "sync_router",
     "relay_router",
+    "observability_router",
 ]

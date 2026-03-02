@@ -1,0 +1,23 @@
+# OpenMemory v0.5 Requirements
+
+# Core dependencies
+cryptography>=41.0.0
+numpy>=1.24.0
+
+# Optional: For production embedding model
+sentence-transformers>=2.2.0
+
+# Optional: For BM25 (or use built-in implementation)
+rank-bm25>=0.2.2
+
+# Optional: LLM clients
+anthropic>=0.18.0
+openai>=1.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Development
+black>=23.0.0
+mypy>=1.5.0

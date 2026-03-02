@@ -2,7 +2,7 @@
  * Content Fingerprint Tests
  *
  * Tests for HMAC-SHA256 content fingerprint derivation (v0.3.1b).
- * Spec: docs/specs/openmemory/server.md section 8.2
+ * Spec: docs/specs/totalreclaw/server.md section 8.2
  */
 import { deriveKeys, generateSalt } from '../src/crypto/kdf';
 import {

@@ -1,5 +1,5 @@
 /**
- * BIP-39 Seed Management for OpenMemory Phase 3 (Subgraph).
+ * BIP-39 Seed Management for TotalReclaw Phase 3 (Subgraph).
  *
  * The user's 12-word mnemonic is the ONLY secret. From it we derive:
  *   1. A private key (for signing UserOperations)
@@ -10,8 +10,8 @@
  * Derivation:
  *   mnemonic -> BIP-39 seed (512 bits)
  *     -> BIP-32/44 derive m/44'/60'/0'/0/0 -> private key (256 bits) + EOA address
- *     -> HKDF(private_key, "openmemory-encryption-key-v1") -> encryption key (256 bits)
- *     -> HKDF(private_key, "openmemory-auth-key-v1") -> auth key (256 bits)
+ *     -> HKDF(private_key, "totalreclaw-encryption-key-v1") -> encryption key (256 bits)
+ *     -> HKDF(private_key, "totalreclaw-auth-key-v1") -> auth key (256 bits)
  *
  * The encryption key derivation uses the SAME HKDF info strings as
  * client/src/crypto/kdf.ts so that the AES and blind-index modules work
@@ -68,7 +68,7 @@ export function validateMnemonic(mnemonic: string): boolean {
  * Derive all keys from a BIP-39 mnemonic.
  *
  * This is the primary entry point for the seed path. It produces all the
- * keys needed for OpenMemory operations:
+ * keys needed for TotalReclaw operations:
  *   - privateKey: for signing ERC-4337 UserOperations
  *   - eoaAddress: for computing the Smart Account counterfactual address
  *   - encryptionKey: for AES-256-GCM encryption (identical to kdf.ts output)
@@ -104,19 +104,19 @@ export async function mnemonicToKeys(mnemonic: string): Promise<SeedDerivedKeys>
   );
   const eoaAddress = account.address;
 
-  // Step 4: Derive OpenMemory keys using HKDF with same info strings as kdf.ts
+  // Step 4: Derive TotalReclaw keys using HKDF with same info strings as kdf.ts
   // This ensures the AES and blind-index modules work identically.
   const encryptionKey = hkdfSha256(
     privateKey,
-    Buffer.from("openmemory-seed-salt-v1", "utf-8"), // Fixed salt for seed path
-    Buffer.from("openmemory-encryption-key-v1", "utf-8"),
+    Buffer.from("totalreclaw-seed-salt-v1", "utf-8"), // Fixed salt for seed path
+    Buffer.from("totalreclaw-encryption-key-v1", "utf-8"),
     32
   );
 
   const authKey = hkdfSha256(
     privateKey,
-    Buffer.from("openmemory-seed-salt-v1", "utf-8"),
-    Buffer.from("openmemory-auth-key-v1", "utf-8"),
+    Buffer.from("totalreclaw-seed-salt-v1", "utf-8"),
+    Buffer.from("totalreclaw-auth-key-v1", "utf-8"),
     32
   );
 

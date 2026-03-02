@@ -6,7 +6,7 @@
  */
 
 import * as crypto from 'crypto';
-import { OpenMemoryError, OpenMemoryErrorCode } from '../types';
+import { TotalReclawError, TotalReclawErrorCode } from '../types';
 
 /**
  * Tokenize text into words for blind indexing

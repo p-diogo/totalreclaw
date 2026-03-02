@@ -1,11 +1,11 @@
 /**
- * OpenMemory Skill - Before Agent Start Hook
+ * TotalReclaw Skill - Before Agent Start Hook
  *
  * This hook runs BEFORE the agent processes the user's message.
  * It retrieves relevant memories and injects them into the context.
  *
  * Flow:
- * 1. Retrieve relevant memories using OpenMemory client
+ * 1. Retrieve relevant memories using TotalReclaw client
  * 2. Rerank with cross-encoder for high-quality results
  * 3. Format memories for context injection
  * 4. Return BeforeAgentStartResult with memories and contextString
@@ -13,12 +13,12 @@
  * Target latency: <100ms total
  */
 
-import type { OpenMemory } from '@openmemory/client';
-import type { RerankedResult, Fact } from '@openmemory/client';
+import type { TotalReclaw } from '@totalreclaw/client';
+import type { RerankedResult, Fact } from '@totalreclaw/client';
 import type {
   BeforeAgentStartResult,
   OpenClawContext,
-  OpenMemorySkillConfig,
+  TotalReclawSkillConfig,
 } from '../types';
 import { CrossEncoderReranker, getCrossEncoderReranker } from '../reranker/cross-encoder';
 
@@ -30,10 +30,10 @@ import { CrossEncoderReranker, getCrossEncoderReranker } from '../reranker/cross
  * Options for the before-agent-start hook
  */
 export interface BeforeAgentStartOptions {
-  /** OpenMemory client instance */
-  client: OpenMemory;
+  /** TotalReclaw client instance */
+  client: TotalReclaw;
   /** Skill configuration */
-  config: OpenMemorySkillConfig;
+  config: TotalReclawSkillConfig;
   /** Cross-encoder reranker instance (optional, will create if not provided) */
   reranker?: CrossEncoderReranker;
   /** Custom context formatter (optional) */
@@ -195,10 +195,10 @@ export async function beforeAgentStart(
     const searchQuery = buildSearchQuery(context);
 
     if (options.debug) {
-      console.log(`[OpenMemory] Searching for: "${searchQuery}"`);
+      console.log(`[TotalReclaw] Searching for: "${searchQuery}"`);
     }
 
-    // Step 2: Retrieve candidate memories from OpenMemory
+    // Step 2: Retrieve candidate memories from TotalReclaw
     const searchStart = Date.now();
     const candidates = await options.client.recall(
       searchQuery,
@@ -208,7 +208,7 @@ export async function beforeAgentStart(
     metrics.candidatesRetrieved = candidates.length;
 
     if (options.debug) {
-      console.log(`[OpenMemory] Retrieved ${candidates.length} candidates in ${metrics.searchLatencyMs}ms`);
+      console.log(`[TotalReclaw] Retrieved ${candidates.length} candidates in ${metrics.searchLatencyMs}ms`);
     }
 
     // If no candidates, return empty result early
@@ -241,7 +241,7 @@ export async function beforeAgentStart(
     metrics.rerankLatencyMs = Date.now() - rerankStart;
 
     if (options.debug) {
-      console.log(`[OpenMemory] Reranked in ${metrics.rerankLatencyMs}ms`);
+      console.log(`[TotalReclaw] Reranked in ${metrics.rerankLatencyMs}ms`);
     }
 
     // Convert CrossEncoderResult back to RerankedResult format
@@ -264,7 +264,7 @@ export async function beforeAgentStart(
     metrics.totalLatencyMs = Date.now() - startTime;
 
     if (options.debug) {
-      console.log(`[OpenMemory] Hook completed in ${metrics.totalLatencyMs}ms`);
+      console.log(`[TotalReclaw] Hook completed in ${metrics.totalLatencyMs}ms`);
       console.log(`  - Search: ${metrics.searchLatencyMs}ms`);
       console.log(`  - Rerank: ${metrics.rerankLatencyMs}ms`);
       console.log(`  - Format: ${metrics.formatLatencyMs}ms`);
@@ -277,7 +277,7 @@ export async function beforeAgentStart(
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[OpenMemory] beforeAgentStart hook failed:', errorMsg);
+    console.error('[TotalReclaw] beforeAgentStart hook failed:', errorMsg);
 
     // Return empty result on error to avoid blocking the agent
     return {

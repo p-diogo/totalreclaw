@@ -1,0 +1,373 @@
+# LLM Prompts for Synthetic Memory Generation
+# This file contains prompt templates for generating realistic OpenClaw-style memories
+
+# Category 1: Daily Conversation Logs (30% - 450 chunks)
+daily_conversation_logs: |
+  You are generating realistic OpenClaw daily memory log entries. Generate {count} memory entries
+  that would typically appear in memory/YYYY-MM-DD.md files.
+
+  CRITICAL REQUIREMENTS:
+  1. Each entry must include SPECIFIC, realistic technical details:
+     - Realistic API endpoints (e.g., https://api.example.com/v1/graphql, https://api.stripe.com/v1)
+     - Actual error codes (429, 500, 503, CORS errors, timeout errors)
+     - Specific error messages with stack traces or error IDs
+     - Real function names and code paths (e.g., memorySearch.query.hybrid, UserAuthService.validateToken)
+     - Realistic UUIDs (e.g., a828e60-7b4a-4f3d-9e2a-1c5b8d9e6f3a)
+
+  2. Include realistic project discussions:
+     - Framework decisions (React vs Vue, TypeScript vs JavaScript)
+     - Library choices (axios vs fetch, Zustand vs Redux)
+     - Architecture discussions (microservices vs monolith, SQL vs NoSQL)
+     - Code style agreements (naming conventions, file structure)
+
+  3. Debugging sessions with:
+     - Specific error messages and their solutions
+     - Stack trace snippets
+     - API configuration issues
+     - Database query problems
+     - Deployment errors
+
+  4. Each entry must be timestamped and formatted as Markdown
+
+  OUTPUT FORMAT:
+  ## memory/2026-{MM:02d}-{DD:02d}.md
+
+  ### {HH:02d}:{MM:02d} AM/PM - {Descriptive Title}
+  **User:** {User message with technical details}
+  **Assistant:** {Assistant response with specific solutions}
+
+  Include varied dates across January-February 2026.
+
+  DO NOT include explanations or meta-text. Output ONLY the Markdown content.
+
+# Category 2: Email Threads (25% - 375 chunks)
+email_threads: |
+  You are generating realistic email thread memories. Generate {count} email conversations
+  that would be stored in OpenClaw memory after being processed.
+
+  CRITICAL REQUIREMENTS:
+  1. Include specific email addresses:
+     - Realistic corporate emails (e.g., sarah.r@techcorp.com, mike.chen@company.io)
+     - Role-based emails (e.g., security@company.com, devops@company.io)
+     - External service emails (e.g., support@aws.amazon.com, notifications@slack.com)
+
+  2. Include real technical discussions:
+     - API key rotations and security updates
+     - Deployment schedules and maintenance windows
+     - Code review feedback
+     - Architecture decision records
+     - Incident post-mortems
+
+  3. Each email thread must have:
+     - Subject line with clear topic
+     - Sender and recipient email addresses
+     - Timestamp (realistic dates in Jan-Feb 2026)
+     - CC/BCC lists where relevant
+     - Specific technical details in body
+
+  4. Include actionable details:
+     - Specific configuration values
+     - API endpoints and versions
+     - Database connection strings (partially redacted but realistic)
+     - Deployment credentials (placeholder format)
+
+  OUTPUT FORMAT:
+  ## Email Thread: {Subject}
+  **Date:** 2026-{MM:02d}-{DD:02d} {HH:02d}:{MM:02d}
+  **From:** {Name} <{email}>
+  **To:** {email addresses}
+  **CC:** {email addresses}
+
+  {Email body with technical details}
+
+  ---
+  **Reply from:** {Name} <{email}>
+  {Follow-up message}
+
+  DO NOT include explanations. Output ONLY the email threads.
+
+# Category 3: Meeting Notes (15% - 225 chunks)
+meeting_notes: |
+  You are generating realistic meeting notes. Generate {count} meeting entries
+  that would be stored in OpenClaw memory files.
+
+  CRITICAL REQUIREMENTS:
+  1. Include various meeting types:
+     - Daily standups (15 min, quick status updates)
+     - Sprint planning meetings (1 hour, task breakdown)
+     - 1:1 meetings with manager (career, blockers)
+     - Technical design reviews (architecture decisions)
+     - Retrospectives (what went well, improvements)
+
+  2. Each meeting must include:
+     - Date and time (realistic Jan-Feb 2026)
+     - Attendee names and emails
+     - Meeting type/purpose
+     - Specific action items with owners
+     - Technical decisions made
+
+  3. Action items must be specific:
+     - "Sarah to implement rate limiting by Friday"
+     - "Mike to update API documentation with new endpoints"
+     - "Debug why Stripe webhook returns 500 error"
+
+  4. Include real attendee names and emails:
+     - Sarah Rodriguez (sarah.r@techcorp.com) - Backend Lead
+     - Mike Chen (mike.chen@company.io) - Frontend Lead
+     - Jennifer Lopez (jen.lopez@company.io) - Product Manager
+     - David Kim (david.kim@company.io) - DevOps Engineer
+     - Alex Turner (alex.turner@company.io) - Security Engineer
+
+  OUTPUT FORMAT:
+  ## Meeting: {Meeting Type} - {Date}
+  **Date:** 2026-{MM:02d}-{DD:02d} {HH:02d}:{MM:02d}
+  **Attendees:** {Name} ({email}), {Name} ({email})
+  **Duration:** {duration}
+
+  ### Agenda
+  - {Item 1}
+  - {Item 2}
+
+  ### Discussion
+  {Meeting discussion with technical details}
+
+  ### Action Items
+  - [ ] {Action item} - {Owner} - {Due date}
+  - [ ] {Action item} - {Owner} - {Due date}
+
+  DO NOT include explanations. Output ONLY the meeting notes.
+
+# Category 4: Personal Preferences (15% - 225 chunks)
+personal_preferences: |
+  You are generating personal preference and context memories. Generate {count} entries
+  about work habits, environment setup, and personal workflow.
+
+  CRITICAL REQUIREMENTS:
+  1. Work schedule and preferences:
+     - Meeting times (standup at 10 AM EST)
+     - Focus hours (9 AM - 12 PM no meetings)
+     - 1:1 schedule (Thursdays at 3 PM)
+     - Lunch preferences
+
+  2. Development environment:
+     - Local server ports (localhost:3000, localhost:8080)
+     - Database configurations (PostgreSQL on port 5432)
+     - IDE preferences and shortcuts
+     - Terminal aliases and tools
+
+  3. Team context and relationships:
+     - Who to contact for specific issues
+     - Team communication preferences
+     - Code review assignments
+     - On-call rotation schedules
+
+  4. Personal workflow preferences:
+     - Git commit message style
+     - Branch naming conventions
+     - Preferred testing frameworks
+     - Documentation habits
+
+  OUTPUT FORMAT:
+  ## Personal Preferences
+
+  ### Work Schedule
+  - Standup: 10:00 AM EST daily with frontend team
+  - 1:1 with manager: Thursdays at 3:00 PM
+  - Focus hours: 9 AM - 12 PM (no meetings scheduled)
+
+  ### Environment Setup
+  - Local dev server: http://localhost:3000
+  - API server: http://localhost:8080
+  - Database: PostgreSQL 15 on port 5432
+  - Redis: localhost:6379
+
+  ### Team
+  - Backend lead: Sarah (sarah.r@techcorp.com)
+  - Frontend lead: Mike (mike.chen@company.io)
+  - DevOps: David (david.kim@company.io)
+
+  ### Code Preferences
+  - TypeScript strict mode enabled
+  - Prettier for formatting (2 spaces)
+  - ESLint rules extended from airbnb
+
+  DO NOT include explanations. Output ONLY the preference entries.
+
+# Category 5: Technical Documentation (10% - 150 chunks)
+technical_documentation: |
+  You are generating technical documentation memories. Generate {count} documentation
+  entries that would be stored in MEMORY.md files.
+
+  CRITICAL REQUIREMENTS:
+  1. API configurations:
+     - Base URLs and versioning
+     - Authentication methods (Bearer tokens, API keys)
+     - Rate limits and quotas
+     - Request/response formats
+
+  2. Deployment procedures:
+     - CI/CD pipeline configurations
+     - Environment variables (with examples)
+     - Deployment commands
+     - Rollback procedures
+
+  3. Infrastructure details:
+     - Server configurations
+     - Database schemas (with column types)
+     - Network configurations
+     - CDN and caching setup
+
+  4. Include specific technical details:
+     - Exact API endpoint URLs
+     - Specific configuration values
+     - Error codes and their meanings
+     - Connection string formats
+
+  OUTPUT FORMAT:
+  ## Technical Documentation
+
+  ### API Configuration
+  - **Base URL:** https://api.example.com/v1
+  - **Authentication:** Bearer token (stored in AWS Secrets Manager)
+  - **Rate Limit:** 100 requests/minute (429 response with Retry-After header)
+  - **Timeout:** 30 seconds
+
+  ### Database Schema
+  ```sql
+  CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+  ```
+
+  ### Deployment
+  - **Production:** us-east-1 (EC2, RDS PostgreSQL 15)
+  - **Staging:** us-west-2
+  - **CI/CD:** GitHub Actions with Docker
+  - **Container Registry:** ECR (account ID: 123456789012)
+
+  DO NOT include explanations. Output ONLY the documentation.
+
+# Category 6: Configuration Details (5% - 75 chunks)
+configuration_details: |
+  You are generating configuration detail memories. Generate {count} configuration
+  entries with specific technical settings.
+
+  CRITICAL REQUIREMENTS:
+  1. API keys and tokens (placeholder format):
+     - Format examples: sk-proj-abc123..., pk_live_xxx..., ghp_xxx...
+     - Service tokens: Stripe, OpenAI, AWS, GitHub, Slack
+
+  2. Connection strings and endpoints:
+     - Database connection strings (PostgreSQL, MongoDB, Redis)
+     - API endpoint URLs
+     - Webhook URLs
+     - CDN URLs
+
+  3. Environment variables:
+     - Variable names and example values
+     - Required vs optional flags
+     - Default values
+     - Validation rules
+
+  4. Third-party service configurations:
+     - Stripe API keys (test/live modes)
+     - AWS credentials (IAM roles, S3 buckets)
+     - GitHub personal access tokens
+     - Slack bot tokens
+
+  OUTPUT FORMAT:
+  ## Configuration Details
+
+  ### API Keys (Placeholder Format)
+  ```
+  OPENAI_API_KEY=sk-proj-abc123def456...
+  STRIPE_SECRET_KEY=pk_live_51AbCdEf...
+  GITHUB_TOKEN=ghp_xxxxxxxxxxxx...
+  AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+  ```
+
+  ### Connection Strings
+  ```
+  DATABASE_URL=postgresql://user:pass@localhost:5432/dbname
+  REDIS_URL=redis://localhost:6379/0
+  MONGODB_URI=mongodb://localhost:27017/dbname
+  ```
+
+  ### Service Endpoints
+  ```
+  API_BASE_URL=https://api.example.com/v1
+  WEBHOOK_URL=https://example.com/api/webhooks/stripe
+  CDN_URL=https://cdn.example.com
+  S3_BUCKET=https://s3.us-east-1.amazonaws.com/my-bucket
+  ```
+
+  DO NOT include explanations. Output ONLY the configuration details.
+
+# Query Generation Prompts
+
+query_generation_contextual: |
+  Based on the following memory content, generate {count} realistic search queries
+  that a user would ask when trying to retrieve information from their OpenClaw memory.
+
+  Memory context:
+  {memories_sample}
+
+  Query types to generate:
+  1. People-referenced queries ("What did Sarah say about...", "Mike's recommendation on...")
+  2. Error-specific queries ("How did we fix the 429 error", "CORS issue solution")
+  3. Decision queries ("What framework did we choose for...", "Why did we decide to...")
+  4. Configuration queries ("What's the API base URL", "Database connection string")
+
+  Each query should:
+  - Be natural and conversational
+  - Reference specific details from the memories
+  - Be answerable from the given content
+  - Vary in specificity (some broad, some specific)
+
+  OUTPUT FORMAT: One query per line, no numbering, no explanations.
+
+query_generation_semantic: |
+  Generate {count} semantic/conceptual search queries based on this memory content.
+
+  Memory context:
+  {memories_sample}
+
+  These queries should use different wording than the stored content but refer to
+  the same concepts. Examples:
+  - "container orchestration" → content mentions "Docker Compose"
+  - "CI/CD automation" → content mentions "GitHub Actions workflow"
+  - "user authentication flow" → content mentions "OAuth login"
+
+  OUTPUT FORMAT: One query per line, no numbering, no explanations.
+
+query_generation_exact: |
+  Generate {count} exact keyword search queries based on this memory content.
+
+  Memory context:
+  {memories_sample}
+
+  These queries should include specific identifiers, error codes, function names,
+  or exact phrases that require precise matching:
+  - UUIDs or IDs
+  - Error codes (429, 500, CORS, timeout)
+  - Function names (memorySearch.query.hybrid)
+  - API endpoints
+  - Email addresses
+
+  OUTPUT FORMAT: One query per line, no numbering, no explanations.
+
+query_generation_temporal: |
+  Generate {count} time-referenced search queries based on this memory content.
+
+  Memory context:
+  {memories_sample}
+
+  These queries should reference time periods:
+  - "What did we discuss yesterday"
+  - "Deployment from last week"
+  - "Meeting notes from February 15"
+  - "Recent changes to..."
+
+  OUTPUT FORMAT: One query per line, no numbering, no explanations.

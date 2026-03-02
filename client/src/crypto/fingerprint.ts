@@ -3,7 +3,7 @@
  *
  * Provides HMAC-SHA256 content fingerprint for exact dedup.
  *
- * Spec: docs/specs/openmemory/server.md v0.3.1b section 8.2
+ * Spec: docs/specs/totalreclaw/server.md v0.3.1b section 8.2
  *
  * Key derivation:
  *   dedup_key = HKDF-SHA256(master_key, salt, "openmemory-dedup-v1", 32)
@@ -23,8 +23,8 @@ import * as crypto from 'crypto';
 
 /**
  * HKDF context string for dedup key derivation.
- * Separate from auth ("openmemory-auth-key-v1") and encryption
- * ("openmemory-encryption-key-v1") context strings so that key
+ * Separate from auth ("totalreclaw-auth-key-v1") and encryption
+ * ("totalreclaw-encryption-key-v1") context strings so that key
  * rotation of one does not affect the others.
  */
 const DEDUP_KEY_INFO = 'openmemory-dedup-v1';

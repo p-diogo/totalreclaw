@@ -1,7 +1,7 @@
 /**
- * OpenMemory Plugin - HTTP API Client
+ * TotalReclaw Plugin - HTTP API Client
  *
- * Communicates with the OpenMemory server over JSON/HTTP. Uses Node.js
+ * Communicates with the TotalReclaw server over JSON/HTTP. Uses Node.js
  * built-in `fetch` (available since Node 18).
  *
  * All authenticated endpoints expect:
@@ -37,6 +37,8 @@ export interface StoreFactPayload {
   content_fp?: string;
   /** Identifier of the creating agent */
   agent_id?: string;
+  /** Hex-encoded AES-256-GCM encrypted embedding vector (PoC v2) */
+  encrypted_embedding?: string;
 }
 
 /**
@@ -52,6 +54,8 @@ export interface SearchCandidate {
   /** Unix milliseconds */
   timestamp: number;
   version: number;
+  /** Hex-encoded AES-256-GCM encrypted embedding vector (PoC v2, optional) */
+  encrypted_embedding?: string;
 }
 
 /**
@@ -73,7 +77,7 @@ export interface ExportedFact {
 // ---------------------------------------------------------------------------
 
 /**
- * Create an API client bound to a specific OpenMemory server URL.
+ * Create an API client bound to a specific TotalReclaw server URL.
  *
  * All methods are async and throw descriptive errors on non-2xx responses.
  */

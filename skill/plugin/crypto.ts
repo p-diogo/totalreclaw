@@ -1,16 +1,16 @@
 /**
- * OpenMemory Plugin - Crypto Operations
+ * TotalReclaw Plugin - Crypto Operations
  *
  * All cryptographic primitives used by the OpenClaw plugin. These must
- * produce byte-for-byte identical output to the OpenMemory client library
+ * produce byte-for-byte identical output to the TotalReclaw client library
  * (`client/src/crypto/`) so that memories written by one can be read by
  * the other.
  *
  * Key derivation chain:
  *   master_password + salt
  *     -> Argon2id(t=3, m=65536, p=4, dkLen=32) -> masterKey
- *     -> HKDF-SHA256(masterKey, salt, "openmemory-auth-key-v1",       32) -> authKey
- *     -> HKDF-SHA256(masterKey, salt, "openmemory-encryption-key-v1", 32) -> encryptionKey
+ *     -> HKDF-SHA256(masterKey, salt, "totalreclaw-auth-key-v1",       32) -> authKey
+ *     -> HKDF-SHA256(masterKey, salt, "totalreclaw-encryption-key-v1", 32) -> encryptionKey
  *     -> HKDF-SHA256(masterKey, salt, "openmemory-dedup-v1",          32) -> dedupKey
  *
  * Encryption: AES-256-GCM (12-byte IV, 16-byte tag)
@@ -24,6 +24,7 @@ import { sha256 } from '@noble/hashes/sha2';
 import { hmac } from '@noble/hashes/hmac';
 import { mnemonicToSeedSync, validateMnemonic } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english.js';
+import { stemmer } from 'porter-stemmer';
 import crypto from 'node:crypto';
 
 // ---------------------------------------------------------------------------
@@ -31,8 +32,8 @@ import crypto from 'node:crypto';
 // ---------------------------------------------------------------------------
 
 /** HKDF context strings -- must match client/src/crypto/kdf.ts exactly. */
-const AUTH_KEY_INFO = 'openmemory-auth-key-v1';
-const ENCRYPTION_KEY_INFO = 'openmemory-encryption-key-v1';
+const AUTH_KEY_INFO = 'totalreclaw-auth-key-v1';
+const ENCRYPTION_KEY_INFO = 'totalreclaw-encryption-key-v1';
 const DEDUP_KEY_INFO = 'openmemory-dedup-v1';
 
 /** Argon2id parameters -- OWASP recommendations, matching client defaults. */
@@ -139,6 +140,55 @@ export function deriveKeys(
 }
 
 // ---------------------------------------------------------------------------
+// LSH Seed Derivation
+// ---------------------------------------------------------------------------
+
+/**
+ * HKDF context string for LSH seed derivation.
+ *
+ * The LSH hasher needs a deterministic seed so that the same master key
+ * always generates the same random hyperplane matrices. We derive this seed
+ * from the master key using HKDF with a unique info string.
+ *
+ * For the BIP-39 path the HKDF input is the 512-bit BIP-39 seed; for the
+ * Argon2id path it is the 32-byte master key.
+ */
+const LSH_SEED_INFO = 'openmemory-lsh-seed-v1';
+
+/**
+ * Derive a 32-byte seed for the LSH hasher from the master key derivation
+ * chain.
+ *
+ * Call this once during initialization and pass the result to `new LSHHasher(seed, dims)`.
+ *
+ * For the BIP-39 path we use the full 512-bit BIP-39 seed as IKM; for the
+ * Argon2id path we use the 32-byte Argon2id-derived master key. In both
+ * cases the salt from `deriveKeys()` is reused for domain separation.
+ */
+export function deriveLshSeed(
+  password: string,
+  salt: Buffer,
+): Uint8Array {
+  if (isBip39Mnemonic(password)) {
+    const seed = mnemonicToSeedSync(password.trim());
+    return new Uint8Array(
+      hkdf(sha256, Buffer.from(seed), salt, Buffer.from(LSH_SEED_INFO, 'utf8'), 32),
+    );
+  }
+
+  // Argon2id path: re-derive the master key, then HKDF with LSH info string.
+  const masterKey = argon2id(
+    Buffer.from(password, 'utf8'),
+    salt,
+    { t: ARGON2_TIME_COST, m: ARGON2_MEMORY_COST, p: ARGON2_PARALLELISM, dkLen: ARGON2_DK_LEN },
+  );
+
+  return new Uint8Array(
+    hkdf(sha256, masterKey, salt, Buffer.from(LSH_SEED_INFO, 'utf8'), 32),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Auth Key Hash
 // ---------------------------------------------------------------------------
 
@@ -239,10 +289,25 @@ export function generateBlindIndices(text: string): string[] {
   const indices: string[] = [];
 
   for (const token of tokens) {
+    // Exact word hash (unchanged behavior).
     const hash = Buffer.from(sha256(Buffer.from(token, 'utf8'))).toString('hex');
     if (!seen.has(hash)) {
       seen.add(hash);
       indices.push(hash);
+    }
+
+    // Stemmed word hash. The stem is prefixed with "stem:" before hashing
+    // to avoid collisions between a word that happens to equal another
+    // word's stem (e.g., the word "commun" vs the stem of "community").
+    const stem = stemmer(token);
+    if (stem.length >= 2 && stem !== token) {
+      const stemHash = Buffer.from(
+        sha256(Buffer.from(`stem:${stem}`, 'utf8'))
+      ).toString('hex');
+      if (!seen.has(stemHash)) {
+        seen.add(stemHash);
+        indices.push(stemHash);
+      }
     }
   }
 

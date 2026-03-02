@@ -1,0 +1,52 @@
+{
+  "benchmark_type": "retrieval_only",
+  "description": "Same raw text stored in both systems. Measures search quality.",
+  "timestamp": "2026-02-23 20:44:31",
+  "dataset": {
+    "total_memories": 8727,
+    "n_queries": 200,
+    "embedding_dim": 384,
+    "sources": [
+      "whatsapp",
+      "slack"
+    ]
+  },
+  "results": {
+    "totalreclaw": {
+      "backend_name": "TotalReclaw E2EE",
+      "recall_at_8": 0.98125,
+      "recall_at_20": 0.9795,
+      "mrr": 0.9908333333333333,
+      "avg_latency_ms": 4.122158354439307,
+      "p95_latency_ms": 7.7009999949950725,
+      "privacy_score": 100,
+      "total_memories": 8727,
+      "queries_run": 200,
+      "notes": "LSH 64bits x 12tables, 3000 candidates, cosine rerank"
+    },
+    "mem0": {
+      "backend_name": "Mem0 Platform",
+      "recall_at_8": 0.0,
+      "recall_at_20": 0.0,
+      "mrr": 0.0,
+      "avg_latency_ms": 459.24849750561407,
+      "p95_latency_ms": 618.3524999942165,
+      "privacy_score": 0,
+      "total_memories": 8727,
+      "queries_run": 200,
+      "notes": "Managed platform, async ingestion, mem0_stored=242, match_stats={'with_index': 1939, 'no_index': 0, 'empty_results': 6}"
+    },
+    "vector_only": {
+      "backend_name": "Vector-only (baseline)",
+      "recall_at_8": 1.0,
+      "recall_at_20": 1.0,
+      "mrr": 1.0,
+      "avg_latency_ms": 0.9739619150059298,
+      "p95_latency_ms": 1.8361250113230199,
+      "privacy_score": 0,
+      "total_memories": 8727,
+      "queries_run": 200,
+      "notes": "Brute-force cosine similarity (perfect recall ceiling)"
+    }
+  }
+}

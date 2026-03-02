@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - Hooks Integration Tests
+ * TotalReclaw Skill - Hooks Integration Tests
  *
  * Tests the integration of lifecycle hooks with mock OpenClaw context.
  * Tests before_agent_start, agent_end, and pre_compaction hooks.
@@ -23,9 +23,9 @@ import type {
   ConversationTurn,
   SkillState,
   ExtractedFact,
-  OpenMemorySkillConfig,
+  TotalReclawSkillConfig,
 } from '../../src/types';
-import type { OpenMemory, Fact, RerankedResult } from '@openmemory/client';
+import type { TotalReclaw, Fact, RerankedResult } from '@totalreclaw/client';
 import { DEFAULT_SKILL_CONFIG } from '../../src/types';
 
 // ============================================================================
@@ -33,9 +33,9 @@ import { DEFAULT_SKILL_CONFIG } from '../../src/types';
 // ============================================================================
 
 /**
- * Mock OpenMemory client
+ * Mock TotalReclaw client
  */
-class MockOpenMemoryClient implements Partial<OpenMemory> {
+class MockTotalReclawClient implements Partial<TotalReclaw> {
   private facts: Map<string, Fact> = new Map();
   private userId: string | null = null;
 
@@ -252,14 +252,14 @@ function createMockFact(overrides: Partial<Fact> = {}): Fact {
 // ============================================================================
 
 describe('before_agent_start hook', () => {
-  let mockClient: MockOpenMemoryClient;
+  let mockClient: MockTotalReclawClient;
   let mockLLM: MockLLMClient;
   let mockReranker: MockReranker;
-  let config: OpenMemorySkillConfig;
+  let config: TotalReclawSkillConfig;
   let state: SkillState;
 
   beforeEach(() => {
-    mockClient = new MockOpenMemoryClient();
+    mockClient = new MockTotalReclawClient();
     mockLLM = new MockLLMClient();
     mockReranker = new MockReranker();
     config = { ...DEFAULT_SKILL_CONFIG };
@@ -516,14 +516,14 @@ describe('before_agent_start hook', () => {
 // ============================================================================
 
 describe('agent_end hook', () => {
-  let mockClient: MockOpenMemoryClient;
+  let mockClient: MockTotalReclawClient;
   let mockLLM: MockLLMClient;
   let mockVectorStore: MockVectorStoreClient;
-  let config: OpenMemorySkillConfig;
+  let config: TotalReclawSkillConfig;
   let state: SkillState;
 
   beforeEach(() => {
-    mockClient = new MockOpenMemoryClient();
+    mockClient = new MockTotalReclawClient();
     mockLLM = new MockLLMClient();
     mockVectorStore = new MockVectorStoreClient();
     config = { ...DEFAULT_SKILL_CONFIG, autoExtractEveryTurns: 3 };
@@ -826,13 +826,13 @@ describe('agent_end hook', () => {
 // ============================================================================
 
 describe('pre_compaction hook', () => {
-  let mockClient: MockOpenMemoryClient;
+  let mockClient: MockTotalReclawClient;
   let mockLLM: MockLLMClient;
   let mockVectorStore: MockVectorStoreClient;
-  let config: OpenMemorySkillConfig;
+  let config: TotalReclawSkillConfig;
 
   beforeEach(() => {
-    mockClient = new MockOpenMemoryClient();
+    mockClient = new MockTotalReclawClient();
     mockLLM = new MockLLMClient();
     mockVectorStore = new MockVectorStoreClient();
     config = { ...DEFAULT_SKILL_CONFIG };
@@ -843,7 +843,7 @@ describe('pre_compaction hook', () => {
       mockLLM.setResponse(JSON.stringify({
         facts: [
           {
-            factText: 'User is working on OpenMemory project',
+            factText: 'User is working on TotalReclaw project',
             type: 'fact',
             importance: 6,
             confidence: 0.8,
@@ -1194,13 +1194,13 @@ describe('pre_compaction hook', () => {
 // ============================================================================
 
 describe('Hooks Integration', () => {
-  let mockClient: MockOpenMemoryClient;
+  let mockClient: MockTotalReclawClient;
   let mockLLM: MockLLMClient;
-  let config: OpenMemorySkillConfig;
+  let config: TotalReclawSkillConfig;
   let state: SkillState;
 
   beforeEach(() => {
-    mockClient = new MockOpenMemoryClient();
+    mockClient = new MockTotalReclawClient();
     mockLLM = new MockLLMClient();
     config = { ...DEFAULT_SKILL_CONFIG, autoExtractEveryTurns: 2 };
     state = createSkillState();

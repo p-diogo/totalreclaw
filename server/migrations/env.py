@@ -1,5 +1,5 @@
 """
-Alembic environment configuration for OpenMemory Server.
+Alembic environment configuration for TotalReclaw Server.
 
 Reads database URL from Settings and configures migrations.
 """

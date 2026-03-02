@@ -1,7 +1,7 @@
 /**
- * OpenMemory Skill - Test Conversation Fixtures
+ * TotalReclaw Skill - Test Conversation Fixtures
  *
- * Scripted test conversations for functional testing of the OpenMemory skill.
+ * Scripted test conversations for functional testing of the TotalReclaw skill.
  * These fixtures simulate realistic conversation flows to test:
  * - Automatic fact extraction (post-turn)
  * - Explicit memory commands
@@ -244,7 +244,7 @@ export const CONVERSATION_BASIC_MEMORY: TestConversation = {
  * Tests extraction and retrieval of multiple distinct facts.
  *
  * Scenario:
- * - Turn 3: "I work on OpenMemory, a zero-knowledge memory vault"
+ * - Turn 3: "I work on TotalReclaw, a zero-knowledge memory vault"
  * - Turn 6: "I use z.ai GLM-5 as my LLM"
  * - Turn 9: "My project is in TypeScript"
  * - Turn 12: Query about one specific fact
@@ -267,11 +267,11 @@ export const CONVERSATION_MULTIPLE_FACTS: TestConversation = {
     // Turn 3: First fact
     {
       role: 'user',
-      content: 'I work on OpenMemory, a zero-knowledge memory vault for AI agents. It is like a password manager but for AI memory.',
+      content: 'I work on TotalReclaw, a zero-knowledge memory vault for AI agents. It is like a password manager but for AI memory.',
       expectedBehavior: {
         expectedFacts: [
           {
-            factText: 'User works on OpenMemory, a zero-knowledge memory vault for AI agents',
+            factText: 'User works on TotalReclaw, a zero-knowledge memory vault for AI agents',
             type: 'fact',
             action: 'ADD',
           },
@@ -355,13 +355,13 @@ export const CONVERSATION_MULTIPLE_FACTS: TestConversation = {
     },
     {
       role: 'assistant',
-      content: 'You mentioned that you use z.ai GLM-5 as your LLM for processing tasks in your OpenMemory project.',
+      content: 'You mentioned that you use z.ai GLM-5 as your LLM for processing tasks in your TotalReclaw project.',
     },
   ],
   expectedFinalState: {
     factsStored: 3,
     retrievableFacts: [
-      'User works on OpenMemory, a zero-knowledge memory vault for AI agents',
+      'User works on TotalReclaw, a zero-knowledge memory vault for AI agents',
       'User uses z.ai GLM-5 as their LLM',
       'User\'s project is primarily in TypeScript',
     ],
@@ -934,11 +934,11 @@ export const CONVERSATION_EPISODIC_MEMORY: TestConversation = {
     },
     {
       role: 'user',
-      content: 'Yesterday, on February 21st, I presented OpenMemory to a group of investors. It went really well!',
+      content: 'Yesterday, on February 21st, I presented TotalReclaw to a group of investors. It went really well!',
       expectedBehavior: {
         expectedFacts: [
           {
-            factText: 'User presented OpenMemory to investors on February 21st',
+            factText: 'User presented TotalReclaw to investors on February 21st',
             type: 'episodic',
             action: 'ADD',
           },
@@ -955,7 +955,7 @@ export const CONVERSATION_EPISODIC_MEMORY: TestConversation = {
       expectedBehavior: {
         expectedFacts: [
           {
-            factText: 'Two investors requested follow-up meetings after User\'s OpenMemory presentation',
+            factText: 'Two investors requested follow-up meetings after User\'s TotalReclaw presentation',
             type: 'episodic',
             action: 'ADD',
           },
@@ -970,8 +970,8 @@ export const CONVERSATION_EPISODIC_MEMORY: TestConversation = {
   expectedFinalState: {
     factsStored: 2,
     retrievableFacts: [
-      'User presented OpenMemory to investors on February 21st',
-      'Two investors requested follow-up meetings after User\'s OpenMemory presentation',
+      'User presented TotalReclaw to investors on February 21st',
+      'Two investors requested follow-up meetings after User\'s TotalReclaw presentation',
     ],
   },
 };

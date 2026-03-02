@@ -1,7 +1,7 @@
 """
 Tests for GET /sync endpoint (v0.3.1b delta sync).
 
-Spec: docs/specs/openmemory/server.md v0.3.1b section 4, 8.2
+Spec: docs/specs/totalreclaw/server.md v0.3.1b section 4, 8.2
 
 Unit tests using mocked database to validate sync handler logic.
 """
@@ -72,7 +72,7 @@ class TestSyncModels:
 class TestSyncHandler:
     """Test the sync endpoint handler logic."""
 
-    def _make_mock_fact(self, fact_id, seq_id=1, content_fp=None, agent_id=None):
+    def _make_mock_fact(self, fact_id, seq_id=1, content_fp=None, agent_id=None, encrypted_embedding=None):
         """Create a mock Fact object."""
         fact = MagicMock()
         fact.id = fact_id
@@ -88,6 +88,7 @@ class TestSyncHandler:
         fact.sequence_id = seq_id
         fact.content_fp = content_fp
         fact.agent_id = agent_id
+        fact.encrypted_embedding = encrypted_embedding
         return fact
 
     @pytest.mark.asyncio

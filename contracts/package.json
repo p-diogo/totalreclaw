@@ -1,0 +1,27 @@
+{
+  "name": "@totalreclaw/contracts",
+  "version": "0.1.0",
+  "description": "TotalReclaw smart contracts — EventfulDataEdge and Paymaster for Base L2",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.ts --network hardhat",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network baseSepolia",
+    "verify": "hardhat run scripts/verify.ts --network baseSepolia",
+    "fund": "hardhat run scripts/fund-paymaster.ts --network baseSepolia",
+    "clean": "hardhat clean"
+  },
+  "devDependencies": {
+    "hardhat": "^2.22.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "typescript": "^5.3.0",
+    "ts-node": "^10.9.0",
+    "@types/node": "^20.11.0",
+    "dotenv": "^16.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

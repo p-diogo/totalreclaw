@@ -1,12 +1,12 @@
 # Functional Testing with Real OpenClaw Instance
 
-This directory contains Docker setup for running functional tests against a real OpenClaw instance integrated with OpenMemory.
+This directory contains Docker setup for running functional tests against a real OpenClaw instance integrated with TotalReclaw.
 
 ## Architecture
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   OpenClaw      │────▶│  OpenMemory     │────▶│   PostgreSQL    │
+│   OpenClaw      │────▶│  TotalReclaw     │────▶│   PostgreSQL    │
 │   (Port 8081)   │     │   Server        │     │                 │
 └─────────────────┘     │   (Port 8080)   │     │                 │
                         └─────────────────┘     └─────────────────┘
@@ -19,7 +19,7 @@ This directory contains Docker setup for running functional tests against a real
    The OpenClaw repository must be cloned into this directory:
 
    ```bash
-   cd /Users/pdiogo/Documents/code/openmemory/testbed/functional-test
+   cd /Users/pdiogo/Documents/code/totalreclaw/testbed/functional-test
    git clone https://github.com/openclaw/openclaw.git openclaw
    ```
 
@@ -33,18 +33,18 @@ This directory contains Docker setup for running functional tests against a real
    export ZAI_API_KEY=your_api_key_here
    ```
 
-3. **Verify OpenMemory Server Dockerfile**
+3. **Verify TotalReclaw Server Dockerfile**
 
-   Ensure the OpenMemory server has a Dockerfile at:
+   Ensure the TotalReclaw server has a Dockerfile at:
    ```
-   /Users/pdiogo/Documents/code/openmemory/server/Dockerfile
+   /Users/pdiogo/Documents/code/totalreclaw/server/Dockerfile
    ```
 
 ## Quick Start
 
 ```bash
 # From this directory
-cd /Users/pdiogo/Documents/code/openmemory/testbed/functional-test
+cd /Users/pdiogo/Documents/code/totalreclaw/testbed/functional-test
 
 # Run the full test suite
 ./run-tests.sh
@@ -91,7 +91,7 @@ docker-compose -f docker-compose.functional-test.yml --profile functional-test d
 
 1. Send a message with personal information
 2. Verify the fact is extracted and stored
-3. Query OpenMemory directly to confirm storage
+3. Query TotalReclaw directly to confirm storage
 
 ### Scenario 2: Memory Retrieval
 
@@ -113,12 +113,12 @@ docker-compose -f docker-compose.functional-test.yml --profile functional-test d
 
 ## Configuration
 
-### OpenMemory Settings (agents.yaml)
+### TotalReclaw Settings (agents.yaml)
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `enabled` | `true` | Enable OpenMemory integration |
-| `serverUrl` | `http://openmemory-server:8080` | OpenMemory server URL |
+| `enabled` | `true` | Enable TotalReclaw integration |
+| `serverUrl` | `http://totalreclaw-server:8080` | TotalReclaw server URL |
 | `autoExtractEveryTurns` | `5` | Extract facts every N turns |
 | `minImportanceForAutoStore` | `6` | Minimum importance (1-10) to store |
 | `maxMemoriesInContext` | `8` | Max memories in context window |
@@ -139,7 +139,7 @@ docker-compose -f docker-compose.functional-test.yml --profile functional-test d
 
 3. **No New Privileges**: Security option `no-new-privileges:true` prevents privilege escalation.
 
-4. **Internal Network**: The `openmemory-internal` network is internal, preventing external access to PostgreSQL and OpenMemory server.
+4. **Internal Network**: The `totalreclaw-internal` network is internal, preventing external access to PostgreSQL and TotalReclaw server.
 
 5. **Test-Only Credentials**: Database credentials and encryption keys are for testing only. Never use in production.
 
@@ -152,14 +152,14 @@ docker-compose -f docker-compose.functional-test.yml --profile functional-test d
 docker-compose -f docker-compose.functional-test.yml logs
 
 # Verify network
-docker network ls | grep openmemory
+docker network ls | grep totalreclaw
 ```
 
 ### Health check failures
 
 ```bash
 # Check individual service health
-docker inspect --format='{{.State.Health.Status}}' openmemory-server-1
+docker inspect --format='{{.State.Health.Status}}' totalreclaw-server-1
 docker inspect --format='{{.State.Health.Status}}' openclaw-test-1
 ```
 

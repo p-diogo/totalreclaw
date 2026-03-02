@@ -1,8 +1,10 @@
 """
-Search endpoint for OpenMemory Server.
+Search endpoint for TotalReclaw Server.
 
 Implements blind index search using PostgreSQL GIN index.
 """
+import time
+
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -11,6 +13,7 @@ import uuid
 from ..auth import verify_auth_key, hash_auth_key, AuthError
 from ..db import get_db, Database
 from ..dependencies import get_current_user
+from ..search_telemetry import telemetry_store, SearchSample
 
 router = APIRouter(tags=["search"])
 
@@ -32,6 +35,7 @@ class SearchResultJSON(BaseModel):
     decay_score: float
     timestamp: int
     version: int
+    encrypted_embedding: Optional[str] = None  # PoC v2: hex-encoded encrypted embedding
 
 
 class SearchResponseJSON(BaseModel):
@@ -41,6 +45,7 @@ class SearchResponseJSON(BaseModel):
     error_message: Optional[str] = None
     results: Optional[List[SearchResultJSON]] = None
     total_candidates: Optional[int] = None
+    total_candidates_matched: Optional[int] = None
 
 
 # ============ Error Codes ============
@@ -101,18 +106,27 @@ async def search(
         # Search using GIN index on blind_indices array
         # Uses PostgreSQL's array overlap operator (&&)
         try:
-            facts = await db.search_facts_by_blind_indices(
+            t0 = time.monotonic()
+            facts, total_matched = await db.search_facts_by_blind_indices(
                 user_id=user_id,
                 trapdoors=request_obj.trapdoors,
                 max_candidates=max_candidates,
                 min_decay_score=request_obj.min_decay_score
             )
+            gin_query_ms = (time.monotonic() - t0) * 1000
         except ValueError as e:
             return SearchResponseJSON(
                 success=False,
                 error_code=ErrorCode.INVALID_REQUEST,
                 error_message=str(e)
             )
+
+        # Record search telemetry for per-user observability
+        telemetry_store.record(user_id, SearchSample(
+            total_candidates_matched=total_matched,
+            max_candidates_requested=max_candidates,
+            gin_query_ms=gin_query_ms,
+        ))
 
         # Convert to response format
         results = []
@@ -125,13 +139,15 @@ async def search(
                 encrypted_blob=fact.encrypted_blob.hex(),
                 decay_score=fact.decay_score,
                 timestamp=timestamp_ms,
-                version=fact.version
+                version=fact.version,
+                encrypted_embedding=getattr(fact, 'encrypted_embedding', None)
             ))
 
         return SearchResponseJSON(
             success=True,
             results=results,
-            total_candidates=len(results)
+            total_candidates=len(results),
+            total_candidates_matched=total_matched,
         )
 
     except HTTPException:
@@ -236,8 +252,9 @@ async def export_facts(
             cursor=cursor
         )
 
-        fact_list = [
-            {
+        fact_list = []
+        for f in facts:
+            fact_dict = {
                 "id": f.id,
                 "encrypted_blob": f.encrypted_blob.hex(),
                 "blind_indices": f.blind_indices,
@@ -247,8 +264,10 @@ async def export_facts(
                 "created_at": f.created_at.isoformat(),
                 "updated_at": f.updated_at.isoformat()
             }
-            for f in facts
-        ]
+            enc_emb = getattr(f, 'encrypted_embedding', None)
+            if enc_emb is not None:
+                fact_dict["encrypted_embedding"] = enc_emb
+            fact_list.append(fact_dict)
 
         return ExportResponseJSON(
             success=True,

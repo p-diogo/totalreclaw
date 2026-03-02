@@ -5,9 +5,11 @@ import {
   ListToolsRequestSchema,
   GetPromptRequestSchema,
   ListPromptsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { OpenMemory } from '@openmemory/client';
+import { TotalReclaw } from '@totalreclaw/client';
 import {
   rememberToolDefinition,
   recallToolDefinition,
@@ -20,14 +22,24 @@ import {
   handleExport,
   handleImport,
 } from './tools/index.js';
-import { SYSTEM_PROMPT_FRAGMENT } from './prompts.js';
+import { setOnRememberCallback } from './tools/remember.js';
+import {
+  SERVER_INSTRUCTIONS,
+  PROMPT_DEFINITIONS,
+  getPromptMessages,
+} from './prompts.js';
+import {
+  memoryContextResource,
+  readMemoryContext,
+  invalidateMemoryContextCache,
+} from './resources/index.js';
 
-const SERVER_URL = process.env.OPENMEMORY_SERVER_URL || 'http://127.0.0.1:8080';
-const DEFAULT_NAMESPACE = process.env.OPENMEMORY_NAMESPACE || 'default';
-const MASTER_PASSWORD = process.env.OPENMEMORY_MASTER_PASSWORD;
+const SERVER_URL = process.env.TOTALRECLAW_SERVER_URL || 'http://127.0.0.1:8080';
+const DEFAULT_NAMESPACE = process.env.TOTALRECLAW_NAMESPACE || 'default';
+const MASTER_PASSWORD = process.env.TOTALRECLAW_MASTER_PASSWORD;
 
 interface ClientState {
-  client: OpenMemory | null;
+  client: TotalReclaw | null;
   userId: string | null;
   salt: Buffer | null;
 }
@@ -38,15 +50,15 @@ const clientState: ClientState = {
   salt: null,
 };
 
-async function getClient(): Promise<OpenMemory> {
+async function getClient(): Promise<TotalReclaw> {
   if (clientState.client && clientState.client.isReady()) {
     return clientState.client;
   }
 
-  const client = new OpenMemory({ serverUrl: SERVER_URL });
+  const client = new TotalReclaw({ serverUrl: SERVER_URL });
   await client.init();
 
-  const credentialsPath = process.env.OPENMEMORY_CREDENTIALS_PATH || '/workspace/.openmemory/credentials.json';
+  const credentialsPath = process.env.TOTALRECLAW_CREDENTIALS_PATH || '/workspace/.totalreclaw/credentials.json';
 
   if (await credentialsExist(credentialsPath)) {
     const credentials = await loadCredentials(credentialsPath);
@@ -103,15 +115,30 @@ async function saveCredentials(path: string, credentials: { userId: string; salt
   await fs.writeFile(path, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+// ── Layer 1: Server with instructions ────────────────────────────────────────
+
 const server = new Server(
-  { name: 'openmemory', version: '1.0.0' },
+  { name: 'totalreclaw', version: '1.0.0' },
   {
     capabilities: {
       tools: {},
       prompts: {},
+      resources: { subscribe: true, listChanged: true },
     },
+    instructions: SERVER_INSTRUCTIONS,
   }
 );
+
+// ── Wire up cache invalidation ───────────────────────────────────────────────
+// When facts are stored, invalidate the memory context resource cache
+
+setOnRememberCallback(() => {
+  invalidateMemoryContextCache();
+  // Notify subscribed clients that the resource has been updated
+  server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch(() => {});
+});
+
+// ── Layer 2 + 3: Tool handlers ───────────────────────────────────────────────
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
@@ -130,19 +157,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const client = await getClient();
 
     switch (name) {
-      case 'openmemory_remember':
-        return await handleRemember(client, args, DEFAULT_NAMESPACE);
+      case 'totalreclaw_remember': {
+        const result = await handleRemember(client, args, DEFAULT_NAMESPACE);
+        return result;
+      }
 
-      case 'openmemory_recall':
+      case 'totalreclaw_recall':
         return await handleRecall(client, args, DEFAULT_NAMESPACE);
 
-      case 'openmemory_forget':
-        return await handleForget(client, args, DEFAULT_NAMESPACE);
+      case 'totalreclaw_forget': {
+        const result = await handleForget(client, args, DEFAULT_NAMESPACE);
+        // Invalidate cache on forget too
+        invalidateMemoryContextCache();
+        server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch(() => {});
+        return result;
+      }
 
-      case 'openmemory_export':
+      case 'totalreclaw_export':
         return await handleExport(client, args, DEFAULT_NAMESPACE);
 
-      case 'openmemory_import':
+      case 'totalreclaw_import':
         return await handleImport(client, args, DEFAULT_NAMESPACE);
 
       default:
@@ -167,29 +201,59 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
+// ── Layer 4: Resources ───────────────────────────────────────────────────────
+
+server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+  resources: [memoryContextResource],
+}));
+
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+  const { uri } = request.params;
+
+  if (uri === memoryContextResource.uri) {
+    const client = await getClient();
+    const content = await readMemoryContext(client, DEFAULT_NAMESPACE);
+
+    return {
+      contents: [
+        {
+          uri: memoryContextResource.uri,
+          mimeType: 'text/markdown',
+          text: content,
+        },
+      ],
+    };
+  }
+
+  throw new Error(`Unknown resource: ${uri}`);
+});
+
+// ── Layer 5: Prompts ─────────────────────────────────────────────────────────
+
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
-  prompts: [{
-    name: 'openmemory_instructions',
-    description: 'Instructions for using OpenMemory tools',
-  }],
+  prompts: [
+    // Legacy instructions prompt (backward compat)
+    {
+      name: 'totalreclaw_instructions',
+      description: 'Instructions for using TotalReclaw tools',
+    },
+    // New auto-memory prompt fallbacks
+    ...PROMPT_DEFINITIONS,
+  ],
 }));
 
 server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-  if (request.params.name === 'openmemory_instructions') {
-    return {
-      messages: [{
-        role: 'assistant',
-        content: { type: 'text', text: SYSTEM_PROMPT_FRAGMENT },
-      }],
-    };
-  }
-  throw new Error(`Unknown prompt: ${request.params.name}`);
+  const { name, arguments: args } = request.params;
+  const messages = getPromptMessages(name, args as Record<string, string> | undefined);
+  return { messages };
 });
+
+// ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('OpenMemory MCP server started');
+  console.error('TotalReclaw MCP server started');
 }
 
 main().catch((error) => {

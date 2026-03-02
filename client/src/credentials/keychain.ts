@@ -28,9 +28,9 @@ let keytarInstance: KeytarApi | null = null;
 let keytarResolved = false;
 
 /**
- * The service name used for all OpenMemory keychain entries.
+ * The service name used for all TotalReclaw keychain entries.
  */
-const SERVICE_NAME = 'openmemory';
+const SERVICE_NAME = 'totalreclaw';
 
 /**
  * Lazy-load keytar. Returns null if the native module is unavailable.

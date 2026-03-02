@@ -1,11 +1,11 @@
-# @openmemory/mcp-server
+# @totalreclaw/mcp-server
 
-MCP (Model Context Protocol) server for OpenMemory - zero-knowledge encrypted memory.
+MCP (Model Context Protocol) server for TotalReclaw - zero-knowledge encrypted memory.
 
 ## Installation
 
 ```bash
-npm install @openmemory/mcp-server
+npm install @totalreclaw/mcp-server
 ```
 
 ## Usage
@@ -17,12 +17,12 @@ Add to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "openmemory": {
+    "totalreclaw": {
       "command": "npx",
-      "args": ["-y", "@openmemory/mcp-server"],
+      "args": ["-y", "@totalreclaw/mcp-server"],
       "env": {
-        "OPENMEMORY_SERVER_URL": "http://localhost:8080",
-        "OPENMEMORY_MASTER_PASSWORD": "your-secure-password"
+        "TOTALRECLAW_SERVER_URL": "http://localhost:8080",
+        "TOTALRECLAW_MASTER_PASSWORD": "your-secure-password"
       }
     }
   }
@@ -31,20 +31,20 @@ Add to your `claude_desktop_config.json`:
 
 ### With NanoClaw
 
-See the `@openmemory/skill-nanoclaw` package for NanoClaw integration.
+See the `@totalreclaw/skill-nanoclaw` package for NanoClaw integration.
 
 ### Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `OPENMEMORY_SERVER_URL` | OpenMemory server URL | `http://127.0.0.1:8080` |
-| `OPENMEMORY_MASTER_PASSWORD` | Master password for encryption | Required |
-| `OPENMEMORY_NAMESPACE` | Default namespace | `default` |
-| `OPENMEMORY_CREDENTIALS_PATH` | Path to store credentials | `/workspace/.openmemory/credentials.json` |
+| `TOTALRECLAW_SERVER_URL` | TotalReclaw server URL | `http://127.0.0.1:8080` |
+| `TOTALRECLAW_MASTER_PASSWORD` | Master password for encryption | Required |
+| `TOTALRECLAW_NAMESPACE` | Default namespace | `default` |
+| `TOTALRECLAW_CREDENTIALS_PATH` | Path to store credentials | `/workspace/.totalreclaw/credentials.json` |
 
 ## Available Tools
 
-### openmemory_remember
+### totalreclaw_remember
 
 Store a fact in encrypted memory.
 
@@ -56,7 +56,7 @@ Store a fact in encrypted memory.
 }
 ```
 
-### openmemory_recall
+### totalreclaw_recall
 
 Search memories semantically.
 
@@ -68,7 +68,7 @@ Search memories semantically.
 }
 ```
 
-### openmemory_forget
+### totalreclaw_forget
 
 Delete a memory.
 
@@ -78,7 +78,7 @@ Delete a memory.
 }
 ```
 
-### openmemory_export
+### totalreclaw_export
 
 Export all memories for portability.
 
@@ -88,7 +88,7 @@ Export all memories for portability.
 }
 ```
 
-### openmemory_import
+### totalreclaw_import
 
 Import memories from backup.
 

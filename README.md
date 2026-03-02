@@ -1,4 +1,4 @@
-# OpenMemory
+# TotalReclaw
 
 **Zero-knowledge encrypted memory vault for AI agents** — the "password manager for AI memory."
 
@@ -88,14 +88,14 @@ openclaw skill install .
 ## Repository Structure
 
 ```
-openmemory/
+totalreclaw/
 ├── client/          # TypeScript client library (E2EE, LSH, search)
 ├── server/          # Python/FastAPI server (PostgreSQL, protobuf API)
 ├── skill/           # OpenClaw skill integration (MemOS-style hooks)
 ├── mcp/             # Model Context Protocol server
-├── ombh/            # OpenMemory Benchmark Harness
+├── ombh/            # TotalReclaw Benchmark Harness
 ├── docs/            # Documentation, PRD, and all specs
-│   ├── specs/openmemory/  # Core E2EE product specs
+│   ├── specs/totalreclaw/  # Core E2EE product specs
 │   ├── specs/subgraph/    # Decentralized storage specs
 │   ├── specs/tee/         # TEE product specs
 │   └── specs/archive/     # Superseded specs
@@ -129,8 +129,8 @@ LSH parameters validated on combined WhatsApp + Slack dataset (8,727 embeddings)
 
 | Repo | Description |
 |------|-------------|
-| [openmemory-poc](https://github.com/p-diogo/openmemory-poc) | Code (client, server, skill) |
-| [openmemory-specs](https://github.com/p-diogo/openmemory-specs) | Technical specifications & methodology |
+| [totalreclaw-poc](https://github.com/p-diogo/openmemory-poc) | Code (client, server, skill) |
+| [totalreclaw-specs](https://github.com/p-diogo/openmemory-specs) | Technical specifications & methodology |
 
 ## Documentation
 
@@ -145,13 +145,13 @@ LSH parameters validated on combined WhatsApp + Slack dataset (8,727 embeddings)
 
 ### Technical Specs
 
-- **[architecture.md](./docs/specs/openmemory/architecture.md)** — E2EE with LSH + Blind Buckets (zero-knowledge search)
-- **[server.md](./docs/specs/openmemory/server.md)** — Server PoC v0.3.1b (Auth + Dedup)
-- **[skill-openclaw.md](./docs/specs/openmemory/skill-openclaw.md)** — MemOS-style lifecycle hooks
-- **[benchmark.md](./docs/specs/openmemory/benchmark.md)** — Benchmark Harness (OMBH)
-- **[conflict-resolution.md](./docs/specs/openmemory/conflict-resolution.md)** — Multi-Agent Conflict Resolution v0.3.2
-- **[mcp-server.md](./docs/specs/openmemory/mcp-server.md)** — Generic MCP Server
-- **[skill-nanoclaw.md](./docs/specs/openmemory/skill-nanoclaw.md)** — NanoClaw Skill
+- **[architecture.md](./docs/specs/totalreclaw/architecture.md)** — E2EE with LSH + Blind Buckets (zero-knowledge search)
+- **[server.md](./docs/specs/totalreclaw/server.md)** — Server PoC v0.3.1b (Auth + Dedup)
+- **[skill-openclaw.md](./docs/specs/totalreclaw/skill-openclaw.md)** — MemOS-style lifecycle hooks
+- **[benchmark.md](./docs/specs/totalreclaw/benchmark.md)** — Benchmark Harness (OMBH)
+- **[conflict-resolution.md](./docs/specs/totalreclaw/conflict-resolution.md)** — Multi-Agent Conflict Resolution v0.3.2
+- **[mcp-server.md](./docs/specs/totalreclaw/mcp-server.md)** — Generic MCP Server
+- **[skill-nanoclaw.md](./docs/specs/totalreclaw/skill-nanoclaw.md)** — NanoClaw Skill
 
 ## Testing
 

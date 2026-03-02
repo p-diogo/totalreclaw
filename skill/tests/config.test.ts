@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - Configuration Tests
+ * TotalReclaw Skill - Configuration Tests
  *
  * Tests for configuration loading, merging, and validation.
  */
@@ -11,7 +11,7 @@ import {
   createConfig,
   type ConfigValidationResult,
 } from '../src/config';
-import type { OpenMemorySkillConfig } from '../src/types';
+import type { TotalReclawSkillConfig } from '../src/types';
 import { DEFAULT_SKILL_CONFIG } from '../src/types';
 
 // ============================================================================
@@ -70,7 +70,7 @@ describe('loadConfig', () => {
     });
 
     it('should override all values', () => {
-      const overrides: Partial<OpenMemorySkillConfig> = {
+      const overrides: Partial<TotalReclawSkillConfig> = {
         serverUrl: 'https://secure.example.com',
         autoExtractEveryTurns: 3,
         minImportanceForAutoStore: 8,
@@ -101,7 +101,7 @@ describe('loadConfig', () => {
       const openclawConfig = {
         agents: {
           defaults: {
-            openmemory: {
+            totalreclaw: {
               serverUrl: 'http://openclaw-memory:8080',
               maxMemoriesInContext: 12,
             },
@@ -130,107 +130,107 @@ describe('loadConfig', () => {
   });
 
   describe('environment variable loading', () => {
-    it('should load from OPENMEMORY_SERVER_URL', () => {
-      process.env.OPENMEMORY_SERVER_URL = 'http://env-server:8888';
+    it('should load from TOTALRECLAW_SERVER_URL', () => {
+      process.env.TOTALRECLAW_SERVER_URL = 'http://env-server:8888';
 
       const config = loadConfig();
 
       expect(config.serverUrl).toBe('http://env-server:8888');
 
-      delete process.env.OPENMEMORY_SERVER_URL;
+      delete process.env.TOTALRECLAW_SERVER_URL;
     });
 
-    it('should load from OPENMEMORY_AUTO_EXTRACT_EVERY_TURNS', () => {
-      process.env.OPENMEMORY_AUTO_EXTRACT_EVERY_TURNS = '7';
+    it('should load from TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS', () => {
+      process.env.TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS = '7';
 
       const config = loadConfig();
 
       expect(config.autoExtractEveryTurns).toBe(7);
 
-      delete process.env.OPENMEMORY_AUTO_EXTRACT_EVERY_TURNS;
+      delete process.env.TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS;
     });
 
-    it('should load from OPENMEMORY_MIN_IMPORTANCE', () => {
-      process.env.OPENMEMORY_MIN_IMPORTANCE = '8';
+    it('should load from TOTALRECLAW_MIN_IMPORTANCE', () => {
+      process.env.TOTALRECLAW_MIN_IMPORTANCE = '8';
 
       const config = loadConfig();
 
       expect(config.minImportanceForAutoStore).toBe(8);
 
-      delete process.env.OPENMEMORY_MIN_IMPORTANCE;
+      delete process.env.TOTALRECLAW_MIN_IMPORTANCE;
     });
 
-    it('should load from OPENMEMORY_MAX_MEMORIES', () => {
-      process.env.OPENMEMORY_MAX_MEMORIES = '15';
+    it('should load from TOTALRECLAW_MAX_MEMORIES', () => {
+      process.env.TOTALRECLAW_MAX_MEMORIES = '15';
 
       const config = loadConfig();
 
       expect(config.maxMemoriesInContext).toBe(15);
 
-      delete process.env.OPENMEMORY_MAX_MEMORIES;
+      delete process.env.TOTALRECLAW_MAX_MEMORIES;
     });
 
-    it('should load from OPENMEMORY_FORGET_THRESHOLD', () => {
-      process.env.OPENMEMORY_FORGET_THRESHOLD = '0.5';
+    it('should load from TOTALRECLAW_FORGET_THRESHOLD', () => {
+      process.env.TOTALRECLAW_FORGET_THRESHOLD = '0.5';
 
       const config = loadConfig();
 
       expect(config.forgetThreshold).toBe(0.5);
 
-      delete process.env.OPENMEMORY_FORGET_THRESHOLD;
+      delete process.env.TOTALRECLAW_FORGET_THRESHOLD;
     });
 
-    it('should load from OPENMEMORY_MASTER_PASSWORD', () => {
-      process.env.OPENMEMORY_MASTER_PASSWORD = 'env-password';
+    it('should load from TOTALRECLAW_MASTER_PASSWORD', () => {
+      process.env.TOTALRECLAW_MASTER_PASSWORD = 'env-password';
 
       const config = loadConfig();
 
       expect(config.masterPassword).toBe('env-password');
 
-      delete process.env.OPENMEMORY_MASTER_PASSWORD;
+      delete process.env.TOTALRECLAW_MASTER_PASSWORD;
     });
 
     it('should handle invalid numeric env values', () => {
-      process.env.OPENMEMORY_AUTO_EXTRACT_EVERY_TURNS = 'not-a-number';
+      process.env.TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS = 'not-a-number';
 
       const config = loadConfig();
 
       // Should fall back to default or skip invalid value
       expect(config.autoExtractEveryTurns).toBeDefined();
 
-      delete process.env.OPENMEMORY_AUTO_EXTRACT_EVERY_TURNS;
+      delete process.env.TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS;
     });
 
     it('should handle empty env values', () => {
-      process.env.OPENMEMORY_SERVER_URL = '';
+      process.env.TOTALRECLAW_SERVER_URL = '';
 
       const config = loadConfig();
 
       // Empty string should be skipped
       expect(config.serverUrl).toBe('http://127.0.0.1:8080');
 
-      delete process.env.OPENMEMORY_SERVER_URL;
+      delete process.env.TOTALRECLAW_SERVER_URL;
     });
   });
 
   describe('priority order', () => {
     it('should prioritize explicit overrides over env vars', () => {
-      process.env.OPENMEMORY_SERVER_URL = 'http://env-server';
+      process.env.TOTALRECLAW_SERVER_URL = 'http://env-server';
       const overrides = { serverUrl: 'http://override-server' };
 
       const config = loadConfig({ overrides });
 
       expect(config.serverUrl).toBe('http://override-server');
 
-      delete process.env.OPENMEMORY_SERVER_URL;
+      delete process.env.TOTALRECLAW_SERVER_URL;
     });
 
     it('should prioritize env vars over OpenClaw config', () => {
-      process.env.OPENMEMORY_SERVER_URL = 'http://env-server';
+      process.env.TOTALRECLAW_SERVER_URL = 'http://env-server';
       const openclawConfig = {
         agents: {
           defaults: {
-            openmemory: {
+            totalreclaw: {
               serverUrl: 'http://openclaw-server',
             },
           },
@@ -241,7 +241,7 @@ describe('loadConfig', () => {
 
       expect(config.serverUrl).toBe('http://env-server');
 
-      delete process.env.OPENMEMORY_SERVER_URL;
+      delete process.env.TOTALRECLAW_SERVER_URL;
     });
   });
 });
@@ -261,7 +261,7 @@ describe('validateConfig', () => {
     });
 
     it('should validate configuration with all valid values', () => {
-      const config: OpenMemorySkillConfig = {
+      const config: TotalReclawSkillConfig = {
         serverUrl: 'https://secure.example.com',
         autoExtractEveryTurns: 5,
         minImportanceForAutoStore: 7,
@@ -469,7 +469,7 @@ describe('assertValidConfig', () => {
   it('should throw for invalid config', () => {
     const config = { ...DEFAULT_SKILL_CONFIG, serverUrl: 'invalid' };
 
-    expect(() => assertValidConfig(config)).toThrow('Invalid OpenMemory configuration');
+    expect(() => assertValidConfig(config)).toThrow('Invalid TotalReclaw configuration');
   });
 
   it('should include all errors in message', () => {
@@ -524,8 +524,8 @@ describe('createConfig', () => {
 // ============================================================================
 
 describe('Type Safety', () => {
-  it('should accept valid OpenMemorySkillConfig', () => {
-    const config: OpenMemorySkillConfig = {
+  it('should accept valid TotalReclawSkillConfig', () => {
+    const config: TotalReclawSkillConfig = {
       serverUrl: 'http://localhost:8080',
       autoExtractEveryTurns: 5,
       minImportanceForAutoStore: 6,
@@ -540,12 +540,12 @@ describe('Type Safety', () => {
 
   it('should handle numeric coercion', () => {
     // Environment variables are always strings
-    process.env.OPENMEMORY_AUTO_EXTRACT_EVERY_TURNS = '5';
+    process.env.TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS = '5';
 
     const config = loadConfig();
 
     expect(typeof config.autoExtractEveryTurns).toBe('number');
 
-    delete process.env.OPENMEMORY_AUTO_EXTRACT_EVERY_TURNS;
+    delete process.env.TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS;
   });
 });

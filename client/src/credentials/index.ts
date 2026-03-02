@@ -1,5 +1,5 @@
 /**
- * OpenMemory Credentials Module
+ * TotalReclaw Credentials Module
  *
  * Provides secure credential storage (OS keychain) and session management
  * (in-memory key caching with automatic expiry).

@@ -1,0 +1,13 @@
+{"role": "user", "content": "I'm burning out running my AI startup. I've been working 80-hour weeks since we launched last year, and my parents just moved in with me in Lisbon."}
+{"role": "assistant", "content": "That sounds incredibly stressful. How old are your parents and what kind of care do they need?"}
+{"role": "user", "content": "Mom's 72 and has early-stage Parkinson's. Dad's 75 and mostly okay but can't drive anymore. I'm trying to manage everything from investor meetings to doctor appointments."}
+{"role": "assistant", "content": "That's a heavy load. Have you considered hiring help or bringing on a co-founder to share the workload?"}
+{"role": "user", "content": "I've thought about it. We're pre-seed so cash is tight. I did hire a part-time developer last month though - my old college friend Sofia who's amazing with 3D printing and robotics."}
+{"role": "assistant", "content": "That's great you have Sofia on board! How's the startup doing otherwise?"}
+{"role": "user", "content": "We just closed a small angel round - about €200,000. Enough to keep us going for 6-8 months. But I'm questioning if this is sustainable long-term."}
+{"role": "assistant", "content": "What would you do if you weren't running this startup?"}
+{"role": "user", "content": "I'd probably go back to my woodworking hobby full-time. I've been making these intricate origami-inspired wooden lamps that people seem to love."}
+{"role": "assistant", "content": "Those sound beautiful! Have you sold any?"}
+{"role": "user", "content": "Just through word of mouth so far. Made about €3,000 last quarter. But it's not enough to support everyone."}
+{"role": "assistant", "content": "What does your partner think about all this?"}
+{"role": "user", "content": "I'm single, actually. Focused on the business and parents. My sister in Porto offered to take them but I couldn't do that to her - she has three kids already."}

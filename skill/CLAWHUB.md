@@ -1,6 +1,6 @@
 # Claw Hub Publishing Checklist
 
-Internal notes for preparing the OpenMemory skill for listing on [clawhub.ai](https://clawhub.ai).
+Internal notes for preparing the TotalReclaw skill for listing on [clawhub.ai](https://clawhub.ai).
 
 ---
 
@@ -12,8 +12,8 @@ Internal notes for preparing the OpenMemory skill for listing on [clawhub.ai](ht
 - [x] `SKILL.md` -- YAML frontmatter with full metadata; tools, hooks, prompts, and LLM instructions documented
 - [x] `README.md` -- Public-facing documentation with quick start, benchmarks, configuration, and architecture
 - [x] Hooks defined: `before_agent_start`, `agent_end`, `pre_compaction`
-- [x] Tools defined: `openmemory_remember`, `openmemory_recall`, `openmemory_forget`, `openmemory_export`
-- [x] Environment variables documented (`OPENMEMORY_SERVER_URL`, `OPENMEMORY_MASTER_PASSWORD`)
+- [x] Tools defined: `totalreclaw_remember`, `totalreclaw_recall`, `totalreclaw_forget`, `totalreclaw_export`
+- [x] Environment variables documented (`TOTALRECLAW_SERVER_URL`, `TOTALRECLAW_MASTER_PASSWORD`)
 - [x] Benchmark comparison table (98.1% recall@8 with 100% privacy)
 - [x] License declared (MIT)
 - [x] Keywords and OS compatibility specified
@@ -32,9 +32,9 @@ Internal notes for preparing the OpenMemory skill for listing on [clawhub.ai](ht
   - Highlight that the server never sees plaintext
   - Keep it under 90 seconds
 - [ ] **Icon/logo** (256x256 PNG, transparent background)
-- [ ] **Server deployment guide** -- users need a running OpenMemory server; link to deployment docs
+- [ ] **Server deployment guide** -- users need a running TotalReclaw server; link to deployment docs
 - [ ] **End-to-end integration tests** -- verify the full clawhub install flow works
-- [ ] **npm package published** -- `@openmemory/skill` must be on npm before listing
+- [ ] **npm package published** -- `@totalreclaw/skill` must be on npm before listing
 
 ---
 
@@ -60,7 +60,7 @@ clawhub validate ./skill
 clawhub install --local ./skill
 
 # Run the skill in a test agent
-clawhub test openmemory
+clawhub test totalreclaw
 ```
 
 ### Step 3: Submit for Review
@@ -88,8 +88,8 @@ If issues are found, you will receive a report with required fixes. Address them
 ### Step 5: Go Live
 
 Once approved:
-- The skill appears on [clawhub.ai/skills/openmemory](https://clawhub.ai/skills/openmemory)
-- Users can install with `clawhub install openmemory`
+- The skill appears on [clawhub.ai/skills/totalreclaw](https://clawhub.ai/skills/totalreclaw)
+- Users can install with `clawhub install totalreclaw`
 - Monitor install metrics and reviews on the Claw Hub dashboard
 
 ---
@@ -99,12 +99,12 @@ Once approved:
 - **Version updates**: Bump version in `skill.json` and `SKILL.md` frontmatter, then `clawhub publish` again
 - **Responding to reviews**: Monitor the Claw Hub dashboard for user feedback
 - **Security patches**: Critical security fixes can be fast-tracked (24-48 hours review)
-- **Deprecation**: Use `clawhub deprecate openmemory@0.1.0` if a version needs to be pulled
+- **Deprecation**: Use `clawhub deprecate totalreclaw@0.1.0` if a version needs to be pulled
 
 ---
 
 ## Notes
 
-- The `OPENMEMORY_MASTER_PASSWORD` env var will likely trigger extra scrutiny during security review. Prepare documentation explaining the zero-knowledge architecture and that the password never leaves the client.
+- The `TOTALRECLAW_MASTER_PASSWORD` env var will likely trigger extra scrutiny during security review. Prepare documentation explaining the zero-knowledge architecture and that the password never leaves the client.
 - Claw Hub listings with benchmark data (like our recall comparison table) tend to rank higher in search results.
 - Consider adding a "Verified E2EE" badge request once the crypto review passes.

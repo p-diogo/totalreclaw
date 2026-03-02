@@ -1,5 +1,5 @@
 """
-Store endpoint for OpenMemory Server.
+Store endpoint for TotalReclaw Server.
 
 Stores encrypted facts with blind indices.
 """
@@ -35,6 +35,8 @@ class FactJSON(BaseModel):
     # v0.3.1b fields
     content_fp: Optional[str] = Field(None, description="HMAC-SHA256 content fingerprint for dedup")
     agent_id: Optional[str] = Field(None, description="Identifier of the creating agent")
+    # PoC v2 fields (LSH + reranking)
+    encrypted_embedding: Optional[str] = Field(None, description="Hex-encoded AES-256-GCM encrypted embedding vector", max_length=2097152)
 
 
 class StoreRequestJSON(BaseModel):
@@ -129,7 +131,7 @@ async def store(
                     duplicate_ids.append(existing_id)
                     continue  # Skip this fact, it's a duplicate
 
-            # Store fact (with new v0.3.1b fields)
+            # Store fact (with new v0.3.1b + PoC v2 fields)
             stored_fact = await db.store_fact(
                 fact_id=fact.id,
                 user_id=user_id,
@@ -138,7 +140,8 @@ async def store(
                 decay_score=fact.decay_score,
                 source=fact.source,
                 content_fp=fact.content_fp,
-                agent_id=fact.agent_id
+                agent_id=fact.agent_id,
+                encrypted_embedding=fact.encrypted_embedding
             )
             stored_ids.append(fact.id)
             max_version = max(max_version, stored_fact.version)

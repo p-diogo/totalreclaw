@@ -22,7 +22,7 @@
 
 | Component | Mocked | Real Server Required |
 |-----------|--------|---------------------|
-| OpenMemory Client | Yes (in-memory Map) | No |
+| TotalReclaw Client | Yes (in-memory Map) | No |
 | LLM Client | Yes (predefined responses) | No |
 | Vector Store | Yes (random embeddings) | No |
 | Reranker | Yes (sorted by input order) | No |
@@ -43,7 +43,7 @@
 ## Known Gaps
 
 ### 1. Integration Tests (HIGH Priority)
-**Status:** All tests use mocks, none require running OpenMemory server
+**Status:** All tests use mocks, none require running TotalReclaw server
 
 **What's Missing:**
 - Tests against actual PostgreSQL database
@@ -54,7 +54,7 @@
 **Fix Plan:**
 1. Create `tests/integration/real-server/` directory
 2. Add Docker Compose for test infrastructure
-3. Implement `@openmemory/test-helpers` package
+3. Implement `@totalreclaw/test-helpers` package
 4. Add CI job with real server
 
 **Effort:** 16-24 hours
@@ -110,7 +110,7 @@
 
 **Fix Plan:**
 1. Integrate with system keychain (node-keytar)
-2. Add `openmemory auth rotate` command
+2. Add `totalreclaw auth rotate` command
 3. Implement session management
 4. Add secure export/import for migration
 
@@ -122,13 +122,13 @@
 **Status:** No tool to migrate facts between namespaces
 
 **What's Missing:**
-- `openmemory namespace migrate` command
+- `totalreclaw namespace migrate` command
 - Bulk fact re-tagging
 - Preview before migration
 - Undo capability
 
 **Fix Plan:**
-1. Add to MCP tools: `openmemory_migrate_namespace`
+1. Add to MCP tools: `totalreclaw_migrate_namespace`
 2. Implement batch update with transaction
 3. Add `--dry-run` option
 4. Track migration in metadata

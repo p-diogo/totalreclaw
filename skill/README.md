@@ -1,35 +1,35 @@
-# OpenMemory Skill for OpenClaw
+# TotalReclaw Skill for OpenClaw
 
 > **Zero-knowledge encrypted memory for AI agents -- the "password manager for AI memory."**
 >
 > Your AI remembers everything. Your server sees nothing.
 
-OpenMemory gives any [OpenClaw](https://github.com/openclaw/openclaw) agent persistent, encrypted long-term memory. Preferences, decisions, and context carry across every conversation -- fully end-to-end encrypted so the server **never** sees plaintext.
+TotalReclaw gives any [OpenClaw](https://github.com/openclaw/openclaw) agent persistent, encrypted long-term memory. Preferences, decisions, and context carry across every conversation -- fully end-to-end encrypted so the server **never** sees plaintext.
 
 ## Claw Hub Installation
 
 ```bash
-clawhub install openmemory
+clawhub install totalreclaw
 ```
 
 Then set your environment variables:
 
 ```bash
-export OPENMEMORY_SERVER_URL="http://your-openmemory-server:8080"
-export OPENMEMORY_MASTER_PASSWORD="your-secure-password"
+export TOTALRECLAW_SERVER_URL="http://your-totalreclaw-server:8080"
+export TOTALRECLAW_MASTER_PASSWORD="your-secure-password"
 ```
 
-That's it. OpenMemory hooks into your agent automatically.
+That's it. TotalReclaw hooks into your agent automatically.
 
 ---
 
-## Why OpenMemory?
+## Why TotalReclaw?
 
-Most AI memory solutions force a tradeoff: **good recall OR privacy**. OpenMemory eliminates that tradeoff.
+Most AI memory solutions force a tradeoff: **good recall OR privacy**. TotalReclaw eliminates that tradeoff.
 
 | | Recall@8 | Privacy | Encryption | Portable Export |
 |---|:---:|:---:|:---:|:---:|
-| **OpenMemory (E2EE)** | **98.1%** | **100%** | AES-256-GCM | Yes |
+| **TotalReclaw (E2EE)** | **98.1%** | **100%** | AES-256-GCM | Yes |
 | Plaintext vector search | 99.2% | 0% | None | Varies |
 | Mem0 (hosted) | ~95% | 0% | At-rest only | No |
 | Native OpenClaw QMD | ~90% | 50% | Partial | No |
@@ -61,13 +61,13 @@ Most AI memory solutions force a tradeoff: **good recall OR privacy**. OpenMemor
 ### 1. Install
 
 ```bash
-clawhub install openmemory
+clawhub install totalreclaw
 ```
 
 Or manually:
 
 ```bash
-npm install @openmemory/skill
+npm install @totalreclaw/skill
 ```
 
 ### 2. Configure
@@ -76,21 +76,21 @@ Set the required environment variables:
 
 ```bash
 # Required
-export OPENMEMORY_SERVER_URL="http://your-openmemory-server:8080"
-export OPENMEMORY_MASTER_PASSWORD="your-secure-password"
+export TOTALRECLAW_SERVER_URL="http://your-totalreclaw-server:8080"
+export TOTALRECLAW_MASTER_PASSWORD="your-secure-password"
 
 # Optional
-export OPENMEMORY_AUTO_EXTRACT_EVERY_TURNS=5
-export OPENMEMORY_MIN_IMPORTANCE=6
-export OPENMEMORY_MAX_MEMORIES=8
-export OPENMEMORY_FORGET_THRESHOLD=0.3
-export OPENMEMORY_RERANKER_MODEL="BAAI/bge-reranker-base"
-export OPENMEMORY_USER_ID="user-123"
+export TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS=5
+export TOTALRECLAW_MIN_IMPORTANCE=6
+export TOTALRECLAW_MAX_MEMORIES=8
+export TOTALRECLAW_FORGET_THRESHOLD=0.3
+export TOTALRECLAW_RERANKER_MODEL="BAAI/bge-reranker-base"
+export TOTALRECLAW_USER_ID="user-123"
 ```
 
 ### 3. Use
 
-Once installed, OpenMemory hooks into your agent lifecycle automatically. No code changes needed.
+Once installed, TotalReclaw hooks into your agent lifecycle automatically. No code changes needed.
 
 Your agent will:
 - **Load relevant memories** before processing each message (`before_agent_start`)
@@ -110,9 +110,9 @@ You can also use the tools directly in conversation:
 
 ## Tools
 
-OpenMemory provides four tools:
+TotalReclaw provides four tools:
 
-### openmemory_remember
+### totalreclaw_remember
 
 Explicitly store a memory.
 
@@ -126,7 +126,7 @@ const result = await skill.remember({
 console.log(result); // "Memory stored successfully with ID: fact-123"
 ```
 
-### openmemory_recall
+### totalreclaw_recall
 
 Search for relevant memories.
 
@@ -144,7 +144,7 @@ const memories = await skill.recall({
 // - decayAdjustedScore: Score adjusted for decay
 ```
 
-### openmemory_forget
+### totalreclaw_forget
 
 Delete a specific memory.
 
@@ -154,7 +154,7 @@ await skill.forget({
 });
 ```
 
-### openmemory_export
+### totalreclaw_export
 
 Export all memories for portability.
 
@@ -170,7 +170,7 @@ console.log(jsonExport);
 
 ## Lifecycle Hooks
 
-OpenMemory integrates with OpenClaw through three lifecycle hooks:
+TotalReclaw integrates with OpenClaw through three lifecycle hooks:
 
 | Hook | Priority | Description |
 |------|----------|-------------|
@@ -223,22 +223,22 @@ const result = await skill.onPreCompaction(context);
 
 | Variable | Required | Default | Description |
 |----------|:---:|---------|-------------|
-| `OPENMEMORY_SERVER_URL` | **Yes** | `http://127.0.0.1:8080` | OpenMemory server URL |
-| `OPENMEMORY_MASTER_PASSWORD` | **Yes** | -- | Encryption master password (never sent to server) |
-| `OPENMEMORY_AUTO_EXTRACT_EVERY_TURNS` | No | `5` | Turns between automatic extractions |
-| `OPENMEMORY_MIN_IMPORTANCE` | No | `6` | Minimum importance (1-10) to auto-store |
-| `OPENMEMORY_MAX_MEMORIES` | No | `8` | Maximum memories to inject into context |
-| `OPENMEMORY_FORGET_THRESHOLD` | No | `0.3` | Decay score threshold for eviction |
-| `OPENMEMORY_RERANKER_MODEL` | No | `BAAI/bge-reranker-base` | ONNX reranker model path |
-| `OPENMEMORY_USER_ID` | No | -- | Existing user ID (skips registration) |
+| `TOTALRECLAW_SERVER_URL` | **Yes** | `http://127.0.0.1:8080` | TotalReclaw server URL |
+| `TOTALRECLAW_MASTER_PASSWORD` | **Yes** | -- | Encryption master password (never sent to server) |
+| `TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS` | No | `5` | Turns between automatic extractions |
+| `TOTALRECLAW_MIN_IMPORTANCE` | No | `6` | Minimum importance (1-10) to auto-store |
+| `TOTALRECLAW_MAX_MEMORIES` | No | `8` | Maximum memories to inject into context |
+| `TOTALRECLAW_FORGET_THRESHOLD` | No | `0.3` | Decay score threshold for eviction |
+| `TOTALRECLAW_RERANKER_MODEL` | No | `BAAI/bge-reranker-base` | ONNX reranker model path |
+| `TOTALRECLAW_USER_ID` | No | -- | Existing user ID (skips registration) |
 
 ### Configuration Sources (Priority Order)
 
 Configuration is loaded from multiple sources. Higher priority overrides lower:
 
 1. **Default values** -- Built-in defaults
-2. **OpenClaw config** -- `agents.defaults.openmemory.*`
-3. **Environment variables** -- `OPENMEMORY_*`
+2. **OpenClaw config** -- `agents.defaults.totalreclaw.*`
+3. **Environment variables** -- `TOTALRECLAW_*`
 4. **Explicit overrides** -- Passed to constructor
 
 ### OpenClaw Configuration
@@ -249,7 +249,7 @@ Add to your OpenClaw configuration file:
 {
   "agents": {
     "defaults": {
-      "openmemory": {
+      "totalreclaw": {
         "serverUrl": "http://your-server:8080",
         "autoExtractEveryTurns": 5,
         "minImportanceForAutoStore": 6,
@@ -265,7 +265,7 @@ Add to your OpenClaw configuration file:
 
 ## Memory Types
 
-OpenMemory categorizes memories into five types:
+TotalReclaw categorizes memories into five types:
 
 | Type | Description | Example |
 |------|-------------|---------|
@@ -290,7 +290,7 @@ Memories are scored on a 1-10 scale:
 
 ## Encryption Details
 
-OpenMemory uses zero-knowledge end-to-end encryption:
+TotalReclaw uses zero-knowledge end-to-end encryption:
 
 1. **Key Derivation**: Master password is processed through Argon2id to derive encryption keys. The password is never sent to the server.
 2. **Encryption**: All memories are encrypted client-side using AES-256-GCM before transmission.
@@ -317,7 +317,7 @@ The server is cryptographically unable to read your memories, embeddings, or sea
 
 ```
 +-------------------+     +-------------------+     +-------------------+
-|   OpenClaw Agent  |     |  OpenMemory Skill |     | OpenMemory Server |
+|   OpenClaw Agent  |     |  TotalReclaw Skill |     | TotalReclaw Server |
 +-------------------+     +-------------------+     +-------------------+
         |                         |                         |
         | onBeforeAgentStart()    |                         |
@@ -352,7 +352,7 @@ The fact ID may be incorrect, or the memory may have been evicted due to decay.
 
 ### Slow searches
 
-- Ensure the OpenMemory server is properly indexed
+- Ensure the TotalReclaw server is properly indexed
 - Check network latency to the server
 - Consider increasing `maxMemoriesInContext` for better recall
 
@@ -364,7 +364,7 @@ The fact ID may be incorrect, or the memory may have been evicted due to decay.
 
 ```bash
 git clone https://github.com/p-diogo/openmemory-poc
-cd openmemory-poc/skill
+cd totalreclaw-poc/skill
 npm install
 ```
 
@@ -408,7 +408,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Links
 
-- [OpenMemory Documentation](https://docs.openmemory.ai)
-- [Claw Hub Listing](https://clawhub.ai/skills/openmemory)
+- [TotalReclaw Documentation](https://docs.totalreclaw.ai)
+- [Claw Hub Listing](https://clawhub.ai/skills/totalreclaw)
 - [OpenClaw](https://github.com/openclaw/openclaw)
 - [Issue Tracker](https://github.com/p-diogo/openmemory-poc/issues)

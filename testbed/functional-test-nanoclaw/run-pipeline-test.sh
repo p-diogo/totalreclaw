@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ============================================================================
-# OpenMemory Direct Pipeline Test Runner
+# TotalReclaw Direct Pipeline Test Runner
 #
 # Tests the full encrypted storage/recall pipeline WITHOUT needing a Claude
 # agent or Anthropic API key. Validates T195, T196, T197.
 #
 # This script:
-#   1. Starts postgres + openmemory-server via docker-compose
+#   1. Starts postgres + totalreclaw-server via docker-compose
 #   2. Waits for health checks
 #   3. Installs npm deps (if needed)
 #   4. Runs test-pipeline.ts via npx tsx from the HOST
@@ -22,8 +22,8 @@
 #   ./run-pipeline-test.sh --no-cleanup  # Keep containers running after tests
 #
 # Environment variables (all optional):
-#   OPENMEMORY_MASTER_PASSWORD  — default "pipeline-test-password"
-#   OPENMEMORY_SERVER_URL       — default http://localhost:8090
+#   TOTALRECLAW_MASTER_PASSWORD  — default "pipeline-test-password"
+#   TOTALRECLAW_SERVER_URL       — default http://localhost:8090
 # ============================================================================
 
 set -euo pipefail
@@ -53,8 +53,8 @@ for arg in "$@"; do
       echo "  --no-cleanup   Keep Docker containers running after tests"
       echo ""
       echo "Environment variables:"
-      echo "  OPENMEMORY_MASTER_PASSWORD  Test password (default: pipeline-test-password)"
-      echo "  OPENMEMORY_SERVER_URL       Server URL (default: http://localhost:8090)"
+      echo "  TOTALRECLAW_MASTER_PASSWORD  Test password (default: pipeline-test-password)"
+      echo "  TOTALRECLAW_SERVER_URL       Server URL (default: http://localhost:8090)"
       exit 0
       ;;
   esac
@@ -84,9 +84,9 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
 fi
 
 # Set defaults
-export OPENMEMORY_MASTER_PASSWORD="${OPENMEMORY_MASTER_PASSWORD:-pipeline-test-password}"
-export OPENMEMORY_SERVER_URL="${OPENMEMORY_SERVER_URL:-http://localhost:8090}"
-export OPENMEMORY_CREDENTIALS_PATH="$CREDENTIALS_FILE"
+export TOTALRECLAW_MASTER_PASSWORD="${TOTALRECLAW_MASTER_PASSWORD:-pipeline-test-password}"
+export TOTALRECLAW_SERVER_URL="${TOTALRECLAW_SERVER_URL:-http://localhost:8090}"
+export TOTALRECLAW_CREDENTIALS_PATH="$CREDENTIALS_FILE"
 
 cleanup() {
   if [ "$CLEANUP" = true ]; then
@@ -169,16 +169,16 @@ else
 fi
 
 # ============================================================================
-# Phase 3: Start infrastructure (postgres + openmemory-server)
+# Phase 3: Start infrastructure (postgres + totalreclaw-server)
 # ============================================================================
 
-log "Phase 3: Starting postgres + openmemory-server..."
+log "Phase 3: Starting postgres + totalreclaw-server..."
 
 # Remove stale test credentials from previous runs
 rm -f "$CREDENTIALS_FILE"
 
 # Build and start services
-docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" up -d --build postgres openmemory-server 2>&1 | tail -5
+docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" up -d --build postgres totalreclaw-server 2>&1 | tail -5
 
 # Wait for health checks
 log "  Waiting for services to be healthy..."
@@ -205,7 +205,7 @@ if [ $WAITED -ge $MAX_WAIT ]; then
   exit 1
 fi
 
-log "  Server healthy at ${OPENMEMORY_SERVER_URL}"
+log "  Server healthy at ${TOTALRECLAW_SERVER_URL}"
 
 # ============================================================================
 # Phase 4: Run the pipeline test

@@ -1,7 +1,7 @@
 {
-  "name": "@openmemory/client",
+  "name": "@totalreclaw/client",
   "version": "0.3.0",
-  "description": "TypeScript client library for OpenMemory - zero-knowledge memory operations",
+  "description": "TypeScript client library for TotalReclaw - zero-knowledge memory operations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -13,16 +13,17 @@
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [
-    "openmemory",
+    "totalreclaw",
     "zero-knowledge",
     "encryption",
     "lsh",
     "vector-search",
     "memory"
   ],
-  "author": "OpenMemory Team",
+  "author": "TotalReclaw Team",
   "license": "MIT",
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
     "@noble/hashes": "^2.0.1",
     "argon2": "^0.31.0",
     "bip39": "^3.1.0",
@@ -54,7 +55,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/openmemory/openmemory.git",
+    "url": "https://github.com/p-diogo/openmemory-poc.git",
     "directory": "client"
   }
 }

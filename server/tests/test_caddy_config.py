@@ -28,8 +28,8 @@ class TestCaddyConfiguration:
             content = f.read()
 
         assert "reverse_proxy" in content, "Caddyfile must have reverse_proxy directive"
-        assert "openmemory-server" in content or "8080" in content, \
-            "Caddyfile must proxy to openmemory-server or port 8080"
+        assert "totalreclaw-server" in content or "8080" in content, \
+            "Caddyfile must proxy to totalreclaw-server or port 8080"
 
     def test_caddyfile_has_security_headers(self):
         """Caddyfile must set security headers."""

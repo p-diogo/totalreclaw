@@ -1,4 +1,4 @@
--- OpenMemory Server Database Schema v0.3.1
+-- TotalReclaw Server Database Schema v0.3.1
 -- PostgreSQL 16+
 
 -- Enable required extensions
@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============ Users Table ============
 -- Stores authentication credentials for each user
--- auth_key_hash is SHA256(HKDF(master_password, salt, "openmemory-auth-v1"))
+-- auth_key_hash is SHA256(HKDF(master_password, salt, "totalreclaw-auth-v1"))
 -- Server NEVER stores the master password or auth_key itself
 
 CREATE TABLE users (

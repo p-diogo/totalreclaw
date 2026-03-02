@@ -2,8 +2,8 @@
  * @jest-environment node
  */
 
-jest.mock('@openmemory/client', () => ({
-  OpenMemory: jest.fn(),
+jest.mock('@totalreclaw/client', () => ({
+  TotalReclaw: jest.fn(),
 }));
 
 const {
@@ -16,34 +16,38 @@ const {
 
 describe('MCP Tool Definitions', () => {
   it('should define remember tool with correct schema', () => {
-    expect(rememberToolDefinition.name).toBe('openmemory_remember');
-    expect(rememberToolDefinition.inputSchema.required).toContain('fact');
+    expect(rememberToolDefinition.name).toBe('totalreclaw_remember');
+    // Batch mode: neither fact nor facts is strictly required (one or the other)
     expect(rememberToolDefinition.inputSchema.properties.fact.type).toBe('string');
+    expect(rememberToolDefinition.inputSchema.properties.facts.type).toBe('array');
     expect(rememberToolDefinition.inputSchema.properties.importance.minimum).toBe(1);
     expect(rememberToolDefinition.inputSchema.properties.importance.maximum).toBe(10);
+    // Tool annotations
+    expect(rememberToolDefinition.annotations.idempotentHint).toBe(true);
+    expect(rememberToolDefinition.annotations.readOnlyHint).toBe(false);
   });
 
   it('should define recall tool with correct schema', () => {
-    expect(recallToolDefinition.name).toBe('openmemory_recall');
+    expect(recallToolDefinition.name).toBe('totalreclaw_recall');
     expect(recallToolDefinition.inputSchema.required).toContain('query');
     expect(recallToolDefinition.inputSchema.properties.query.type).toBe('string');
     expect(recallToolDefinition.inputSchema.properties.k.default).toBe(8);
   });
 
   it('should define forget tool with correct schema', () => {
-    expect(forgetToolDefinition.name).toBe('openmemory_forget');
+    expect(forgetToolDefinition.name).toBe('totalreclaw_forget');
     expect(forgetToolDefinition.inputSchema.properties.fact_id).toBeDefined();
     expect(forgetToolDefinition.inputSchema.properties.query).toBeDefined();
   });
 
   it('should define export tool with correct schema', () => {
-    expect(exportToolDefinition.name).toBe('openmemory_export');
+    expect(exportToolDefinition.name).toBe('totalreclaw_export');
     expect(exportToolDefinition.inputSchema.properties.format.enum).toContain('markdown');
     expect(exportToolDefinition.inputSchema.properties.format.enum).toContain('json');
   });
 
   it('should define import tool with correct schema', () => {
-    expect(importToolDefinition.name).toBe('openmemory_import');
+    expect(importToolDefinition.name).toBe('totalreclaw_import');
     expect(importToolDefinition.inputSchema.required).toContain('content');
     expect(importToolDefinition.inputSchema.properties.merge_strategy.enum).toContain('skip_existing');
     expect(importToolDefinition.inputSchema.properties.merge_strategy.enum).toContain('overwrite');
@@ -214,7 +218,7 @@ describe('handleExport', () => {
 
     const parsed = JSON.parse(result.content[0].text);
     expect(parsed.format).toBe('markdown');
-    expect(parsed.content).toContain('# OpenMemory Export');
+    expect(parsed.content).toContain('# TotalReclaw Export');
     expect(parsed.content).toContain('Test fact');
   });
 });
@@ -263,7 +267,7 @@ describe('handleImport', () => {
   it('should import from markdown format', async () => {
     const mockClient = createMockClient();
     const { handleImport } = require('../dist/tools/import.js');
-    const markdownContent = `# OpenMemory Export
+    const markdownContent = `# TotalReclaw Export
 
 ## User prefers dark mode
 **Type:** preference

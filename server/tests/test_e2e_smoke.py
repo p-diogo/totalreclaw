@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenMemory Server — End-to-End Smoke Test
+TotalReclaw Server — End-to-End Smoke Test
 
 Tests the full API flow against a running Docker instance.
 
@@ -15,7 +15,7 @@ Requirements:
     pip install requests
 
 Environment variables:
-    SERVER_URL  — Base URL of the OpenMemory server (default: http://localhost:8080)
+    SERVER_URL  — Base URL of the TotalReclaw server (default: http://localhost:8080)
 """
 import hashlib
 import json
@@ -543,7 +543,7 @@ ALL_STEPS = [
 
 def run_all():
     """Execute all test steps sequentially."""
-    print(f"\nOpenMemory E2E Smoke Test")
+    print(f"\nTotalReclaw E2E Smoke Test")
     print(f"Server: {SERVER_URL}")
     print("-" * 60)
 
@@ -595,7 +595,7 @@ def _make_pytest_test(step_fn):
 # runs tests in file order, which works here.
 
 class TestE2ESmoke:
-    """End-to-end smoke tests against a running OpenMemory server.
+    """End-to-end smoke tests against a running TotalReclaw server.
 
     Tests MUST run in order (each depends on state from prior steps).
     """

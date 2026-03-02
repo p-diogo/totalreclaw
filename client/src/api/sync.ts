@@ -4,7 +4,7 @@
  * Provides delta sync against the /sync endpoint and
  * local fact reconciliation for agent reconnection.
  *
- * Spec: docs/specs/openmemory/server.md v0.3.1b section 8.2
+ * Spec: docs/specs/totalreclaw/server.md v0.3.1b section 8.2
  *
  * Protocol:
  * 1. Agent comes online

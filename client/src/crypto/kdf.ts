@@ -74,7 +74,7 @@ export async function deriveAuthKey(
     const authKey = hkdfSha256(
       masterKey,
       salt,
-      Buffer.from('openmemory-auth-key-v1', 'utf-8'),
+      Buffer.from('totalreclaw-auth-key-v1', 'utf-8'),
       32
     );
 
@@ -122,7 +122,7 @@ export async function deriveEncryptionKey(
     const encryptionKey = hkdfSha256(
       masterKey,
       salt,
-      Buffer.from('openmemory-encryption-key-v1', 'utf-8'),
+      Buffer.from('totalreclaw-encryption-key-v1', 'utf-8'),
       32
     );
 
@@ -171,14 +171,14 @@ export async function deriveKeys(
     const authKey = hkdfSha256(
       masterKey,
       salt,
-      Buffer.from('openmemory-auth-key-v1', 'utf-8'),
+      Buffer.from('totalreclaw-auth-key-v1', 'utf-8'),
       32
     );
 
     const encryptionKey = hkdfSha256(
       masterKey,
       salt,
-      Buffer.from('openmemory-encryption-key-v1', 'utf-8'),
+      Buffer.from('totalreclaw-encryption-key-v1', 'utf-8'),
       32
     );
 

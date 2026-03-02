@@ -1,8 +1,8 @@
 {
-  "name": "openmemory",
+  "name": "totalreclaw",
   "version": "0.1.0",
   "description": "Zero-knowledge encrypted memory vault for AI agents — the password manager for AI memory. Full E2EE: server never sees plaintext.",
-  "author": "OpenMemory Team",
+  "author": "TotalReclaw Team",
   "license": "MIT",
   "homepage": "https://github.com/p-diogo/openmemory-poc",
   "repository": "https://github.com/p-diogo/openmemory-poc",
@@ -20,12 +20,12 @@
     "maxVersion": "1.0.0",
     "requires": {
       "env": [
-        "OPENMEMORY_SERVER_URL",
-        "OPENMEMORY_MASTER_PASSWORD"
+        "TOTALRECLAW_SERVER_URL",
+        "TOTALRECLAW_MASTER_PASSWORD"
       ],
       "bins": []
     },
-    "primaryEnv": "OPENMEMORY_SERVER_URL",
+    "primaryEnv": "TOTALRECLAW_SERVER_URL",
     "emoji": "🧠",
     "os": ["macos", "linux", "windows"],
     "hooks": {
@@ -44,7 +44,7 @@
     },
     "tools": [
       {
-        "name": "openmemory_remember",
+        "name": "totalreclaw_remember",
         "description": "Store a new fact or preference in long-term memory",
         "parameters": {
           "text": {
@@ -69,7 +69,7 @@
         }
       },
       {
-        "name": "openmemory_recall",
+        "name": "totalreclaw_recall",
         "description": "Search and retrieve relevant memories from long-term storage",
         "parameters": {
           "query": {
@@ -87,7 +87,7 @@
         }
       },
       {
-        "name": "openmemory_forget",
+        "name": "totalreclaw_forget",
         "description": "Delete a specific fact from memory",
         "parameters": {
           "factId": {
@@ -98,7 +98,7 @@
         }
       },
       {
-        "name": "openmemory_export",
+        "name": "totalreclaw_export",
         "description": "Export all stored memories in plaintext format",
         "parameters": {
           "format": {
@@ -115,7 +115,7 @@
       "serverUrl": {
         "type": "string",
         "default": "http://127.0.0.1:8080",
-        "description": "OpenMemory server URL"
+        "description": "TotalReclaw server URL"
       },
       "autoExtractEveryTurns": {
         "type": "number",

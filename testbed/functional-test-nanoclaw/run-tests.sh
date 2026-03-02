@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================================
-# OpenMemory + NanoClaw Functional Test Runner
+# TotalReclaw + NanoClaw Functional Test Runner
 #
 # This script:
 #   1. Builds the NanoClaw base container image
 #   2. Builds the extended container with @noble/hashes
-#   3. Starts postgres + openmemory-server via docker-compose
+#   3. Starts postgres + totalreclaw-server via docker-compose
 #   4. Waits for health checks
 #   5. Runs test scenarios by invoking containers with crafted stdin JSON
 #   6. Verifies memories stored in DB (query postgres directly)
@@ -13,7 +13,7 @@
 #
 # Prerequisites:
 #   - Docker and docker-compose installed
-#   - .env file with ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN, and OPENMEMORY_MASTER_PASSWORD
+#   - .env file with ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN, and TOTALRECLAW_MASTER_PASSWORD
 #   - NanoClaw source at ./nanoclaw/
 #
 # Usage:
@@ -25,7 +25,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.nanoclaw-test.yml"
-COMPOSE_PROJECT="nanoclaw-openmemory-test"
+COMPOSE_PROJECT="nanoclaw-totalreclaw-test"
 
 # Colors for output
 RED='\033[0;31m'
@@ -66,9 +66,9 @@ elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
   echo -e "${GREEN}[test]${NC} Auth method: ANTHROPIC_API_KEY"
 fi
 
-if [ -z "${OPENMEMORY_MASTER_PASSWORD:-}" ]; then
-  echo -e "${YELLOW}WARNING: OPENMEMORY_MASTER_PASSWORD not set, using default${NC}"
-  export OPENMEMORY_MASTER_PASSWORD="test-password-for-functional-tests"
+if [ -z "${TOTALRECLAW_MASTER_PASSWORD:-}" ]; then
+  echo -e "${YELLOW}WARNING: TOTALRECLAW_MASTER_PASSWORD not set, using default${NC}"
+  export TOTALRECLAW_MASTER_PASSWORD="test-password-for-functional-tests"
 fi
 
 log() {
@@ -102,11 +102,11 @@ cleanup() {
   if [ "$CLEANUP" = true ]; then
     log "Cleaning up..."
     docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" down -v --remove-orphans 2>/dev/null || true
-    docker volume rm nanoclaw-openmemory-credentials 2>/dev/null || true
+    docker volume rm nanoclaw-totalreclaw-credentials 2>/dev/null || true
   else
     warn "Skipping cleanup (--no-cleanup). Run manually:"
     warn "  docker compose -p $COMPOSE_PROJECT -f $COMPOSE_FILE down -v"
-    warn "  docker volume rm nanoclaw-openmemory-credentials"
+    warn "  docker volume rm nanoclaw-totalreclaw-credentials"
   fi
 }
 
@@ -129,10 +129,10 @@ else
 fi
 
 # Build the extended image with @noble/hashes
-log "Building NanoClaw+OpenMemory image..."
+log "Building NanoClaw+TotalReclaw image..."
 docker build \
-  -t nanoclaw-openmemory:latest \
-  -f "$SCRIPT_DIR/Dockerfile.nanoclaw-openmemory" \
+  -t nanoclaw-totalreclaw:latest \
+  -f "$SCRIPT_DIR/Dockerfile.nanoclaw-totalreclaw" \
   "$SCRIPT_DIR" 2>&1 | tail -5
 
 log "Images built successfully."
@@ -141,9 +141,9 @@ log "Images built successfully."
 # Phase 2: Start Infrastructure
 # ============================================================================
 
-log "Phase 2: Starting postgres + openmemory-server..."
+log "Phase 2: Starting postgres + totalreclaw-server..."
 
-docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" up -d postgres openmemory-server
+docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" up -d postgres totalreclaw-server
 
 # Wait for health checks
 log "Waiting for services to be healthy..."
@@ -152,7 +152,7 @@ MAX_WAIT=120
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
   PG_HEALTHY=$(docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" ps postgres --format json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data.get('Health','') if isinstance(data,dict) else [d.get('Health','') for d in data][0] if data else '')" 2>/dev/null || echo "")
-  OM_HEALTHY=$(docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" ps openmemory-server --format json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data.get('Health','') if isinstance(data,dict) else [d.get('Health','') for d in data][0] if data else '')" 2>/dev/null || echo "")
+  OM_HEALTHY=$(docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" ps totalreclaw-server --format json 2>/dev/null | python3 -c "import sys,json; data=json.load(sys.stdin); print(data.get('Health','') if isinstance(data,dict) else [d.get('Health','') for d in data][0] if data else '')" 2>/dev/null || echo "")
 
   if [[ "$PG_HEALTHY" == *"healthy"* ]] && [[ "$OM_HEALTHY" == *"healthy"* ]]; then
     break
@@ -188,7 +188,7 @@ run_agent() {
   local input_json
   # Build secrets object with whichever auth method is available
   local secrets_json
-  secrets_json=$(jq -n --arg master_pw "$OPENMEMORY_MASTER_PASSWORD" '{ OPENMEMORY_MASTER_PASSWORD: $master_pw }')
+  secrets_json=$(jq -n --arg master_pw "$TOTALRECLAW_MASTER_PASSWORD" '{ TOTALRECLAW_MASTER_PASSWORD: $master_pw }')
   if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
     secrets_json=$(echo "$secrets_json" | jq --arg v "$ANTHROPIC_API_KEY" '. + { ANTHROPIC_API_KEY: $v }')
   fi
@@ -215,12 +215,12 @@ run_agent() {
   printf '%s\n' "$input_json" | timeout "$timeout" docker run \
     --rm -i \
     --network "$NETWORK" \
-    -e OPENMEMORY_SERVER_URL=http://openmemory-server:8080 \
-    -v "$SCRIPT_DIR/nanoclaw-openmemory-overlay/agent-runner-src/index.ts:/app/src/index.ts:ro" \
-    -v "$SCRIPT_DIR/nanoclaw-openmemory-overlay/agent-runner-src/openmemory-mcp.ts:/app/src/openmemory-mcp.ts:ro" \
-    -v "$SCRIPT_DIR/nanoclaw-openmemory-overlay/skills/openmemory:/app/skills/openmemory:ro" \
-    -v nanoclaw-openmemory-credentials:/workspace/.openmemory \
-    nanoclaw-openmemory:latest 2>/dev/null || true
+    -e TOTALRECLAW_SERVER_URL=http://totalreclaw-server:8080 \
+    -v "$SCRIPT_DIR/nanoclaw-totalreclaw-overlay/agent-runner-src/index.ts:/app/src/index.ts:ro" \
+    -v "$SCRIPT_DIR/nanoclaw-totalreclaw-overlay/agent-runner-src/totalreclaw-mcp.ts:/app/src/totalreclaw-mcp.ts:ro" \
+    -v "$SCRIPT_DIR/nanoclaw-totalreclaw-overlay/skills/totalreclaw:/app/skills/totalreclaw:ro" \
+    -v nanoclaw-totalreclaw-credentials:/workspace/.totalreclaw \
+    nanoclaw-totalreclaw:latest 2>/dev/null || true
 }
 
 # Extract output between markers
@@ -232,13 +232,13 @@ extract_output() {
 # Query postgres for fact count
 query_fact_count() {
   docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" exec -T postgres \
-    psql -U openmemory -d openmemory -t -c "SELECT COUNT(*) FROM facts WHERE deleted_at IS NULL;" 2>/dev/null | tr -d ' \n'
+    psql -U totalreclaw -d totalreclaw -t -c "SELECT COUNT(*) FROM facts WHERE deleted_at IS NULL;" 2>/dev/null | tr -d ' \n'
 }
 
 # Query postgres for encrypted blobs (check they exist and are not plaintext)
 query_encrypted_blobs() {
   docker compose -p "$COMPOSE_PROJECT" -f "$COMPOSE_FILE" exec -T postgres \
-    psql -U openmemory -d openmemory -t -c "SELECT encrypted_blob FROM facts WHERE deleted_at IS NULL LIMIT 5;" 2>/dev/null
+    psql -U totalreclaw -d totalreclaw -t -c "SELECT encrypted_blob FROM facts WHERE deleted_at IS NULL LIMIT 5;" 2>/dev/null
 }
 
 log ""

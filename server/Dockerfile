@@ -1,4 +1,4 @@
-# OpenMemory Server Dockerfile
+# TotalReclaw Server Dockerfile
 # Multi-stage build for smaller production image
 
 # ============ Builder Stage ============
@@ -42,10 +42,10 @@ COPY src/ ./src/
 COPY proto/ ./proto/
 
 # Create non-root user for security
-RUN useradd --create-home --shell /bin/bash openmemory && \
-    chown -R openmemory:openmemory /app
+RUN useradd --create-home --shell /bin/bash totalreclaw && \
+    chown -R totalreclaw:totalreclaw /app
 
-USER openmemory
+USER totalreclaw
 
 # Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \

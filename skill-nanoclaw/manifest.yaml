@@ -1,7 +1,7 @@
-name: add-openmemory
+name: add-totalreclaw
 version: 0.3.0
 description: Add zero-knowledge encrypted memory to NanoClaw
-author: OpenMemory Team
+author: TotalReclaw Team
 
 dependencies:
   - name: nanoclaw
@@ -15,7 +15,7 @@ modifies:
   - container/agent-runner/src/index.ts
 
 adds:
-  - container/agent-runner/src/mcp/openmemory-mcp.ts
+  - container/agent-runner/src/mcp/totalreclaw-mcp.ts
   - container/agent-runner/src/mcp/tools/*.ts
-  - src/openmemory/hooks/*.ts
-  - src/openmemory/extraction/*.ts
+  - src/totalreclaw/hooks/*.ts
+  - src/totalreclaw/extraction/*.ts

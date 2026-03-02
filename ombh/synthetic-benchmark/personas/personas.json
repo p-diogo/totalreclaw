@@ -1,0 +1,969 @@
+[
+  {
+    "id": "persona-001",
+    "name": "Aiden Brown",
+    "age": 23,
+    "occupation": "Senior Software Engineer at Nexus Labs",
+    "interests": [
+      "chess",
+      "baking sourdough",
+      "sci-fi novels",
+      "archery",
+      "gardening"
+    ],
+    "life_context": "Single, shares an apartment with roommates in San Diego, CA.",
+    "topics": [
+      "fitness and health",
+      "career decisions",
+      "hobbies and side projects",
+      "work projects",
+      "learning new skills"
+    ]
+  },
+  {
+    "id": "persona-002",
+    "name": "Alex Mueller",
+    "age": 32,
+    "occupation": "Product Designer at a fintech startup",
+    "interests": [
+      "vintage cars",
+      "home automation",
+      "hiking",
+      "painting",
+      "tennis",
+      "gardening"
+    ],
+    "life_context": "Planning a wedding for next year.",
+    "topics": [
+      "learning new skills",
+      "cooking and food",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-003",
+    "name": "Frankie Garcia",
+    "age": 24,
+    "occupation": "Data Scientist at BioGenesis Pharma",
+    "interests": [
+      "leatherworking",
+      "mountain biking",
+      "board games",
+      "baking sourdough"
+    ],
+    "life_context": "Planning a wedding for next year.",
+    "topics": [
+      "learning new skills",
+      "travel experiences",
+      "finance and budgeting"
+    ]
+  },
+  {
+    "id": "persona-004",
+    "name": "River Harris",
+    "age": 62,
+    "occupation": "Freelance Graphic Designer",
+    "interests": [
+      "salsa dancing",
+      "travel blogging",
+      "leatherworking",
+      "photography"
+    ],
+    "life_context": "Recently adopted a golden retriever named Coco from a shelter.",
+    "topics": [
+      "cooking and food",
+      "learning new skills",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-005",
+    "name": "Sage Schmidt",
+    "age": 57,
+    "occupation": "High School Math Teacher",
+    "interests": [
+      "archery",
+      "drone photography",
+      "skiing",
+      "3D printing",
+      "astronomy"
+    ],
+    "life_context": "Single, shares an apartment with roommates in Austin, TX.",
+    "topics": [
+      "travel experiences",
+      "home improvement",
+      "finance and budgeting"
+    ]
+  },
+  {
+    "id": "persona-006",
+    "name": "Phoenix White",
+    "age": 57,
+    "occupation": "Emergency Room Nurse at City Hospital",
+    "interests": [
+      "salsa dancing",
+      "reading philosophy",
+      "piano"
+    ],
+    "life_context": "Just started a side project: a YouTube channel.",
+    "topics": [
+      "home improvement",
+      "learning new skills",
+      "books and media",
+      "family and relationships",
+      "cooking and food"
+    ]
+  },
+  {
+    "id": "persona-007",
+    "name": "Jules Martinez",
+    "age": 56,
+    "occupation": "Mechanical Engineer at Tesla",
+    "interests": [
+      "volunteer firefighting",
+      "travel blogging",
+      "aquariums"
+    ],
+    "life_context": "Just started a side project: a community garden.",
+    "topics": [
+      "tech choices and tools",
+      "daily routines",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-008",
+    "name": "Cameron White",
+    "age": 55,
+    "occupation": "Marketing Manager at a SaaS company",
+    "interests": [
+      "painting",
+      "stand-up comedy",
+      "mushroom foraging",
+      "reading philosophy",
+      "home brewing beer",
+      "woodworking"
+    ],
+    "life_context": "Expecting first child in a few months.",
+    "topics": [
+      "career decisions",
+      "hobbies and side projects",
+      "books and media",
+      "social events",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-009",
+    "name": "Frankie Reyes",
+    "age": 25,
+    "occupation": "PhD Student in Computational Linguistics",
+    "interests": [
+      "marathon running",
+      "japanese cuisine",
+      "vintage cars",
+      "mechanical keyboards"
+    ],
+    "life_context": "Travels frequently for work, based in Amsterdam, Netherlands.",
+    "topics": [
+      "home improvement",
+      "books and media",
+      "finance and budgeting"
+    ]
+  },
+  {
+    "id": "persona-010",
+    "name": "Logan Scott",
+    "age": 48,
+    "occupation": "Chef and Restaurant Owner",
+    "interests": [
+      "reading philosophy",
+      "photography",
+      "salsa dancing",
+      "beekeeping",
+      "mushroom foraging",
+      "gardening"
+    ],
+    "life_context": "Just went through a career change from journalism.",
+    "topics": [
+      "learning new skills",
+      "pets and animals",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-011",
+    "name": "Zion Roberts",
+    "age": 28,
+    "occupation": "Civil Rights Attorney",
+    "interests": [
+      "beekeeping",
+      "stand-up comedy",
+      "rock climbing"
+    ],
+    "life_context": "Just returned from a sabbatical traveling through Eastern Europe.",
+    "topics": [
+      "finance and budgeting",
+      "fitness and health",
+      "hobbies and side projects"
+    ]
+  },
+  {
+    "id": "persona-012",
+    "name": "Ezra Tanaka",
+    "age": 57,
+    "occupation": "Indie Game Developer",
+    "interests": [
+      "hiking",
+      "woodworking",
+      "mountain biking",
+      "painting",
+      "photography",
+      "drone photography"
+    ],
+    "life_context": "Volunteering at a animal shelter on weekends.",
+    "topics": [
+      "cooking and food",
+      "pets and animals",
+      "family and relationships",
+      "work projects",
+      "learning new skills"
+    ]
+  },
+  {
+    "id": "persona-013",
+    "name": "Spencer Jackson",
+    "age": 59,
+    "occupation": "Veterinarian at a rural practice",
+    "interests": [
+      "knitting",
+      "board games",
+      "podcast listening"
+    ],
+    "life_context": "Recovering from a knee injury and adjusting routines.",
+    "topics": [
+      "books and media",
+      "daily routines",
+      "travel experiences",
+      "tech choices and tools",
+      "environmental concerns"
+    ]
+  },
+  {
+    "id": "persona-014",
+    "name": "Riley Garcia",
+    "age": 56,
+    "occupation": "Journalist covering technology",
+    "interests": [
+      "mechanical keyboards",
+      "birdwatching",
+      "sci-fi novels",
+      "crossword puzzles"
+    ],
+    "life_context": "Recently bought a house in Berlin, Germany and renovating it.",
+    "topics": [
+      "finance and budgeting",
+      "family and relationships",
+      "travel experiences"
+    ]
+  },
+  {
+    "id": "persona-015",
+    "name": "Jamie Harris",
+    "age": 40,
+    "occupation": "Architect at a sustainable design firm",
+    "interests": [
+      "triathlon training",
+      "vintage cars",
+      "painting",
+      "salsa dancing"
+    ],
+    "life_context": "Single, shares an apartment with roommates in Pittsburgh, PA.",
+    "topics": [
+      "home improvement",
+      "environmental concerns",
+      "finance and budgeting",
+      "travel experiences",
+      "work projects"
+    ]
+  },
+  {
+    "id": "persona-016",
+    "name": "Frankie Scott",
+    "age": 57,
+    "occupation": "Music Producer and DJ",
+    "interests": [
+      "piano",
+      "marathon running",
+      "home brewing beer"
+    ],
+    "life_context": "Volunteering at a animal shelter on weekends.",
+    "topics": [
+      "cooking and food",
+      "social events",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-017",
+    "name": "Logan Johansson",
+    "age": 57,
+    "occupation": "Physical Therapist specializing in sports injuries",
+    "interests": [
+      "knitting",
+      "archery",
+      "hiking",
+      "chess",
+      "coffee brewing",
+      "yoga"
+    ],
+    "life_context": "Finishing a part-time MBA while working in Phoenix, AZ.",
+    "topics": [
+      "work projects",
+      "fitness and health",
+      "pets and animals",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-018",
+    "name": "Finley Moore",
+    "age": 36,
+    "occupation": "Startup Founder (pre-seed, AI tools)",
+    "interests": [
+      "origami",
+      "woodworking",
+      "3D printing"
+    ],
+    "life_context": "Taking care of aging parents while working full-time in Lisbon, Portugal.",
+    "topics": [
+      "home improvement",
+      "social events",
+      "cooking and food",
+      "learning new skills"
+    ]
+  },
+  {
+    "id": "persona-019",
+    "name": "Sutton Scott",
+    "age": 44,
+    "occupation": "Park Ranger at Yellowstone",
+    "interests": [
+      "skiing",
+      "volunteer firefighting",
+      "mechanical keyboards",
+      "piano",
+      "cooking Thai food"
+    ],
+    "life_context": "Recently moved to Melbourne, Australia. Has a rabbit named Coco.",
+    "topics": [
+      "hobbies and side projects",
+      "travel experiences",
+      "work projects",
+      "pets and animals",
+      "environmental concerns"
+    ]
+  },
+  {
+    "id": "persona-020",
+    "name": "Finley Flores",
+    "age": 48,
+    "occupation": "Financial Analyst at Goldman Sachs",
+    "interests": [
+      "3D printing",
+      "home brewing beer",
+      "mountain biking",
+      "surfing",
+      "sci-fi novels"
+    ],
+    "life_context": "Recently bought a house in Salt Lake City, UT and renovating it.",
+    "topics": [
+      "social events",
+      "books and media",
+      "hobbies and side projects"
+    ]
+  },
+  {
+    "id": "persona-021",
+    "name": "Zion Ramirez",
+    "age": 35,
+    "occupation": "UX Researcher at a big tech company",
+    "interests": [
+      "DJing",
+      "tennis",
+      "archery",
+      "coffee brewing",
+      "origami",
+      "board games"
+    ],
+    "life_context": "Working remotely from Phoenix, AZ after leaving the Bay Area.",
+    "topics": [
+      "books and media",
+      "cooking and food",
+      "social events",
+      "learning new skills"
+    ]
+  },
+  {
+    "id": "persona-022",
+    "name": "Aiden Turner",
+    "age": 34,
+    "occupation": "Electrician running own business",
+    "interests": [
+      "aquariums",
+      "3D printing",
+      "chess",
+      "hiking",
+      "beekeeping",
+      "home brewing beer"
+    ],
+    "life_context": "Working remotely from Chicago, IL after leaving the Bay Area.",
+    "topics": [
+      "tech choices and tools",
+      "learning new skills",
+      "hobbies and side projects"
+    ]
+  },
+  {
+    "id": "persona-023",
+    "name": "Gray Hill",
+    "age": 49,
+    "occupation": "Marine Biologist studying coral reefs",
+    "interests": [
+      "coffee brewing",
+      "archery",
+      "Brazilian jiu-jitsu",
+      "pottery",
+      "birdwatching",
+      "chess"
+    ],
+    "life_context": "Working remotely from Boston, MA after leaving the Bay Area.",
+    "topics": [
+      "home improvement",
+      "learning new skills",
+      "daily routines",
+      "environmental concerns",
+      "finance and budgeting"
+    ]
+  },
+  {
+    "id": "persona-024",
+    "name": "Hayden Young",
+    "age": 31,
+    "occupation": "Yoga Instructor and Wellness Coach",
+    "interests": [
+      "marathon running",
+      "podcast listening",
+      "vintage cars",
+      "stand-up comedy"
+    ],
+    "life_context": "Recently adopted a golden retriever named Willow from a shelter.",
+    "topics": [
+      "social events",
+      "work projects",
+      "tech choices and tools",
+      "hobbies and side projects"
+    ]
+  },
+  {
+    "id": "persona-025",
+    "name": "Sutton Moore",
+    "age": 53,
+    "occupation": "DevOps Engineer at a cloud platform",
+    "interests": [
+      "home automation",
+      "skiing",
+      "aquariums",
+      "rust programming"
+    ],
+    "life_context": "Recently adopted a parrot named Milo from a shelter.",
+    "topics": [
+      "books and media",
+      "environmental concerns",
+      "daily routines",
+      "learning new skills"
+    ]
+  },
+  {
+    "id": "persona-026",
+    "name": "Ellis Anderson",
+    "age": 25,
+    "occupation": "Real Estate Agent in Austin, TX",
+    "interests": [
+      "cooking Thai food",
+      "travel blogging",
+      "painting",
+      "urban sketching",
+      "vintage cars"
+    ],
+    "life_context": "Taking care of aging parents while working full-time in Denver, CO.",
+    "topics": [
+      "home improvement",
+      "learning new skills",
+      "social events",
+      "hobbies and side projects"
+    ]
+  },
+  {
+    "id": "persona-027",
+    "name": "Reese Patel",
+    "age": 61,
+    "occupation": "Documentary Filmmaker",
+    "interests": [
+      "chess",
+      "sci-fi novels",
+      "Brazilian jiu-jitsu",
+      "origami"
+    ],
+    "life_context": "Taking care of aging parents while working full-time in Lisbon, Portugal.",
+    "topics": [
+      "hobbies and side projects",
+      "finance and budgeting",
+      "pets and animals"
+    ]
+  },
+  {
+    "id": "persona-028",
+    "name": "Skyler Nakamura",
+    "age": 34,
+    "occupation": "Cybersecurity Consultant",
+    "interests": [
+      "drone photography",
+      "home brewing beer",
+      "speedcubing"
+    ],
+    "life_context": "Just started a side project: a YouTube channel.",
+    "topics": [
+      "tech choices and tools",
+      "pets and animals",
+      "learning new skills"
+    ]
+  },
+  {
+    "id": "persona-029",
+    "name": "Alex Wright",
+    "age": 53,
+    "occupation": "Elementary School Principal",
+    "interests": [
+      "skiing",
+      "astronomy",
+      "speedcubing"
+    ],
+    "life_context": "Commutes 45 minutes each way to work in Pittsburgh, PA.",
+    "topics": [
+      "travel experiences",
+      "hobbies and side projects",
+      "fitness and health",
+      "pets and animals"
+    ]
+  },
+  {
+    "id": "persona-030",
+    "name": "Dakota Green",
+    "age": 37,
+    "occupation": "Aerospace Engineer at SpaceX",
+    "interests": [
+      "calligraphy",
+      "knitting",
+      "origami",
+      "cooking Thai food",
+      "vintage cars",
+      "rust programming"
+    ],
+    "life_context": "Planning a wedding for next year.",
+    "topics": [
+      "books and media",
+      "fitness and health",
+      "finance and budgeting",
+      "tech choices and tools"
+    ]
+  },
+  {
+    "id": "persona-031",
+    "name": "Shiloh Mueller",
+    "age": 37,
+    "occupation": "Pastry Chef at a Michelin-starred restaurant",
+    "interests": [
+      "beekeeping",
+      "triathlon training",
+      "aquariums",
+      "pottery",
+      "rust programming",
+      "board games"
+    ],
+    "life_context": "Just started a side project: a YouTube channel.",
+    "topics": [
+      "finance and budgeting",
+      "hobbies and side projects",
+      "pets and animals",
+      "tech choices and tools"
+    ]
+  },
+  {
+    "id": "persona-032",
+    "name": "Rowan Moore",
+    "age": 29,
+    "occupation": "Social Worker specializing in foster care",
+    "interests": [
+      "travel blogging",
+      "piano",
+      "archery",
+      "stand-up comedy"
+    ],
+    "life_context": "Taking care of aging parents while working full-time in Raleigh, NC.",
+    "topics": [
+      "family and relationships",
+      "tech choices and tools",
+      "daily routines",
+      "pets and animals",
+      "finance and budgeting"
+    ]
+  },
+  {
+    "id": "persona-033",
+    "name": "Frankie Mitchell",
+    "age": 30,
+    "occupation": "Robotics Researcher at MIT",
+    "interests": [
+      "japanese cuisine",
+      "photography",
+      "surfing",
+      "mountain biking",
+      "home brewing beer"
+    ],
+    "life_context": "Recently moved to Raleigh, NC. Has a border collie named Ziggy.",
+    "topics": [
+      "environmental concerns",
+      "cooking and food",
+      "social events"
+    ]
+  },
+  {
+    "id": "persona-034",
+    "name": "Skyler Nelson",
+    "age": 26,
+    "occupation": "Podcast Host covering true crime",
+    "interests": [
+      "hiking",
+      "tennis",
+      "calligraphy"
+    ],
+    "life_context": "Finishing a part-time MBA while working in Salt Lake City, UT.",
+    "topics": [
+      "fitness and health",
+      "tech choices and tools",
+      "cooking and food",
+      "home improvement"
+    ]
+  },
+  {
+    "id": "persona-035",
+    "name": "Taylor Morales",
+    "age": 28,
+    "occupation": "Agricultural Scientist working on drought-resistant crops",
+    "interests": [
+      "speedcubing",
+      "painting",
+      "birdwatching",
+      "origami"
+    ],
+    "life_context": "Dealing with chronic back pain, exploring treatment options.",
+    "topics": [
+      "family and relationships",
+      "tech choices and tools",
+      "fitness and health"
+    ]
+  },
+  {
+    "id": "persona-036",
+    "name": "Morgan Ramirez",
+    "age": 36,
+    "occupation": "Fashion Buyer for a luxury department store",
+    "interests": [
+      "DJing",
+      "speedcubing",
+      "drone photography",
+      "origami",
+      "tennis"
+    ],
+    "life_context": "Working remotely from Pittsburgh, PA after leaving the Bay Area.",
+    "topics": [
+      "social events",
+      "cooking and food",
+      "home improvement"
+    ]
+  },
+  {
+    "id": "persona-037",
+    "name": "Ezra Lewis",
+    "age": 47,
+    "occupation": "Paramedic in a major city",
+    "interests": [
+      "mechanical keyboards",
+      "stand-up comedy",
+      "aquariums",
+      "pottery",
+      "board games"
+    ],
+    "life_context": "Learning Mandarin in preparation for a move to Brazil.",
+    "topics": [
+      "cooking and food",
+      "daily routines",
+      "hobbies and side projects",
+      "pets and animals",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-038",
+    "name": "Dakota Anderson",
+    "age": 59,
+    "occupation": "Software QA Lead at a healthcare company",
+    "interests": [
+      "speedcubing",
+      "aquariums",
+      "board games",
+      "Brazilian jiu-jitsu",
+      "crossword puzzles",
+      "podcast listening"
+    ],
+    "life_context": "Recovering from a knee injury and adjusting routines.",
+    "topics": [
+      "books and media",
+      "environmental concerns",
+      "cooking and food",
+      "fitness and health"
+    ]
+  },
+  {
+    "id": "persona-039",
+    "name": "Kit King",
+    "age": 54,
+    "occupation": "Professional Rock Climber and Guide",
+    "interests": [
+      "origami",
+      "stand-up comedy",
+      "urban sketching"
+    ],
+    "life_context": "Learning Spanish in preparation for a move to Taiwan.",
+    "topics": [
+      "cooking and food",
+      "tech choices and tools",
+      "home improvement",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-040",
+    "name": "Sage Nakamura",
+    "age": 32,
+    "occupation": "Librarian at a university research library",
+    "interests": [
+      "surfing",
+      "rock climbing",
+      "podcast listening",
+      "board games",
+      "baking sourdough"
+    ],
+    "life_context": "Training for a 5K next month.",
+    "topics": [
+      "daily routines",
+      "cooking and food",
+      "books and media"
+    ]
+  },
+  {
+    "id": "persona-041",
+    "name": "River Taylor",
+    "age": 60,
+    "occupation": "Blockchain Developer at a DeFi protocol",
+    "interests": [
+      "marathon running",
+      "home automation",
+      "leatherworking",
+      "DJing"
+    ],
+    "life_context": "Taking care of aging parents while working full-time in Portland, OR.",
+    "topics": [
+      "books and media",
+      "daily routines",
+      "learning new skills",
+      "home improvement"
+    ]
+  },
+  {
+    "id": "persona-042",
+    "name": "Jules Mitchell",
+    "age": 46,
+    "occupation": "Interior Designer for commercial spaces",
+    "interests": [
+      "travel blogging",
+      "woodworking",
+      "home brewing beer",
+      "chess",
+      "calligraphy",
+      "cooking Thai food"
+    ],
+    "life_context": "Just returned from a sabbatical traveling through Eastern Europe.",
+    "topics": [
+      "social events",
+      "work projects",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-043",
+    "name": "Phoenix Baker",
+    "age": 22,
+    "occupation": "Pediatrician in a community clinic",
+    "interests": [
+      "podcast listening",
+      "beekeeping",
+      "hiking",
+      "marathon running"
+    ],
+    "life_context": "Recently adopted a golden retriever named Finn from a shelter.",
+    "topics": [
+      "home improvement",
+      "family and relationships",
+      "career decisions",
+      "pets and animals"
+    ]
+  },
+  {
+    "id": "persona-044",
+    "name": "Hayden Schmidt",
+    "age": 27,
+    "occupation": "Video Game Streamer and Content Creator",
+    "interests": [
+      "gardening",
+      "mushroom foraging",
+      "speedcubing",
+      "triathlon training",
+      "tennis",
+      "pottery"
+    ],
+    "life_context": "Married with 2 kid(s). Lives in Minneapolis, MN.",
+    "topics": [
+      "career decisions",
+      "daily routines",
+      "work projects"
+    ]
+  },
+  {
+    "id": "persona-045",
+    "name": "Casey Morales",
+    "age": 46,
+    "occupation": "Environmental Policy Advisor",
+    "interests": [
+      "aquariums",
+      "drone photography",
+      "hiking",
+      "baking sourdough"
+    ],
+    "life_context": "Recently moved to Berlin, Germany. Has a border collie named Thor.",
+    "topics": [
+      "home improvement",
+      "finance and budgeting",
+      "travel experiences",
+      "books and media"
+    ]
+  },
+  {
+    "id": "persona-046",
+    "name": "Finley Taylor",
+    "age": 46,
+    "occupation": "Opera Singer performing internationally",
+    "interests": [
+      "gardening",
+      "chess",
+      "cooking Thai food",
+      "calligraphy",
+      "crossword puzzles",
+      "mushroom foraging"
+    ],
+    "life_context": "Recently adopted a golden retriever named Willow from a shelter.",
+    "topics": [
+      "career decisions",
+      "work projects",
+      "social events",
+      "books and media"
+    ]
+  },
+  {
+    "id": "persona-047",
+    "name": "Rowan Ramirez",
+    "age": 64,
+    "occupation": "Truck Driver (long-haul, owner-operator)",
+    "interests": [
+      "speedcubing",
+      "gardening",
+      "beekeeping",
+      "japanese cuisine"
+    ],
+    "life_context": "Training for a triathlon next month.",
+    "topics": [
+      "daily routines",
+      "work projects",
+      "career decisions",
+      "family and relationships"
+    ]
+  },
+  {
+    "id": "persona-048",
+    "name": "Devon Clark",
+    "age": 43,
+    "occupation": "AI Ethics Researcher at a think tank",
+    "interests": [
+      "urban sketching",
+      "marathon running",
+      "hiking"
+    ],
+    "life_context": "Dealing with chronic back pain, exploring treatment options.",
+    "topics": [
+      "learning new skills",
+      "social events",
+      "environmental concerns"
+    ]
+  },
+  {
+    "id": "persona-049",
+    "name": "Dana Moore",
+    "age": 52,
+    "occupation": "Wedding Planner running own agency",
+    "interests": [
+      "knitting",
+      "surfing",
+      "travel blogging"
+    ],
+    "life_context": "Just started a side project: an online course.",
+    "topics": [
+      "finance and budgeting",
+      "books and media",
+      "cooking and food",
+      "daily routines",
+      "environmental concerns"
+    ]
+  },
+  {
+    "id": "persona-050",
+    "name": "Quinn Young",
+    "age": 51,
+    "occupation": "Geologist working in mining exploration",
+    "interests": [
+      "origami",
+      "archery",
+      "home brewing beer",
+      "stand-up comedy",
+      "podcast listening"
+    ],
+    "life_context": "Just returned from a sabbatical traveling through South America.",
+    "topics": [
+      "travel experiences",
+      "daily routines",
+      "hobbies and side projects",
+      "books and media",
+      "cooking and food"
+    ]
+  }
+]

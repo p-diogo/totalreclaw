@@ -1,9 +1,12 @@
 /**
- * OpenMemory Plugin - LLM Client
+ * TotalReclaw Plugin - LLM Client
  *
  * Auto-detects the user's LLM provider from OpenClaw's config and derives a
  * cheap extraction model. Supports OpenAI-compatible APIs and Anthropic's
  * Messages API. No external dependencies -- uses native fetch().
+ *
+ * Embedding generation has been moved to embedding.ts (local ONNX model via
+ * @huggingface/transformers). No API key needed for embeddings.
  */
 
 // ---------------------------------------------------------------------------
@@ -146,7 +149,7 @@ let _logger: { warn: (msg: string) => void } | null = null;
  * Called once from the plugin's `register()` function.
  *
  * Resolution order (highest priority first):
- *   1. OPENMEMORY_LLM_MODEL env var (power user override for model)
+ *   1. TOTALRECLAW_LLM_MODEL env var (power user override for model)
  *   2. Plugin config `extraction.model` (if provided)
  *   3. Auto-derived from provider heuristic
  *   4. Fallback: try common env vars (ZAI_API_KEY, OPENAI_API_KEY) for dev/test
@@ -165,7 +168,7 @@ export function initLLMClient(options: {
   // Check if extraction is explicitly disabled
   const extraction = pluginConfig?.extraction as Record<string, unknown> | undefined;
   if (extraction?.enabled === false) {
-    _logger?.warn('OpenMemory: LLM extraction explicitly disabled via plugin config.');
+    _logger?.warn('TotalReclaw: LLM extraction explicitly disabled via plugin config.');
     return;
   }
 
@@ -187,7 +190,7 @@ export function initLLMClient(options: {
         if (baseUrl) {
           // Determine model: env override > plugin config > auto-derived
           const model =
-            process.env.OPENMEMORY_LLM_MODEL ??
+            process.env.TOTALRECLAW_LLM_MODEL ??
             (typeof extraction?.model === 'string' ? extraction.model : null) ??
             deriveCheapModel(provider, modelName);
 
@@ -212,7 +215,7 @@ export function initLLMClient(options: {
   for (const [provider, envVar, defaultModel] of fallbackProviders) {
     const apiKey = process.env[envVar];
     if (apiKey) {
-      const model = process.env.OPENMEMORY_LLM_MODEL ??
+      const model = process.env.TOTALRECLAW_LLM_MODEL ??
         (typeof extraction?.model === 'string' ? extraction.model : null) ??
         defaultModel;
 
@@ -231,7 +234,7 @@ export function initLLMClient(options: {
 
   // No LLM available
   _logger?.warn(
-    'OpenMemory: No LLM available for auto-extraction. ' +
+    'TotalReclaw: No LLM available for auto-extraction. ' +
     'Set an API key for your provider or configure extraction in plugin settings.',
   );
 }
@@ -254,7 +257,7 @@ export function resolveLLMConfig(): LLMClientConfig | null {
   const zaiKey = process.env.ZAI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
 
-  const model = process.env.OPENMEMORY_LLM_MODEL
+  const model = process.env.TOTALRECLAW_LLM_MODEL
     ?? (zaiKey ? 'glm-4.5-flash' : 'gpt-4.1-mini');
 
   if (zaiKey) {
@@ -404,3 +407,12 @@ async function chatCompletionAnthropic(
     throw new Error(`LLM call failed: ${msg}`);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Embedding (re-exported from local ONNX module)
+// ---------------------------------------------------------------------------
+
+// Embeddings are now generated locally via @huggingface/transformers
+// (bge-small-en-v1.5 ONNX model). No API key needed.
+// See embedding.ts for implementation details.
+export { generateEmbedding, getEmbeddingDims } from './embedding.js';

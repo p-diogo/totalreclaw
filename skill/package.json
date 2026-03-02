@@ -1,7 +1,7 @@
 {
-  "name": "@openmemory/skill",
+  "name": "@totalreclaw/skill",
   "version": "0.1.0",
-  "description": "OpenMemory Skill for OpenClaw - Zero-knowledge encrypted memory for AI agents",
+  "description": "TotalReclaw Skill for OpenClaw - Zero-knowledge encrypted memory for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -11,7 +11,7 @@
     "lint": "eslint src/**/*.ts"
   },
   "keywords": [
-    "openmemory",
+    "totalreclaw",
     "openclaw",
     "skill",
     "memory",
@@ -20,10 +20,10 @@
     "ai",
     "agent"
   ],
-  "author": "OpenMemory Team",
+  "author": "TotalReclaw Team",
   "license": "MIT",
   "dependencies": {
-    "@openmemory/client": "file:../client",
+    "@totalreclaw/client": "file:../client",
     "onnxruntime-node": "^1.17.0",
     "uuid": "^9.0.0"
   },
@@ -49,10 +49,10 @@
       "pre_compaction"
     ],
     "tools": [
-      "openmemory_remember",
-      "openmemory_recall",
-      "openmemory_forget",
-      "openmemory_export"
+      "totalreclaw_remember",
+      "totalreclaw_recall",
+      "totalreclaw_forget",
+      "totalreclaw_export"
     ],
     "configSchema": "./dist/config.schema.json"
   }

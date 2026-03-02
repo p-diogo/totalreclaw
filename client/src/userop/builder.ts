@@ -1,8 +1,8 @@
 /**
- * ERC-4337 UserOperation Builder for OpenMemory.
+ * ERC-4337 UserOperation Builder for TotalReclaw.
  *
  * Builds UserOperations that target the EventfulDataEdge contract on Base L2.
- * The calldata is the encrypted Protobuf-serialized OpenMemoryFact.
+ * The calldata is the encrypted Protobuf-serialized TotalReclawFact.
  *
  * Flow:
  *   1. Client encrypts fact + serializes to Protobuf (existing code)
@@ -141,10 +141,10 @@ export async function buildUserOperation(
 /**
  * Submit a UserOperation to the relay server.
  *
- * This sends the signed UserOp JSON to the OpenMemory server's /relay endpoint,
+ * This sends the signed UserOp JSON to the TotalReclaw server's /relay endpoint,
  * which forwards it to the Pimlico bundler.
  *
- * @param relayUrl - The /relay endpoint URL (e.g., "https://api.openmemory.dev/relay")
+ * @param relayUrl - The /relay endpoint URL (e.g., "https://api.totalreclaw.dev/relay")
  * @param userOp - The UserOperation result from buildUserOperation()
  * @returns Transaction hash from the bundler
  */

@@ -40,10 +40,10 @@
   },
   "plugins": {
     "slots": {
-      "memory": "openmemory"
+      "memory": "totalreclaw"
     },
     "entries": {
-      "openmemory": {
+      "totalreclaw": {
         "enabled": true
       },
       "memory-core": {

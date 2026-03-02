@@ -1,11 +1,11 @@
 /**
- * OpenMemory Plugin for OpenClaw
+ * TotalReclaw Plugin for OpenClaw
  *
- * Registers runtime tools so OpenClaw can execute OpenMemory operations:
- *   - openmemory_remember  -- store an encrypted memory
- *   - openmemory_recall    -- search and decrypt memories
- *   - openmemory_forget    -- soft-delete a memory
- *   - openmemory_export    -- export all memories (JSON or Markdown)
+ * Registers runtime tools so OpenClaw can execute TotalReclaw operations:
+ *   - totalreclaw_remember  -- store an encrypted memory
+ *   - totalreclaw_recall    -- search and decrypt memories
+ *   - totalreclaw_forget    -- soft-delete a memory
+ *   - totalreclaw_export    -- export all memories (JSON or Markdown)
  *
  * Also registers a `before_agent_start` hook that automatically injects
  * relevant memories into the agent's context.
@@ -16,6 +16,7 @@
 
 import {
   deriveKeys,
+  deriveLshSeed,
   computeAuthKeyHash,
   encrypt,
   decrypt,
@@ -24,7 +25,9 @@ import {
 } from './crypto.js';
 import { createApiClient, type StoreFactPayload } from './api-client.js';
 import { extractFacts, type ExtractedFact } from './extractor.js';
-import { initLLMClient } from './llm-client.js';
+import { initLLMClient, generateEmbedding, getEmbeddingDims } from './llm-client.js';
+import { LSHHasher } from './lsh.js';
+import { rerank, type RerankerCandidate } from './reranker.js';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -60,7 +63,7 @@ interface OpenClawPluginApi {
 // ---------------------------------------------------------------------------
 
 /** Path where we persist userId + salt across restarts. */
-const CREDENTIALS_PATH = '/home/node/.openmemory/credentials.json';
+const CREDENTIALS_PATH = '/home/node/.totalreclaw/credentials.json';
 
 // ---------------------------------------------------------------------------
 // Module-level state (persists across tool calls within a session)
@@ -73,6 +76,67 @@ let userId: string | null = null;
 let apiClient: ReturnType<typeof createApiClient> | null = null;
 let initPromise: Promise<void> | null = null;
 
+// LSH hasher — lazily initialized on first use (needs credentials + embedding dims)
+let lshHasher: LSHHasher | null = null;
+let lshInitFailed = false; // If true, skip LSH on future calls (provider doesn't support embeddings)
+
+// ---------------------------------------------------------------------------
+// Dynamic candidate pool sizing
+// ---------------------------------------------------------------------------
+
+/** Cached fact count for dynamic candidate pool sizing. */
+let cachedFactCount: number | null = null;
+/** Timestamp of last fact count fetch (ms). */
+let lastFactCountFetch: number = 0;
+/** Cache TTL for fact count: 5 minutes. */
+const FACT_COUNT_CACHE_TTL = 5 * 60 * 1000;
+
+/**
+ * Compute the candidate pool size from a fact count.
+ *
+ * Formula: pool = min(max(factCount * 3, 400), 5000)
+ *   - At least 400 candidates (even for tiny vaults)
+ *   - At most 5000 candidates (to bound decryption + reranking cost)
+ *   - 3x fact count in between
+ */
+function computeCandidatePool(factCount: number): number {
+  return Math.min(Math.max(factCount * 3, 400), 5000);
+}
+
+/**
+ * Fetch the user's fact count from the server, with caching.
+ *
+ * Uses the /v1/export endpoint with limit=1 to get `total_count` without
+ * downloading all facts. Falls back to 400 (which gives pool=1200) if
+ * the server is unreachable or returns no count.
+ */
+async function getFactCount(logger: OpenClawPluginApi['logger']): Promise<number> {
+  const now = Date.now();
+
+  // Return cached value if fresh.
+  if (cachedFactCount !== null && (now - lastFactCountFetch) < FACT_COUNT_CACHE_TTL) {
+    return cachedFactCount;
+  }
+
+  try {
+    if (!apiClient || !authKeyHex) {
+      return cachedFactCount ?? 400; // Not initialized yet, use default
+    }
+
+    const page = await apiClient.exportFacts(authKeyHex, 1);
+    const count = page.total_count ?? page.facts.length;
+
+    cachedFactCount = count;
+    lastFactCountFetch = now;
+    logger.info(`Fact count updated: ${count} (candidate pool: ${computeCandidatePool(count)})`);
+    return count;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn(`Failed to fetch fact count (using ${cachedFactCount ?? 400}): ${msg}`);
+    return cachedFactCount ?? 400; // Fall back to cached or default
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Initialisation
 // ---------------------------------------------------------------------------
@@ -83,12 +147,12 @@ let initPromise: Promise<void> | null = null;
  */
 async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
   const serverUrl =
-    process.env.OPENMEMORY_SERVER_URL || 'http://openmemory-server:8080';
-  const masterPassword = process.env.OPENMEMORY_MASTER_PASSWORD;
+    process.env.TOTALRECLAW_SERVER_URL || 'http://totalreclaw-server:8080';
+  const masterPassword = process.env.TOTALRECLAW_MASTER_PASSWORD;
 
   if (!masterPassword) {
-    logger.error('OPENMEMORY_MASTER_PASSWORD environment variable not set');
-    throw new Error('OPENMEMORY_MASTER_PASSWORD not set');
+    logger.error('TOTALRECLAW_MASTER_PASSWORD environment variable not set');
+    throw new Error('TOTALRECLAW_MASTER_PASSWORD not set');
   }
 
   apiClient = createApiClient(serverUrl);
@@ -113,6 +177,10 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
   authKeyHex = keys.authKey.toString('hex');
   encryptionKey = keys.encryptionKey;
   dedupKey = keys.dedupKey;
+
+  // Cache credentials for lazy LSH seed derivation
+  masterPasswordCache = masterPassword;
+  saltCache = keys.salt;
 
   if (existingUserId) {
     userId = existingUserId;
@@ -146,6 +214,76 @@ async function ensureInitialized(logger: OpenClawPluginApi['logger']): Promise<v
     initPromise = initialize(logger);
   }
   await initPromise;
+}
+
+// ---------------------------------------------------------------------------
+// LSH + Embedding helpers
+// ---------------------------------------------------------------------------
+
+/** Master password cached for LSH seed derivation (set during initialize()). */
+let masterPasswordCache: string | null = null;
+/** Salt cached for LSH seed derivation (set during initialize()). */
+let saltCache: Buffer | null = null;
+
+/**
+ * Get or initialize the LSH hasher.
+ *
+ * The hasher is created lazily because it needs:
+ *   1. The master password + salt (available after initialize())
+ *   2. The embedding dimensions (available after initLLMClient())
+ *
+ * If the provider doesn't support embeddings, this returns null and
+ * sets `lshInitFailed` to avoid retrying.
+ */
+function getLSHHasher(logger: OpenClawPluginApi['logger']): LSHHasher | null {
+  if (lshHasher) return lshHasher;
+  if (lshInitFailed) return null;
+
+  try {
+    if (!masterPasswordCache || !saltCache) {
+      logger.warn('LSH hasher: credentials not available yet');
+      return null;
+    }
+
+    const dims = getEmbeddingDims();
+    const lshSeed = deriveLshSeed(masterPasswordCache, saltCache);
+    lshHasher = new LSHHasher(lshSeed, dims);
+    logger.info(`LSH hasher initialized (dims=${dims}, tables=${lshHasher.tables}, bits=${lshHasher.bits})`);
+    return lshHasher;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn(`LSH hasher initialization failed (will use word-only indices): ${msg}`);
+    lshInitFailed = true;
+    return null;
+  }
+}
+
+/**
+ * Generate an embedding for the given text and compute LSH bucket hashes.
+ *
+ * Returns null if embedding generation fails (provider doesn't support it,
+ * network error, etc.). In that case, the caller should fall back to
+ * word-only blind indices.
+ */
+async function generateEmbeddingAndLSH(
+  text: string,
+  logger: OpenClawPluginApi['logger'],
+): Promise<{ embedding: number[]; lshBuckets: string[]; encryptedEmbedding: string } | null> {
+  try {
+    const embedding = await generateEmbedding(text);
+
+    const hasher = getLSHHasher(logger);
+    const lshBuckets = hasher ? hasher.hash(embedding) : [];
+
+    // Encrypt the embedding (JSON array of numbers) for zero-knowledge storage
+    const encryptedEmbedding = encryptToHex(JSON.stringify(embedding), encryptionKey!);
+
+    return { embedding, lshBuckets, encryptedEmbedding };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn(`Embedding/LSH generation failed (falling back to word-only indices): ${msg}`);
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -208,7 +346,7 @@ function relativeTime(isoOrMs: string | number): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Store extracted facts in the OpenMemory server.
+ * Store extracted facts in the TotalReclaw server.
  * Encrypts each fact, generates blind indices and fingerprint, stores via API.
  * Silently skips duplicates.
  */
@@ -234,6 +372,13 @@ async function storeExtractedFacts(
 
       const encryptedBlob = encryptToHex(JSON.stringify(doc), encryptionKey);
       const blindIndices = generateBlindIndices(fact.text);
+
+      // Generate embedding + LSH bucket hashes (PoC v2).
+      const embeddingResult = await generateEmbeddingAndLSH(fact.text, logger);
+      const allIndices = embeddingResult
+        ? [...blindIndices, ...embeddingResult.lshBuckets]
+        : blindIndices;
+
       const contentFp = generateContentFingerprint(fact.text, dedupKey);
       const factId = crypto.randomUUID();
 
@@ -241,11 +386,12 @@ async function storeExtractedFacts(
         id: factId,
         timestamp: new Date().toISOString(),
         encrypted_blob: encryptedBlob,
-        blind_indices: blindIndices,
+        blind_indices: allIndices,
         decay_score: fact.importance,
         source: 'auto-extraction',
         content_fp: contentFp,
         agent_id: 'openclaw-plugin-auto',
+        encrypted_embedding: embeddingResult?.encryptedEmbedding,
       };
 
       await apiClient.store(userId, [payload], authKeyHex);
@@ -267,8 +413,8 @@ async function storeExtractedFacts(
 // ---------------------------------------------------------------------------
 
 const plugin = {
-  id: 'openmemory',
-  name: 'OpenMemory',
+  id: 'totalreclaw',
+  name: 'TotalReclaw',
   description: 'Zero-knowledge encrypted memory vault for AI agents',
   kind: 'memory' as const,
   configSchema: {
@@ -302,22 +448,22 @@ const plugin = {
     // ---------------------------------------------------------------
 
     api.registerService({
-      id: 'openmemory',
+      id: 'totalreclaw',
       start: () => {
-        api.logger.info('OpenMemory plugin loaded');
+        api.logger.info('TotalReclaw plugin loaded');
       },
       stop: () => {
-        api.logger.info('OpenMemory plugin stopped');
+        api.logger.info('TotalReclaw plugin stopped');
       },
     });
 
     // ---------------------------------------------------------------
-    // Tool: openmemory_remember
+    // Tool: totalreclaw_remember
     // ---------------------------------------------------------------
 
     api.registerTool(
       {
-        name: 'openmemory_remember',
+        name: 'totalreclaw_remember',
         label: 'Remember',
         description:
           'Store a memory in the encrypted vault. Use this when the user shares important information worth remembering.',
@@ -367,6 +513,15 @@ const plugin = {
             // Generate blind indices for server-side search.
             const blindIndices = generateBlindIndices(params.text);
 
+            // Generate embedding + LSH bucket hashes (PoC v2).
+            // Falls back to word-only indices if embedding generation fails.
+            const embeddingResult = await generateEmbeddingAndLSH(params.text, api.logger);
+
+            // Merge LSH bucket hashes into blind indices.
+            const allIndices = embeddingResult
+              ? [...blindIndices, ...embeddingResult.lshBuckets]
+              : blindIndices;
+
             // Generate content fingerprint for dedup.
             const contentFp = generateContentFingerprint(params.text, dedupKey!);
 
@@ -378,11 +533,12 @@ const plugin = {
               id: factId,
               timestamp: new Date().toISOString(),
               encrypted_blob: encryptedBlob,
-              blind_indices: blindIndices,
+              blind_indices: allIndices,
               decay_score: importance,
               source: 'explicit',
               content_fp: contentFp,
               agent_id: 'openclaw-plugin',
+              encrypted_embedding: embeddingResult?.encryptedEmbedding,
             };
 
             await apiClient!.store(userId!, [factPayload], authKeyHex!);
@@ -393,23 +549,23 @@ const plugin = {
             };
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-            api.logger.error(`openmemory_remember failed: ${message}`);
+            api.logger.error(`totalreclaw_remember failed: ${message}`);
             return {
               content: [{ type: 'text', text: `Failed to store memory: ${message}` }],
             };
           }
         },
       },
-      { name: 'openmemory_remember' },
+      { name: 'totalreclaw_remember' },
     );
 
     // ---------------------------------------------------------------
-    // Tool: openmemory_recall
+    // Tool: totalreclaw_recall
     // ---------------------------------------------------------------
 
     api.registerTool(
       {
-        name: 'openmemory_recall',
+        name: 'totalreclaw_recall',
         label: 'Recall',
         description:
           'Search the encrypted memory vault. Returns the most relevant memories matching the query.',
@@ -436,45 +592,73 @@ const plugin = {
 
             const k = Math.min(params.k ?? 8, 20);
 
-            // Generate trapdoors (blind indices for the query).
-            const trapdoors = generateBlindIndices(params.query);
+            // 1. Generate word trapdoors (blind indices for the query).
+            const wordTrapdoors = generateBlindIndices(params.query);
 
-            if (trapdoors.length === 0) {
+            // 2. Generate query embedding + LSH trapdoors (may fail gracefully).
+            let queryEmbedding: number[] | null = null;
+            let lshTrapdoors: string[] = [];
+            try {
+              queryEmbedding = await generateEmbedding(params.query, { isQuery: true });
+              const hasher = getLSHHasher(api.logger);
+              if (hasher && queryEmbedding) {
+                lshTrapdoors = hasher.hash(queryEmbedding);
+              }
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              api.logger.warn(`Recall: embedding/LSH generation failed (using word-only trapdoors): ${msg}`);
+            }
+
+            // 3. Merge word trapdoors + LSH trapdoors.
+            const allTrapdoors = [...wordTrapdoors, ...lshTrapdoors];
+
+            if (allTrapdoors.length === 0) {
               return {
                 content: [{ type: 'text', text: 'No searchable terms in query.' }],
                 details: { count: 0, memories: [] },
               };
             }
 
-            // Request more candidates than needed so we can re-rank client-side.
+            // 4. Request more candidates than needed so we can re-rank client-side.
+            const factCount = await getFactCount(api.logger);
+            const pool = computeCandidatePool(factCount);
             const candidates = await apiClient!.search(
               userId!,
-              trapdoors,
-              k * 50,
+              allTrapdoors,
+              pool,
               authKeyHex!,
             );
 
-            // Decrypt, score, and rank.
-            interface ScoredMemory {
-              factId: string;
-              text: string;
-              metadata: Record<string, unknown>;
-              score: number;
-              timestamp: number;
-            }
-
-            const scored: ScoredMemory[] = [];
+            // 5. Decrypt candidates (text + embeddings) and build reranker input.
+            const rerankerCandidates: RerankerCandidate[] = [];
+            // Keep metadata + timestamp for formatting after reranking.
+            const metaMap = new Map<string, { metadata: Record<string, unknown>; timestamp: number }>();
 
             for (const candidate of candidates) {
               try {
                 const docJson = decryptFromHex(candidate.encrypted_blob, encryptionKey!);
                 const doc = JSON.parse(docJson) as { text: string; metadata?: Record<string, unknown> };
-                const score = textScore(params.query, doc.text);
-                scored.push({
-                  factId: candidate.fact_id,
+
+                // Decrypt embedding if present (PoC v2 facts).
+                let decryptedEmbedding: number[] | undefined;
+                if (candidate.encrypted_embedding) {
+                  try {
+                    decryptedEmbedding = JSON.parse(
+                      decryptFromHex(candidate.encrypted_embedding, encryptionKey!),
+                    );
+                  } catch {
+                    // Embedding decryption failed -- proceed without it.
+                  }
+                }
+
+                rerankerCandidates.push({
+                  id: candidate.fact_id,
                   text: doc.text,
+                  embedding: decryptedEmbedding,
+                });
+
+                metaMap.set(candidate.fact_id, {
                   metadata: doc.metadata ?? {},
-                  score,
                   timestamp: candidate.timestamp,
                 });
               } catch {
@@ -482,24 +666,29 @@ const plugin = {
               }
             }
 
-            // Sort by score descending, take top k.
-            scored.sort((a, b) => b.score - a.score);
-            const topK = scored.slice(0, k);
+            // 6. Re-rank with BM25 + cosine + RRF fusion.
+            const reranked = rerank(
+              params.query,
+              queryEmbedding ?? [],
+              rerankerCandidates,
+              k,
+            );
 
-            if (topK.length === 0) {
+            if (reranked.length === 0) {
               return {
                 content: [{ type: 'text', text: 'No memories found matching your query.' }],
                 details: { count: 0, memories: [] },
               };
             }
 
-            // Format results.
-            const lines = topK.map((m, i) => {
-              const imp = m.metadata.importance
-                ? ` (importance: ${Math.round((m.metadata.importance as number) * 10)}/10)`
+            // 7. Format results.
+            const lines = reranked.map((m, i) => {
+              const meta = metaMap.get(m.id);
+              const imp = meta?.metadata.importance
+                ? ` (importance: ${Math.round((meta.metadata.importance as number) * 10)}/10)`
                 : '';
-              const age = relativeTime(m.timestamp);
-              return `${i + 1}. ${m.text}${imp} -- ${age} [ID: ${m.factId}]`;
+              const age = meta ? relativeTime(meta.timestamp) : '';
+              return `${i + 1}. ${m.text}${imp} -- ${age} [ID: ${m.id}]`;
             });
 
             const formatted = lines.join('\n');
@@ -507,33 +696,32 @@ const plugin = {
             return {
               content: [{ type: 'text', text: formatted }],
               details: {
-                count: topK.length,
-                memories: topK.map((m) => ({
-                  factId: m.factId,
+                count: reranked.length,
+                memories: reranked.map((m) => ({
+                  factId: m.id,
                   text: m.text,
-                  score: m.score,
                 })),
               },
             };
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-            api.logger.error(`openmemory_recall failed: ${message}`);
+            api.logger.error(`totalreclaw_recall failed: ${message}`);
             return {
               content: [{ type: 'text', text: `Failed to search memories: ${message}` }],
             };
           }
         },
       },
-      { name: 'openmemory_recall' },
+      { name: 'totalreclaw_recall' },
     );
 
     // ---------------------------------------------------------------
-    // Tool: openmemory_forget
+    // Tool: totalreclaw_forget
     // ---------------------------------------------------------------
 
     api.registerTool(
       {
-        name: 'openmemory_forget',
+        name: 'totalreclaw_forget',
         label: 'Forget',
         description: 'Delete a specific memory by its ID.',
         parameters: {
@@ -559,23 +747,23 @@ const plugin = {
             };
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-            api.logger.error(`openmemory_forget failed: ${message}`);
+            api.logger.error(`totalreclaw_forget failed: ${message}`);
             return {
               content: [{ type: 'text', text: `Failed to delete memory: ${message}` }],
             };
           }
         },
       },
-      { name: 'openmemory_forget' },
+      { name: 'totalreclaw_forget' },
     );
 
     // ---------------------------------------------------------------
-    // Tool: openmemory_export
+    // Tool: totalreclaw_export
     // ---------------------------------------------------------------
 
     api.registerTool(
       {
-        name: 'openmemory_export',
+        name: 'totalreclaw_export',
         label: 'Export',
         description:
           'Export all stored memories. Decrypts every memory and returns them as JSON or Markdown.',
@@ -656,14 +844,14 @@ const plugin = {
             };
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
-            api.logger.error(`openmemory_export failed: ${message}`);
+            api.logger.error(`totalreclaw_export failed: ${message}`);
             return {
               content: [{ type: 'text', text: `Failed to export memories: ${message}` }],
             };
           }
         },
       },
-      { name: 'openmemory_export' },
+      { name: 'totalreclaw_export' },
     );
 
     // ---------------------------------------------------------------
@@ -683,60 +871,94 @@ const plugin = {
 
           await ensureInitialized(api.logger);
 
-          // Generate trapdoors from the user prompt.
-          const trapdoors = generateBlindIndices(evt.prompt);
-          if (trapdoors.length === 0) return undefined;
+          // 1. Generate word trapdoors from the user prompt.
+          const wordTrapdoors = generateBlindIndices(evt.prompt);
 
-          // Fetch candidates from the server.
+          // 2. Generate query embedding + LSH trapdoors (may fail gracefully).
+          let queryEmbedding: number[] | null = null;
+          let lshTrapdoors: string[] = [];
+          try {
+            queryEmbedding = await generateEmbedding(evt.prompt, { isQuery: true });
+            const hasher = getLSHHasher(api.logger);
+            if (hasher && queryEmbedding) {
+              lshTrapdoors = hasher.hash(queryEmbedding);
+            }
+          } catch {
+            // Embedding/LSH failed -- proceed with word-only trapdoors.
+          }
+
+          // 3. Merge word + LSH trapdoors.
+          const allTrapdoors = [...wordTrapdoors, ...lshTrapdoors];
+          if (allTrapdoors.length === 0) return undefined;
+
+          // 4. Fetch candidates from the server (dynamic pool sizing).
+          const factCount = await getFactCount(api.logger);
+          const pool = computeCandidatePool(factCount);
           const candidates = await apiClient!.search(
             userId!,
-            trapdoors,
-            400,
+            allTrapdoors,
+            pool,
             authKeyHex!,
           );
 
           if (candidates.length === 0) return undefined;
 
-          // Decrypt and score.
-          interface ScoredMemory {
-            text: string;
-            importance: number;
-            age: string;
-            score: number;
-          }
-
-          const scored: ScoredMemory[] = [];
+          // 5. Decrypt candidates (text + embeddings) and build reranker input.
+          const rerankerCandidates: RerankerCandidate[] = [];
+          const hookMetaMap = new Map<string, { importance: number; age: string }>();
 
           for (const candidate of candidates) {
             try {
               const docJson = decryptFromHex(candidate.encrypted_blob, encryptionKey!);
               const doc = JSON.parse(docJson) as { text: string; metadata?: Record<string, unknown> };
-              const score = textScore(evt.prompt, doc.text);
+
+              // Decrypt embedding if present.
+              let decryptedEmbedding: number[] | undefined;
+              if (candidate.encrypted_embedding) {
+                try {
+                  decryptedEmbedding = JSON.parse(
+                    decryptFromHex(candidate.encrypted_embedding, encryptionKey!),
+                  );
+                } catch {
+                  // Embedding decryption failed -- proceed without it.
+                }
+              }
+
+              rerankerCandidates.push({
+                id: candidate.fact_id,
+                text: doc.text,
+                embedding: decryptedEmbedding,
+              });
+
               const importance = doc.metadata?.importance
                 ? Math.round((doc.metadata.importance as number) * 10)
                 : 5;
-              scored.push({
-                text: doc.text,
+              hookMetaMap.set(candidate.fact_id, {
                 importance,
                 age: relativeTime(candidate.timestamp),
-                score,
               });
             } catch {
               // Skip un-decryptable candidates.
             }
           }
 
-          // Take top 8.
-          scored.sort((a, b) => b.score - a.score);
-          const topK = scored.slice(0, 8);
-
-          if (topK.length === 0) return undefined;
-
-          // Build context string.
-          const lines = topK.map(
-            (m, i) =>
-              `${i + 1}. ${m.text} (importance: ${m.importance}/10, ${m.age})`,
+          // 6. Re-rank with BM25 + cosine + RRF fusion.
+          const reranked = rerank(
+            evt.prompt,
+            queryEmbedding ?? [],
+            rerankerCandidates,
+            8,
           );
+
+          if (reranked.length === 0) return undefined;
+
+          // 7. Build context string.
+          const lines = reranked.map((m, i) => {
+            const meta = hookMetaMap.get(m.id);
+            const importance = meta?.importance ?? 5;
+            const age = meta?.age ?? '';
+            return `${i + 1}. ${m.text} (importance: ${importance}/10, ${age})`;
+          });
           const contextString = `## Relevant Memories\n\n${lines.join('\n')}`;
 
           return { prependContext: contextString };

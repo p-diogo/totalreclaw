@@ -1,16 +1,16 @@
-# OpenMemory Beta Testing Guide
+# TotalReclaw Beta Testing Guide
 
 > Encrypted memory for AI agents. This guide gets you from zero to a working local stack in ~15 minutes.
 
 ---
 
-## What is OpenMemory?
+## What is TotalReclaw?
 
-OpenMemory is an **encrypted memory vault for AI agents** -- a password manager for AI memory.
+TotalReclaw is an **encrypted memory vault for AI agents** -- a password manager for AI memory.
 
 **The problem:** AI agents forget everything between sessions. Tools that do persist memory store it as plaintext on remote servers, readable by the provider.
 
-**OpenMemory's approach:**
+**TotalReclaw's approach:**
 - Memories are **AES-256-GCM encrypted on your device** before they leave it
 - The server stores ciphertext and blind indices (SHA-256 hashes) -- it never sees plaintext
 - You can **export or delete all your data** at any time
@@ -28,11 +28,11 @@ The test stack runs three Docker containers on a single machine:
  You (browser)
    |
    v
- openclaw-test (:8081)    -- OpenClaw with the OpenMemory plugin
+ openclaw-test (:8081)    -- OpenClaw with the TotalReclaw plugin
    |                          Encrypts/decrypts client-side
    |                          LLM decides when to store memories
    v
- openmemory-server (:8080) -- FastAPI server (sees only ciphertext)
+ totalreclaw-server (:8080) -- FastAPI server (sees only ciphertext)
    |
    v
  postgres                  -- PostgreSQL 16 (encrypted blobs + blind indices)
@@ -59,7 +59,7 @@ All ports are bound to `127.0.0.1` only. Nothing is exposed to the network.
 
 ```bash
 git clone https://github.com/p-diogo/openmemory-poc.git
-cd openmemory-poc
+cd totalreclaw-poc
 ```
 
 The OpenClaw container builds from source. You need the OpenClaw source tree at `testbed/functional-test/openclaw/`. If it is not already there, clone or symlink it:
@@ -84,20 +84,20 @@ Edit `.env` and fill in:
 | Variable | Required | Description |
 |---|---|---|
 | `ZAI_API_KEY` | Yes | Your Z.AI API key (or another provider's key -- see below) |
-| `OPENMEMORY_MASTER_PASSWORD` | Yes | A **12-word BIP-39 mnemonic** for encryption key derivation. Generate one with `npx tsx skill/plugin/generate-mnemonic.ts` from the repo root. **Unrecoverable if lost.** This mnemonic can later derive an Ethereum wallet for on-chain features. |
+| `TOTALRECLAW_MASTER_PASSWORD` | Yes | A **12-word BIP-39 mnemonic** for encryption key derivation. Generate one with `npx tsx skill/plugin/generate-mnemonic.ts` from the repo root. **Unrecoverable if lost.** This mnemonic can later derive an Ethereum wallet for on-chain features. |
 | `POSTGRES_PASSWORD` | No | Defaults to `test`. Change for any shared environment. |
 
 **Generating a mnemonic:**
 
 ```bash
-cd /path/to/openmemory-poc
+cd /path/to/totalreclaw-poc
 npx tsx skill/plugin/generate-mnemonic.ts
 ```
 
 This prints 12 random English words. Copy them into your `.env`:
 
 ```
-OPENMEMORY_MASTER_PASSWORD=word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12
+TOTALRECLAW_MASTER_PASSWORD=word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12
 ```
 
 > **Why a mnemonic?** The same 12-word secret will later derive an Ethereum wallet for on-chain memory anchoring (MVP roadmap). Using it now means your encrypted memories will be forward-compatible — no migration needed.
@@ -122,8 +122,8 @@ curl http://localhost:8080/health
 docker compose -f docker-compose.functional-test.yml --profile functional-test ps
 
 # Plugin loaded?
-docker logs openclaw-test 2>&1 | grep -i openmemory
-# Look for: "OpenMemory plugin loaded"
+docker logs openclaw-test 2>&1 | grep -i totalreclaw
+# Look for: "TotalReclaw plugin loaded"
 # Note: "Registered new user: <uuid>" appears after your first message, not at startup.
 ```
 
@@ -137,25 +137,25 @@ docker exec openclaw-test npx openclaw devices approve --latest \
   --token e6a13aa43a07820b3a80755748a6c856fdb2cd9a8a6be0b6
 ```
 
-You are now connected. The OpenMemory plugin is active and the agent has four memory tools available.
+You are now connected. The TotalReclaw plugin is active and the agent has four memory tools available.
 
 ---
 
 ## How It Works
 
-The OpenMemory plugin gives the agent four tools and one automatic hook:
+The TotalReclaw plugin gives the agent four tools and one automatic hook:
 
 | Tool | What it does |
 |---|---|
-| `openmemory_remember` | Encrypt and store a fact, preference, decision, or goal |
-| `openmemory_recall` | Search the vault using blind indices, decrypt and re-rank client-side |
-| `openmemory_forget` | Soft-delete a memory by ID |
-| `openmemory_export` | Export all memories as JSON or Markdown (decrypted client-side) |
+| `totalreclaw_remember` | Encrypt and store a fact, preference, decision, or goal |
+| `totalreclaw_recall` | Search the vault using blind indices, decrypt and re-rank client-side |
+| `totalreclaw_forget` | Soft-delete a memory by ID |
+| `totalreclaw_export` | Export all memories as JSON or Markdown (decrypted client-side) |
 
 **Automatic recall (`before_agent_start` hook):** Before every response, the plugin tokenizes your message, searches for relevant memories via blind indices, decrypts matches client-side, and injects the top 8 into the agent's context. The server never sees the query or the results in plaintext.
 
 **Fact extraction (two paths):**
-1. **Explicit** — The agent calls `openmemory_remember` when it detects important information (guided by SKILL.md instructions).
+1. **Explicit** — The agent calls `totalreclaw_remember` when it detects important information (guided by SKILL.md instructions).
 2. **Automatic** — After each agent turn, the `agent_end` hook runs a lightweight LLM call to extract facts the agent may have missed. This uses a cheap/fast model derived from your provider (e.g., `glm-4.5-flash` for Z.AI, `gpt-4.1-mini` for OpenAI, `claude-haiku-4-5` for Anthropic).
 
 Both paths encrypt and store facts identically. Content fingerprint deduplication prevents exact duplicates, though slight LLM text variations may occasionally produce near-duplicates.
@@ -190,9 +190,9 @@ docker logs openclaw-test 2>&1 | tail -20
 Test direct memory operations:
 
 - "Remember that my favorite programming language is Rust"
-- "What do you remember about my preferences?" (triggers `openmemory_recall`)
-- "Export all my memories" (triggers `openmemory_export`)
-- "Forget memory `<paste-an-id-from-export>`" (triggers `openmemory_forget`)
+- "What do you remember about my preferences?" (triggers `totalreclaw_recall`)
+- "Export all my memories" (triggers `totalreclaw_export`)
+- "Forget memory `<paste-an-id-from-export>`" (triggers `totalreclaw_forget`)
 
 ### 3. Encryption Verification (~2 min)
 
@@ -200,7 +200,7 @@ Confirm the server only stores ciphertext:
 
 ```bash
 docker exec $(docker ps -qf name=postgres) \
-  psql -U openmemory -d openmemory \
+  psql -U totalreclaw -d totalreclaw \
   -c "SELECT id, substring(encrypted_blob, 1, 80) AS blob_preview, blind_indices FROM facts LIMIT 5;"
 ```
 
@@ -284,20 +284,20 @@ The memory plugin auto-detects your provider and uses a cheap/fast model for fac
 | **Localhost-only ports** | All ports bound to `127.0.0.1`. Nothing exposed to the network. |
 | **Privilege restriction** | `no-new-privileges:true` on server and database containers. |
 | **Read-only filesystem** | Server container filesystem is read-only (`tmpfs` for `/tmp`). |
-| **Non-root processes** | Server runs as `openmemory` user, OpenClaw build runs as `node` user. |
+| **Non-root processes** | Server runs as `totalreclaw` user, OpenClaw build runs as `node` user. |
 
 ### What testers should verify
 
 - [ ] Database contains no readable plaintext (Test Scenario 3 above)
 - [ ] `docker port` shows only `127.0.0.1` bindings, not `0.0.0.0`
-- [ ] No plaintext facts appear in container logs (`docker logs openmemory-server`)
+- [ ] No plaintext facts appear in container logs (`docker logs totalreclaw-server`)
 
 ### PoC limitations (not production-ready)
 
 - Gateway auth token is static in `config.json5` (would be generated per-session in production)
 - No TLS between containers (all traffic stays on a Docker bridge network)
 - No rate limiting on the API
-- `OPENMEMORY_MASTER_PASSWORD` falls back to a test passphrase if `.env` is not configured (uses Argon2id path, not BIP-39)
+- `TOTALRECLAW_MASTER_PASSWORD` falls back to a test passphrase if `.env` is not configured (uses Argon2id path, not BIP-39)
 
 ---
 
@@ -306,7 +306,7 @@ The memory plugin auto-detects your provider and uses a cheap/fast model for fac
 ### Server won't start
 
 ```bash
-docker compose -f docker-compose.functional-test.yml --profile functional-test logs openmemory-server
+docker compose -f docker-compose.functional-test.yml --profile functional-test logs totalreclaw-server
 docker compose -f docker-compose.functional-test.yml --profile functional-test logs postgres
 ```
 
@@ -315,11 +315,11 @@ Common cause: port 8080 already in use. Check with `lsof -i :8080`.
 ### Plugin not loading
 
 ```bash
-docker logs openclaw-test 2>&1 | grep -i "error\|openmemory\|plugin"
+docker logs openclaw-test 2>&1 | grep -i "error\|totalreclaw\|plugin"
 ```
 
-- **"OPENMEMORY_MASTER_PASSWORD not set"** -- Your `.env` is missing or not being read. Confirm the file exists in `testbed/functional-test/.env`.
-- **No "OpenMemory plugin loaded" log** -- Check that `skill/plugin/node_modules/` exists. Run `cd skill/plugin && ./setup.sh` on the host, or rebuild: `docker compose ... up -d --build openclaw-test`.
+- **"TOTALRECLAW_MASTER_PASSWORD not set"** -- Your `.env` is missing or not being read. Confirm the file exists in `testbed/functional-test/.env`.
+- **No "TotalReclaw plugin loaded" log** -- Check that `skill/plugin/node_modules/` exists. Run `cd skill/plugin && ./setup.sh` on the host, or rebuild: `docker compose ... up -d --build openclaw-test`.
 - **"openclaw: command not found"** — Use `npx openclaw` instead of bare `openclaw` inside the container. All CLI commands require the `npx` prefix.
 
 ### "Register failed: 409"
@@ -327,7 +327,7 @@ docker logs openclaw-test 2>&1 | grep -i "error\|openmemory\|plugin"
 The server already has an account for a different password/salt combination. Reset credentials:
 
 ```bash
-docker volume rm functional-test_openmemory-credentials
+docker volume rm functional-test_totalreclaw-credentials
 docker compose -f docker-compose.functional-test.yml --profile functional-test restart openclaw-test
 ```
 
@@ -358,7 +358,7 @@ There is no recovery. This is the zero-knowledge tradeoff. Start fresh (see abov
 | Data | Location | Survives restart? |
 |---|---|---|
 | Encrypted memories | PostgreSQL volume (`test-db-data`) | Yes |
-| Plugin credentials (user ID + salt) | Docker volume (`openmemory-credentials`) | Yes |
+| Plugin credentials (user ID + salt) | Docker volume (`totalreclaw-credentials`) | Yes |
 | OpenClaw state | Docker volume (`openclaw-state`) | Yes |
 | Encryption keys | Derived from 12-word mnemonic at startup | Never stored |
 
@@ -385,5 +385,5 @@ After testing, we would like to hear about:
 | Search | LSH blind indices, GIN index lookup on PostgreSQL |
 | Re-ranking | Client-side text-overlap scoring (BM25 + cosine planned) |
 | Benchmark | 98.1% Recall@8, full E2EE, real-world data |
-| Architecture spec | `docs/specs/openmemory/architecture.md` |
-| Server spec | `docs/specs/openmemory/server.md` |
+| Architecture spec | `docs/specs/totalreclaw/architecture.md` |
+| Server spec | `docs/specs/totalreclaw/server.md` |

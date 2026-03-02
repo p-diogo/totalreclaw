@@ -1,7 +1,7 @@
 /**
- * OpenMemory Skill - Tools Barrel Export
+ * TotalReclaw Skill - Tools Barrel Export
  *
- * This module exports all tool implementations for the OpenMemory skill.
+ * This module exports all tool implementations for the TotalReclaw skill.
  * Each tool provides a specific capability for interacting with memories.
  *
  * ## Available Tools

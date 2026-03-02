@@ -1,0 +1,67 @@
+{
+  "benchmark_type": "e2e_pipeline",
+  "description": "Full pipeline benchmark: raw conversations -> extraction -> storage -> retrieval. Each system uses its own extraction.",
+  "timestamp": "2026-02-24 01:55:20",
+  "config": {
+    "max_conversations": 500,
+    "max_queries": 200,
+    "seed": 42,
+    "om_extraction_concurrency": 3
+  },
+  "dataset": {
+    "total_conversations": 500,
+    "total_queries": 200,
+    "sources": [
+      "slack",
+      "whatsapp"
+    ]
+  },
+  "results": {
+    "totalreclaw": {
+      "system_name": "TotalReclaw E2EE",
+      "privacy_score": 100,
+      "extraction": {
+        "total_facts": 2498,
+        "avg_importance": 5.841873498799039,
+        "avg_confidence": 0.8719015212169736,
+        "total_extraction_time_ms": 6401510.735034943,
+        "facts_per_conversation": 4.996,
+        "extraction_errors": 21
+      },
+      "retrieval": {
+        "recall_at_8": 0.675,
+        "recall_at_20": 0.72,
+        "mrr": 0.5841767093200917,
+        "avg_latency_ms": 57.46304210508242,
+        "p95_latency_ms": 104.21491699526086,
+        "queries_run": 200
+      },
+      "total_conversations": 500,
+      "total_time_s": 6438.037456989288,
+      "notes": "TotalReclaw E2EE pipeline, extraction via arcee-ai/trinity-large-preview:free, LLM tokens=1266838, LLM calls=500, extraction_time=6401.5s"
+    },
+    "mem0": {
+      "system_name": "Mem0 Platform",
+      "privacy_score": 0,
+      "extraction": {
+        "total_facts": 29,
+        "avg_importance": 0.0,
+        "avg_confidence": 0.0,
+        "total_extraction_time_ms": 347160.25972366333,
+        "facts_per_conversation": 1.0,
+        "extraction_errors": 0
+      },
+      "retrieval": {
+        "recall_at_8": 0.005,
+        "recall_at_20": 0.005,
+        "mrr": 0.0016666666666666666,
+        "avg_latency_ms": 469.1028433208703,
+        "p95_latency_ms": 605.9945000160951,
+        "queries_run": 200
+      },
+      "total_conversations": 500,
+      "total_time_s": 771.9022216796875,
+      "notes": "Mem0 SaaS, internal extraction (gpt-4.1-nano), stored=29, errors=0, rate_limited=0"
+    }
+  }
+}

@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - Deduplication Logic
+ * TotalReclaw Skill - Deduplication Logic
  *
  * Handles detection of duplicate facts using:
  * 1. Vector similarity for initial candidate retrieval

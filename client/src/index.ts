@@ -1,5 +1,5 @@
 /**
- * OpenMemory Client Library
+ * TotalReclaw Client Library
  *
  * A TypeScript library for zero-knowledge memory operations.
  *
@@ -11,9 +11,9 @@
  *
  * @example
  * ```typescript
- * import { OpenMemory } from '@openmemory/client';
+ * import { TotalReclaw } from '@totalreclaw/client';
  *
- * const client = new OpenMemory({
+ * const client = new TotalReclaw({
  *   serverUrl: 'http://127.0.0.1:8080',
  * });
  *
@@ -30,7 +30,7 @@
 
 import * as crypto from 'crypto';
 import {
-  OpenMemoryConfig,
+  TotalReclawConfig,
   Fact,
   FactMetadata,
   EncryptedFact,
@@ -38,8 +38,8 @@ import {
   RerankedResult,
   ExportedData,
   LSHConfig,
-  OpenMemoryError,
-  OpenMemoryErrorCode,
+  TotalReclawError,
+  TotalReclawErrorCode,
   DEFAULT_LSH_CONFIG,
 } from './types';
 import { deriveKeys, generateSalt, createAuthProof } from './crypto';
@@ -49,10 +49,10 @@ import { generateBlindIndices, generateTrapdoors } from './crypto/blind';
 import { LSHIndex, mergeLSHConfig } from './lsh';
 import { EmbeddingModel, createHashBasedEmbedding } from './embedding';
 import { cosineSimilarity, BM25Scorer, rrfFusion, normalizeScores, calculateDecayScore } from './search';
-import { OpenMemoryClient } from './api';
+import { TotalReclawClient } from './api';
 
 /**
- * Internal state for the OpenMemory client
+ * Internal state for the TotalReclaw client
  */
 interface ClientState {
   userId: string | null;
@@ -63,13 +63,13 @@ interface ClientState {
 }
 
 /**
- * Main OpenMemory Client
+ * Main TotalReclaw Client
  *
  * Provides a high-level API for zero-knowledge memory operations.
  */
-export class OpenMemory {
-  private config: OpenMemoryConfig & { lshConfig: Required<LSHConfig> };
-  private apiClient: OpenMemoryClient;
+export class TotalReclaw {
+  private config: TotalReclawConfig & { lshConfig: Required<LSHConfig> };
+  private apiClient: TotalReclawClient;
   private lshIndex: LSHIndex;
   private embeddingModel: EmbeddingModel;
   private bm25Scorer: BM25Scorer;
@@ -82,17 +82,17 @@ export class OpenMemory {
   };
 
   /**
-   * Create a new OpenMemory client
+   * Create a new TotalReclaw client
    *
    * @param config - Client configuration
    */
-  constructor(config: OpenMemoryConfig) {
+  constructor(config: TotalReclawConfig) {
     this.config = {
       ...config,
       lshConfig: mergeLSHConfig(config.lshConfig) as Required<LSHConfig>,
     };
 
-    this.apiClient = new OpenMemoryClient(this.config);
+    this.apiClient = new TotalReclawClient(this.config);
     this.lshIndex = new LSHIndex(this.config.lshConfig);
     this.embeddingModel = new EmbeddingModel();
     this.bm25Scorer = new BM25Scorer();
@@ -133,8 +133,8 @@ export class OpenMemory {
    */
   async register(masterPassword: string): Promise<string> {
     if (this.state.isRegistered) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.ALREADY_REGISTERED,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.ALREADY_REGISTERED,
         'Client is already registered'
       );
     }
@@ -446,8 +446,8 @@ export class OpenMemory {
    */
   private ensureReady(): void {
     if (!this.state.isRegistered) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.NOT_REGISTERED,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.NOT_REGISTERED,
         'Client not registered. Call register() or login() first.'
       );
     }
@@ -480,7 +480,7 @@ export {
   // Types
   LSHConfig,
   DEFAULT_LSH_CONFIG,
-  OpenMemoryConfig,
+  TotalReclawConfig,
   Fact,
   FactMetadata,
   EncryptedFact,
@@ -493,8 +493,8 @@ export {
   StoreResponse,
   SearchRequest,
   SearchResponse,
-  OpenMemoryError,
-  OpenMemoryErrorCode,
+  TotalReclawError,
+  TotalReclawErrorCode,
 } from './types';
 
 export {
@@ -521,4 +521,4 @@ export * from './search';
 export * from './api';
 
 // Default export
-export default OpenMemory;
+export default TotalReclaw;

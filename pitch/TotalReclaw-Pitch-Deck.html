@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TotalReclaw - Pitch Deck</title>
+    <style>
+        @font-face {
+            font-family: 'Euclid Circular A';
+            src: url('Euclid/EuclidCircularA-Light.otf') format('opentype');
+            font-weight: 300;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Euclid Circular A';
+            src: url('Euclid/EuclidCircularA-Regular.otf') format('opentype');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Euclid Circular A';
+            src: url('Euclid/EuclidCircularA-Medium.otf') format('opentype');
+            font-weight: 500;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Euclid Circular A';
+            src: url('Euclid/EuclidCircularA-Semibold.otf') format('opentype');
+            font-weight: 600;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Euclid Circular A';
+            src: url('Euclid/EuclidCircularA-Bold.otf') format('opentype');
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* The Graph Brand Colors */
+            --graph-purple: #6F4CFF;
+            --graph-dark: #0C0A1D;
+            --graph-gray: #494755;
+            --graph-white: #F8F6FF;
+            --astro-blue: #4C66FF;
+            --galactic-aqua: #66D8FF;
+            --starfield-green: #4BCA81;
+            --nebula-pink: #FF79C6;
+            --solar-yellow: #FFA801;
+        }
+
+        body {
+            font-family: 'Euclid Circular A', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--graph-dark);
+            color: var(--graph-white);
+            line-height: 1.6;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .deck-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slides-wrapper {
+            display: flex;
+            height: 100%;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 80px 100px;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(111, 76, 255, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .slide-number {
+            position: absolute;
+            top: 50px;
+            right: 100px;
+            font-size: 14px;
+            color: var(--graph-gray);
+            font-weight: 500;
+            letter-spacing: 0.1em;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--graph-purple), var(--astro-blue));
+            transition: width 0.3s ease;
+        }
+
+        .nav-dots {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(111, 76, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-dot:hover {
+            background: rgba(111, 76, 255, 0.6);
+        }
+
+        .nav-dot.active {
+            background: var(--graph-purple);
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(111, 76, 255, 0.1);
+            border: 1px solid rgba(111, 76, 255, 0.2);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            font-size: 20px;
+            color: var(--graph-purple);
+        }
+
+        .nav-arrow:hover {
+            background: rgba(111, 76, 255, 0.2);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .nav-arrow.prev {
+            left: 30px;
+        }
+
+        .nav-arrow.next {
+            right: 30px;
+        }
+
+        h1 {
+            font-size: 56px;
+            font-weight: 600;
+            color: var(--graph-white);
+            margin-bottom: 24px;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        h2 {
+            font-size: 42px;
+            font-weight: 600;
+            color: var(--graph-white);
+            margin-bottom: 20px;
+            letter-spacing: -0.01em;
+        }
+
+        h3 {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--graph-white);
+            margin-bottom: 12px;
+        }
+
+        p {
+            font-size: 19px;
+            color: rgba(248, 246, 255, 0.7);
+            margin-bottom: 16px;
+            line-height: 1.6;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .accent {
+            color: var(--graph-purple);
+            font-weight: 600;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, var(--graph-purple) 0%, var(--astro-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+
+        .tagline {
+            font-size: 26px;
+            color: var(--graph-gray);
+            margin-top: 20px;
+            font-weight: 400;
+        }
+
+        ul {
+            list-style: none;
+            margin: 24px auto;
+            max-width: 900px;
+            text-align: left;
+        }
+
+        li {
+            font-size: 18px;
+            color: rgba(248, 246, 255, 0.7);
+            padding: 10px 0;
+            padding-left: 28px;
+            position: relative;
+        }
+
+        li::before {
+            content: "◆";
+            position: absolute;
+            left: 0;
+            color: var(--graph-purple);
+            font-size: 12px;
+        }
+
+        .problem-box {
+            background: rgba(111, 76, 255, 0.08);
+            border-left: 4px solid var(--graph-purple);
+            padding: 20px 24px;
+            margin: 20px auto;
+            border-radius: 0 12px 12px 0;
+            max-width: 900px;
+        }
+
+        .solution-box {
+            background: rgba(75, 202, 129, 0.08);
+            border-left: 4px solid var(--starfield-green);
+            padding: 20px 24px;
+            margin: 20px auto;
+            border-radius: 0 12px 12px 0;
+            max-width: 900px;
+        }
+
+        .quote {
+            background: rgba(73, 71, 85, 0.3);
+            padding: 20px 28px;
+            border-radius: 12px;
+            margin: 20px auto;
+            font-style: italic;
+            border-left: 4px solid var(--graph-purple);
+            position: relative;
+            max-width: 900px;
+        }
+
+        .quote::before {
+            content: '"';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            font-size: 50px;
+            color: var(--graph-purple);
+            opacity: 0.3;
+            font-family: Georgia, serif;
+        }
+
+        .quote-author {
+            font-size: 13px;
+            color: var(--graph-gray);
+            margin-top: 10px;
+            font-style: normal;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 28px auto;
+            max-width: 900px;
+        }
+
+        .comparison-card {
+            background: rgba(73, 71, 85, 0.3);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(111, 76, 255, 0.15);
+        }
+
+        .comparison-card p {
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+            margin: 32px auto;
+            max-width: 900px;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 28px 20px;
+            background: rgba(73, 71, 85, 0.3);
+            border-radius: 16px;
+            border: 1px solid rgba(111, 76, 255, 0.1);
+        }
+
+        .stat-number {
+            font-size: 52px;
+            font-weight: 600;
+            color: var(--graph-purple);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 15px;
+            color: var(--graph-gray);
+            margin-top: 12px;
+        }
+
+        .tech-diagram {
+            background: rgba(12, 10, 29, 0.8);
+            padding: 28px;
+            border-radius: 16px;
+            margin: 24px 0;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            border: 1px solid rgba(111, 76, 255, 0.1);
+            max-width: 900px;
+            line-height: 1.5;
+        }
+
+        .roadmap {
+            position: relative;
+            padding-left: 36px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .roadmap::before {
+            content: "";
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--graph-purple) 0%, var(--graph-gray) 100%);
+        }
+
+        .roadmap-item {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .roadmap-item::before {
+            content: "";
+            position: absolute;
+            left: -26px;
+            top: 24px;
+            width: 12px;
+            height: 12px;
+            background: var(--graph-gray);
+            border-radius: 50%;
+        }
+
+        .roadmap-item.now::before {
+            background: var(--starfield-green);
+            box-shadow: 0 0 20px rgba(75, 202, 129, 0.5);
+        }
+
+        .logo {
+            font-size: 36px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--graph-purple) 0%, var(--galactic-aqua) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+
+        .slide-title {
+            display: inline-block;
+            padding: 6px 18px;
+            background: rgba(111, 76, 255, 0.1);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--graph-purple);
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .diamond-pattern {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image:
+                linear-gradient(45deg, var(--graph-purple) 25%, transparent 25%),
+                linear-gradient(-45deg, var(--graph-purple) 25%, transparent 25%);
+            background-size: 20px 20px;
+        }
+
+        .split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .pricing-card {
+            background: rgba(73, 71, 85, 0.3);
+            padding: 28px;
+            border-radius: 16px;
+            border: 1px solid rgba(111, 76, 255, 0.2);
+            text-align: center;
+        }
+
+        .price {
+            font-size: 42px;
+            font-weight: 600;
+            color: var(--graph-purple);
+            margin: 16px 0;
+        }
+
+        @media (max-width: 1024px) {
+            .slide {
+                padding: 60px 40px;
+            }
+            h1 {
+                font-size: 42px;
+            }
+            h2 {
+                font-size: 32px;
+            }
+            .split {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="deck-container">
+        <div class="slides-wrapper" id="slidesWrapper">
+
+            <!-- SLIDE 1: Title -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">01 / 13</div>
+                <div class="logo">TotalReclaw</div>
+                <h1>The Universal Memory Layer<br>for AI Agents</h1>
+                <p class="tagline">Encrypted. Portable. Yours.</p>
+            </div>
+
+            <!-- SLIDE 2: The Problem -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">02 / 13</div>
+                <span class="slide-title">THE PROBLEM</span>
+                <h2>AI Memory Lock-in is Here</h2>
+
+                <div class="problem-box">
+                    <p style="color: var(--nebula-pink); margin-bottom: 8px;"><strong>AI agents create powerful, personalized memories.</strong> But there's a catch: <span class="accent">you're building memories you can never leave.</span></p>
+                </div>
+
+                <p>Today's AI memory systems are creating data silos:</p>
+                <ul>
+                    <li><strong>Hosted OpenClaw instances</strong> on Railway, Vercel, Render — each with isolated local memory</li>
+                    <li><strong>Platform-specific memory</strong> — ChatGPT memories don't sync with Claude</li>
+                    <li><strong>Vendor-controlled storage</strong> — your memories are held hostage by whoever hosts your agent</li>
+                </ul>
+
+                <p style="margin-top: 24px;">The result: <span class="highlight">a fragmented digital brain scattered across different companies' servers.</span></p>
+            </div>
+
+            <!-- SLIDE 3: Evidence -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">03 / 13</div>
+                <span class="slide-title">EVIDENCE</span>
+                <h2>The Silo Pattern is Emerging</h2>
+
+                <p>Major platforms now offer one-click OpenClaw deployment:</p>
+
+                <div class="comparison">
+                    <div class="comparison-card">
+                        <h3>Railway</h3>
+                        <p>"Deploy OpenClaw to the cloud for free"</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h3>Vercel</h3>
+                        <p>"Running OpenClaw in Vercel Sandbox"</p>
+                    </div>
+                </div>
+
+                <div class="quote">
+                    "Your AI memory is vendor-locked. Each platform independently solved the same problem — creating accidental lock-in by design."
+                    <div class="quote-author">— Guild.ai, "AI Agent Portability"</div>
+                </div>
+
+                <p>Each deployment = isolated memory. Your agent learns about you on Railway, but that memory <span class="accent">never leaves</span>.</p>
+            </div>
+
+            <!-- SLIDE 4: Why Existing Solutions Fall Short -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">04 / 13</div>
+                <span class="slide-title">THE GAP</span>
+                <h2>Why Existing Solutions Fall Short</h2>
+
+                <div class="comparison">
+                    <div class="comparison-card">
+                        <h3>Local-First Solutions</h3>
+                        <p><strong>Examples:</strong> openclaw-engram, QMD</p>
+                        <p style="color: var(--graph-gray); margin-top: 12px;">Great privacy. But: <span class="accent">no cross-device sync</span>, memory lives on one machine.</p>
+                    </div>
+                    <div class="comparison-card">
+                        <h3>Hosted Solutions</h3>
+                        <p><strong>Examples:</strong> Mem0, Zep</p>
+                        <p style="color: var(--graph-gray); margin-top: 12px;">Easy to use. But: <span class="accent">vendor lock-in</span>, they can read your memories.</p>
+                    </div>
+                </div>
+
+                <div class="solution-box" style="margin-top: 32px;">
+                    <p style="color: var(--starfield-green);"><strong>The gap:</strong> No one offers <span class="highlight">encrypted cross-device sync</span> with <span class="highlight">guaranteed data portability</span>.</p>
+                </div>
+            </div>
+
+            <!-- SLIDE 5: Our Solution -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">05 / 13</div>
+                <span class="slide-title">OUR SOLUTION</span>
+                <h1 style="font-size: 52px; margin-bottom: 28px;">TotalReclaw</h1>
+
+                <p class="tagline" style="font-size: 28px; color: var(--graph-purple);">The Password Manager for AI Memory</p>
+                <p style="color: var(--graph-gray); font-size: 18px;">Like 1Password, but for your AI agent memories — encrypted, portable, and works everywhere.</p>
+
+                <div class="solution-box" style="margin-top: 32px;">
+                    <p style="color: var(--starfield-green);"><strong>A zero-knowledge encrypted memory vault that syncs across all your AI agents.</strong></p>
+                </div>
+
+                <ul style="margin-top: 28px;">
+                    <li><strong>End-to-end encrypted:</strong> Your memories are encrypted before they leave your device</li>
+                    <li><strong>Universal sync:</strong> Use the same memory across OpenClaw, Claude Desktop, and any MCP-compatible agent</li>
+                    <li><strong>Always portable:</strong> One-click export to plain-text markdown — leave anytime, no lock-in</li>
+                </ul>
+            </div>
+
+            <!-- SLIDE 6: Technical Overview -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">06 / 13</div>
+                <span class="slide-title">TECHNICAL APPROACH</span>
+                <h2>How It Works</h2>
+
+                <div style="max-width: 1000px; display: grid; grid-template-columns: 1fr 80px 1fr; gap: 24px; align-items: center;">
+                    <!-- Your Device Section -->
+                    <div style="background: rgba(111, 76, 255, 0.12); border: 2px solid var(--graph-purple); border-radius: 16px; padding: 28px;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                            <span style="font-size: 32px;">💻</span>
+                            <h3 style="margin: 0; font-size: 20px;">YOUR DEVICE</h3>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; font-size: 13px;">
+                                <span style="color: var(--graph-purple);">🔐</span> <strong>Argon2id KDF</strong>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; font-size: 13px;">
+                                <span style="color: var(--galactic-aqua);">🧠</span> <strong>ONNX</strong> embeddings
+                            </div>
+                            <div style="background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; font-size: 13px;">
+                                <span style="color: var(--nebula-pink);">🔒</span> <strong>AES-GCM</strong> encrypt
+                            </div>
+                            <div style="background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; font-size: 13px;">
+                                <span style="color: var(--starfield-green);">🔍</span> <strong>BM25</strong> rerank
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connection Arrow -->
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                            <span style="color: var(--graph-purple); font-size: 12px; font-weight: 600;">mTLS</span>
+                            <span style="font-size: 28px; color: var(--graph-purple);">→</span>
+                        </div>
+                    </div>
+
+                    <!-- Server Section -->
+                    <div style="background: rgba(75, 202, 129, 0.12); border: 2px solid var(--starfield-green); border-radius: 16px; padding: 28px;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                            <span style="font-size: 32px;">🖥️</span>
+                            <h3 style="margin: 0; font-size: 20px;">SERVER</h3>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; font-size: 13px; text-align: center;">
+                                <span style="color: var(--starfield-green);">🗄️</span> <strong>PostgreSQL</strong> + pgvector
+                            </div>
+                            <div style="background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; font-size: 13px; text-align: center;">
+                                <span style="color: var(--starfield-green);">📦</span> ciphertext + embeddings
+                            </div>
+                            <div style="background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; font-size: 13px; text-align: center;">
+                                <span style="color: var(--nebula-pink);">🚫</span> <strong>NEVER</strong> sees plaintext
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Insight & Search -->
+                <div style="max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px;">
+                    <div style="background: rgba(255, 121, 198, 0.1); border-left: 4px solid var(--nebula-pink); padding: 14px 18px; border-radius: 0 10px 10px 0;">
+                        <p style="margin: 0; font-size: 15px;"><strong style="color: var(--nebula-pink);">Zero-knowledge:</strong> Encryption happens locally. <strong>Even we can't read your memories.</strong></p>
+                    </div>
+                    <div style="background: rgba(73, 71, 85, 0.3); padding: 14px 18px; border-radius: 10px;">
+                        <p style="margin: 0; font-size: 15px;"><strong style="color: var(--galactic-aqua);">Search:</strong> <span style="color: var(--graph-purple);">remote semantic</span> → <span style="color: var(--starfield-green);">local BM25</span> → <span style="color: var(--solar-yellow);">RRF</span>. Competitive accuracy + privacy.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE 7: Competitive Advantage -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">07 / 13</div>
+                <span class="slide-title">COMPETITIVE ADVANTAGE</span>
+                <h2>State of the Art: Hybrid Search</h2>
+
+                <p style="margin-bottom: 20px;">Our two-pass hybrid retrieval achieves competitive accuracy while maintaining zero-knowledge privacy:</p>
+
+                <div style="max-width: 950px;">
+                    <!-- Search Flow -->
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 16px; align-items: center; margin-bottom: 28px;">
+                        <div style="background: rgba(111, 76, 255, 0.15); border: 2px solid var(--graph-purple); padding: 20px; border-radius: 12px; text-align: center;">
+                            <p style="margin: 0; font-size: 14px;"><strong style="color: var(--graph-purple);">PASS 1</strong><br>Server<br>~100ms</p>
+                            <p style="margin: 8px 0 0 0; font-size: 12px;">Semantic vector search<br>HNSW KNN<br>Top 250</p>
+                        </div>
+                        <span style="font-size: 28px; color: var(--graph-purple);">→</span>
+                        <div style="background: rgba(75, 202, 129, 0.15); border: 2px solid var(--starfield-green); padding: 20px; border-radius: 12px; text-align: center;">
+                            <p style="margin: 0; font-size: 14px;"><strong style="color: var(--starfield-green);">PASS 2</strong><br>Client<br>~500ms</p>
+                            <p style="margin: 8px 0 0 0; font-size: 12px;">Decrypt + BM25<br>keyword rerank<br>RRF fusion</p>
+                        </div>
+                        <span style="font-size: 28px; color: var(--solar-yellow);">=</span>
+                        <div style="background: rgba(255, 168, 1, 0.15); border: 2px solid var(--solar-yellow); padding: 20px; border-radius: 12px; text-align: center;">
+                            <p style="margin: 0; font-size: 14px;"><strong style="color: var(--solar-yellow);">RESULT</strong></p>
+                            <p style="margin: 8px 0 0 0; font-size: 12px;">Top 3-5<br>competitive<br>accuracy</p>
+                        </div>
+                    </div>
+
+                    <!-- Why It Works -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                        <div style="background: rgba(73, 71, 85, 0.3); padding: 16px; border-radius: 12px; text-align: center;">
+                            <span style="font-size: 28px; color: var(--galactic-aqua);">🎯</span>
+                            <p style="margin: 8px 0 0 0; font-size: 13px;"><strong>Semantic Recall</strong><br>Remote vectors find concepts and meaning</p>
+                        </div>
+                        <div style="background: rgba(73, 71, 85, 0.3); padding: 16px; border-radius: 12px; text-align: center;">
+                            <span style="font-size: 28px; color: var(--starfield-green);">🔎</span>
+                            <p style="margin: 8px 0 0 0; font-size: 13px;"><strong>Exact Precision</strong><br>Local BM25 finds IDs, error codes, symbols</p>
+                        </div>
+                        <div style="background: rgba(73, 71, 85, 0.3); padding: 16px; border-radius: 12px; text-align: center;">
+                            <span style="font-size: 28px; color: var(--solar-yellow);">⚡</span>
+                            <p style="margin: 8px 0 0 0; font-size: 13px;"><strong>Blind Indices</strong><br>HMAC hashes for exact-match on sensitive data</p>
+                        </div>
+                    </div>
+
+                    <!-- Key Differentiator -->
+                    <div style="background: rgba(111, 76, 255, 0.12); border: 2px solid var(--graph-purple); padding: 20px 24px; border-radius: 12px; display: flex; align-items: center; gap: 20px;">
+                        <span style="font-size: 40px;">🏆</span>
+                        <div>
+                            <p style="margin: 0; font-size: 16px;"><strong style="color: var(--graph-purple);">The TotalReclaw Difference:</strong> No competitor combines zero-knowledge encryption with competitive search accuracy. Local-first solutions can't sync; hosted solutions can't guarantee privacy. <strong style="color: var(--starfield-green);">We do both without compromise.</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE 8: Market Opportunity -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">08 / 13</div>
+                <span class="slide-title">MARKET OPPORTUNITY</span>
+                <h2>Why Now</h2>
+
+                <div class="stat-grid">
+                    <div class="stat">
+                        <div class="stat-number">189K+</div>
+                        <div class="stat-label">OpenClaw GitHub stars</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">dozens</div>
+                        <div class="stat-label">Hosting platforms offering OpenClaw</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">1</div>
+                        <div class="stat-label">Portable memory solution</div>
+                    </div>
+                </div>
+
+                <p style="margin-top: 32px;"><strong>The window is open:</strong></p>
+                <ul>
+                    <li>AI agent usage is exploding</li>
+                    <li>Silos are forming now (Railway, Vercel, Render)</li>
+                    <li>Users are starting to feel the pain of lock-in</li>
+                    <li>No credible portable memory solution exists</li>
+                </ul>
+
+                <p style="margin-top: 20px;"><span class="highlight">We're building the anti-silo before the walls close.</span></p>
+            </div>
+
+            <!-- SLIDE 9: Go-to-Market Strategy -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">09 / 13</div>
+                <span class="slide-title">GO-TO-MARKET</span>
+                <h2>The Trojan Horse Strategy</h2>
+
+                <p>We enter through OpenClaw, then expand to the entire AI ecosystem:</p>
+
+                <div class="roadmap">
+                    <div class="roadmap-item now">
+                        <h3>Phase 1: OpenClaw Skill (The Wedge)</h3>
+                        <p style="font-size: 16px; color: var(--graph-gray);">npm package that overrides OpenClaw's default local memory commands. Seamless install, instant value.</p>
+                    </div>
+                    <div class="roadmap-item">
+                        <h3>Phase 2: MCP Server (Universal Compatibility)</h3>
+                        <p style="font-size: 16px; color: var(--graph-gray);">Local stdio process for Claude Desktop, ChatGPT Desktop, and any MCP-compatible agent.</p>
+                    </div>
+                    <div class="roadmap-item">
+                        <h3>Phase 3: Direct API (Platform Integration)</h3>
+                        <p style="font-size: 16px; color: var(--graph-gray);">REST API for custom agents, enterprise deployments, and platform partnerships.</p>
+                    </div>
+                </div>
+
+                <p style="margin-top: 24px;"><strong>Why this works:</strong> OpenClaw has 189k+ GitHub stars. The perfect beachhead for portable AI memory.</p>
+            </div>
+
+            <!-- SLIDE 10: Roadmap - Three Phases -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">10 / 13</div>
+                <span class="slide-title">LONG-TERM VISION</span>
+                <h2>Censorship-Resistant Memory</h2>
+
+                <p>Our SaaS is the first step. The long-term vision is even more ambitious:</p>
+
+                <div class="roadmap">
+                    <div class="roadmap-item now">
+                        <h3>Now: Centralized SaaS</h3>
+                        <p style="font-size: 15px; color: var(--graph-gray);">Fast go-to-market, single operator, zero-knowledge encryption, OpenClaw skill + MCP server, REST API.</p>
+                    </div>
+                    <div class="roadmap-item">
+                        <h3>Phase 2: The Graph Network</h3>
+                        <p style="font-size: 15px; color: var(--graph-gray);">Decentralized storage via The Graph Horizon Data Service. Graph Indexers run TotalReclaw nodes. No central point of failure. Censorship-resistant.</p>
+                    </div>
+                    <div class="roadmap-item">
+                        <h3>Phase 3: TDX Integration <span style="color: var(--solar-yellow); font-size: 14px;">+ Accuracy Boost</span></h3>
+                        <p style="font-size: 15px; color: var(--graph-gray);"><strong>Intel TDX</strong> for hardware-enforced security. <strong>Local Qwen-2.5-1.5B LLM</strong> enriches metadata inside enclave — entity extraction, smart tagging, query parsing. <strong style="color: var(--starfield-green);">Dramatically improves search accuracy while staying private.</strong></p>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255, 168, 1, 0.1); border-left: 4px solid var(--solar-yellow); padding: 14px 18px; border-radius: 0 10px 10px 0; margin-top: 20px; max-width: 900px;">
+                    <p style="margin: 0; font-size: 15px;"><strong style="color: var(--solar-yellow);">Why TDX matters:</strong> Hardware-enforced security + enhanced semantics from local LLM = <span style="color: var(--starfield-green);">better privacy AND better accuracy</span>. No external API calls — the LLM runs entirely inside the enclave.</p>
+                </div>
+
+                <p style="margin-top: 20px;"><strong>The progression:</strong> Start simple (SaaS), prove the model, then decentralize and enhance.</p>
+            </div>
+
+            <!-- SLIDE 11: The Graph Integration -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">11 / 13</div>
+                <span class="slide-title">THE GRAPH NETWORK</span>
+                <h2>Path to Decentralization</h2>
+
+                <div class="comparison" style="margin-bottom: 24px;">
+                    <div class="comparison-card" style="border-color: var(--graph-purple);">
+                        <h3 style="font-size: 18px; color: var(--starfield-green);">Phase 1: E2EE Stack on Horizon</h3>
+                        <p style="font-size: 14px; margin-top: 12px;">Migrate to <strong>The Graph Horizon Data Service</strong>. Indexers run isolated nodes (PostgreSQL+pgvector OR Qdrant). Store only ciphertext — zero-knowledge preserved.</p>
+                    </div>
+                    <div class="comparison-card" style="border-color: var(--solar-yellow);">
+                        <h3 style="font-size: 18px; color: var(--solar-yellow);">Phase 2: TDX + LLM Enhancement</h3>
+                        <p style="font-size: 14px; margin-top: 12px;"><strong>Intel TDX</strong> hardware enclaves. <strong>Qwen-2.5-1.5B</strong> (MIT) runs in-enclave for metadata extraction. Entity recognition, smart tagging, query parsing. <strong style="color: var(--starfield-green);">Boosts accuracy + privacy.</strong></p>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 24px auto; max-width: 900px;">
+                    <div style="background: rgba(73, 71, 85, 0.3); padding: 20px; border-radius: 12px; text-align: center;">
+                        <span style="font-size: 32px; color: var(--graph-purple);">🛡️</span>
+                        <p style="font-size: 14px; margin-top: 8px; margin-bottom: 0;"><strong>Censorship-resistant</strong></p>
+                    </div>
+                    <div style="background: rgba(73, 71, 85, 0.3); padding: 20px; border-radius: 12px; text-align: center;">
+                        <span style="font-size: 32px; color: var(--graph-purple);">⚡</span>
+                        <p style="font-size: 14px; margin-top: 8px; margin-bottom: 0;"><strong>No central failure point</strong></p>
+                    </div>
+                    <div style="background: rgba(73, 71, 85, 0.3); padding: 20px; border-radius: 12px; text-align: center;">
+                        <span style="font-size: 32px; color: var(--graph-purple);">🌐</span>
+                        <p style="font-size: 14px; margin-top: 8px; margin-bottom: 0;"><strong>Community-operated</strong></p>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255, 121, 198, 0.1); border-left: 4px solid var(--nebula-pink); padding: 14px 20px; border-radius: 0 10px 10px 0; max-width: 900px;">
+                    <p style="margin: 0; font-size: 16px;"><strong style="color: var(--nebula-pink);">Key insight:</strong> We don't sacrifice privacy for decentralization. Zero-knowledge encryption is preserved throughout both migrations. Client-side crypto remains identical — only the storage backend changes.</p>
+                </div>
+            </div>
+
+            <!-- SLIDE 12: Summary -->
+            <div class="slide">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">12 / 13</div>
+                <span class="slide-title">SUMMARY</span>
+                <h2>In Summary</h2>
+
+                <div class="solution-box" style="margin-bottom: 20px;">
+                    <p style="color: var(--starfield-green);"><strong>The problem:</strong> AI memory lock-in is here. Silos are forming. Your memories are trapped.</p>
+                </div>
+
+                <div class="solution-box" style="margin-bottom: 20px;">
+                    <p style="color: var(--starfield-green);"><strong>The solution:</strong> TotalReclaw — encrypted cross-device sync for all your AI agents.</p>
+                </div>
+
+                <div class="solution-box">
+                    <p style="color: var(--starfield-green);"><strong>The vision:</strong> SaaS → Graph Network → TDX. Build the anti-silo.</p>
+                </div>
+
+                <h1 style="margin-top: 40px; font-size: 36px;">The Universal Memory Layer for AI Agents</h1>
+                <p class="tagline" style="font-size: 22px;">Encrypted. Portable. Yours.</p>
+            </div>
+
+            <!-- SLIDE 13: Call to Action -->
+            <div class="slide" style="text-align: center; align-items: center;">
+                <div class="diamond-pattern"></div>
+                <div class="slide-number">13 / 13</div>
+                <div style="color: var(--graph-purple); font-size: 42px; margin-bottom: 20px;">◆</div>
+                <h1 style="font-size: 58px; margin-bottom: 28px;">Let's build the<br>anti-silo.</h1>
+                <p style="font-size: 22px; color: var(--graph-gray); max-width: 550px; margin: 0 auto 40px;">AI memory shouldn't be trapped. Your digital brain should be portable, private, and permanently yours.</p>
+                <div style="font-size: 32px; font-weight: 600; color: var(--graph-purple);">TotalReclaw</div>
+                <p style="font-size: 17px; color: var(--graph-gray); margin-top: 14px;">Encrypted. Portable. Yours.</p>
+            </div>
+
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-arrow prev" id="prevBtn">‹</div>
+        <div class="nav-arrow next" id="nextBtn">›</div>
+        <div class="nav-dots" id="navDots"></div>
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <script>
+        const slidesWrapper = document.getElementById('slidesWrapper');
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const navDotsContainer = document.getElementById('navDots');
+        const progressBar = document.getElementById('progressBar');
+
+        let currentSlide = 0;
+        const totalSlides = slides.length;
+
+        // Create navigation dots
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+            dot.addEventListener('click', () => goToSlide(i));
+            navDotsContainer.appendChild(dot);
+        }
+
+        const navDots = document.querySelectorAll('.nav-dot');
+
+        function updateSlide() {
+            slidesWrapper.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            progressBar.style.width = `${((currentSlide + 1) / totalSlides) * 100}%`;
+
+            navDots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+
+            prevBtn.style.opacity = currentSlide === 0 ? '0.3' : '1';
+            prevBtn.style.pointerEvents = currentSlide === 0 ? 'none' : 'auto';
+            nextBtn.style.opacity = currentSlide === totalSlides - 1 ? '0.3' : '1';
+            nextBtn.style.pointerEvents = currentSlide === totalSlides - 1 ? 'none' : 'auto';
+        }
+
+        function goToSlide(index) {
+            currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+            updateSlide();
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // Button clicks
+        prevBtn.addEventListener('click', prevSlide);
+        nextBtn.addEventListener('click', nextSlide);
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                goToSlide(0);
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                goToSlide(totalSlides - 1);
+            }
+        });
+
+        // Mouse wheel navigation
+        let wheelTimeout;
+        document.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            clearTimeout(wheelTimeout);
+            wheelTimeout = setTimeout(() => {
+                if (e.deltaY > 0 || e.deltaX > 0) {
+                    nextSlide();
+                } else if (e.deltaY < 0 || e.deltaX < 0) {
+                    prevSlide();
+                }
+            }, 50);
+        }, { passive: false });
+
+        // Touch swipe support
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const diffX = touchStartX - touchEndX;
+            const diffY = touchStartY - touchEndY;
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX > 50) {
+                    nextSlide();
+                } else if (diffX < -50) {
+                    prevSlide();
+                }
+            }
+        });
+
+        // Initialize
+        updateSlide();
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Basic integration tests for OpenMemory Server endpoints.
+Basic integration tests for TotalReclaw Server endpoints.
 
 Tests:
 1. /register - User registration
@@ -260,7 +260,7 @@ def test_unauthorized_access():
 
 def main():
     print("=" * 60)
-    print("OpenMemory Server Integration Tests")
+    print("TotalReclaw Server Integration Tests")
     print("=" * 60)
 
     results = []

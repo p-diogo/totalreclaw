@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - Server Integration Tests
+ * TotalReclaw Skill - Server Integration Tests
  *
  * Tests the full integration with a mock HTTP server.
  * Tests authentication flows, store/search/retrieve operations,
@@ -7,11 +7,11 @@
  */
 
 import {
-  OpenMemorySkill,
-  createOpenMemorySkill,
-} from '../../src/openmemory-skill';
+  TotalReclawSkill,
+  createTotalReclawSkill,
+} from '../../src/totalreclaw-skill';
 import type {
-  OpenMemorySkillConfig,
+  TotalReclawSkillConfig,
   RememberToolParams,
   RecallToolParams,
   ForgetToolParams,
@@ -19,7 +19,7 @@ import type {
   OpenClawContext,
   ConversationTurn,
 } from '../../src/types';
-import type { Fact, RerankedResult } from '@openmemory/client';
+import type { Fact, RerankedResult } from '@totalreclaw/client';
 
 // ============================================================================
 // Types
@@ -44,9 +44,9 @@ interface MockHttpRequest {
 
 /**
  * Mock HTTP server for testing
- * Simulates the OpenMemory server API
+ * Simulates the TotalReclaw server API
  */
-class MockOpenMemoryServer {
+class MockTotalReclawServer {
   private routes: Map<string, Map<string, (req: MockHttpRequest) => MockServerResponse>> = new Map();
   private users: Map<string, { salt: Buffer; hash: string }> = new Map();
   private facts: Map<string, Fact> = new Map();
@@ -324,19 +324,19 @@ class MockOpenMemoryServer {
 }
 
 // ============================================================================
-// Mock OpenMemory Client (wraps mock server)
+// Mock TotalReclaw Client (wraps mock server)
 // ============================================================================
 
 /**
- * Mock OpenMemory client that uses the mock server
+ * Mock TotalReclaw client that uses the mock server
  */
-class MockOpenMemoryClientWithServer {
-  private server: MockOpenMemoryServer;
+class MockTotalReclawClientWithServer {
+  private server: MockTotalReclawServer;
   private userId: string | null = null;
   private token: string | null = null;
   private salt: Buffer | null = null;
 
-  constructor(server: MockOpenMemoryServer) {
+  constructor(server: MockTotalReclawServer) {
     this.server = server;
   }
 
@@ -528,13 +528,13 @@ function createMockFact(overrides: Partial<Fact> = {}): Fact {
 // ============================================================================
 
 describe('Server Integration Tests', () => {
-  let mockServer: MockOpenMemoryServer;
-  let mockClient: MockOpenMemoryClientWithServer;
+  let mockServer: MockTotalReclawServer;
+  let mockClient: MockTotalReclawClientWithServer;
 
   beforeEach(() => {
-    mockServer = new MockOpenMemoryServer();
+    mockServer = new MockTotalReclawServer();
     mockServer.start();
-    mockClient = new MockOpenMemoryClientWithServer(mockServer);
+    mockClient = new MockTotalReclawClientWithServer(mockServer);
   });
 
   afterEach(() => {
@@ -561,7 +561,7 @@ describe('Server Integration Tests', () => {
       const salt = mockClient.getSalt()!;
 
       // Create new client and login
-      const newClient = new MockOpenMemoryClientWithServer(mockServer);
+      const newClient = new MockTotalReclawClientWithServer(mockServer);
       await newClient.login(userId, 'test-password-123', salt);
 
       expect(newClient.getUserId()).toBe(userId);
@@ -573,7 +573,7 @@ describe('Server Integration Tests', () => {
       const salt = mockClient.getSalt()!;
 
       // Create new client and try to login with wrong password
-      const newClient = new MockOpenMemoryClientWithServer(mockServer);
+      const newClient = new MockTotalReclawClientWithServer(mockServer);
 
       await expect(
         newClient.login(userId, 'wrong-password', salt)
@@ -596,7 +596,7 @@ describe('Server Integration Tests', () => {
       expect(factId).toBeDefined();
 
       // Login again
-      const newClient = new MockOpenMemoryClientWithServer(mockServer);
+      const newClient = new MockTotalReclawClientWithServer(mockServer);
       await newClient.login(userId, 'secure-password', salt);
 
       // Verify can access stored data

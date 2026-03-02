@@ -1,0 +1,335 @@
+# 4-Way Memory System Benchmark — Docker Compose
+#
+# Runs 4 independent OpenClaw instances, each with a different memory backend,
+# for a fair head-to-head benchmark. All instances use the same LLM provider
+# (Z.AI glm-4.5-air) so extraction quality is not a variable.
+#
+# Instances:
+#   1. openclaw-totalreclaw (port 8081) — TotalReclaw (TotalReclaw E2EE)
+#   2. openclaw-mem0         (port 8082) — Mem0 cloud API (custom Dockerfile with plugin)
+#   3. openclaw-qmd          (port 8083) — Built-in memory-core (QMD)
+#   4. openclaw-lancedb      (port 8084) — LanceDB vector DB plugin
+#
+# Shared infrastructure:
+#   - postgres (port 5434) — PostgreSQL for TotalReclaw server
+#   - totalreclaw-server (port 8090) — TotalReclaw backend API
+#
+# Usage:
+#   cp .env.example .env    # Fill in API keys (including MEM0_API_KEY)
+#   docker compose -f docker-compose.benchmark.yml build
+#   docker compose -f docker-compose.benchmark.yml up -d
+#   docker compose -f docker-compose.benchmark.yml down -v  # Clean up
+#
+# Prerequisites:
+#   - OpenClaw repo cloned at testbed/functional-test/openclaw/ (already in this repo)
+#   - .env file with required API keys (see .env.example)
+#   - MEM0_API_KEY from https://app.mem0.ai (for the Mem0 instance)
+#
+# SECURITY: All ports bind to 127.0.0.1 (localhost only). Never expose to internet.
+
+services:
+  # =========================================================================
+  # Shared Infrastructure (for TotalReclaw)
+  # =========================================================================
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ombh-benchmark-postgres
+    environment:
+      POSTGRES_USER: totalreclaw
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-benchmark-test}
+      POSTGRES_DB: totalreclaw
+    volumes:
+      - benchmark-db-data:/var/lib/postgresql/data
+    networks:
+      - benchmark-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U totalreclaw -d totalreclaw"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    ports:
+      - "127.0.0.1:5434:5432"
+    security_opt:
+      - no-new-privileges:true
+
+  totalreclaw-server:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    container_name: ombh-benchmark-totalreclaw-server
+    environment:
+      DATABASE_URL: postgresql+asyncpg://totalreclaw:${POSTGRES_PASSWORD:-benchmark-test}@postgres:5432/totalreclaw
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - benchmark-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    ports:
+      - "127.0.0.1:8090:8080"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=50M,mode=1777
+
+  # =========================================================================
+  # Instance 1: TotalReclaw (TotalReclaw E2EE)
+  # =========================================================================
+  # Uses the TotalReclaw plugin from skill/plugin/ with full E2EE.
+  # Requires totalreclaw-server + postgres for its backend.
+
+  openclaw-totalreclaw:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw-totalreclaw
+      additional_contexts:
+        openclaw-src: ../testbed/functional-test/openclaw
+        totalreclaw-plugin: ../skill/plugin
+        totalreclaw-skill: ../skill
+    container_name: ombh-benchmark-totalreclaw
+    depends_on:
+      totalreclaw-server:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8081:18789"
+    networks:
+      - benchmark-internal
+    volumes:
+      - type: bind
+        source: ./configs/openclaw-totalreclaw
+        target: /config
+        read_only: true
+      - totalreclaw-state:/home/node/.openclaw
+      - totalreclaw-credentials:/home/node/.totalreclaw
+    environment:
+      - OPENCLAW_LLM_PROVIDER=zai
+      - OPENCLAW_LLM_MODEL=glm-4.5-air
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - OPENCLAW_CONFIG_PATH=/config/config.json5
+      - TOTALRECLAW_SERVER_URL=http://totalreclaw-server:8080
+      - TOTALRECLAW_MASTER_PASSWORD=${TOTALRECLAW_MASTER_PASSWORD:-test-benchmark-mnemonic}
+      - HOME=/home/node
+    user: "0:0"
+    tmpfs:
+      - /tmp:size=100M,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:18789/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # =========================================================================
+  # Instance 2: Mem0 (Cloud API)
+  # =========================================================================
+  # Uses a custom Dockerfile that installs the @mem0/openclaw-mem0 plugin
+  # (not bundled with OpenClaw) into the extensions directory during build.
+  # Requires MEM0_API_KEY in .env (get from https://app.mem0.ai).
+
+  openclaw-mem0:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw-mem0
+      additional_contexts:
+        openclaw-src: ../testbed/functional-test/openclaw
+    container_name: ombh-benchmark-mem0
+    ports:
+      - "127.0.0.1:8082:18789"
+    networks:
+      - benchmark-internal
+    volumes:
+      - type: bind
+        source: ./configs/openclaw-mem0
+        target: /config
+        read_only: true
+      - mem0-state:/home/node/.openclaw
+    environment:
+      - OPENCLAW_LLM_PROVIDER=zai
+      - OPENCLAW_LLM_MODEL=glm-4.5-air
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - OPENCLAW_CONFIG_PATH=/config/config.json5
+      - MEM0_API_KEY=${MEM0_API_KEY}
+      - HOME=/home/node
+    user: "0:0"
+    tmpfs:
+      - /tmp:size=100M,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:18789/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # =========================================================================
+  # Instance 3: QMD (Built-in memory-core)
+  # =========================================================================
+  # Default OpenClaw memory system. No extra plugins or dependencies needed.
+
+  openclaw-qmd:
+    build:
+      context: ../testbed/functional-test/openclaw
+      dockerfile: Dockerfile
+    container_name: ombh-benchmark-qmd
+    ports:
+      - "127.0.0.1:8083:18789"
+    networks:
+      - benchmark-internal
+    volumes:
+      - type: bind
+        source: ./configs/openclaw-qmd
+        target: /config
+        read_only: true
+      - qmd-state:/home/node/.openclaw
+    environment:
+      - OPENCLAW_LLM_PROVIDER=zai
+      - OPENCLAW_LLM_MODEL=glm-4.5-air
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - OPENCLAW_CONFIG_PATH=/config/config.json5
+      - HOME=/home/node
+    user: "0:0"
+    tmpfs:
+      - /tmp:size=100M,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:18789/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # =========================================================================
+  # Instance 4: LanceDB (Vector DB plugin)
+  # =========================================================================
+  # Uses the built-in memory-lancedb plugin. Requires OPENAI_API_KEY for
+  # embeddings (text-embedding-3-small).
+
+  openclaw-lancedb:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw-lancedb
+      additional_contexts:
+        openclaw-src: ../testbed/functional-test/openclaw
+    container_name: ombh-benchmark-lancedb
+    ports:
+      - "127.0.0.1:8084:18789"
+    networks:
+      - benchmark-internal
+    volumes:
+      - type: bind
+        source: ./configs/openclaw-lancedb
+        target: /config
+        read_only: true
+      - lancedb-state:/home/node/.openclaw
+    environment:
+      - OPENCLAW_LLM_PROVIDER=zai
+      - OPENCLAW_LLM_MODEL=glm-4.5-air
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - OPENCLAW_CONFIG_PATH=/config/config.json5
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-${OPENROUTER_API_KEY}}
+      - OPENAI_BASE_URL=https://openrouter.ai/api/v1
+      - HOME=/home/node
+    user: "0:0"
+    tmpfs:
+      - /tmp:size=100M,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:18789/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # =========================================================================
+  # Instance 5: TotalReclaw v1 (Facts-Only, No Embeddings)
+  # =========================================================================
+  # Same TotalReclaw plugin as Instance 1, but WITHOUT @huggingface/transformers.
+  # Forces BM25-only search (word-based blind indices, no cosine similarity).
+  # This tests whether PoC v2 (embeddings + LSH + reranking) is actually better.
+
+  openclaw-totalreclaw-v1:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw-totalreclaw-v1
+      additional_contexts:
+        openclaw-src: ../testbed/functional-test/openclaw
+        totalreclaw-plugin: ../skill/plugin
+        totalreclaw-skill: ../skill
+    container_name: ombh-benchmark-totalreclaw-v1
+    depends_on:
+      totalreclaw-server:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8085:18789"
+    networks:
+      - benchmark-internal
+    volumes:
+      - type: bind
+        source: ./configs/openclaw-totalreclaw-v1
+        target: /config
+        read_only: true
+      - totalreclaw-v1-state:/home/node/.openclaw
+      - totalreclaw-v1-credentials:/home/node/.totalreclaw
+    environment:
+      - OPENCLAW_LLM_PROVIDER=zai
+      - OPENCLAW_LLM_MODEL=glm-4.5-air
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - OPENCLAW_CONFIG_PATH=/config/config.json5
+      - TOTALRECLAW_SERVER_URL=http://totalreclaw-server:8080
+      - TOTALRECLAW_MASTER_PASSWORD=${TOTALRECLAW_MASTER_PASSWORD:-test-benchmark-v1-mnemonic}
+      - HOME=/home/node
+    user: "0:0"
+    tmpfs:
+      - /tmp:size=100M,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:18789/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+# =========================================================================
+# Networks
+# =========================================================================
+networks:
+  benchmark-internal:
+    driver: bridge
+
+# =========================================================================
+# Volumes
+# =========================================================================
+volumes:
+  # Shared infrastructure
+  benchmark-db-data:
+    driver: local
+
+  # Per-instance state (persistent across restarts)
+  totalreclaw-state:
+    driver: local
+  totalreclaw-credentials:
+    driver: local
+  totalreclaw-v1-state:
+    driver: local
+  totalreclaw-v1-credentials:
+    driver: local
+  mem0-state:
+    driver: local
+  qmd-state:
+    driver: local
+  lancedb-state:
+    driver: local

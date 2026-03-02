@@ -1,5 +1,5 @@
 /**
- * OpenMemory Crypto Module
+ * TotalReclaw Crypto Module
  *
  * Provides cryptographic primitives for zero-knowledge memory operations.
  */

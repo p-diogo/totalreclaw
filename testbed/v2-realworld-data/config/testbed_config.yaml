@@ -1,0 +1,78 @@
+# v2 Real-World Data Testbed Configuration
+# TotalReclaw v0.6 Evaluation
+
+version: "2.0"
+description: "Real-world data testbed for TotalReclaw v0.6 with encrypted BM25 index"
+
+# Data sources configuration
+data_sources:
+  whatsapp:
+    enabled: true
+    raw_path: "raw/whatsapp/"
+    parser: "scripts/parse_whatsapp.py"
+    output: "processed/whatsapp_memories.json"
+
+  telegram:
+    enabled: true
+    raw_path: "raw/telegram/"
+    parser: "scripts/parse_telegram.py"
+    output: "processed/telegram_memories.json"
+
+  gmail:
+    enabled: true
+    raw_path: "raw/gmail/"
+    parser: "scripts/parse_gmail.py"
+    output: "processed/gmail_memories.json"
+
+# Processing settings
+processing:
+  # Chunk size constraints
+  chunk_min_chars: 100      # Minimum characters per chunk
+  chunk_max_chars: 1000     # Maximum characters per chunk
+  time_window_minutes: 60   # Group messages within this time window
+
+  # Text cleaning
+  remove_media_placeholders: true
+  normalize_whitespace: true
+  min_messages_per_chunk: 2
+
+# Embedding configuration
+embedding:
+  model: "all-MiniLM-L6-v2"
+  dimension: 384
+  batch_size: 32
+
+# Ground truth generation
+ground_truth:
+  method: "llm"              # "llm" or "manual"
+  coverage_target: 0.8        # 80% of queries should have relevant docs
+  min_relevant_per_query: 1
+  max_relevant_per_query: 20
+
+# Search evaluation
+evaluation:
+  top_k: 5
+  metrics:
+    - precision_at_k
+    - recall_at_k
+    - f1_at_k
+    - mrr
+    - map
+    - ndcg_at_k
+
+# v0.6 algorithm settings
+algorithm:
+  bm25:
+    k1: 1.5
+    b: 0.75
+
+  rrf:
+    k: 60
+    bm25_weight: 0.5
+    vector_weight: 0.5
+
+  query_expansion:
+    enabled: true
+    model: "local"           # "local" or "openrouter"
+    max_expansions: 3
+    timeout_ms: 500

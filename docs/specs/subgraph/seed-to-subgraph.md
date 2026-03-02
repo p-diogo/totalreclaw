@@ -6,7 +6,7 @@ Last updated: 2026-02-24
 -->
 
 # Full Technical Specification (Ready for Coding Agent)
-# Technical Specification: Decentralized OpenMemory v1.0  
+# Technical Specification: Decentralized TotalReclaw v1.0  
 **"Seed-to-Subgraph" — Fully E2EE, Account-Abstraction, Gasless, Decentralized Memory for OpenClaw**
 
 **Version:** 1.0 (Complete for Coding Agent)  
@@ -55,9 +55,9 @@ Any agent queries subgraph by address → decrypts with seed
 
 ## 3. Data Models & Serialization
 
-**Protobuf schema** (`openmemory.proto`):
+**Protobuf schema** (`totalreclaw.proto`):
 ```proto
-message OpenMemoryFact {
+message TotalReclawFact {
   string id = 1;                    // UUIDv7
   string timestamp = 2;
   string fact_text = 3;
@@ -109,7 +109,7 @@ On every store / update / decay / eviction:
 - Schema with rich entities/relations (same as your earlier spec).
 - Mapping (AssemblyScript):
 ```TypeScriptexport function handleLog(event: EventfulDataEdge.Log): void {
-  const fact = decodeProtobuf<OpenMemoryFact>(event.params.data);
+  const fact = decodeProtobuf<TotalReclawFact>(event.params.data);
   let entity = FactEntity.load(fact.id) || new FactEntity(fact.id);
   entity.owner = event.transaction.from;   // Smart Account address
   entity.factText = fact.factText;

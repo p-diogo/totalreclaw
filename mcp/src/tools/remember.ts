@@ -1,9 +1,11 @@
-import { OpenMemory, FactMetadata } from '@openmemory/client';
+import { TotalReclaw, FactMetadata } from '@totalreclaw/client';
 import {
   REMEMBER_TOOL_DESCRIPTION,
-} from '../prompts';
+} from '../prompts.js';
 
-export interface RememberInput {
+// ── Single-fact input (backward compat) ──────────────────────────────────────
+
+export interface RememberInputSingle {
   fact: string;
   importance?: number;
   namespace?: string;
@@ -13,6 +15,23 @@ export interface RememberInput {
   };
 }
 
+// ── Batch-fact input (new) ───────────────────────────────────────────────────
+
+export interface BatchFact {
+  text: string;
+  importance?: number;
+  type?: 'fact' | 'preference' | 'decision' | 'episodic' | 'goal';
+}
+
+export interface RememberInputBatch {
+  facts: BatchFact[];
+  namespace?: string;
+}
+
+// ── Union type for the handler ───────────────────────────────────────────────
+
+export type RememberInput = RememberInputSingle | RememberInputBatch;
+
 export interface RememberOutput {
   success: boolean;
   fact_id: string;
@@ -20,22 +39,55 @@ export interface RememberOutput {
   action: 'created' | 'updated' | 'skipped';
 }
 
+export interface BatchRememberOutput {
+  success: boolean;
+  results: RememberOutput[];
+  total: number;
+  created: number;
+  skipped: number;
+}
+
 export const rememberToolDefinition = {
-  name: 'openmemory_remember',
+  name: 'totalreclaw_remember',
   description: REMEMBER_TOOL_DESCRIPTION,
   inputSchema: {
     type: 'object',
     properties: {
       fact: {
         type: 'string',
-        description: 'The fact to remember (atomic, concise)',
+        description: 'A single fact to remember (atomic, concise). Use this OR the facts array.',
+      },
+      facts: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            text: {
+              type: 'string',
+              description: 'The atomic fact text',
+            },
+            importance: {
+              type: 'number',
+              minimum: 1,
+              maximum: 10,
+              description: 'Importance score 1-10',
+            },
+            type: {
+              type: 'string',
+              enum: ['fact', 'preference', 'decision', 'episodic', 'goal'],
+              description: 'Category of the fact',
+            },
+          },
+          required: ['text'],
+        },
+        description: 'Array of facts to store in a single call (preferred for multiple facts)',
       },
       importance: {
         type: 'number',
         minimum: 1,
         maximum: 10,
         default: 5,
-        description: 'Importance score 1-10',
+        description: 'Importance score 1-10 (only for single-fact mode)',
       },
       namespace: {
         type: 'string',
@@ -55,18 +107,158 @@ export const rememberToolDefinition = {
         },
       },
     },
-    required: ['fact'],
+  },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
   },
 };
 
+// Notify callback type for cache invalidation
+export type OnRememberCallback = () => void;
+
+let _onRememberCallback: OnRememberCallback | null = null;
+
+export function setOnRememberCallback(cb: OnRememberCallback): void {
+  _onRememberCallback = cb;
+}
+
+// ── Internal: store a single fact ────────────────────────────────────────────
+
+async function storeSingleFact(
+  client: TotalReclaw,
+  text: string,
+  importance: number,
+  factType: string | undefined,
+  namespace: string,
+  expiresAt?: string
+): Promise<RememberOutput> {
+  const metadata: FactMetadata = {
+    importance: importance / 10,
+    source: 'mcp_remember',
+    tags: factType
+      ? [factType, `namespace:${namespace}`]
+      : [`namespace:${namespace}`],
+  };
+
+  if (expiresAt) {
+    metadata.timestamp = new Date(expiresAt);
+  }
+
+  const factId = await client.remember(text.trim(), metadata);
+
+  return {
+    success: true,
+    fact_id: factId,
+    was_duplicate: false,
+    action: 'created',
+  };
+}
+
+// ── Handler ──────────────────────────────────────────────────────────────────
+
 export async function handleRemember(
-  client: OpenMemory,
+  client: TotalReclaw,
   args: unknown,
   defaultNamespace: string
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
-  const input = args as RememberInput;
+  const input = args as Record<string, unknown>;
 
-  if (!input.fact || typeof input.fact !== 'string' || input.fact.trim().length === 0) {
+  // Determine if this is batch or single mode
+  const isBatch = Array.isArray(input?.facts) && (input.facts as unknown[]).length > 0;
+  const isSingle = typeof input?.fact === 'string';
+
+  if (!isBatch && !isSingle) {
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          success: false,
+          error: 'Invalid input: provide either a "fact" string or a "facts" array',
+        }),
+      }],
+    };
+  }
+
+  const namespace = (input.namespace as string) || defaultNamespace;
+
+  // ── Batch mode ─────────────────────────────────────────────────────────────
+  if (isBatch) {
+    const factsArray = input.facts as BatchFact[];
+    const results: RememberOutput[] = [];
+    let created = 0;
+    let skipped = 0;
+
+    for (const f of factsArray) {
+      if (!f.text || typeof f.text !== 'string' || f.text.trim().length === 0) {
+        results.push({
+          success: false,
+          fact_id: '',
+          was_duplicate: false,
+          action: 'skipped',
+        });
+        skipped++;
+        continue;
+      }
+
+      const imp = f.importance ?? 5;
+      if (typeof imp !== 'number' || imp < 1 || imp > 10) {
+        results.push({
+          success: false,
+          fact_id: '',
+          was_duplicate: false,
+          action: 'skipped',
+        });
+        skipped++;
+        continue;
+      }
+
+      try {
+        const result = await storeSingleFact(
+          client,
+          f.text,
+          imp,
+          f.type,
+          namespace
+        );
+        results.push(result);
+        created++;
+      } catch (error) {
+        results.push({
+          success: false,
+          fact_id: '',
+          was_duplicate: false,
+          action: 'skipped',
+        });
+        skipped++;
+      }
+    }
+
+    const batchResult: BatchRememberOutput = {
+      success: created > 0,
+      results,
+      total: factsArray.length,
+      created,
+      skipped,
+    };
+
+    if (_onRememberCallback && created > 0) {
+      _onRememberCallback();
+    }
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify(batchResult),
+      }],
+    };
+  }
+
+  // ── Single-fact mode (backward compat) ─────────────────────────────────────
+  const singleInput = input as unknown as RememberInputSingle;
+
+  if (!singleInput.fact || typeof singleInput.fact !== 'string' || singleInput.fact.trim().length === 0) {
     return {
       content: [{
         type: 'text',
@@ -78,8 +270,8 @@ export async function handleRemember(
     };
   }
 
-  if (input.importance !== undefined) {
-    if (typeof input.importance !== 'number' || input.importance < 1 || input.importance > 10) {
+  if (singleInput.importance !== undefined) {
+    if (typeof singleInput.importance !== 'number' || singleInput.importance < 1 || singleInput.importance > 10) {
       return {
         content: [{
           type: 'text',
@@ -93,27 +285,18 @@ export async function handleRemember(
   }
 
   try {
-    const importance = (input.importance ?? 5) / 10;
-    const namespace = input.namespace || defaultNamespace;
+    const result = await storeSingleFact(
+      client,
+      singleInput.fact,
+      singleInput.importance ?? 5,
+      singleInput.metadata?.type,
+      namespace,
+      singleInput.metadata?.expires_at
+    );
 
-    const metadata: FactMetadata = {
-      importance,
-      source: 'mcp_remember',
-      tags: input.metadata?.type ? [input.metadata.type, `namespace:${namespace}`] : [`namespace:${namespace}`],
-    };
-
-    if (input.metadata?.expires_at) {
-      metadata.timestamp = new Date(input.metadata.expires_at);
+    if (_onRememberCallback) {
+      _onRememberCallback();
     }
-
-    const factId = await client.remember(input.fact.trim(), metadata);
-
-    const result: RememberOutput = {
-      success: true,
-      fact_id: factId,
-      was_duplicate: false,
-      action: 'created',
-    };
 
     return {
       content: [{

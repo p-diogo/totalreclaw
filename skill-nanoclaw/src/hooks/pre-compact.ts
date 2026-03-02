@@ -1,4 +1,4 @@
-import type { OpenMemory, FactMetadata } from '@openmemory/client';
+import type { TotalReclaw, FactMetadata } from '@totalreclaw/client';
 import type { LLMClient } from './agent-end';
 import type { ExtractedFact } from '../extraction/prompts';
 import {
@@ -19,7 +19,7 @@ export interface PreCompactOutput {
 }
 
 export async function preCompact(
-  client: OpenMemory,
+  client: TotalReclaw,
   llmClient: LLMClient | null,
   input: PreCompactInput
 ): Promise<PreCompactOutput> {
@@ -109,7 +109,7 @@ export async function preCompact(
 }
 
 async function syncToClaudeMd(
-  client: OpenMemory,
+  client: TotalReclaw,
   namespace: string,
   claudeMdPath: string
 ): Promise<boolean> {
@@ -133,8 +133,8 @@ async function syncToClaudeMd(
       // File doesn't exist
     }
 
-    if (!existing.includes('## OpenMemory Sync')) {
-      const section = '\n\n## OpenMemory Sync\n\n' +
+    if (!existing.includes('## TotalReclaw Sync')) {
+      const section = '\n\n## TotalReclaw Sync\n\n' +
         filtered.map(m => `- ${m.fact.text}`).join('\n');
 
       await fs.writeFile(claudeMdPath, existing + section, 'utf-8');

@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - LLM Prompts for Fact Extraction
+ * TotalReclaw Skill - LLM Prompts for Fact Extraction
  *
  * Prompts follow Mem0-style ADD/UPDATE/DELETE/NOOP pattern for
  * intelligent deduplication and conflict resolution.

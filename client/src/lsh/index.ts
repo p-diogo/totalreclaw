@@ -1,5 +1,5 @@
 /**
- * OpenMemory LSH Module
+ * TotalReclaw LSH Module
  *
  * Locality-Sensitive Hashing for approximate nearest neighbor search
  * while preserving privacy.

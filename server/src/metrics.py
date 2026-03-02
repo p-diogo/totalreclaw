@@ -1,5 +1,5 @@
 """
-Prometheus metrics for OpenMemory Server.
+Prometheus metrics for TotalReclaw Server.
 
 Exposes request counts, latency histograms, error counts,
 and database pool metrics.

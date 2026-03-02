@@ -1,6 +1,6 @@
 {
-  "id": "openmemory",
-  "name": "OpenMemory",
+  "id": "totalreclaw",
+  "name": "TotalReclaw",
   "kind": "memory",
   "description": "Zero-knowledge encrypted memory vault for AI agents",
   "configSchema": {

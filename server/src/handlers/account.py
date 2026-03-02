@@ -1,5 +1,5 @@
 """
-Account management endpoints for OpenMemory Server.
+Account management endpoints for TotalReclaw Server.
 
 Includes GDPR-compliant account deletion.
 """

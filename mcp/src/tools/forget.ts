@@ -1,5 +1,5 @@
-import { OpenMemory } from '@openmemory/client';
-import { FORGET_TOOL_DESCRIPTION } from '../prompts';
+import { TotalReclaw } from '@totalreclaw/client';
+import { FORGET_TOOL_DESCRIPTION } from '../prompts.js';
 
 export interface ForgetIntput {
   fact_id?: string;
@@ -13,7 +13,7 @@ export interface ForgetOutput {
 }
 
 export const forgetToolDefinition = {
-  name: 'openmemory_forget',
+  name: 'totalreclaw_forget',
   description: FORGET_TOOL_DESCRIPTION,
   inputSchema: {
     type: 'object',
@@ -32,10 +32,15 @@ export const forgetToolDefinition = {
       },
     },
   },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+  },
 };
 
 export async function handleForget(
-  client: OpenMemory,
+  client: TotalReclaw,
   args: unknown,
   defaultNamespace: string
 ): Promise<{ content: Array<{ type: string; text: string }> }> {

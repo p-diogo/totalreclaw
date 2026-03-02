@@ -1,6 +1,6 @@
 <!--
 Product: TEE
-Formerly: tech specs/archive/OpenMemory v0.4 Techincal Spec (TDX SaaS LLM Auto-Enrichment).md
+Formerly: tech specs/archive/TotalReclaw v0.4 Techincal Spec (TDX SaaS LLM Auto-Enrichment).md
 Version: 0.4
 Last updated: 2026-02-24
 -->
@@ -9,7 +9,7 @@ Last updated: 2026-02-24
 
 ## System Architecture & Core Constraints
 
-OpenMemory MVP is a centralized, Git-backed memory vault for AI agents executing strictly within a Trusted Execution Environment (TEE) (e.g., AWS Nitro Enclaves).
+TotalReclaw MVP is a centralized, Git-backed memory vault for AI agents executing strictly within a Trusted Execution Environment (TEE) (e.g., AWS Nitro Enclaves).
 
 **Strict Technology Stack:**
 

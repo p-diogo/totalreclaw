@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - Pre-Compaction Hook
+ * TotalReclaw Skill - Pre-Compaction Hook
  *
  * This hook runs BEFORE context compaction occurs.
  * It performs comprehensive extraction of the conversation history.
@@ -14,11 +14,11 @@
  * This hook is more thorough than agent-end and runs less frequently.
  */
 
-import type { OpenMemory } from '@openmemory/client';
+import type { TotalReclaw } from '@totalreclaw/client';
 import type {
   PreCompactionResult,
   OpenClawContext,
-  OpenMemorySkillConfig,
+  TotalReclawSkillConfig,
   ExtractedFact,
   Entity,
   Relation,
@@ -42,10 +42,10 @@ import {
  * Options for the pre-compaction hook
  */
 export interface PreCompactionOptions {
-  /** OpenMemory client instance */
-  client: OpenMemory;
+  /** TotalReclaw client instance */
+  client: TotalReclaw;
   /** Skill configuration */
-  config: OpenMemorySkillConfig;
+  config: TotalReclawSkillConfig;
   /** LLM client for extraction */
   llmClient: LLMClient;
   /** Vector store client for deduplication (optional) */
@@ -114,8 +114,8 @@ export async function preCompaction(
   const startTime = Date.now();
 
   if (options.debug) {
-    console.log(`[OpenMemory] Pre-compaction hook started`);
-    console.log(`[OpenMemory] Analyzing ${context.history.length} turns`);
+    console.log(`[TotalReclaw] Pre-compaction hook started`);
+    console.log(`[TotalReclaw] Analyzing ${context.history.length} turns`);
   }
 
   try {
@@ -123,7 +123,7 @@ export async function preCompaction(
     const result = await runComprehensiveExtraction(context, options);
 
     if (options.debug) {
-      console.log(`[OpenMemory] Pre-compaction completed in ${result.processingTimeMs}ms`);
+      console.log(`[TotalReclaw] Pre-compaction completed in ${result.processingTimeMs}ms`);
       console.log(`  - Extracted: ${result.factsExtracted}`);
       console.log(`  - Stored: ${result.factsStored}`);
       console.log(`  - Skipped: ${result.duplicatesSkipped}`);
@@ -141,7 +141,7 @@ export async function preCompaction(
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[OpenMemory] preCompaction hook failed:', errorMsg);
+    console.error('[TotalReclaw] preCompaction hook failed:', errorMsg);
 
     return {
       factsExtracted: 0,
@@ -191,14 +191,14 @@ async function runComprehensiveExtraction(
     result.factsExtracted = extractionResult.facts.length;
 
     if (options.debug) {
-      console.log(`[OpenMemory] Raw extraction: ${result.factsExtracted} facts`);
+      console.log(`[TotalReclaw] Raw extraction: ${result.factsExtracted} facts`);
     }
 
     // Step 3: Get existing memories for deduplication
     const existingMemories = await getExistingMemories(context, options);
 
     if (options.debug) {
-      console.log(`[OpenMemory] Found ${existingMemories.length} existing memories for deduplication`);
+      console.log(`[TotalReclaw] Found ${existingMemories.length} existing memories for deduplication`);
     }
 
     // Step 4: Create deduplicator and process facts
@@ -224,7 +224,7 @@ async function runComprehensiveExtraction(
       result.graphStats = consolidatedFacts.stats;
 
       if (options.debug) {
-        console.log(`[OpenMemory] Graph consolidation: ${result.graphStats.entitiesMerged} entities merged`);
+        console.log(`[TotalReclaw] Graph consolidation: ${result.graphStats.entitiesMerged} entities merged`);
       }
     }
 
@@ -238,7 +238,7 @@ async function runComprehensiveExtraction(
 
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[OpenMemory] Comprehensive extraction failed:', errorMsg);
+    console.error('[TotalReclaw] Comprehensive extraction failed:', errorMsg);
   }
 
   result.processingTimeMs = Date.now() - startTime;
@@ -276,7 +276,7 @@ async function getExistingMemories(
       };
     });
   } catch (error) {
-    console.error('[OpenMemory] Failed to get existing memories:', error);
+    console.error('[TotalReclaw] Failed to get existing memories:', error);
     return [];
   }
 }

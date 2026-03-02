@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.2.22",
+    "lastTouchedAt": "2026-02-26T00:00:00.000Z"
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "zai/glm-4.5-air"
+      },
+      "models": {
+        "zai/glm-4.5-air": {}
+      },
+      "compaction": {
+        "mode": "safeguard"
+      }
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "auth": {
+      "mode": "token",
+      "token": "benchmark-token-2026"
+    },
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  // LanceDB: Vector DB memory plugin (bundled with OpenClaw)
+  // Requires an OpenAI API key for embeddings (text-embedding-3-small)
+  "plugins": {
+    "slots": {
+      "memory": "memory-lancedb"
+    },
+    "entries": {
+      "memory-lancedb": {
+        "enabled": true,
+        "config": {
+          "embedding": {
+            "apiKey": "${OPENAI_API_KEY}",
+            "model": "text-embedding-3-small"
+          },
+          "dbPath": "/home/node/.openclaw/memory/lancedb",
+          "autoCapture": true,
+          "autoRecall": true
+        }
+      },
+      "memory-core": {
+        "enabled": false
+      }
+    }
+  }
+}

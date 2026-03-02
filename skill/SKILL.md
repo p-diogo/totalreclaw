@@ -1,18 +1,17 @@
 ---
-name: openmemory
+name: totalreclaw
 description: "Zero-knowledge encrypted memory vault for AI agents — the password manager for AI memory. Full E2EE: server never sees plaintext."
 version: 0.1.0
-author: OpenMemory Team
+author: TotalReclaw Team
 license: MIT
 homepage: https://github.com/p-diogo/openmemory-poc
 metadata:
   openclaw:
     requires:
       env:
-        - OPENMEMORY_SERVER_URL
-        - OPENMEMORY_MASTER_PASSWORD
+        - TOTALRECLAW_SERVER_URL
+        - TOTALRECLAW_MASTER_PASSWORD
       bins: []
-    primaryEnv: OPENMEMORY_SERVER_URL
     emoji: "🧠"
     os: ["macos", "linux", "windows"]
     keywords:
@@ -25,11 +24,11 @@ metadata:
       - persistent-context
 ---
 
-# OpenMemory Skill
+# TotalReclaw Skill
 
 ## Tools
 
-### openmemory_remember
+### totalreclaw_remember
 
 Store a new fact or preference in long-term memory.
 
@@ -62,7 +61,7 @@ Store a new fact or preference in long-term memory.
 
 ---
 
-### openmemory_recall
+### totalreclaw_recall
 
 Search and retrieve relevant memories from long-term storage.
 
@@ -101,7 +100,7 @@ Search and retrieve relevant memories from long-term storage.
 
 ---
 
-### openmemory_forget
+### totalreclaw_forget
 
 Delete a specific fact from memory.
 
@@ -129,7 +128,7 @@ Delete a specific fact from memory.
 
 ---
 
-### openmemory_export
+### totalreclaw_export
 
 Export all stored memories in plaintext format.
 
@@ -172,7 +171,7 @@ Export all stored memories in plaintext format.
 
 **Returns (Markdown format):**
 ```markdown
-# OpenMemory Export
+# TotalReclaw Export
 Exported: 2026-02-22T10:30:00Z
 Total Facts: 127
 
@@ -189,7 +188,7 @@ Total Facts: 127
 
 ## Description
 
-OpenMemory is a zero-knowledge encrypted memory vault for AI agents. Think of it as a "password manager for AI memory" that provides:
+TotalReclaw is a zero-knowledge encrypted memory vault for AI agents. Think of it as a "password manager for AI memory" that provides:
 
 1. **End-to-End Encryption** - All memories are encrypted client-side using AES-256-GCM. The server never sees plaintext data.
 
@@ -209,7 +208,7 @@ OpenMemory is a zero-knowledge encrypted memory vault for AI agents. Think of it
 
 ### When to Use Each Tool
 
-#### openmemory_remember
+#### totalreclaw_remember
 
 Use when:
 - The user explicitly asks you to remember something ("remember that...", "note that...", "don't forget...")
@@ -222,7 +221,7 @@ Do NOT use for:
 - Information the user explicitly says is temporary
 - Generic knowledge that isn't user-specific
 
-#### openmemory_recall
+#### totalreclaw_recall
 
 Use when:
 - The user asks about their past preferences, decisions, or history
@@ -235,14 +234,14 @@ Do NOT use for:
 - Every single message (use sparingly, max once per conversation start or when explicitly relevant)
 - General knowledge questions unrelated to the user
 
-#### openmemory_forget
+#### totalreclaw_forget
 
 Use when:
 - The user explicitly asks you to forget something ("forget that...", "delete that memory...")
 - The user indicates information is outdated or incorrect and should be removed
 - The user requests a clean slate for a specific topic
 
-#### openmemory_export
+#### totalreclaw_export
 
 Use when:
 - The user asks to export, backup, or download their memory data
@@ -273,7 +272,7 @@ Use when:
 
 ## Extraction Prompts (Mem0-Style)
 
-OpenMemory uses a Mem0-style extraction pattern with four possible actions:
+TotalReclaw uses a Mem0-style extraction pattern with four possible actions:
 
 ### Actions
 
@@ -507,7 +506,7 @@ Default configuration values:
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `serverUrl` | `http://127.0.0.1:8080` | OpenMemory server URL |
+| `serverUrl` | `http://127.0.0.1:8080` | TotalReclaw server URL |
 | `autoExtractEveryTurns` | `5` | Turns between automatic extractions |
 | `minImportanceForAutoStore` | `6` | Minimum importance to auto-store |
 | `maxMemoriesInContext` | `8` | Maximum memories to inject into context |
@@ -527,7 +526,7 @@ Default configuration values:
 
 ## Lifecycle Hooks
 
-OpenMemory integrates with OpenClaw through three lifecycle hooks:
+TotalReclaw integrates with OpenClaw through three lifecycle hooks:
 
 | Hook | Priority | Description |
 |------|----------|-------------|
@@ -544,7 +543,7 @@ OpenMemory integrates with OpenClaw through three lifecycle hooks:
 ```json
 // Tool call
 {
-  "tool": "openmemory_remember",
+  "tool": "totalreclaw_remember",
   "params": {
     "text": "User prefers functional programming over OOP",
     "type": "preference",
@@ -564,7 +563,7 @@ OpenMemory integrates with OpenClaw through three lifecycle hooks:
 ```json
 // Tool call
 {
-  "tool": "openmemory_recall",
+  "tool": "totalreclaw_recall",
   "params": {
     "query": "programming preferences",
     "k": 5
@@ -590,7 +589,7 @@ OpenMemory integrates with OpenClaw through three lifecycle hooks:
 ```json
 // Tool call
 {
-  "tool": "openmemory_forget",
+  "tool": "totalreclaw_forget",
   "params": {
     "factId": "abc123"
   }

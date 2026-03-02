@@ -1,14 +1,14 @@
 /**
- * OpenMemory HTTP Client
+ * TotalReclaw HTTP Client
  *
- * Handles communication with the OpenMemory server over HTTP using Protobuf.
+ * Handles communication with the TotalReclaw server over HTTP using Protobuf.
  */
 
 import * as http from 'http';
 import * as https from 'https';
 import * as crypto from 'crypto';
 import {
-  OpenMemoryConfig,
+  TotalReclawConfig,
   RegisterRequest,
   RegisterResponse,
   StoreRequest,
@@ -17,8 +17,8 @@ import {
   SearchResponse,
   EncryptedFact,
   EncryptedSearchResult,
-  OpenMemoryError,
-  OpenMemoryErrorCode,
+  TotalReclawError,
+  TotalReclawErrorCode,
 } from '../types';
 import { ProtobufSerializer, protobufSerializer } from './protobuf';
 import { createAuthProof } from '../crypto/kdf';
@@ -26,25 +26,25 @@ import { createAuthProof } from '../crypto/kdf';
 /**
  * Default configuration values
  */
-const DEFAULT_CONFIG: Partial<OpenMemoryConfig> = {
+const DEFAULT_CONFIG: Partial<TotalReclawConfig> = {
   timeout: 30000,
 };
 
 /**
- * HTTP Client for OpenMemory Server
+ * HTTP Client for TotalReclaw Server
  */
-export class OpenMemoryClient {
+export class TotalReclawClient {
   private serverUrl: string;
   private timeout: number;
   private serializer: ProtobufSerializer;
   private initialized: boolean = false;
 
   /**
-   * Create a new OpenMemory client
+   * Create a new TotalReclaw client
    *
    * @param config - Client configuration
    */
-  constructor(config: OpenMemoryConfig) {
+  constructor(config: TotalReclawConfig) {
     const fullConfig = { ...DEFAULT_CONFIG, ...config };
     this.serverUrl = fullConfig.serverUrl.replace(/\/$/, ''); // Remove trailing slash
     this.timeout = fullConfig.timeout || 30000;
@@ -65,8 +65,8 @@ export class OpenMemoryClient {
    */
   private ensureInitialized(): void {
     if (!this.initialized) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.NETWORK_ERROR,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.NETWORK_ERROR,
         'Client not initialized. Call init() first.'
       );
     }
@@ -117,8 +117,8 @@ export class OpenMemoryClient {
             resolve(responseBuffer);
           } else {
             reject(
-              new OpenMemoryError(
-                OpenMemoryErrorCode.NETWORK_ERROR,
+              new TotalReclawError(
+                TotalReclawErrorCode.NETWORK_ERROR,
                 `HTTP ${res.statusCode}: ${responseBuffer.toString('utf-8')}`
               )
             );
@@ -128,8 +128,8 @@ export class OpenMemoryClient {
 
       req.on('error', (error) => {
         reject(
-          new OpenMemoryError(
-            OpenMemoryErrorCode.NETWORK_ERROR,
+          new TotalReclawError(
+            TotalReclawErrorCode.NETWORK_ERROR,
             `Network error: ${error.message}`
           )
         );
@@ -138,8 +138,8 @@ export class OpenMemoryClient {
       req.on('timeout', () => {
         req.destroy();
         reject(
-          new OpenMemoryError(
-            OpenMemoryErrorCode.NETWORK_ERROR,
+          new TotalReclawError(
+            TotalReclawErrorCode.NETWORK_ERROR,
             `Request timeout after ${this.timeout}ms`
           )
         );
@@ -214,8 +214,8 @@ export class OpenMemoryClient {
     const result = this.serializer.deserializeRegisterResponse(response);
 
     if (!result.success) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.AUTH_FAILED,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.AUTH_FAILED,
         `Registration failed: ${result.errorCode} - ${result.errorMessage}`
       );
     }
@@ -252,8 +252,8 @@ export class OpenMemoryClient {
     const result = this.serializer.deserializeStoreResponse(response);
 
     if (!result.success) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.NETWORK_ERROR,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.NETWORK_ERROR,
         `Store failed: ${result.errorCode}`
       );
     }
@@ -296,8 +296,8 @@ export class OpenMemoryClient {
     const result = this.serializer.deserializeSearchResponse(response);
 
     if (!result.success) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.NETWORK_ERROR,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.NETWORK_ERROR,
         `Search failed: ${result.errorCode}`
       );
     }

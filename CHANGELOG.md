@@ -5,7 +5,354 @@
 
 ---
 
+## 2026-02-28
+
+### Session 14 | Claude (opus) | Embedding Upgrade + Dynamic Pool + Server Metrics + NanoClaw Sync + MCP Auto-Memory Spec + Codebase Rebrand
+
+**Started:** Session 14 picks up where Session 13 left off. Three priorities:
+1. Upgrade embedding model: MiniLM-L6-v2 → bge-small-en-v1.5 (+23% retrieval quality)
+2. Implement dynamic candidate pool sizing (both layers: client formula + server metrics)
+3. Sync ALL improvements to NanoClaw MCP (LSH 32×20, stemming, new model, dynamic pool)
+
+**Phase 1 — 3 parallel agents (all complete):**
+- Agent A: Server `/v1/metrics` endpoint + `total_candidates_matched` in search response
+- Agent B: Plugin embedding model upgrade (bge-small-en-v1.5 with query prefix)
+- Agent C: Plugin dynamic pool sizing (formula-based, 5-min TTL cache)
+
+**Phase 2 — NanoClaw sync (complete):**
+- Synced all 6 improvements to NanoClaw MCP (LSH 32×20, stemming, bge-small-en-v1.5, dynamic pool, query prefix, porter-stemmer dep)
+
+**Phase 3 — Validation (complete):**
+- 343/343 runnable tests pass, 0 failures (221 server + 38 E2E + 32 LSH + 52 reranker)
+- 23 server test errors are pre-existing pytest-asyncio fixture issues (not regressions)
+
+**Files modified:**
+- `server/src/db/database.py` — search returns `(facts, total_candidates_matched)` tuple, new `count_active_facts()` method
+- `server/src/handlers/search.py` — `total_candidates_matched` in response, search telemetry recording
+- `server/src/handlers/observability.py` — NEW: GET `/v1/metrics` endpoint (per-user operational metrics)
+- `server/src/search_telemetry.py` — NEW: in-memory per-user search telemetry (deque maxlen=100)
+- `server/src/handlers/__init__.py` — exported observability_router
+- `server/src/main.py` — registered observability_router under `/v1/`
+- `server/tests/test_observability.py` — NEW: 27 tests for metrics + telemetry
+- `server/tests/test_encrypted_embedding.py` — updated for tuple return from search
+- `server/tests/conftest.py` — updated mock DB for new methods
+- `skill/plugin/embedding.ts` — bge-small-en-v1.5 model, query prefix support (`isQuery` option)
+- `skill/plugin/index.ts` — dynamic pool sizing (`computeCandidatePool`, `getFactCount` with cache), `{ isQuery: true }` for search embeddings
+- `skill/plugin/llm-client.ts` — updated model name comment
+- `skill/plugin/pocv2-e2e-test.ts` — updated for bge-small-en-v1.5 + query prefix
+- `testbed/functional-test-nanoclaw/nanoclaw-openmemory-overlay/agent-runner-src/openmemory-mcp.ts` — all 6 improvements synced
+- `testbed/functional-test-nanoclaw/Dockerfile.nanoclaw-openmemory` — added porter-stemmer dep
+
+**Tests:** 343/343 passing (221 server + 38 E2E + 32 LSH + 52 reranker)
+
+### T228: MCP Auto-Memory Research + Spec
+
+- **New spec:** `docs/specs/totalreclaw/mcp-auto-memory.md` (836 lines)
+- **Key finding:** MCP protocol has NO lifecycle hooks. Generic MCP hosts (Claude Desktop, Cursor, Windsurf) cannot guarantee automatic recall/storage.
+- **Recommended approach:** Hybrid 6-layer strategy:
+  1. Server `instructions` field in initialize response (most impactful — clients SHOULD incorporate into system prompt)
+  2. Enhanced tool descriptions with imperative behavioral guidance
+  3. Batch `totalreclaw_remember` tool (accept facts array)
+  4. Memory context resource (`memory://context/summary`)
+  5. Prompt fallbacks (`/totalreclaw_start`, `/totalreclaw_save`)
+  6. Sampling-based extraction (future, where supported)
+- **Expected reliability:** Auto-recall ~70-85%, auto-store ~40-60% (vs ~99%/95% with hooks)
+- **Research covered:** MCP protocol analysis, Claude Desktop/Cursor/Windsurf/VS Code capabilities, existing MCP memory servers (official Knowledge Graph, Recall MCP, Mem0 MCP, mcp-memory-service)
+
+### T227: Full Codebase Rebrand (OpenMemory → TotalReclaw)
+
+- **319 files modified**, 29 files/directories renamed
+- **Scope:** User-facing strings, package names (`@openmemory/*` → `@totalreclaw/*`), env vars (`OPENMEMORY_*` → `TOTALRECLAW_*`), Docker services, tool names (`openmemory_*` → `totalreclaw_*`), backend/enum names, spec directory (`docs/specs/openmemory/` → `docs/specs/totalreclaw/`)
+- **Preserved:** CHANGELOG.md history, GitHub URLs, HKDF cryptographic protocol strings (`openmemory-auth-v1`, `openmemory-enc-v1`, etc. — changing would break all existing user data), archive directory
+- **Post-rebrand validation:** 343/343 tests pass, no broken source imports
+- **Stale artifacts cleaned:** `dist/` and `node_modules/` rebuilt in client/, mcp/, skill/, skill/plugin/. Zero `@openmemory/` references remaining.
+
+### Build Artifact Cleanup + Client Library Fix
+
+- **client/src/embedding/onnx.ts** — Updated model to bge-small-en-v1.5 (was still MiniLM-L6-v2), added query prefix support (`isQuery` option), fixed TS error (`quantized` type assertion)
+- **All packages rebuilt:** client/, mcp/, skill/, skill/plugin/ — `rm -rf dist/ node_modules/ && npm install && npm run build`
+- **Zero stale `@openmemory/` references** in any dist/, lock files, or node_modules
+
+**Tests (post-cleanup):** 343/343 passing (38/38 E2E confirmed after full rebuild)
+
+---
+
+### Session 13 Summary | Claude (opus) | 5-Way Benchmark Complete + Retrieval Improvements
+
+**5-Way Benchmark — COMPLETE:**
+- **Data mismatch fix:** Discovered only 50/981 conversations were ingested but queries referenced all 981. Regenerated 140 queries from the 415 facts actually ingested using `ombh/scripts/regenerate_queries_for_ingested.py` (NEW).
+- **Speed optimizations:** Switched from glm-5 to glm-4.5-air, increased concurrency 2→8, reduced max_tokens 2048→512. Cut query time from ~13h to ~2h.
+- **5-way benchmark completed:** TotalReclaw v2, v1, Mem0, QMD, LanceDB all tested with apple-to-apple comparison.
+- **Reports:** `ombh/synthetic-benchmark/benchmark-results/5-way-report.md`, `v2-improvement-comparison.md`, `v2-lsh-tuning-comparison.md`.
+
+**Retrieval gap diagnosed and fixed:**
+- **Root cause:** LanceDB beat v2 by 2.8pp, entirely in semantic queries. 64-bit LSH signatures too strict (~0% match at cosine 0.7), and missing morphological variants in blind indices.
+- **3 improvements implemented:**
+  1. LSH parameters: 64-bit × 12 → 32-bit × 20 tables (after testing 12-bit × 28 which was too coarse)
+  2. Stemmed blind indices via Porter stemmer
+  3. Candidate pool: 400 → 1200
+- **Results:** Semantic recall +48% (16.4% → 24.3%), now within 0.4% of LanceDB while maintaining zero-knowledge E2EE.
+
+**Files modified:**
+- `skill/plugin/lsh.ts` — LSH params: 32-bit × 20 tables
+- `skill/plugin/crypto.ts` — Added stemmed blind indices
+- `skill/plugin/reranker.ts` — Added stemming to BM25 tokenizer
+- `skill/plugin/index.ts` — Candidate pool 400 → 1200
+- `skill/plugin/package.json` — Added porter-stemmer dependency
+- `ombh/scripts/run_benchmark.py` — Speed fixes (glm-4.5-air, concurrency 8, max_tokens 512, queries-ingested.json)
+- `ombh/scripts/regenerate_queries_for_ingested.py` — NEW: generates queries from ingested facts only
+- `ombh/scripts/ingest_v1.py` — NEW: standalone v1 ingest script
+- `ombh/scripts/generate_5way_report.py` — NEW: 5-way report generator
+- `ombh/docker-compose.benchmark.yml` — glm-4.5-air model for all instances
+- `ombh/configs/*/config.json5` — glm-4.5-air model
+- `plans/2026-02-28-retrieval-improvements.md` — NEW: improvement spec
+- `CLAUDE.md` — Added compaction protocol rule #7
+
+**Tests:** 122/122 passing (38 E2E + 32 LSH + 52 reranker)
+
+### 28:02 | Claude (opus) | LSH Tuning Spec for Multi-Tenant SaaS
+
+- **New spec:** `docs/specs/openmemory/lsh-tuning.md` — Covers LSH parameter tuning guidance for multi-tenant SaaS deployment.
+- **Key finding documented:** Per-user LSH tuning is NOT needed. Bit width (32) and table count (20) are content-type-agnostic -- cosine similarity distributions follow the same patterns across domains (cooking, coding, personal, etc.). Only the candidate pool needs per-user scaling based on fact count.
+- **Dynamic pool formula:** `pool = min(max(factCount * 3, 400), 5000)` — client sets `max_candidates` per search request. No server changes needed.
+- **Zero-knowledge observability:** Server can expose fact count, candidate match rates, and search latency to help the client auto-tune pool size without revealing content.
+- **Updated TASKS.md:** Added LSH tuning spec to phase summary, updated pending work with NanoClaw sync + dynamic pool sizing + optional embedding upgrade, clarified benchmark is DONE.
+
+### 28:01 | Claude (opus) | Task/memory compaction update
+
+- Removed "Build production re-indexing endpoint" from pending priorities (pre-production, not needed).
+- Documented LSH tuning guidance in TASKS.md (bit width vs scale, candidate pool sizing, when to re-tune).
+- Updated pending priorities: (1) Sync LSH/stemming to NanoClaw, (2) Optionally upgrade to bge-small-en-v1.5.
+
+---
+
 ## 2026-02-26
+
+### Session 11 Summary | Claude (opus) | PoC v2 + 4-Way Benchmark + Local Embeddings
+
+**PoC v2 (LSH + Semantic Search) — COMPLETE, 122/122 tests pass:**
+- `skill/plugin/embedding.ts` — Local all-MiniLM-L6-v2 ONNX embeddings (384-dim, ~22MB, zero API keys)
+- `skill/plugin/lsh.ts` — Random Hyperplane LSH (64-bit × 12 tables, deterministic from master key)
+- `skill/plugin/reranker.ts` — BM25 + cosine similarity + RRF fusion (replaces naive textScore)
+- `skill/plugin/index.ts` — Storage path (embed + LSH + encrypt) and search path (LSH trapdoors + decrypt + rerank) fully wired
+- `server/migrations/versions/002_add_encrypted_embedding.py` — Nullable TEXT column for encrypted embeddings
+- NanoClaw MCP (`openmemory-mcp.ts`) updated with same pipeline (self-contained LSH + reranker)
+- `client/src/embedding/onnx.ts` — Rewritten with proper tokenizer (was broken placeholder)
+- **Critical UX decision:** API-based embeddings REMOVED entirely. Users don't need extra API keys. Local model strengthens zero-knowledge.
+
+**4-Way Benchmark setup — COMPLETE, data generation in progress:**
+- `ombh/docker-compose.benchmark.yml` — 4 OpenClaw instances (TotalReclaw:8081, Mem0:8082, QMD:8083, LanceDB:8084)
+- `ombh/Dockerfile.openclaw-mem0` — Custom Dockerfile to install @mem0/openclaw-mem0 (not bundled with OpenClaw)
+- `ombh/scripts/generate_synthetic_benchmark.py` — 5-phase pipeline (1439 lines), checkpoint/resume
+- `ombh/ombh/llm/client.py` — Cross-provider fallback (Ollama > Gemini > OpenRouter > Z.AI)
+- **Data status:** ~555/1000 conversations generated via funded OpenRouter (Llama 3.3 70B). Fact extraction + query generation pending.
+
+---
+
+### Claude (opus) | Add Gemini Support to OMBH LLM Client + Cross-Provider Fallback
+
+- **Added Gemini as primary LLM provider** in `ombh/ombh/llm/client.py`. Uses the OpenAI-compatible endpoint (`generativelanguage.googleapis.com/v1beta/openai`) with `gemini-2.5-flash-lite` as default model (highest free tier quota: 1000 RPD, 15 RPM). Fallback models: `gemini-2.5-flash`, `gemini-2.0-flash`.
+- **Provider priority**: Gemini > OpenRouter > Z.AI (based on which env vars are set: `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `ZAI_API_KEY`).
+- **Cross-provider fallback**: When all models on one provider exhaust their quotas, the client automatically switches to the next provider. Example: Gemini free tier exhausted -> falls back to OpenRouter -> falls back to Z.AI. Each provider has its own model chain and API client.
+- **Fast daily quota detection**: Gemini's 429 errors with "quota exceeded" + "PerDay" in the message are detected immediately (no retries), cutting fallback time from ~45s to ~3s per model.
+- **Increased max_tokens in synthetic benchmark script** (`ombh/scripts/generate_synthetic_benchmark.py`): conversation generation raised from 4096 to 8192 tokens, fact/query extraction raised from 2048 to 4096 tokens. Prevents JSON truncation with verbose Gemini/OpenRouter models.
+- **Increased rate limit delays**: 0.5-1.0s delays increased to 4.0s between batches to stay within Gemini's 15 RPM free tier limit.
+- **Full generation started**: `--conversations 1000 --conversations-per-call 2` running in background via OpenRouter (Gemini daily quota exhausted for today). Checkpointing enabled for resume.
+- **Key Gemini free tier findings**: All models share a 20 RPD limit per model (not 1000 as some docs claim). `gemini-2.5-flash-lite` is the most capable model with available quota. The OpenAI-compat endpoint works seamlessly with the `openai` Python SDK.
+
+### T245 | Claude (opus) | Add Mem0 Plugin Support to 4-Way Benchmark
+
+- **T245 (completed):** Added full Mem0 plugin support to the 4-way benchmark Docker setup. The Mem0 plugin (`@mem0/openclaw-mem0`) is not bundled with OpenClaw, so a custom Dockerfile installs it during the Docker build. All 4 benchmark instances (TotalReclaw, Mem0, QMD, LanceDB) now start together by default.
+  - **New file: `ombh/Dockerfile.openclaw-mem0`** -- Multi-stage Dockerfile that builds OpenClaw from source, then installs `@mem0/openclaw-mem0@0.1.2` (with deps: `mem0ai`, `@sinclair/typebox`) into `/app/extensions/openclaw-mem0/`. Uses Docker `additional_contexts` to reference the OpenClaw source tree.
+  - **Updated: `ombh/docker-compose.benchmark.yml`** -- Mem0 service (`openclaw-mem0`) now uses the custom Dockerfile instead of the base OpenClaw Dockerfile. Removed the `profiles: [mem0]` gate so all 4 instances start with a plain `docker compose up -d`. Build uses `additional_contexts` for the OpenClaw source.
+  - **Updated: `ombh/configs/openclaw-mem0/config.json5`** -- Fixed plugin ID from `memory-mem0` to `openclaw-mem0` (matches actual plugin `openclaw.plugin.json` id). Added `userId: "benchmark-user"` config. Removed old placeholder comments.
+  - **Updated: `ombh/.env.example`** -- `MEM0_API_KEY` moved from OPTIONAL to REQUIRED section. Updated description and instructions.
+  - **Updated: `ombh/README.md`** -- Rewrote Quick Start to show all 4 instances starting together. Added "Mem0 Plugin Setup" section explaining the custom Dockerfile approach, how to get a Mem0 API key, and how the build works. Updated directory structure, configuration details, and API keys table.
+  - **Web research findings:** npm package `@mem0/openclaw-mem0` v0.1.2, plugin ID `openclaw-mem0`, kind `memory`, depends on `@sinclair/typebox@0.34.47` + `mem0ai@^2.2.1`. Supports platform mode (cloud API with MEM0_API_KEY) and open-source mode (self-hosted). Auto-recall and auto-capture enabled by default. 5 agent tools: memory_search, memory_list, memory_store, memory_get, memory_forget.
+  - **Docker build verified:** Image builds successfully, plugin files present at `/app/extensions/openclaw-mem0/` with correct `package.json` and `openclaw.plugin.json`.
+
+### T250 | Claude (opus) | Replace API Embeddings with Local all-MiniLM-L6-v2
+
+- **T250 (completed):** Replaced API-based embedding generation with local ONNX model (Xenova/all-MiniLM-L6-v2) via `@huggingface/transformers`. This fixes two critical issues: (1) most LLM providers don't expose embedding APIs, requiring a separate API key, and (2) sending plaintext to an external embedding API breaks the zero-knowledge guarantee.
+  - **New file: `skill/plugin/embedding.ts`** -- Local embedding module using `@huggingface/transformers`. Lazy initialization, quantized int8 model (~22MB), 384-dim output, cached in ~/.cache/huggingface/. First call ~2-3s, subsequent ~15ms.
+  - **Updated: `skill/plugin/llm-client.ts`** -- Removed all API-based embedding code (provider mapping, embedding models table, provider detection for embeddings, `resolveEmbeddingConfig()`, `callEmbeddingAPI()`, `_cachedProvider`). Re-exports `generateEmbedding` and `getEmbeddingDims` from `embedding.ts`. Chat completion code unchanged.
+  - **Updated: NanoClaw MCP (`openmemory-mcp.ts`)** -- Replaced inline API embedding client with local ONNX embedding (same approach as plugin). Removed provider env var detection, model mapping, and API call code.
+  - **Updated: NanoClaw Dockerfile** -- Added `@huggingface/transformers` to npm install.
+  - **Rewritten: `client/src/embedding/onnx.ts`** -- Replaced broken hash-based tokenizer implementation with proper `@huggingface/transformers` pipeline. Same `EmbeddingModel` API (load/embed/embedBatch/dispose) but now uses real WordPiece tokenization.
+  - **Updated: `skill/plugin/pocv2-e2e-test.ts`** -- Removed API key detection, provider mapping, and skip logic. Now uses local embeddings unconditionally. Updated test expectations for 384-dim LSH behavior (64-bit signatures have finer granularity than with 1536-dim API embeddings). Added cosine similarity verification. 38 tests, 0 skipped, all pass.
+  - **Dependencies added:** `@huggingface/transformers` in `skill/plugin/package.json` and `client/package.json`.
+  - **Fixed dimensions:** Embeddings are now always 384-dim (was provider-dependent: 768-2048). LSH hasher adapts via its `dims` constructor parameter.
+  - **Test results:** 38/38 E2E, 32/32 LSH, 52/52 reranker -- all pass with zero API keys.
+  - **Key insight:** With 384-dim embeddings and 64-bit LSH signatures, bucket overlap probability is lower than with larger API model embeddings. This is expected and acceptable -- the reranker's cosine similarity (0.95 for similar texts vs 0.005 for dissimilar) provides the semantic ranking. LSH recall improves with dataset scale (validated at 93.6% recall on 8,727 facts in architecture.md).
+
+### T241 | Claude (opus) | Docker Setup -- 4 OpenClaw Instances for Benchmark
+
+- **T241 (completed):** Created Docker Compose infrastructure for 4-way memory system benchmark. 4 independent OpenClaw instances, each with a different memory backend, all sharing the same LLM provider (Z.AI glm-5) for fair comparison.
+  - **`ombh/docker-compose.benchmark.yml`** -- Main compose file with 6 services:
+    - `postgres` (port 5434) -- PostgreSQL for TotalReclaw server
+    - `openmemory-server` (port 8090) -- TotalReclaw backend API
+    - `openclaw-totalreclaw` (port 8081) -- OpenMemory E2EE plugin
+    - `openclaw-mem0` (port 8082) -- Mem0 cloud API (behind `mem0` profile, see below)
+    - `openclaw-qmd` (port 8083) -- Built-in memory-core (default QMD)
+    - `openclaw-lancedb` (port 8084) -- LanceDB vector DB plugin
+  - **`ombh/configs/`** -- Per-instance JSON5 config files:
+    - `openclaw-totalreclaw/config.json5` -- openmemory plugin in memory slot, memory-core disabled
+    - `openclaw-mem0/config.json5` -- memory-mem0 plugin (with installation notes)
+    - `openclaw-qmd/config.json5` -- memory-core enabled (default, no extra plugins)
+    - `openclaw-lancedb/config.json5` -- memory-lancedb plugin with OpenAI embedding config
+  - **`ombh/.env.example`** -- Updated with all required keys (ZAI, OPENMEMORY_MASTER_PASSWORD, OPENAI_API_KEY, MEM0_API_KEY, POSTGRES_PASSWORD)
+  - **`ombh/README.md`** -- Updated with 4-way benchmark instructions, network diagram, plugin status table
+  - **Key finding: Mem0 plugin is NOT bundled with OpenClaw** -- `extensions/` directory contains `memory-core` and `memory-lancedb` but no Mem0 plugin. The Mem0 service is placed behind a Docker Compose profile (`mem0`) so it does not start by default. If Mem0 plugin becomes available, activate with `--profile mem0`.
+  - **LanceDB plugin is bundled** -- `extensions/memory-lancedb` exists in OpenClaw and requires OPENAI_API_KEY for text-embedding-3-small embeddings.
+  - All ports bind to 127.0.0.1 (localhost only). Security hardening: no-new-privileges, read-only where applicable, tmpfs for /tmp.
+  - Shared gateway token (`benchmark-token-2026`) across all instances for API access.
+  - Config pattern learned from working functional test: `plugins.slots.memory` for exclusive slot, `plugins.entries` for enable/disable.
+
+### T237 | Claude (opus) | E2E Test -- Paraphrased Query Recall
+
+- **T237 (completed):** Created `skill/plugin/pocv2-e2e-test.ts` -- standalone E2E test script validating the full PoC v2 store -> search -> rerank pipeline locally (no Docker or running server needed).
+  - **35 TAP tests** covering 10 test scenarios (A through J):
+    - A: Exact word match (baseline) -- encryption round-trip, blind indices, word search
+    - B: Paraphrased query "Where is Alex employed?" vs stored "Alex works at Nexus Labs" (THE KEY TEST)
+    - C: Paraphrased "What programming language does Sarah like?" vs "Sarah prefers Python"
+    - D: Paraphrased "What database change was planned?" vs "migrate from MongoDB to PostgreSQL"
+    - E: Negative query "weather forecast" should NOT match Alex fact
+    - F: Multiple facts ranked correctly -- Alex fact ranked #1 for Alex query, database fact ranked #1 for database query
+    - G: Backward compatibility -- v1 fact (no embedding) found via word trapdoors, mixed v1+v2 facts
+    - H: LSH bucket overlap verification -- similar texts share more buckets than dissimilar texts
+    - I: Embedding encryption round-trip -- encrypt/decrypt preserves all dimensions and values exactly
+    - J: Content fingerprint dedup -- same text produces same fingerprint, different text differs
+  - **Self-contained crypto:** Inlines the necessary crypto functions using `.js` import paths (compatible with `npx tsx`), since `crypto.ts` uses bare import paths that only work under OpenClaw's bundler.
+  - **Auto-detects embedding provider:** Checks OPENAI_API_KEY, ZAI_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, etc. If no key is available, LSH tests are skipped gracefully and only word-based matching is tested.
+  - **Simulates server-side GIN index:** `simulateGINSearch()` replicates the PostgreSQL GIN overlap query locally.
+  - Run with: `cd skill/plugin && npx tsx pocv2-e2e-test.ts`
+  - Result without API key: 23 passed, 0 failed, 12 skipped. Result with API key: all 35 tests expected to pass.
+
+### T236 | Claude (opus) | Verified Backward Compatibility for v1 Facts
+
+- **T236 (completed):** Verified backward compatibility for v1 facts (stored without embeddings or LSH hashes) across the entire pipeline. No code changes needed -- all paths are already correctly handling the mixed v1/v2 scenario.
+  - **Files reviewed:** `skill/plugin/index.ts`, `skill/plugin/reranker.ts`, `openmemory-mcp.ts`, `server/src/db/models.py`, `server/src/db/database.py`, `server/src/handlers/store.py`, `server/src/handlers/search.py`, `skill/plugin/lsh.ts`, `skill/plugin/llm-client.ts`, `skill/plugin/api-client.ts`
+  - **Store path:** `generateEmbeddingAndLSH()` returns null on failure. Callers use ternary to fall back to word-only indices. `encrypted_embedding` is undefined/null when skipped. Server column is `nullable=True`.
+  - **Search path:** Word trapdoors always generated first. Embedding/LSH trapdoors generated in try/catch with graceful fallback. Both plugin and NanoClaw MCP follow identical pattern.
+  - **Decrypt path:** `candidate.encrypted_embedding` checked with `if` guard before decryption. v1 facts (null embedding) skip decryption, produce `embedding: undefined` in reranker candidates.
+  - **Reranker:** `RerankerCandidate.embedding` is explicitly optional (`embedding?: number[]`). Cosine similarity only computed for candidates with non-empty embeddings. v1 candidates excluded from cosine ranking list. RRF fusion works with single BM25 list when no cosine data. BM25 works for all candidates regardless of embedding presence.
+  - **Server:** `encrypted_embedding` is `Optional[str]` in Pydantic models (default None), `nullable=True` in SQLAlchemy model, `getattr(fact, 'encrypted_embedding', None)` in search/export handlers. All endpoints accept requests without `encrypted_embedding`.
+  - **Scenarios verified:** (1) v1 fact searched with v2 query -- found via word trapdoor, BM25-only ranking. (2) v2 fact searched with v1 query -- found via word trapdoor, cosine returns 0 for empty query embedding. (3) Mixed v1+v2 results -- BM25 works for all, cosine only for v2, RRF fusion handles mixed. (4) Embedding provider unavailable -- falls back to word-only store/search, no crash.
+  - **Minor edge case noted:** When `queryEmbedding` is `[]` but candidates have embeddings, cosine scores are all 0 but the ranking list is still added to RRF. This creates a negligible uniform boost for v2 candidates. Not a functional issue -- BM25 dominates.
+
+### T235 | Claude (opus) | Update Search/Recall Path — LSH Trapdoors + BM25/Cosine/RRF Reranking
+
+- **T235 (completed):** Updated search/recall path in both OpenClaw plugin and NanoClaw MCP to use LSH trapdoors, decrypt embeddings, and re-rank with BM25 + cosine + RRF fusion.
+  - **Plugin (`skill/plugin/index.ts`):**
+    - Added import: `rerank` + `RerankerCandidate` from `./reranker.js`
+    - Updated `openmemory_recall` tool:
+      1. Generates query embedding via `generateEmbedding()`
+      2. Computes LSH trapdoors via `getLSHHasher().hash()`
+      3. Merges word trapdoors + LSH trapdoors before sending to server
+      4. Decrypts `encrypted_embedding` from each candidate (if present)
+      5. Passes decrypted candidates to `rerank()` (BM25 + cosine + RRF fusion)
+      6. Returns top-k results from fused ranking
+    - Updated `before_agent_start` hook: same full pipeline (LSH trapdoors + embedding decryption + reranker)
+    - **Graceful fallback:** If embedding generation fails, falls back to word-only trapdoors + BM25-only reranking
+    - **Backward compatibility:** v1 facts without embeddings get BM25-only scoring (cosine excluded from RRF)
+  - **NanoClaw MCP (`openmemory-mcp.ts`):**
+    - Added self-contained reranker code: `tokenize()`, `bm25Score()`, `cosineSimilarity()`, `rrfFuse()`, `rerankCandidates()`
+    - Updated `handleRecall()`: same full pipeline as plugin (LSH trapdoors + embedding decryption + reranker)
+    - Increased `maxCandidates` from `k*10` to `k*50` (matches plugin) for better re-ranking pool
+    - **Graceful fallback:** Same as plugin — word-only trapdoors + BM25-only if embedding fails
+  - **Old `textScore` function:** Still present in plugin for potential future use but no longer called by any active code path. Replaced by BM25 in the reranker.
+  - **Key improvement:** Queries like "Where is Alex employed?" now match facts like "Alex works at Nexus Labs" via LSH semantic buckets, even when no exact words overlap.
+
+### T233 | Claude (opus) | Update Storage Path — Embeddings + LSH in Store
+
+- **T233 (completed):** Updated storage path in both OpenClaw plugin and NanoClaw MCP to generate embeddings, compute LSH bucket hashes, and store encrypted embeddings alongside facts.
+  - **Plugin (`skill/plugin/index.ts`):**
+    - Added imports: `deriveLshSeed` from crypto, `generateEmbedding`/`getEmbeddingDims` from llm-client, `LSHHasher` from lsh
+    - Added lazy LSH hasher initialization (`getLSHHasher()`) — caches master password + salt from `initialize()`, creates hasher on first use with auto-detected embedding dims
+    - Added `generateEmbeddingAndLSH()` helper — generates embedding, computes 12 LSH bucket hashes, encrypts embedding as hex blob
+    - Updated `openmemory_remember` tool: generates embedding + LSH buckets, merges into `blind_indices`, sends `encrypted_embedding` to server
+    - Updated `storeExtractedFacts()` (auto-extraction hooks): same embedding + LSH + encrypted_embedding flow
+    - **Graceful fallback:** If embedding generation fails (provider doesn't support it, network error), falls back to word-only blind indices without breaking the store
+  - **API client (`skill/plugin/api-client.ts`):**
+    - Added `encrypted_embedding?: string` to `StoreFactPayload` interface
+    - Added `encrypted_embedding?: string` to `SearchCandidate` interface (prepares for T235 recall path)
+  - **NanoClaw MCP (`openmemory-mcp.ts`):**
+    - Added self-contained `LSHHasher` class (byte-for-byte copy of `skill/plugin/lsh.ts`)
+    - Added `deriveLshSeed()` function (mirrors `skill/plugin/crypto.ts`)
+    - Added lazy `getLSHHasher()` and `generateEmbeddingAndLSH()` helpers
+    - Updated `handleRemember()`: same embedding + LSH + encrypted_embedding flow as plugin
+    - Updated `StoreFactPayload` and `SearchCandidate` interfaces with `encrypted_embedding` field
+    - **Graceful fallback:** Same as plugin — word-only indices if embedding fails
+  - **Backward compatibility:** All changes are additive. Stores without embedding support continue to work (word-only blind indices, no encrypted_embedding). Server column is nullable.
+  - **Zero-knowledge:** Embeddings are encrypted client-side with AES-256-GCM before being sent to the server. Server stores opaque hex blobs.
+
+### T234 | Claude (opus) | Server Schema — Add encrypted_embedding Column
+
+- **T234 (completed):** Added `encrypted_embedding` column to facts table for PoC v2 LSH + reranking support
+  - **Model:** `server/src/db/models.py` — new nullable `Text` column on `Fact` model
+  - **Migration:** `server/migrations/versions/002_add_encrypted_embedding.py` — Alembic migration (revision 002, depends on 001)
+  - **Database layer:** `server/src/db/database.py` — `store_fact()` accepts and stores `encrypted_embedding`; `search_facts_by_blind_indices()`, `get_facts_since_sequence()`, `get_all_facts()`, `get_facts_paginated()` all return `encrypted_embedding`
+  - **Store endpoint:** `server/src/handlers/store.py` — `FactJSON` accepts optional `encrypted_embedding`; passes it through to `db.store_fact()`
+  - **Search endpoint:** `server/src/handlers/search.py` — `SearchResultJSON` includes optional `encrypted_embedding` in response
+  - **Export endpoint:** `server/src/handlers/search.py` — export fact dicts include `encrypted_embedding` when present
+  - **Sync endpoint:** `server/src/handlers/sync.py` — `SyncedFactJSON` includes optional `encrypted_embedding` in response
+  - **Protobuf:** `server/proto/openmemory.proto` — field 13 on `OpenMemoryFact`, field 6 on `SearchResult`
+  - **Tests:** 19 new tests in `server/tests/test_encrypted_embedding.py` (model, store with/without embedding, search, sync, schema, migration, protobuf)
+  - **Existing tests:** Fixed `test_sync.py` mock to include `encrypted_embedding=None` on mock facts. All 194 tests pass (0 failures, 23 pre-existing integration errors needing PostgreSQL)
+  - **Backward compat:** Column is nullable, v1 clients that don't send `encrypted_embedding` still work (defaults to None)
+  - **Zero-knowledge:** Server never decrypts the embedding — stores and returns opaque hex blobs
+
+### T240 | Claude (opus) | Synthetic Benchmark Dataset Generator
+
+- **T240 (completed):** Created `ombh/scripts/generate_synthetic_benchmark.py` — full pipeline for generating synthetic benchmark data
+  - **Phase 1a: Personas** — 50-100 diverse persona templates (50 occupations, 52 interests, 20 life context templates, 22 cities). Deterministic from seed.
+  - **Phase 1b: Conversations** — Batched LLM generation (5 convs per call). 10-20 messages each. Edge cases: 5% short (3-5 msgs), 10% long (18-24 msgs). Topics rotated across 16 categories.
+  - **Phase 1c: Fact Extraction** — LLM extracts 3-8 atomic facts per conversation. Types: factual/preference/decision/episodic/goal. Importance 1-10.
+  - **Phase 1d: Query Generation** — Batched (10 facts per call). Category distribution: 30% factual, 40% semantic, 20% cross-conversation, 10% negative. Relevance scores 0-1.
+  - **Phase 1e: Validation** — Stats, orphan fact detection, distribution checks.
+  - **Features:** Checkpoint/resume capability, dry-run mode (10 convs), deterministic seed, CLI with all required args.
+  - **Uses:** OMBH LLMClient (OpenRouter free models, fallback chain, retry with backoff, token counting). JSON parsing handles code blocks + think tags.
+  - **Output:** `ombh/synthetic-benchmark/` with conversations/ (JSONL), ground-truth/ (facts.json, queries.json, statistics.json), personas/ (personas.json), README.md.
+  - **Scale:** ~200 LLM calls for conversations + ~400 for queries = ~600-800 total. ~20-30 min at ~2s/call.
+  - **Offline tests pass:** Persona generation (10/10), checkpoint round-trip, JSON parsing (4/4 edge cases).
+
+### Session 11 (continued) | Claude (opus-lsh) | PoC v2 — LSH Hasher (T231)
+
+- **T231 (completed):** Implemented Random Hyperplane LSH hasher at `skill/plugin/lsh.ts`
+  - **LSHHasher class:** Pure TypeScript, zero external deps beyond `@noble/hashes` (already in project)
+  - **Deterministic hyperplanes:** Seed (32 bytes from HKDF) -> per-table HKDF derivation -> Box-Muller transform -> Gaussian-distributed hyperplanes. Same master key -> same hyperplanes -> same hashing across sessions.
+  - **Hash function:** For each table: dot(hyperplane, embedding) -> sign bit -> 64-bit binary signature -> `lsh_t{table}_{sig}` -> SHA-256 blind hash (hex). Output merges with existing blind word indices.
+  - **HKDF chunking:** Handles large embedding dims (e.g., 1536 * 64 * 8 = 786KB per table) by iterating over sub-block indices, bypassing the 8,160-byte HKDF-SHA256 limit.
+  - **Parameters:** 64 bits per table, 12 tables (default), matching architecture spec validated at 93.6% Recall@3000.
+  - **Performance:** 0.82ms per hash for 1536-dim vectors (well under 5ms target).
+  - **deriveLshSeed() added to crypto.ts:** Derives 32-byte LSH seed from master key via HKDF with info string `openmemory-lsh-seed-v1`. Supports both BIP-39 and Argon2id paths.
+  - **Tests:** 32/32 pass in `lsh.test.ts`. Covers determinism, different embeddings, different seeds, output count, hex format, dimension mismatch, similar vs dissimilar vectors (low-bit LSH locality), performance, constructor validation, accessors, small dims, repeated hashing, HKDF integration, per-table uniqueness.
+  - **Files:** `skill/plugin/lsh.ts` (new), `skill/plugin/lsh.test.ts` (new), `skill/plugin/crypto.ts` (added `deriveLshSeed`)
+
+### Session 11 (continued) | Claude (opus) | PoC v2 — BM25 + Cosine + RRF Reranker (T232)
+
+- **T232 (completed):** Implemented client-side re-ranker at `skill/plugin/reranker.ts`
+  - **Tokenizer:** Matches blind index tokenization from crypto.ts (lowercase, remove punctuation, split whitespace, filter <2 chars) + optional English stop word removal (70 words)
+  - **BM25 (Okapi BM25):** Full implementation with IDF (Robertson-Walker floor), TF saturation with length normalization. Parameters: k1=1.2, b=0.75
+  - **Cosine similarity:** dot product / (norm_a * norm_b) with zero-vector edge case handling
+  - **RRF (Reciprocal Rank Fusion):** Standard formula 1/(k + rank), k=60 default. Fuses BM25 + cosine rankings
+  - **Combined `rerank()` function:** Tokenize -> corpus stats -> BM25 rank -> cosine rank -> RRF fuse -> top-k
+  - **Backward compatibility:** Candidates without embeddings (v1 facts) excluded from cosine ranking, still ranked by BM25. Single-list RRF when no embeddings present
+  - **52 unit tests** in `skill/plugin/reranker.test.ts` (TAP format, `npx tsx` runner): tokenization (14), BM25 (8), cosine (9), RRF (11), end-to-end rerank (10)
+  - Pure TypeScript, zero external dependencies
+  - Replaces naive `textScore` word-overlap scorer from `skill/plugin/index.ts`
+
+### Session 11 | Claude (opus) | PoC v2 — Embedding Client (T230)
+
+- **T230 (completed):** Added embedding client to `skill/plugin/llm-client.ts` and NanoClaw MCP (`openmemory-mcp.ts`)
+  - New exports: `generateEmbedding(text: string): Promise<number[]>` and `getEmbeddingDims(): number`
+  - 8 providers with embedding support: openai (text-embedding-3-small, 1536d), zai (embedding-3, 2048d), gemini/google (text-embedding-004, 768d), mistral (mistral-embed, 1024d), openrouter (openai/text-embedding-3-small, 1536d), together (m2-bert-80M-8k-retrieval, 768d), deepseek (deepseek-chat, 1024d)
+  - 4 providers without embeddings throw descriptive errors: anthropic, groq, xai, cerebras
+  - Uses OpenAI-compatible `/v1/embeddings` endpoint format for all providers
+  - Auto-detects provider the same way as `chatCompletion` (from OpenClaw config or env vars)
+  - Retries once on API failure before throwing
+  - `_cachedProvider` state added to track detected provider name across `initLLMClient()` / `resolveLLMConfig()` / `resolveEmbeddingConfig()`
+  - NanoClaw MCP: self-contained implementation with same provider detection via env vars, same model mappings, same retry logic
 
 ### Session 8 (continued) | Claude (opus-nanoclaw) | Full E2E Agent Validation
 

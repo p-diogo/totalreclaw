@@ -1,8 +1,8 @@
-# OpenMemory Roadmap
+# TotalReclaw Roadmap
 
 ## Overview
 
-OpenMemory is a zero-knowledge encrypted memory vault for AI agents. The project progresses through four phases, each building on the last but with distinct goals:
+TotalReclaw is a zero-knowledge encrypted memory vault for AI agents. The project progresses through four phases, each building on the last but with distinct goals:
 
 1. **Phase 1 (PoC)** -- Validate the E2EE architecture end-to-end with local testing.
 2. **Phase 2 (Free MVP)** -- Ship a production server, publish on Claw Hub, and benchmark against Mem0.
@@ -14,7 +14,7 @@ OpenMemory is a zero-knowledge encrypted memory vault for AI agents. The project
 ## Phase 1: Proof of Concept (PoC) — COMPLETE
 
 **Goal:** Validate the E2EE architecture end-to-end. Test locally with friends.
-**Specs:** `docs/specs/openmemory/architecture.md` (v0.3), `docs/specs/openmemory/server.md` (v0.3.1b)
+**Specs:** `docs/specs/totalreclaw/architecture.md` (v0.3), `docs/specs/totalreclaw/server.md` (v0.3.1b)
 **Status:** All code complete. 836+ tests passing. Ready for local testing.
 
 ### What's Built
@@ -35,14 +35,14 @@ OpenMemory is a zero-knowledge encrypted memory vault for AI agents. The project
 
 | Task | IDs | Description |
 |------|-----|-------------|
-| Repo split | T073-T077 | Split monorepo into openmemory-poc and openmemory-specs (IN PROGRESS) |
+| Repo split | T073-T077 | Split monorepo into totalreclaw-poc and totalreclaw-specs (IN PROGRESS) |
 
 ---
 
 ## Phase 2: Free MVP
 
 **Goal:** Public launch via Claw Hub and other channels. Production server online for real users.
-**Specs:** `docs/specs/openmemory/server.md` (v0.3.1b) + production hardening
+**Specs:** `docs/specs/totalreclaw/server.md` (v0.3.1b) + production hardening
 
 ### 2.1 Server Production Readiness
 
@@ -108,14 +108,14 @@ Before launching the MVP publicly, complete a fair competitive benchmark against
 
 | System | Recall@8 | Latency | Privacy |
 |--------|----------|---------|---------|
-| OpenMemory | 67.5% | 57.5ms | 100% |
+| TotalReclaw | 67.5% | 57.5ms | 100% |
 | Mem0 | 0.5% (only 29/500 conversations indexed) | 469ms | 0% |
 
 **Why current results are bad:**
 
 1. Mem0 free tier async processing only indexed 29 out of 500 conversations within the polling window.
 2. Mem0 returned 502 Bad Gateway errors during retrieval.
-3. OpenMemory used a weak free LLM (13B active params) for extraction -- production will use the host agent's LLM.
+3. TotalReclaw used a weak free LLM (13B active params) for extraction -- production will use the host agent's LLM.
 4. The comparison does not reflect either system's true capability.
 
 **Lessons learned for the next benchmark attempt:**
@@ -123,17 +123,17 @@ Before launching the MVP publicly, complete a fair competitive benchmark against
 1. Slow down Mem0 ingestion: 1 conversation at a time with 10-30s waits between.
 2. Reduce scale to 50-100 conversations (within Mem0 free tier: 10K memories, 1K searches/month).
 3. Poll much longer for Mem0 async processing (10+ minutes, not 5).
-4. Use a production-quality LLM for OpenMemory extraction (or the host agent's LLM).
+4. Use a production-quality LLM for TotalReclaw extraction (or the host agent's LLM).
 5. Monitor Mem0 memory count via API to confirm all conversations were processed before running retrieval.
 6. Consider running on a weekday/off-peak to avoid Mem0 platform load issues.
 7. Consider self-hosting Mem0 via Docker for a controlled comparison (tests different product but eliminates platform flakiness).
-8. Use OpenClaw's LLM task feature for OpenMemory's fact extraction (leveraging the host agent's LLM, e.g., Claude or GPT-4). This matches production behavior and provides a fair comparison against Mem0's platform, which also uses a powerful LLM (gpt-4.1-nano) internally for extraction.
+8. Use OpenClaw's LLM task feature for TotalReclaw's fact extraction (leveraging the host agent's LLM, e.g., Claude or GPT-4). This matches production behavior and provides a fair comparison against Mem0's platform, which also uses a powerful LLM (gpt-4.1-nano) internally for extraction.
 
 **What we DO know from retrieval-only benchmark:**
 
-- OpenMemory: 98.1% Recall@8 on 8,727 pre-indexed memories (with full E2EE privacy).
+- TotalReclaw: 98.1% Recall@8 on 8,727 pre-indexed memories (with full E2EE privacy).
 - This validates the core search architecture works well.
-- The E2E extraction quality depends on the LLM used, not OpenMemory's architecture.
+- The E2E extraction quality depends on the LLM used, not TotalReclaw's architecture.
 
 ### 2.3 Claw Hub Publishing
 
@@ -145,11 +145,11 @@ Before launching the MVP publicly, complete a fair competitive benchmark against
 | CLAWHUB.md publishing checklist | Done | -- |
 | Screenshots (3-5, 1920x1080) | Pending | Manual |
 | Demo video (30-90s) | Pending | Manual |
-| Make openmemory-poc repo public | Pending | User action |
+| Make totalreclaw-poc repo public | Pending | User action |
 | Submit to Claw Hub review | Blocked | Repo must be public |
 | Test skill uses host agent's LLM | Pending (T088) | -- |
 
-### 2.4 Multi-Agent Conflict Resolution (`docs/specs/openmemory/conflict-resolution.md` v0.3.2)
+### 2.4 Multi-Agent Conflict Resolution (`docs/specs/totalreclaw/conflict-resolution.md` v0.3.2)
 
 Applies to both MVP (PostgreSQL) and future Subgraph path. 4-layer protocol:
 
@@ -188,7 +188,7 @@ All scaffolding and smart contracts are built and locally tested. Testnet deploy
 | Component | Description | Tests | Status |
 |-----------|-------------|-------|--------|
 | EventfulDataEdge.sol | Minimal DA contract, fallback() emits Log(bytes), EntryPoint access control | 14 | DONE |
-| OpenMemoryPaymaster.sol | ERC-4337 paymaster with per-sender sliding window rate limiting | 32 | DONE |
+| TotalReclawPaymaster.sol | ERC-4337 paymaster with per-sender sliding window rate limiting | 32 | DONE |
 | Deploy/verify/fund scripts | Hardhat deploy to Base Sepolia, Basescan verification, paymaster funding | — | DONE (tested locally) |
 | Subgraph schema + mapping | 14-field FactEntity, AssemblyScript Protobuf decoder, GlobalState tracking | graph build OK | DONE |
 | Client BIP-39 seed management | 12-word mnemonic, BIP-32/44 derivation, HKDF key compatibility with kdf.ts | 19 | DONE |
@@ -232,14 +232,14 @@ Maps each spec to its rollout phase:
 
 | Spec | Path | Phase | Status |
 |------|------|-------|--------|
-| E2EE with LSH + Blind Buckets | `docs/specs/openmemory/architecture.md` | Phase 1 (PoC) | Implemented, validated |
-| OpenMemory Skill for OpenClaw | `docs/specs/openmemory/skill-openclaw.md` | Phase 1 (PoC) | Implemented |
-| Benchmark Harness (OMBH) | `docs/specs/openmemory/benchmark.md` | Phase 1 (PoC) | Implemented |
+| E2EE with LSH + Blind Buckets | `docs/specs/totalreclaw/architecture.md` | Phase 1 (PoC) | Implemented, validated |
+| TotalReclaw Skill for OpenClaw | `docs/specs/totalreclaw/skill-openclaw.md` | Phase 1 (PoC) | Implemented |
+| Benchmark Harness (OMBH) | `docs/specs/totalreclaw/benchmark.md` | Phase 1 (PoC) | Implemented |
 | Server PoC (no auth, superseded) | `docs/specs/archive/server-no-auth-superseded.md` | Phase 1 (PoC) | Superseded by v0.3.1 |
-| Server PoC v0.3.1b (Auth + Dedup) | `docs/specs/openmemory/server.md` | Phase 1-2 (PoC to MVP) | Partially implemented |
-| Multi-Agent Conflict Resolution v0.3.2 | `docs/specs/openmemory/conflict-resolution.md` | Phase 2 (MVP) | Draft spec |
-| OpenMemory MCP Server | `docs/specs/openmemory/mcp-server.md` | Phase 1 (PoC) | Implemented |
-| OpenMemory Skill for NanoClaw | `docs/specs/openmemory/skill-nanoclaw.md` | Phase 1 (PoC) | Implemented |
+| Server PoC v0.3.1b (Auth + Dedup) | `docs/specs/totalreclaw/server.md` | Phase 1-2 (PoC to MVP) | Partially implemented |
+| Multi-Agent Conflict Resolution v0.3.2 | `docs/specs/totalreclaw/conflict-resolution.md` | Phase 2 (MVP) | Draft spec |
+| TotalReclaw MCP Server | `docs/specs/totalreclaw/mcp-server.md` | Phase 1 (PoC) | Implemented |
+| TotalReclaw Skill for NanoClaw | `docs/specs/totalreclaw/skill-nanoclaw.md` | Phase 1 (PoC) | Implemented |
 | Seed-to-Subgraph v1.0 | `docs/specs/subgraph/seed-to-subgraph.md` | Phase 3 (Subgraph) | Spec complete |
 | TEE vs E2EE | `docs/specs/tee/architecture.md` | Phase 4 (TEE) | Analysis complete |
 | TDX SaaS v0.4 | `docs/specs/tee/tdx-saas.md` | Phase 4 (TEE) | Spec complete |

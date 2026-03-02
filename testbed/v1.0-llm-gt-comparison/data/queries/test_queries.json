@@ -1,0 +1,819 @@
+[
+  {
+    "text": "What did we decide regarding Tom's suggestion about the deployment strategy?",
+    "category": "contextual_fact",
+    "id": "q001"
+  },
+  {
+    "text": "What was the conclusion about performance optimization that Emma mentioned?",
+    "category": "contextual_fact",
+    "id": "q002"
+  },
+  {
+    "text": "We encountered 429 rate limit - what resolved it?",
+    "category": "error_solution",
+    "id": "q003"
+  },
+  {
+    "text": "How did we fix the CORS issue?",
+    "category": "error_solution",
+    "id": "q004"
+  },
+  {
+    "text": "deadlock - what's the fix?",
+    "category": "error_solution",
+    "id": "q005"
+  },
+  {
+    "text": "What was the conclusion about testing methodology that Alex mentioned?",
+    "category": "contextual_fact",
+    "id": "q006"
+  },
+  {
+    "text": "What did Tom say in the last discussion?",
+    "category": "temporal",
+    "id": "q007"
+  },
+  {
+    "text": "ECONNRESET",
+    "category": "exact_keyword",
+    "expected_match": "ECONNRESET",
+    "id": "q008"
+  },
+  {
+    "text": "What bugs did we fix recently?",
+    "category": "temporal",
+    "id": "q009"
+  },
+  {
+    "text": "What did we decide regarding Lisa's suggestion about the new feature timeline?",
+    "category": "contextual_fact",
+    "id": "q010"
+  },
+  {
+    "text": "What was decided in the last standup?",
+    "category": "temporal",
+    "id": "q011"
+  },
+  {
+    "text": "Tom's opinion on database schema changes",
+    "category": "contextual_fact",
+    "id": "q012"
+  },
+  {
+    "text": "serverless computing setup guide",
+    "category": "semantic",
+    "expected_terms": [
+      "AWS Lambda"
+    ],
+    "id": "q013"
+  },
+  {
+    "text": "Jen's opinion on performance optimization",
+    "category": "contextual_fact",
+    "id": "q014"
+  },
+  {
+    "text": "How to implement message queue?",
+    "category": "semantic",
+    "expected_terms": [
+      "RabbitMQ"
+    ],
+    "id": "q015"
+  },
+  {
+    "text": "According to John, what's the best approach for the API rate limit?",
+    "category": "contextual_fact",
+    "id": "q016"
+  },
+  {
+    "text": "Sarah's opinion on database schema changes",
+    "category": "contextual_fact",
+    "id": "q017"
+  },
+  {
+    "text": "According to Alex, what's the best approach for the new feature timeline?",
+    "category": "contextual_fact",
+    "id": "q018"
+  },
+  {
+    "text": "What was the solution for timeout error?",
+    "category": "error_solution",
+    "id": "q019"
+  },
+  {
+    "text": "What was decided in the last standup?",
+    "category": "temporal",
+    "id": "q020"
+  },
+  {
+    "text": "What's the base URL for the API?",
+    "category": "configuration",
+    "id": "q021"
+  },
+  {
+    "text": "What's the database endpoint?",
+    "category": "configuration",
+    "id": "q022"
+  },
+  {
+    "text": "Workaround for memory leak",
+    "category": "error_solution",
+    "id": "q023"
+  },
+  {
+    "text": "ETIMEDOUT",
+    "category": "exact_keyword",
+    "expected_match": "ETIMEDOUT",
+    "id": "q024"
+  },
+  {
+    "text": "What's the timeout setting for S3 bucket?",
+    "category": "configuration",
+    "id": "q025"
+  },
+  {
+    "text": "Mike's opinion on database schema changes",
+    "category": "contextual_fact",
+    "id": "q026"
+  },
+  {
+    "text": "123e4567-e89b-12d3-a456-426614174000",
+    "category": "exact_keyword",
+    "expected_match": "123e4567-e89b-12d3-a456-426614174000",
+    "id": "q027"
+  },
+  {
+    "text": "What was the conclusion about performance optimization that Lisa mentioned?",
+    "category": "contextual_fact",
+    "id": "q028"
+  },
+  {
+    "text": "We encountered timeout error - what resolved it?",
+    "category": "error_solution",
+    "id": "q029"
+  },
+  {
+    "text": "How do I connect to load balancer?",
+    "category": "configuration",
+    "id": "q030"
+  },
+  {
+    "text": "What was the solution for timeout error?",
+    "category": "error_solution",
+    "id": "q031"
+  },
+  {
+    "text": "Alternatives to Docker for container orchestration",
+    "category": "semantic",
+    "expected_terms": [
+      "Docker"
+    ],
+    "id": "q032"
+  },
+  {
+    "text": "HTTP 429",
+    "category": "exact_keyword",
+    "expected_match": "HTTP 429",
+    "id": "q033"
+  },
+  {
+    "text": "What was the solution for 429 rate limit?",
+    "category": "error_solution",
+    "id": "q034"
+  },
+  {
+    "text": "Alternatives to MongoDB for document database",
+    "category": "semantic",
+    "expected_terms": [
+      "MongoDB"
+    ],
+    "id": "q035"
+  },
+  {
+    "text": "Workaround for memory leak",
+    "category": "error_solution",
+    "id": "q036"
+  },
+  {
+    "text": "What was the conclusion about the API rate limit that Lisa mentioned?",
+    "category": "contextual_fact",
+    "id": "q037"
+  },
+  {
+    "text": "How do I connect to API?",
+    "category": "configuration",
+    "id": "q038"
+  },
+  {
+    "text": "What did we work on yesterday?",
+    "category": "temporal",
+    "id": "q039"
+  },
+  {
+    "text": "How do I connect to API?",
+    "category": "configuration",
+    "id": "q040"
+  },
+  {
+    "text": "What's the base URL for the API?",
+    "category": "configuration",
+    "id": "q041"
+  },
+  {
+    "text": "Compare API gateway implementations",
+    "category": "semantic",
+    "expected_terms": [
+      "Kong"
+    ],
+    "id": "q042"
+  },
+  {
+    "text": "Jen's opinion on performance optimization",
+    "category": "contextual_fact",
+    "id": "q043"
+  },
+  {
+    "text": "What's the base URL for the load balancer?",
+    "category": "configuration",
+    "id": "q044"
+  },
+  {
+    "text": "API gateway setup guide",
+    "category": "semantic",
+    "expected_terms": [
+      "Kong"
+    ],
+    "id": "q045"
+  },
+  {
+    "text": "What's the base URL for the CDN?",
+    "category": "configuration",
+    "id": "q046"
+  },
+  {
+    "text": "What did Tom say about database schema changes?",
+    "category": "contextual_fact",
+    "id": "q047"
+  },
+  {
+    "text": "What did Jen say about performance optimization?",
+    "category": "contextual_fact",
+    "id": "q048"
+  },
+  {
+    "text": "According to Sarah, what's the best approach for the new feature timeline?",
+    "category": "contextual_fact",
+    "id": "q049"
+  },
+  {
+    "text": "What's the base URL for the database?",
+    "category": "configuration",
+    "id": "q050"
+  },
+  {
+    "text": "What did Sarah say in the last discussion?",
+    "category": "temporal",
+    "id": "q051"
+  },
+  {
+    "text": "How did we fix the deadlock?",
+    "category": "error_solution",
+    "id": "q052"
+  },
+  {
+    "text": "container orchestration tools",
+    "category": "semantic",
+    "expected_terms": [
+      "Docker"
+    ],
+    "id": "q053"
+  },
+  {
+    "text": "How do I connect to Redis cache?",
+    "category": "configuration",
+    "id": "q054"
+  },
+  {
+    "text": "What's the base URL for the CDN?",
+    "category": "configuration",
+    "id": "q055"
+  },
+  {
+    "text": "What's my API configuration?",
+    "category": "configuration",
+    "id": "q056"
+  },
+  {
+    "text": "What's the latest update on database migration?",
+    "category": "temporal",
+    "id": "q057"
+  },
+  {
+    "text": "CI/CD pipeline setup guide",
+    "category": "semantic",
+    "expected_terms": [
+      "GitHub Actions"
+    ],
+    "id": "q058"
+  },
+  {
+    "text": "document database tools",
+    "category": "semantic",
+    "expected_terms": [
+      "MongoDB"
+    ],
+    "id": "q059"
+  },
+  {
+    "text": "Show me the S3 bucket connection string",
+    "category": "configuration",
+    "id": "q060"
+  },
+  {
+    "text": "What did Mike say in the last discussion?",
+    "category": "temporal",
+    "id": "q061"
+  },
+  {
+    "text": "Lisa's opinion on the API rate limit",
+    "category": "contextual_fact",
+    "id": "q062"
+  },
+  {
+    "text": "What was the solution for deadlock?",
+    "category": "error_solution",
+    "id": "q063"
+  },
+  {
+    "text": "What's the API endpoint?",
+    "category": "configuration",
+    "id": "q064"
+  },
+  {
+    "text": "What was decided in the last standup?",
+    "category": "temporal",
+    "id": "q065"
+  },
+  {
+    "text": "What's the timeout setting for Redis cache?",
+    "category": "configuration",
+    "id": "q066"
+  },
+  {
+    "text": "What did we work on yesterday?",
+    "category": "temporal",
+    "id": "q067"
+  },
+  {
+    "text": "ya29.a0AfH6SMBx...",
+    "category": "exact_keyword",
+    "expected_match": "ya29.a0AfH6SMBx...",
+    "id": "q068"
+  },
+  {
+    "text": "ghp_xxxxxxxxxxxxxxxxxxxx",
+    "category": "exact_keyword",
+    "expected_match": "ghp_xxxxxxxxxxxxxxxxxxxx",
+    "id": "q069"
+  },
+  {
+    "text": "What's the latest update on database migration?",
+    "category": "temporal",
+    "id": "q070"
+  },
+  {
+    "text": "Alternatives to GitHub Actions for CI/CD pipeline",
+    "category": "semantic",
+    "expected_terms": [
+      "GitHub Actions"
+    ],
+    "id": "q071"
+  },
+  {
+    "text": "Documentation for memory leak",
+    "category": "error_solution",
+    "id": "q072"
+  },
+  {
+    "text": "What bugs did we fix recently?",
+    "category": "temporal",
+    "id": "q073"
+  },
+  {
+    "text": "What was the conclusion about the API rate limit that Sarah mentioned?",
+    "category": "contextual_fact",
+    "id": "q074"
+  },
+  {
+    "text": "What's the latest update on security fix?",
+    "category": "temporal",
+    "id": "q075"
+  },
+  {
+    "text": "According to Jen, what's the best approach for testing methodology?",
+    "category": "contextual_fact",
+    "id": "q076"
+  },
+  {
+    "text": "How did we fix the memory leak?",
+    "category": "error_solution",
+    "id": "q077"
+  },
+  {
+    "text": "According to Lisa, what's the best approach for security concerns?",
+    "category": "contextual_fact",
+    "id": "q078"
+  },
+  {
+    "text": "Documentation for deadlock",
+    "category": "error_solution",
+    "id": "q079"
+  },
+  {
+    "text": "Compare message queue implementations",
+    "category": "semantic",
+    "expected_terms": [
+      "RabbitMQ"
+    ],
+    "id": "q080"
+  },
+  {
+    "text": "deadlock - what's the fix?",
+    "category": "error_solution",
+    "id": "q081"
+  },
+  {
+    "text": "What bugs did we fix recently?",
+    "category": "temporal",
+    "id": "q082"
+  },
+  {
+    "text": "What was the conclusion about refactoring the codebase that Mike mentioned?",
+    "category": "contextual_fact",
+    "id": "q083"
+  },
+  {
+    "text": "What was the conclusion about the new feature timeline that Alex mentioned?",
+    "category": "contextual_fact",
+    "id": "q084"
+  },
+  {
+    "text": "502 Bad Gateway",
+    "category": "exact_keyword",
+    "expected_match": "502 Bad Gateway",
+    "id": "q085"
+  },
+  {
+    "text": "What's my API configuration?",
+    "category": "configuration",
+    "id": "q086"
+  },
+  {
+    "text": "What's the latest update on API changes?",
+    "category": "temporal",
+    "id": "q087"
+  },
+  {
+    "text": "What's the timeout setting for S3 bucket?",
+    "category": "configuration",
+    "id": "q088"
+  },
+  {
+    "text": "Alternatives to RabbitMQ for message queue",
+    "category": "semantic",
+    "expected_terms": [
+      "RabbitMQ"
+    ],
+    "id": "q089"
+  },
+  {
+    "text": "API gateway setup guide",
+    "category": "semantic",
+    "expected_terms": [
+      "Kong"
+    ],
+    "id": "q090"
+  },
+  {
+    "text": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "category": "exact_keyword",
+    "expected_match": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "id": "q091"
+  },
+  {
+    "text": "What are the Redis cache credentials?",
+    "category": "configuration",
+    "id": "q092"
+  },
+  {
+    "text": "What was the conclusion about testing methodology that Lisa mentioned?",
+    "category": "contextual_fact",
+    "id": "q093"
+  },
+  {
+    "text": "Documentation for 429 rate limit",
+    "category": "error_solution",
+    "id": "q094"
+  },
+  {
+    "text": "What's the S3 bucket endpoint?",
+    "category": "configuration",
+    "id": "q095"
+  },
+  {
+    "text": "What's my API configuration?",
+    "category": "configuration",
+    "id": "q096"
+  },
+  {
+    "text": "What did Tom say about error handling?",
+    "category": "contextual_fact",
+    "id": "q097"
+  },
+  {
+    "text": "document database tools",
+    "category": "semantic",
+    "expected_terms": [
+      "MongoDB"
+    ],
+    "id": "q098"
+  },
+  {
+    "text": "Jen's opinion on the new feature timeline",
+    "category": "contextual_fact",
+    "id": "q099"
+  },
+  {
+    "text": "What did Jen say in the last discussion?",
+    "category": "temporal",
+    "id": "q100"
+  },
+  {
+    "text": "Jen's opinion on error handling",
+    "category": "contextual_fact",
+    "id": "q101"
+  },
+  {
+    "text": "What did Lisa say about security concerns?",
+    "category": "contextual_fact",
+    "id": "q102"
+  },
+  {
+    "text": "According to Tom, what's the best approach for the deployment strategy?",
+    "category": "contextual_fact",
+    "id": "q103"
+  },
+  {
+    "text": "What's the database endpoint?",
+    "category": "configuration",
+    "id": "q104"
+  },
+  {
+    "text": "Compare document database implementations",
+    "category": "semantic",
+    "expected_terms": [
+      "MongoDB"
+    ],
+    "id": "q105"
+  },
+  {
+    "text": "What features were added this month?",
+    "category": "temporal",
+    "id": "q106"
+  },
+  {
+    "text": "What's the base URL for the Redis cache?",
+    "category": "configuration",
+    "id": "q107"
+  },
+  {
+    "text": "How do I configure database in production?",
+    "category": "configuration",
+    "id": "q108"
+  },
+  {
+    "text": "api-techcorp@example.com",
+    "category": "exact_keyword",
+    "expected_match": "api-techcorp@example.com",
+    "id": "q109"
+  },
+  {
+    "text": "Tom's opinion on authentication flow",
+    "category": "contextual_fact",
+    "id": "q110"
+  },
+  {
+    "text": "What was the conclusion about the API rate limit that Mike mentioned?",
+    "category": "contextual_fact",
+    "id": "q111"
+  },
+  {
+    "text": "CI/CD pipeline setup guide",
+    "category": "semantic",
+    "expected_terms": [
+      "GitHub Actions"
+    ],
+    "id": "q112"
+  },
+  {
+    "text": "What did Tom say about authentication flow?",
+    "category": "contextual_fact",
+    "id": "q113"
+  },
+  {
+    "text": "We encountered deadlock - what resolved it?",
+    "category": "error_solution",
+    "id": "q114"
+  },
+  {
+    "text": "What did Lisa say about performance optimization?",
+    "category": "contextual_fact",
+    "id": "q115"
+  },
+  {
+    "text": "What did Sarah say about authentication flow?",
+    "category": "contextual_fact",
+    "id": "q116"
+  },
+  {
+    "text": "What did we decide regarding Sarah's suggestion about performance optimization?",
+    "category": "contextual_fact",
+    "id": "q117"
+  },
+  {
+    "text": "What was the conclusion about refactoring the codebase that Mike mentioned?",
+    "category": "contextual_fact",
+    "id": "q118"
+  },
+  {
+    "text": "Workaround for deadlock",
+    "category": "error_solution",
+    "id": "q119"
+  },
+  {
+    "text": "What's the CDN endpoint?",
+    "category": "configuration",
+    "id": "q120"
+  },
+  {
+    "text": "What was decided in the last standup?",
+    "category": "temporal",
+    "id": "q121"
+  },
+  {
+    "text": "What was the conclusion about the new feature timeline that Mike mentioned?",
+    "category": "contextual_fact",
+    "id": "q122"
+  },
+  {
+    "text": "According to Alex, what's the best approach for error handling?",
+    "category": "contextual_fact",
+    "id": "q123"
+  },
+  {
+    "text": "timeout error - what's the fix?",
+    "category": "error_solution",
+    "id": "q124"
+  },
+  {
+    "text": "Documentation for 429 rate limit",
+    "category": "error_solution",
+    "id": "q125"
+  },
+  {
+    "text": "What was the solution for 429 rate limit?",
+    "category": "error_solution",
+    "id": "q126"
+  },
+  {
+    "text": "According to Jen, what's the best approach for performance optimization?",
+    "category": "contextual_fact",
+    "id": "q127"
+  },
+  {
+    "text": "Best practices for document database",
+    "category": "semantic",
+    "expected_terms": [
+      "MongoDB"
+    ],
+    "id": "q128"
+  },
+  {
+    "text": "sk-proj-abc123xyz789",
+    "category": "exact_keyword",
+    "expected_match": "sk-proj-abc123xyz789",
+    "id": "q129"
+  },
+  {
+    "text": "What's the API endpoint?",
+    "category": "configuration",
+    "id": "q130"
+  },
+  {
+    "text": "What bugs did we fix recently?",
+    "category": "temporal",
+    "id": "q131"
+  },
+  {
+    "text": "What are the database credentials?",
+    "category": "configuration",
+    "id": "q132"
+  },
+  {
+    "text": "sarahr@example.com",
+    "category": "exact_keyword",
+    "expected_match": "sarahr@example.com",
+    "id": "q133"
+  },
+  {
+    "text": "What's the timeout setting for API?",
+    "category": "configuration",
+    "id": "q134"
+  },
+  {
+    "text": "What did Lisa say about refactoring the codebase?",
+    "category": "contextual_fact",
+    "id": "q135"
+  },
+  {
+    "text": "According to John, what's the best approach for error handling?",
+    "category": "contextual_fact",
+    "id": "q136"
+  },
+  {
+    "text": "According to Lisa, what's the best approach for the deployment strategy?",
+    "category": "contextual_fact",
+    "id": "q137"
+  },
+  {
+    "text": "What's my API configuration?",
+    "category": "configuration",
+    "id": "q138"
+  },
+  {
+    "text": "What did Jen say about the deployment strategy?",
+    "category": "contextual_fact",
+    "id": "q139"
+  },
+  {
+    "text": "What was the conclusion about database schema changes that Lisa mentioned?",
+    "category": "contextual_fact",
+    "id": "q140"
+  },
+  {
+    "text": "What was decided in the last standup?",
+    "category": "temporal",
+    "id": "q141"
+  },
+  {
+    "text": "ERR_CONNECTION_REFUSED",
+    "category": "exact_keyword",
+    "expected_match": "ERR_CONNECTION_REFUSED",
+    "id": "q142"
+  },
+  {
+    "text": "What did Mike say about security concerns?",
+    "category": "contextual_fact",
+    "id": "q143"
+  },
+  {
+    "text": "How to implement API gateway?",
+    "category": "semantic",
+    "expected_terms": [
+      "Kong"
+    ],
+    "id": "q144"
+  },
+  {
+    "text": "What was decided in the last standup?",
+    "category": "temporal",
+    "id": "q145"
+  },
+  {
+    "text": "AKIAIOSFODNN7EXAMPLE",
+    "category": "exact_keyword",
+    "expected_match": "AKIAIOSFODNN7EXAMPLE",
+    "id": "q146"
+  },
+  {
+    "text": "How did we fix the 429 rate limit?",
+    "category": "error_solution",
+    "id": "q147"
+  },
+  {
+    "text": "According to Emma, what's the best approach for the API rate limit?",
+    "category": "contextual_fact",
+    "id": "q148"
+  },
+  {
+    "text": "What are the load balancer credentials?",
+    "category": "configuration",
+    "id": "q149"
+  },
+  {
+    "text": "What did we work on yesterday?",
+    "category": "temporal",
+    "id": "q150"
+  }
+]

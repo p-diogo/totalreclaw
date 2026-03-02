@@ -1,5 +1,5 @@
 #!/bin/bash
-# OpenMemory Database Backup Script
+# TotalReclaw Database Backup Script
 # Usage: ./scripts/backup.sh [output_dir]
 # Runs pg_dump inside the Docker container and saves a timestamped backup.
 #
@@ -8,16 +8,16 @@
 #
 # Environment variables:
 #   BACKUP_RETAIN  Number of backups to keep (default: 7)
-#   CONTAINER_NAME Name of the Postgres container (default: openmemory-db)
-#   POSTGRES_USER  Database user (default: openmemory)
-#   POSTGRES_DB    Database name (default: openmemory)
+#   CONTAINER_NAME Name of the Postgres container (default: totalreclaw-db)
+#   POSTGRES_USER  Database user (default: totalreclaw)
+#   POSTGRES_DB    Database name (default: totalreclaw)
 
 set -euo pipefail
 
 # Configuration
-CONTAINER_NAME="${CONTAINER_NAME:-openmemory-db}"
-POSTGRES_USER="${POSTGRES_USER:-openmemory}"
-POSTGRES_DB="${POSTGRES_DB:-openmemory}"
+CONTAINER_NAME="${CONTAINER_NAME:-totalreclaw-db}"
+POSTGRES_USER="${POSTGRES_USER:-totalreclaw}"
+POSTGRES_DB="${POSTGRES_DB:-totalreclaw}"
 BACKUP_RETAIN="${BACKUP_RETAIN:-7}"
 
 # Resolve script directory so we can default output relative to server/
@@ -29,7 +29,7 @@ OUTPUT_DIR="${1:-${SERVER_DIR}/backups}"
 
 # Timestamp for filename
 TIMESTAMP="$(date +%Y-%m-%d_%H%M%S)"
-BACKUP_FILE="openmemory_backup_${TIMESTAMP}.sql.gz"
+BACKUP_FILE="totalreclaw_backup_${TIMESTAMP}.sql.gz"
 BACKUP_PATH="${OUTPUT_DIR}/${BACKUP_FILE}"
 
 # ---------- Helpers ----------
@@ -81,14 +81,14 @@ fi
 # ---------- Retention cleanup ----------
 
 # Count existing backups (sorted oldest first)
-BACKUP_COUNT=$(find "$OUTPUT_DIR" -maxdepth 1 -name 'openmemory_backup_*.sql.gz' -type f | wc -l | tr -d ' ')
+BACKUP_COUNT=$(find "$OUTPUT_DIR" -maxdepth 1 -name 'totalreclaw_backup_*.sql.gz' -type f | wc -l | tr -d ' ')
 
 if [ "$BACKUP_COUNT" -gt "$BACKUP_RETAIN" ]; then
   EXCESS=$((BACKUP_COUNT - BACKUP_RETAIN))
   log "Removing $EXCESS old backup(s) (retaining last $BACKUP_RETAIN)..."
 
   # Remove oldest backups beyond retention limit
-  find "$OUTPUT_DIR" -maxdepth 1 -name 'openmemory_backup_*.sql.gz' -type f -print0 \
+  find "$OUTPUT_DIR" -maxdepth 1 -name 'totalreclaw_backup_*.sql.gz' -type f -print0 \
     | xargs -0 ls -1t \
     | tail -n "$EXCESS" \
     | while read -r old_backup; do

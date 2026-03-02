@@ -1,5 +1,5 @@
 /**
- * OpenMemory Search Module
+ * TotalReclaw Search Module
  *
  * Client-side search reranking with BM25, cosine similarity, and RRF fusion.
  */

@@ -1,19 +1,19 @@
 /**
- * OpenMemory Direct Pipeline Test
+ * TotalReclaw Direct Pipeline Test
  *
  * Tests the full encrypted storage/recall pipeline WITHOUT needing a Claude
  * agent or Anthropic API key. Validates T195 (storage), T196 (cross-session
  * recall), and partially T197 (multi-fact storage/export).
  *
- * Reimplements the crypto from openmemory-mcp.ts and talks directly to the
- * OpenMemory server HTTP API.
+ * Reimplements the crypto from totalreclaw-mcp.ts and talks directly to the
+ * TotalReclaw server HTTP API.
  *
  * Dependencies: @noble/hashes, node:crypto, node:fs
  *
  * Environment variables:
- *   OPENMEMORY_SERVER_URL       — default http://localhost:8090
- *   OPENMEMORY_MASTER_PASSWORD  — default "pipeline-test-password"
- *   OPENMEMORY_CREDENTIALS_PATH — default ./test-credentials.json
+ *   TOTALRECLAW_SERVER_URL       — default http://localhost:8090
+ *   TOTALRECLAW_MASTER_PASSWORD  — default "pipeline-test-password"
+ *   TOTALRECLAW_CREDENTIALS_PATH — default ./test-credentials.json
  */
 
 import { argon2id } from "@noble/hashes/argon2.js";
@@ -28,19 +28,19 @@ import fs from "node:fs";
 // ---------------------------------------------------------------------------
 
 const SERVER_URL =
-  process.env.OPENMEMORY_SERVER_URL || "http://localhost:8090";
+  process.env.TOTALRECLAW_SERVER_URL || "http://localhost:8090";
 const MASTER_PASSWORD =
-  process.env.OPENMEMORY_MASTER_PASSWORD || "pipeline-test-password";
+  process.env.TOTALRECLAW_MASTER_PASSWORD || "pipeline-test-password";
 const CREDENTIALS_PATH =
-  process.env.OPENMEMORY_CREDENTIALS_PATH || "./test-credentials.json";
+  process.env.TOTALRECLAW_CREDENTIALS_PATH || "./test-credentials.json";
 const NAMESPACE = "pipeline-test";
 
 // ---------------------------------------------------------------------------
-// Crypto — byte-for-byte match with openmemory-mcp.ts
+// Crypto — byte-for-byte match with totalreclaw-mcp.ts
 // ---------------------------------------------------------------------------
 
-const AUTH_KEY_INFO = "openmemory-auth-key-v1";
-const ENCRYPTION_KEY_INFO = "openmemory-encryption-key-v1";
+const AUTH_KEY_INFO = "totalreclaw-auth-key-v1";
+const ENCRYPTION_KEY_INFO = "totalreclaw-encryption-key-v1";
 const DEDUP_KEY_INFO = "openmemory-dedup-v1";
 
 const ARGON2_TIME_COST = 3;
@@ -95,7 +95,7 @@ function computeAuthKeyHash(authKey: Buffer): string {
  *
  * Returns hex-encoded string (matching what the server expects).
  *
- * NOTE: The openmemory-mcp.ts `encrypt()` returns base64, but the server's
+ * NOTE: The totalreclaw-mcp.ts `encrypt()` returns base64, but the server's
  * store endpoint parses with `bytes.fromhex()`. This test uses hex to match
  * the server's actual implementation.
  */
@@ -200,7 +200,7 @@ function generateContentFingerprint(
 
 interface StoredCredentials {
   userId: string;
-  salt: string; // base64-encoded (matches openmemory-mcp.ts format)
+  salt: string; // base64-encoded (matches totalreclaw-mcp.ts format)
 }
 
 interface StoreFactPayload {
@@ -476,7 +476,7 @@ const SEARCH_QUERIES: Array<{
 async function main(): Promise<void> {
   console.log("TAP version 13");
   console.log(
-    `# OpenMemory Direct Pipeline Test - ${new Date().toISOString()}`
+    `# TotalReclaw Direct Pipeline Test - ${new Date().toISOString()}`
   );
   console.log(`# Server: ${SERVER_URL}`);
   console.log(`# Credentials: ${CREDENTIALS_PATH}`);

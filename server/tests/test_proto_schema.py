@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 PROTO_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "proto", "openmemory.proto"
+    "proto", "totalreclaw.proto"
 )
 
 
@@ -24,24 +24,24 @@ def read_proto():
 
 
 class TestProtoSchemaV031b:
-    """Test that openmemory.proto has all v0.3.1b fields."""
+    """Test that totalreclaw.proto has all v0.3.1b fields."""
 
     def test_proto_file_exists(self):
         """Proto file must exist."""
         assert os.path.exists(PROTO_PATH), f"Proto file not found at {PROTO_PATH}"
 
-    def test_openmemory_fact_has_content_fp(self):
-        """OpenMemoryFact message must have content_fp field."""
+    def test_totalreclaw_fact_has_content_fp(self):
+        """TotalReclawFact message must have content_fp field."""
         content = read_proto()
-        assert "content_fp" in content, "OpenMemoryFact missing content_fp field"
+        assert "content_fp" in content, "TotalReclawFact missing content_fp field"
 
-    def test_openmemory_fact_has_agent_id(self):
-        """OpenMemoryFact message must have agent_id field."""
+    def test_totalreclaw_fact_has_agent_id(self):
+        """TotalReclawFact message must have agent_id field."""
         content = read_proto()
-        assert "agent_id" in content, "OpenMemoryFact missing agent_id field"
+        assert "agent_id" in content, "TotalReclawFact missing agent_id field"
 
-    def test_openmemory_fact_has_sequence_id(self):
-        """OpenMemoryFact message must have sequence_id field."""
+    def test_totalreclaw_fact_has_sequence_id(self):
+        """TotalReclawFact message must have sequence_id field."""
         content = read_proto()
         # Check for sequence_id in any message
         assert "sequence_id" in content, "Proto missing sequence_id field"

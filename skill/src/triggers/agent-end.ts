@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - Agent End Hook
+ * TotalReclaw Skill - Agent End Hook
  *
  * This hook runs AFTER the agent completes its turn.
  * It extracts facts from the recent conversation and stores them.
@@ -14,11 +14,11 @@
  * This hook is ASYNC and does NOT block the user.
  */
 
-import type { OpenMemory } from '@openmemory/client';
+import type { TotalReclaw } from '@totalreclaw/client';
 import type {
   AgentEndResult,
   OpenClawContext,
-  OpenMemorySkillConfig,
+  TotalReclawSkillConfig,
   ExtractedFact,
   SkillState,
 } from '../types';
@@ -38,10 +38,10 @@ import {
  * Options for the agent-end hook
  */
 export interface AgentEndOptions {
-  /** OpenMemory client instance */
-  client: OpenMemory;
+  /** TotalReclaw client instance */
+  client: TotalReclaw;
   /** Skill configuration */
-  config: OpenMemorySkillConfig;
+  config: TotalReclawSkillConfig;
   /** Skill state (for turn tracking) */
   state: SkillState;
   /** LLM client for extraction */
@@ -101,7 +101,7 @@ export async function agentEnd(
   options.state.turnCount++;
 
   if (options.debug) {
-    console.log(`[OpenMemory] Agent end hook - Turn ${options.state.turnCount}`);
+    console.log(`[TotalReclaw] Agent end hook - Turn ${options.state.turnCount}`);
   }
 
   try {
@@ -110,7 +110,7 @@ export async function agentEnd(
 
     if (!shouldExtract) {
       if (options.debug) {
-        console.log(`[OpenMemory] Skipping extraction this turn`);
+        console.log(`[TotalReclaw] Skipping extraction this turn`);
       }
 
       return {
@@ -124,7 +124,7 @@ export async function agentEnd(
     if (options.async) {
       // Fire and forget - don't await
       runExtractionAsync(context, options).catch(error => {
-        console.error('[OpenMemory] Async extraction failed:', error);
+        console.error('[TotalReclaw] Async extraction failed:', error);
       });
 
       return {
@@ -144,7 +144,7 @@ export async function agentEnd(
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[OpenMemory] agentEnd hook failed:', errorMsg);
+    console.error('[TotalReclaw] agentEnd hook failed:', errorMsg);
 
     return {
       factsExtracted: 0,
@@ -170,7 +170,7 @@ function shouldExtractThisTurn(
   // Always extract for explicit memory commands
   if (isExplicitMemoryCommand(context.userMessage)) {
     if (options.debug) {
-      console.log(`[OpenMemory] Explicit memory command detected`);
+      console.log(`[TotalReclaw] Explicit memory command detected`);
     }
     return true;
   }
@@ -199,7 +199,7 @@ async function runExtractionAsync(
 
   if (options.debug) {
     console.log(
-      `[OpenMemory] Async extraction completed: ${result.factsExtracted} extracted, ` +
+      `[TotalReclaw] Async extraction completed: ${result.factsExtracted} extracted, ` +
       `${result.factsStored} stored, ${result.factsSkipped} skipped`
     );
   }
@@ -240,7 +240,7 @@ async function runExtraction(
     result.factsExtracted = extractionResult.facts.length;
 
     if (options.debug) {
-      console.log(`[OpenMemory] Extracted ${result.factsExtracted} facts in ${extractionResult.processingTimeMs}ms`);
+      console.log(`[TotalReclaw] Extracted ${result.factsExtracted} facts in ${extractionResult.processingTimeMs}ms`);
     }
 
     // Filter and store facts
@@ -263,10 +263,10 @@ async function runExtraction(
         result.factsStored++;
 
         if (options.debug) {
-          console.log(`[OpenMemory] Stored fact: "${fact.factText}" (importance: ${fact.importance})`);
+          console.log(`[TotalReclaw] Stored fact: "${fact.factText}" (importance: ${fact.importance})`);
         }
       } catch (storeError) {
-        console.error(`[OpenMemory] Failed to store fact:`, storeError);
+        console.error(`[TotalReclaw] Failed to store fact:`, storeError);
         result.factsSkipped++;
       }
     }
@@ -276,7 +276,7 @@ async function runExtraction(
     options.state.pendingExtractions = [];
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[OpenMemory] Extraction failed:', errorMsg);
+    console.error('[TotalReclaw] Extraction failed:', errorMsg);
   }
 
   result.processingTimeMs = Date.now() - startTime;
@@ -284,7 +284,7 @@ async function runExtraction(
 }
 
 /**
- * Store a single fact in OpenMemory
+ * Store a single fact in TotalReclaw
  */
 async function storeFact(
   fact: ExtractedFact,

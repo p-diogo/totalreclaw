@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - Reranker Tests
+ * TotalReclaw Skill - Reranker Tests
  *
  * Tests for the cross-encoder reranking functionality.
  * Uses mocked ONNX runtime for unit testing.
@@ -12,7 +12,7 @@ import {
   type CrossEncoderConfig,
   type CrossEncoderResult,
 } from '../src/reranker/cross-encoder';
-import type { Fact } from '@openmemory/client';
+import type { Fact } from '@totalreclaw/client';
 
 // ============================================================================
 // Mock Fact Factory

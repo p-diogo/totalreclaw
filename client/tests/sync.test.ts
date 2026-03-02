@@ -4,7 +4,7 @@
  * Tests for the sync client that pulls delta from server
  * and reconciles local state.
  *
- * Spec: docs/specs/openmemory/server.md v0.3.1b section 8.2
+ * Spec: docs/specs/totalreclaw/server.md v0.3.1b section 8.2
  */
 import {
   SyncClient,

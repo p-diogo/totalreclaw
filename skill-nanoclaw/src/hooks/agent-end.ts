@@ -1,4 +1,4 @@
-import type { OpenMemory, FactMetadata } from '@openmemory/client';
+import type { TotalReclaw, FactMetadata } from '@totalreclaw/client';
 import type { ExtractedFact } from '../extraction/prompts';
 import {
   POST_TURN_PROMPT,
@@ -24,11 +24,11 @@ export type LLMClient = {
   generate: (system: string, user: string, options?: { responseFormat?: { type: string } }) => Promise<string>;
 };
 
-const EXTRACT_INTERVAL = parseInt(process.env.OPENMEMORY_EXTRACT_INTERVAL || '5', 10);
-const MIN_IMPORTANCE = parseInt(process.env.OPENMEMORY_MIN_IMPORTANCE || '6', 10);
+const EXTRACT_INTERVAL = parseInt(process.env.TOTALRECLAW_EXTRACT_INTERVAL || '5', 10);
+const MIN_IMPORTANCE = parseInt(process.env.TOTALRECLAW_MIN_IMPORTANCE || '6', 10);
 
 export async function agentEnd(
-  client: OpenMemory,
+  client: TotalReclaw,
   llmClient: LLMClient | null,
   input: AgentEndInput
 ): Promise<AgentEndOutput> {

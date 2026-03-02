@@ -1,0 +1,123 @@
+# TotalReclaw Testbed Configuration
+
+# Dataset Configuration
+dataset:
+  size: 1500  # Number of memory chunks
+  chunk_size: 400  # Target tokens per chunk
+  chunk_overlap: 80  # Token overlap between chunks
+
+# Query Configuration
+queries:
+  total: 150
+  distribution:
+    contextual_fact: 45      # 30%
+    configuration: 30        # 20%
+    temporal: 22             # 15%
+    error_solution: 22       # 15%
+    semantic: 18             # 12%
+    exact_keyword: 13        # 8%
+
+# Evaluation Configuration
+evaluation:
+  top_k: 5                  # Number of results to retrieve
+  num_evaluators: 3         # Number of ground truth annotators
+  min_fleiss_kappa: 0.70    # Minimum inter-annotator agreement
+
+# Algorithms to Evaluate
+algorithms:
+  - name: bm25_only
+    type: baseline
+    description: "BM25 keyword search only"
+
+  - name: vector_only
+    type: baseline
+    description: "Vector semantic search only"
+
+  - name: openclaw_hybrid
+    type: baseline
+    description: "OpenClaw-style hybrid search"
+    params:
+      vector_weight: 0.7
+      text_weight: 0.3
+      candidate_multiplier: 4
+
+  - name: qmd_hybrid
+    type: baseline
+    description: "QMD-style hybrid with reranking"
+
+  - name: totalreclaw_v02
+    type: e2ee
+    description: "TotalReclaw v0.2 E2EE (two-pass search)"
+    params:
+      candidate_pool: 250
+      rrf_k: 60
+
+  - name: totalreclaw_v05
+    type: e2ee
+    description: "TotalReclaw v0.5 E2EE (three-pass with LLM reranking)"
+    params:
+      candidate_pool: 250
+      rrf_k: 60
+      enable_llm_reranking: true
+
+# Go/No-Go Criteria
+go_no_go:
+  accuracy:
+    min_f1_for_go: 0.80
+    min_f1_for_modify: 0.75
+    min_mrr_for_go: 0.70
+    min_mrr_for_modify: 0.65
+    min_recall_for_go: 0.75
+
+  comparison:
+    max_gap_for_go: 0.05      # 5% gap to baseline
+    max_gap_for_modify: 0.10  # 10% gap to baseline
+    max_gap_for_no_go: 0.15   # 15% gap to baseline
+
+  latency:
+    max_p50: 800              # ms
+    max_p95: 1500             # ms
+
+  compatibility:
+    min_import_f1: 0.90       # OpenClaw import accuracy
+    min_round_trip_f1: 0.95   # Content preservation
+
+# Output Configuration
+output:
+  base_dir: "./reports"
+  save_json: true
+  save_charts: true
+  save_markdown: true
+
+# Ground Truth Labeling
+labeling:
+  interface:
+    host: "0.0.0.0"
+    port: 5000
+
+  labels_per_query: 20
+  export_format: "json"  # json or csv
+
+# Model Configuration
+models:
+  embedding:
+    name: "sentence-transformers/all-MiniLM-L6-v2"
+    dimensions: 384
+
+  llm:
+    provider: "openai"  # or "anthropic", "local"
+    model: "gpt-4"
+    timeout: 30
+
+# Database Configuration
+database:
+  host: "localhost"
+  port: 5432
+  name: "totalreclaw_testbed"
+  user: "postgres"
+  password_env: "POSTGRES_PASSWORD"
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

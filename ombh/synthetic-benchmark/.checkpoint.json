@@ -1,0 +1,11 @@
+{
+  "phase": "completed",
+  "conversations_generated": 1000,
+  "facts_extracted": 981,
+  "query_batches_processed": 827,
+  "total_conversations": 1000,
+  "total_fact_batches": 0,
+  "total_query_batches": 827,
+  "started_at": "2026-02-26T14:41:34.546774",
+  "last_updated": "2026-02-27T02:25:41.700764"
+}

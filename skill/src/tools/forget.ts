@@ -1,8 +1,8 @@
 /**
- * OpenMemory Skill - Forget Tool
+ * TotalReclaw Skill - Forget Tool
  *
- * Tool for deleting memories from OpenMemory.
- * This is the openmemory_forget tool implementation.
+ * Tool for deleting memories from TotalReclaw.
+ * This is the totalreclaw_forget tool implementation.
  *
  * @example
  * ```typescript
@@ -13,9 +13,9 @@
  * ```
  */
 
-import type { OpenMemory } from '@openmemory/client';
+import type { TotalReclaw } from '@totalreclaw/client';
 import type { ForgetToolParams } from '../types';
-import { OpenMemoryError, OpenMemoryErrorCode } from '@openmemory/client';
+import { TotalReclawError, TotalReclawErrorCode } from '@totalreclaw/client';
 
 /**
  * Result of the forget tool operation
@@ -36,13 +36,13 @@ export interface ForgetToolResult {
 const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
- * Delete a memory from OpenMemory
+ * Delete a memory from TotalReclaw
  *
- * @param client - The OpenMemory client instance
+ * @param client - The TotalReclaw client instance
  * @param params - Tool parameters (factId)
  * @returns Result containing success status
  *
- * @throws {OpenMemoryError} If the client is not initialized or operation fails
+ * @throws {TotalReclawError} If the client is not initialized or operation fails
  *
  * @example
  * ```typescript
@@ -59,7 +59,7 @@ const UUID_V7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}
  * ```
  */
 export async function forgetTool(
-  client: OpenMemory,
+  client: TotalReclaw,
   params: ForgetToolParams
 ): Promise<ForgetToolResult> {
   // Validate input
@@ -91,20 +91,20 @@ export async function forgetTool(
     };
   } catch (error) {
     // Handle known error types
-    if (error instanceof OpenMemoryError) {
+    if (error instanceof TotalReclawError) {
       // Map specific error codes to user-friendly messages
       switch (error.code) {
-        case OpenMemoryErrorCode.NOT_REGISTERED:
+        case TotalReclawErrorCode.NOT_REGISTERED:
           return {
             success: false,
             error: 'Client not authenticated. Please initialize the client first.',
           };
-        case OpenMemoryErrorCode.AUTH_FAILED:
+        case TotalReclawErrorCode.AUTH_FAILED:
           return {
             success: false,
             error: 'Authentication failed. Unable to delete memory.',
           };
-        case OpenMemoryErrorCode.NETWORK_ERROR:
+        case TotalReclawErrorCode.NETWORK_ERROR:
           return {
             success: false,
             error: 'Network error. Please check your connection and try again.',
@@ -112,7 +112,7 @@ export async function forgetTool(
         default:
           return {
             success: false,
-            error: `OpenMemory error (${error.code}): ${error.message}`,
+            error: `TotalReclaw error (${error.code}): ${error.message}`,
           };
       }
     }
@@ -131,10 +131,10 @@ export async function forgetTool(
  *
  * Useful for creating a tool that's pre-bound to a client instance.
  *
- * @param client - The OpenMemory client instance
+ * @param client - The TotalReclaw client instance
  * @returns A function that accepts ForgetToolParams and returns ForgetToolResult
  */
-export function createForgetTool(client: OpenMemory): (params: ForgetToolParams) => Promise<ForgetToolResult> {
+export function createForgetTool(client: TotalReclaw): (params: ForgetToolParams) => Promise<ForgetToolResult> {
   return (params: ForgetToolParams) => forgetTool(client, params);
 }
 

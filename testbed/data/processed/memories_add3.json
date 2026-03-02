@@ -1,0 +1,426 @@
+{
+  "memories": [
+    {
+      "id": "b0a8664386551357",
+      "content": "## Email Thread: API Security Update - Key Rotation Required\n**Date:** 2026-01-01 14:30\n**From:** Sarah Rodriguez <sarah.r@techcorp.com>\n**To:** dev-team@company.io\n**CC:** security@company.io, ops@company.io\n\nHi team,\n\nI wanted to follow up on our discussion about api security update - key rotation required. The changes need to be deployed to production by Friday.\n\nKey points:\n- API endpoint: https://api.example.com/v1/auth\n- New rate limit: 1000 requests/minute (increased from 100)\n- Error code 429 will include Retry-After header\n- Database migration required for users table\n\nPlease review the PR at github.com/company/repo/pull/1234.\n\nBest,\nSarah Rodriguez\n\n---\n**Reply from:** Mike Chen <mike.chen@company.io>\n**Date:** 2026-01-01 15:45\n\nThanks for the update Sarah. A few questions:\n\n1. Will this affect the Stripe integration (api.stripe.com/v1)?\n2. Do we need to update environment variables for API_BASE_URL?\n3. What's the rollback plan if something breaks?\n\nThe configuration should be:\n```\nAPI_BASE_URL=https://api.example.com/v1\nAPI_TIMEOUT=30000\nRATE_LIMIT=1000\n```\n\n---\n**Reply from:** Sarah Rodriguez <sarah.r@techcorp.com>\n**Date:** 2026-01-01 16:20\n\nGood questions Mike:\n\n1. Stripe integration is unaffected - it uses a separate client\n2. Yes, update API_BASE_URL in staging first\n3. Rollback plan: revert to previous docker image tag (v2.2.1)\n\nDeployment window is Saturday 2 AM UTC. The database migration ID is db_20260215_auth_update.",
+      "category": "email_threads",
+      "source_file": "memory/2026-01-01.md",
+      "source_type": "memory-daily",
+      "chunk_index": 0,
+      "total_chunks": 7,
+      "line_start": 0,
+      "line_end": 48,
+      "created_at": "2026-01-01T00:00:00",
+      "entities": [
+        {
+          "type": "email",
+          "value": "sarah.r@techcorp.com",
+          "start_pos": 115,
+          "end_pos": 135
+        },
+        {
+          "type": "function_name",
+          "value": "sarah.r",
+          "start_pos": 115,
+          "end_pos": 122
+        },
+        {
+          "type": "function_name",
+          "value": "techcorp.com",
+          "start_pos": 123,
+          "end_pos": 135
+        },
+        {
+          "type": "email",
+          "value": "dev-team@company.io",
+          "start_pos": 145,
+          "end_pos": 164
+        },
+        {
+          "type": "function_name",
+          "value": "company.io",
+          "start_pos": 154,
+          "end_pos": 164
+        },
+        {
+          "type": "email",
+          "value": "security@company.io",
+          "start_pos": 173,
+          "end_pos": 192
+        },
+        {
+          "type": "email",
+          "value": "ops@company.io",
+          "start_pos": 194,
+          "end_pos": 208
+        },
+        {
+          "type": "url",
+          "value": "https://api.example.com/v1/auth",
+          "start_pos": 397,
+          "end_pos": 428
+        },
+        {
+          "type": "function_name",
+          "value": "api.example",
+          "start_pos": 405,
+          "end_pos": 416
+        },
+        {
+          "type": "error_code",
+          "value": "100",
+          "start_pos": 484,
+          "end_pos": 487
+        },
+        {
+          "type": "error_code",
+          "value": "429",
+          "start_pos": 502,
+          "end_pos": 505
+        },
+        {
+          "type": "function_name",
+          "value": "github.com",
+          "start_pos": 609,
+          "end_pos": 619
+        },
+        {
+          "type": "email",
+          "value": "mike.chen@company.io",
+          "start_pos": 699,
+          "end_pos": 719
+        },
+        {
+          "type": "function_name",
+          "value": "mike.chen",
+          "start_pos": 699,
+          "end_pos": 708
+        },
+        {
+          "type": "function_name",
+          "value": "api.stripe",
+          "start_pos": 840,
+          "end_pos": 850
+        },
+        {
+          "type": "url",
+          "value": "https://api.example.com/v1",
+          "start_pos": 1020,
+          "end_pos": 1046
+        }
+      ],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "40bd8b9e4224c4c7",
+      "content": ">\n**Date:** 2026-01-01 16:20\n\nGood questions Mike:\n\n1. Stripe integration is unaffected - it uses a separate client\n2. Yes, update API_BASE_URL in staging first\n3. Rollback plan: revert to previous docker image tag (v2.2.1)\n\nDeployment window is Saturday 2 AM UTC. The database migration ID is db_20260215_auth_update.",
+      "category": "email_threads",
+      "source_file": "memory/2026-01-01.md",
+      "source_type": "memory-daily",
+      "chunk_index": 1,
+      "total_chunks": 7,
+      "line_start": 48,
+      "line_end": 57,
+      "created_at": "2026-01-03T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "87d5a5c29ff98302",
+      "content": "3. Rollback plan: revert to previous docker image tag (v2.2.1)\n\nDeployment window is Saturday 2 AM UTC. The database migration ID is db_20260215_auth_update.",
+      "category": "email_threads",
+      "source_file": "memory/2026-01-01.md",
+      "source_type": "memory-daily",
+      "chunk_index": 2,
+      "total_chunks": 7,
+      "line_start": 57,
+      "line_end": 59,
+      "created_at": "2026-01-05T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "40b741e80888e7f2",
+      "content": "is Saturday 2 AM UTC. The database migration ID is db_20260215_auth_update.",
+      "category": "email_threads",
+      "source_file": "memory/2026-01-01.md",
+      "source_type": "memory-daily",
+      "chunk_index": 3,
+      "total_chunks": 7,
+      "line_start": 59,
+      "line_end": 59,
+      "created_at": "2026-01-07T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "8014eb4bc460b691",
+      "content": "tion ID is db_20260215_auth_update.",
+      "category": "email_threads",
+      "source_file": "memory/2026-01-01.md",
+      "source_type": "memory-daily",
+      "chunk_index": 4,
+      "total_chunks": 7,
+      "line_start": 59,
+      "line_end": 59,
+      "created_at": "2026-01-09T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "77019fd6c605f7e7",
+      "content": "15_auth_update.",
+      "category": "email_threads",
+      "source_file": "memory/2026-01-01.md",
+      "source_type": "memory-daily",
+      "chunk_index": 5,
+      "total_chunks": 7,
+      "line_start": 59,
+      "line_end": 59,
+      "created_at": "2026-01-11T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "88ca145dfb024899",
+      "content": "date.",
+      "category": "email_threads",
+      "source_file": "memory/2026-01-01.md",
+      "source_type": "memory-daily",
+      "chunk_index": 6,
+      "total_chunks": 7,
+      "line_start": 59,
+      "line_end": 59,
+      "created_at": "2026-01-13T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "a3963ac392d97b24",
+      "content": "## Personal Preferences\n\n### Work Schedule\n- Standup: 10:00 AM EST daily with frontend team\n- 1:1 with manager: Thursdays at 3:00 PM\n- Focus hours: 9 AM - 12 PM (no meetings scheduled)\n- Lunch break: 12:30 PM - 1:30 PM\n\n### Environment Setup\n- Local dev server: http://localhost:3000\n- API server: http://localhost:8080\n- Database: PostgreSQL 15 on port 5432\n- Redis: localhost:6379\n- GraphQL playground: http://localhost:8080/graphql\n\n### Team Contacts\n- Backend lead: Sarah Rodriguez (sarah.r@techcorp.com)\n- Frontend lead: Mike Chen (mike.chen@company.io)\n- Product manager: Jennifer Lopez (jen.lopez@company.io)\n- DevOps: David Kim (david.kim@company.io)\n- Security: Alex Turner (alex.turner@company.io)\n\n### Code Preferences\n- TypeScript strict mode enabled\n- Prettier for formatting (2 spaces)\n- ESLint rules extended from airbnb-typescript\n- Git commit format: conventional commits (feat:, fix:, docs:)\n- Branch naming: feature/ticket-name, fix/bug-description\n\n### Development Workflow\n- Feature branches from main\n- PR requires at least 1 approval\n- CI/CD runs on every push\n- Deploy to staging after merge to main\n- Production deploys on Tuesdays and Fridays",
+      "category": "personal_preferences",
+      "source_file": "MEMORY.md",
+      "source_type": "MEMORY.md",
+      "chunk_index": 0,
+      "total_chunks": 7,
+      "line_start": 0,
+      "line_end": 34,
+      "created_at": "2026-01-01T00:00:00",
+      "entities": [
+        {
+          "type": "url",
+          "value": "http://localhost:3000",
+          "start_pos": 262,
+          "end_pos": 283
+        },
+        {
+          "type": "port",
+          "value": ":3000",
+          "start_pos": 278,
+          "end_pos": 283
+        },
+        {
+          "type": "url",
+          "value": "http://localhost:8080",
+          "start_pos": 298,
+          "end_pos": 319
+        },
+        {
+          "type": "port",
+          "value": ":8080",
+          "start_pos": 314,
+          "end_pos": 319
+        },
+        {
+          "type": "port",
+          "value": ":6379",
+          "start_pos": 377,
+          "end_pos": 382
+        },
+        {
+          "type": "url",
+          "value": "http://localhost:8080/graphql",
+          "start_pos": 405,
+          "end_pos": 434
+        },
+        {
+          "type": "email",
+          "value": "sarah.r@techcorp.com",
+          "start_pos": 487,
+          "end_pos": 507
+        },
+        {
+          "type": "function_name",
+          "value": "sarah.r",
+          "start_pos": 487,
+          "end_pos": 494
+        },
+        {
+          "type": "function_name",
+          "value": "techcorp.com",
+          "start_pos": 495,
+          "end_pos": 507
+        },
+        {
+          "type": "email",
+          "value": "mike.chen@company.io",
+          "start_pos": 537,
+          "end_pos": 557
+        },
+        {
+          "type": "function_name",
+          "value": "mike.chen",
+          "start_pos": 537,
+          "end_pos": 546
+        },
+        {
+          "type": "function_name",
+          "value": "company.io",
+          "start_pos": 547,
+          "end_pos": 557
+        },
+        {
+          "type": "email",
+          "value": "jen.lopez@company.io",
+          "start_pos": 594,
+          "end_pos": 614
+        },
+        {
+          "type": "function_name",
+          "value": "jen.lopez",
+          "start_pos": 594,
+          "end_pos": 603
+        },
+        {
+          "type": "email",
+          "value": "david.kim@company.io",
+          "start_pos": 637,
+          "end_pos": 657
+        },
+        {
+          "type": "function_name",
+          "value": "david.kim",
+          "start_pos": 637,
+          "end_pos": 646
+        },
+        {
+          "type": "email",
+          "value": "alex.turner@company.io",
+          "start_pos": 684,
+          "end_pos": 706
+        },
+        {
+          "type": "function_name",
+          "value": "alex.turner",
+          "start_pos": 684,
+          "end_pos": 695
+        }
+      ],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "2adb31b67054e662",
+      "content": "it commit format: conventional commits (feat:, fix:, docs:)\n- Branch naming: feature/ticket-name, fix/bug-description\n\n### Development Workflow\n- Feature branches from main\n- PR requires at least 1 approval\n- CI/CD runs on every push\n- Deploy to staging after merge to main\n- Production deploys on Tuesdays and Fridays",
+      "category": "personal_preferences",
+      "source_file": "MEMORY.md",
+      "source_type": "MEMORY.md",
+      "chunk_index": 1,
+      "total_chunks": 7,
+      "line_start": 34,
+      "line_end": 42,
+      "created_at": "2026-01-03T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "ececb73ac9c613d7",
+      "content": "s from main\n- PR requires at least 1 approval\n- CI/CD runs on every push\n- Deploy to staging after merge to main\n- Production deploys on Tuesdays and Fridays",
+      "category": "personal_preferences",
+      "source_file": "MEMORY.md",
+      "source_type": "MEMORY.md",
+      "chunk_index": 2,
+      "total_chunks": 7,
+      "line_start": 42,
+      "line_end": 46,
+      "created_at": "2026-01-05T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "6786eda191d1da3c",
+      "content": "to staging after merge to main\n- Production deploys on Tuesdays and Fridays",
+      "category": "personal_preferences",
+      "source_file": "MEMORY.md",
+      "source_type": "MEMORY.md",
+      "chunk_index": 3,
+      "total_chunks": 7,
+      "line_start": 46,
+      "line_end": 47,
+      "created_at": "2026-01-07T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "7cfd16af99e0df74",
+      "content": "ion deploys on Tuesdays and Fridays",
+      "category": "personal_preferences",
+      "source_file": "MEMORY.md",
+      "source_type": "MEMORY.md",
+      "chunk_index": 4,
+      "total_chunks": 7,
+      "line_start": 47,
+      "line_end": 47,
+      "created_at": "2026-01-09T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "328e47c408815d07",
+      "content": "ays and Fridays",
+      "category": "personal_preferences",
+      "source_file": "MEMORY.md",
+      "source_type": "MEMORY.md",
+      "chunk_index": 5,
+      "total_chunks": 7,
+      "line_start": 47,
+      "line_end": 47,
+      "created_at": "2026-01-11T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    },
+    {
+      "id": "c8f945d5e1bf4856",
+      "content": "idays",
+      "category": "personal_preferences",
+      "source_file": "MEMORY.md",
+      "source_type": "MEMORY.md",
+      "chunk_index": 6,
+      "total_chunks": 7,
+      "line_start": 47,
+      "line_end": 47,
+      "created_at": "2026-01-13T00:00:00",
+      "entities": [],
+      "embedding": null,
+      "blind_indices": []
+    }
+  ],
+  "total_count": 14,
+  "categories": {
+    "email_threads": 1,
+    "personal_preferences": 1
+  },
+  "generated_at": "2026-02-18T19:59:27.502786"
+}

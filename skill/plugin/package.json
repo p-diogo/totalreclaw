@@ -1,11 +1,13 @@
 {
-  "name": "@openmemory/openmemory",
+  "name": "@totalreclaw/totalreclaw",
   "version": "0.1.0",
-  "description": "OpenMemory plugin for OpenClaw - Zero-knowledge encrypted memory tools",
+  "description": "TotalReclaw plugin for OpenClaw - Zero-knowledge encrypted memory tools",
   "type": "module",
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
     "@noble/hashes": "^2.0.1",
-    "@scure/bip39": "^2.0.1"
+    "@scure/bip39": "^2.0.1",
+    "porter-stemmer": "^0.9.1"
   },
   "openclaw": {
     "extensions": [

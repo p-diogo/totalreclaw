@@ -2,8 +2,8 @@
  * @jest-environment node
  */
 
-jest.mock('@openmemory/client', () => ({
-  OpenMemory: jest.fn(),
+jest.mock('@totalreclaw/client', () => ({
+  TotalReclaw: jest.fn(),
 }));
 
 function createMockClient(overrides = {}) {
@@ -165,7 +165,7 @@ describe('preCompact', () => {
       generate: jest.fn().mockResolvedValue(JSON.stringify({
         facts: [
           {
-            factText: 'User works on OpenMemory',
+            factText: 'User works on TotalReclaw',
             type: 'fact',
             importance: 7,
             confidence: 0.9,

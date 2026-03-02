@@ -1,5 +1,5 @@
 /**
- * OpenMemory Plugin - Fact Extractor
+ * TotalReclaw Plugin - Fact Extractor
  *
  * Uses LLM calls to extract atomic facts from conversation messages.
  * Matches the extraction prompts described in SKILL.md.

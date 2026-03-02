@@ -1,5 +1,5 @@
 /**
- * Cross-Encoder Reranker for OpenMemory Skill
+ * Cross-Encoder Reranker for TotalReclaw Skill
  *
  * Uses BGE-Reranker-base ONNX model for high-quality semantic reranking
  * of candidate facts returned from server search.
@@ -14,7 +14,7 @@
 import * as ort from 'onnxruntime-node';
 import * as path from 'path';
 import * as fs from 'fs';
-import type { Fact, RerankedResult } from '@openmemory/client';
+import type { Fact, RerankedResult } from '@totalreclaw/client';
 
 // ============================================================================
 // Configuration

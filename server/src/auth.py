@@ -1,5 +1,5 @@
 """
-Authentication module for OpenMemory Server.
+Authentication module for TotalReclaw Server.
 
 Implements HKDF-SHA256 based authentication:
 - Registration: auth_key = HKDF(master_password, salt, "openmemory-auth-v1")

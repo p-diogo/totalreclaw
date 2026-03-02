@@ -1,5 +1,5 @@
 #!/bin/bash
-# OpenMemory Database Restore Script
+# TotalReclaw Database Restore Script
 # Usage: ./scripts/restore.sh <backup_file> [--force]
 # WARNING: This will DROP and recreate the database!
 #
@@ -8,16 +8,16 @@
 #   --force       Skip confirmation prompt
 #
 # Environment variables:
-#   CONTAINER_NAME Name of the Postgres container (default: openmemory-db)
-#   POSTGRES_USER  Database user (default: openmemory)
-#   POSTGRES_DB    Database name (default: openmemory)
+#   CONTAINER_NAME Name of the Postgres container (default: totalreclaw-db)
+#   POSTGRES_USER  Database user (default: totalreclaw)
+#   POSTGRES_DB    Database name (default: totalreclaw)
 
 set -euo pipefail
 
 # Configuration
-CONTAINER_NAME="${CONTAINER_NAME:-openmemory-db}"
-POSTGRES_USER="${POSTGRES_USER:-openmemory}"
-POSTGRES_DB="${POSTGRES_DB:-openmemory}"
+CONTAINER_NAME="${CONTAINER_NAME:-totalreclaw-db}"
+POSTGRES_USER="${POSTGRES_USER:-totalreclaw}"
+POSTGRES_DB="${POSTGRES_DB:-totalreclaw}"
 
 FORCE=false
 

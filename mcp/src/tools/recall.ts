@@ -1,5 +1,5 @@
-import { OpenMemory } from '@openmemory/client';
-import { RECALL_TOOL_DESCRIPTION } from '../prompts';
+import { TotalReclaw } from '@totalreclaw/client';
+import { RECALL_TOOL_DESCRIPTION } from '../prompts.js';
 
 export interface RecallInput {
   query: string;
@@ -22,7 +22,7 @@ export interface RecallOutput {
 }
 
 export const recallToolDefinition = {
-  name: 'openmemory_recall',
+  name: 'totalreclaw_recall',
   description: RECALL_TOOL_DESCRIPTION,
   inputSchema: {
     type: 'object',
@@ -54,10 +54,15 @@ export const recallToolDefinition = {
     },
     required: ['query'],
   },
+  annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+  },
 };
 
 export async function handleRecall(
-  client: OpenMemory,
+  client: TotalReclaw,
   args: unknown,
   defaultNamespace: string
 ): Promise<{ content: Array<{ type: string; text: string }> }> {

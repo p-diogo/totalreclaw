@@ -1,0 +1,82 @@
+{
+  "model": "arcee-ai/trinity-large-preview:free",
+  "api_url": "https://openrouter.ai/api/v1/chat/completions",
+  "timestamp": 1771538478.249821,
+  "configurations": {
+    "candidates_10": {
+      "candidate_count": 10,
+      "num_queries": 19,
+      "avg_latency_ms": 5489.49,
+      "p50_latency_ms": 3123.66,
+      "p95_latency_ms": 27225.76,
+      "p99_latency_ms": 27225.76,
+      "avg_api_time_ms": 5489.39,
+      "avg_input_tokens": 450.5,
+      "avg_output_tokens": 40.4,
+      "avg_total_tokens": 490.9
+    },
+    "candidates_20": {
+      "candidate_count": 20,
+      "num_queries": 20,
+      "avg_latency_ms": 7367.49,
+      "p50_latency_ms": 4210.65,
+      "p95_latency_ms": 38556.24,
+      "p99_latency_ms": 38556.24,
+      "avg_api_time_ms": 7367.38,
+      "avg_input_tokens": 767.7,
+      "avg_output_tokens": 113.2,
+      "avg_total_tokens": 880.9
+    },
+    "candidates_30": {
+      "candidate_count": 30,
+      "num_queries": 20,
+      "avg_latency_ms": 6043.11,
+      "p50_latency_ms": 6336.63,
+      "p95_latency_ms": 11192.29,
+      "p99_latency_ms": 11192.29,
+      "avg_api_time_ms": 6042.98,
+      "avg_input_tokens": 1117.7,
+      "avg_output_tokens": 143.8,
+      "avg_total_tokens": 1261.5
+    },
+    "candidates_50": {
+      "candidate_count": 50,
+      "num_queries": 20,
+      "avg_latency_ms": 7994.74,
+      "p50_latency_ms": 7631.11,
+      "p95_latency_ms": 19616.24,
+      "p99_latency_ms": 19616.24,
+      "avg_api_time_ms": 7994.55,
+      "avg_input_tokens": 1829.4,
+      "avg_output_tokens": 235.9,
+      "avg_total_tokens": 2065.3
+    }
+  },
+  "analysis": {
+    "scaling_factor": [
+      {
+        "from_count": 10,
+        "to_count": 20,
+        "count_ratio": 2.0,
+        "latency_ratio": 1.3421089068837295,
+        "scaling_type": "non-linear"
+      },
+      {
+        "from_count": 10,
+        "to_count": 30,
+        "count_ratio": 3.0,
+        "latency_ratio": 1.1008513435709764,
+        "scaling_type": "non-linear"
+      },
+      {
+        "from_count": 10,
+        "to_count": 50,
+        "count_ratio": 5.0,
+        "latency_ratio": 1.4563733597057997,
+        "scaling_type": "non-linear"
+      }
+    ],
+    "bottleneck_identified": true,
+    "recommendation": "LLM reranking is a significant bottleneck at high candidate counts. Consider: (1) Limiting reranking to top-20 candidates, (2) Using a faster model, or (3) Implementing cache for frequent queries."
+  }
+}

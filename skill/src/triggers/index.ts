@@ -1,7 +1,7 @@
 /**
- * OpenMemory Skill - Lifecycle Hooks (Triggers)
+ * TotalReclaw Skill - Lifecycle Hooks (Triggers)
  *
- * This module exports the three lifecycle hooks for OpenMemory integration:
+ * This module exports the three lifecycle hooks for TotalReclaw integration:
  *
  * 1. **beforeAgentStart** - Runs before agent processes message
  *    - Retrieves relevant memories

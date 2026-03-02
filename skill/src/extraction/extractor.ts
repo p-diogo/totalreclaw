@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - Fact Extractor
+ * TotalReclaw Skill - Fact Extractor
  *
  * Main extraction module that:
  * 1. Extracts facts from conversation context

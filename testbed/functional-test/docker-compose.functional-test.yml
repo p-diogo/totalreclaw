@@ -1,18 +1,18 @@
 services:
-  # OpenMemory Server (existing)
-  openmemory-server:
+  # TotalReclaw Server (existing)
+  totalreclaw-server:
     build:
       context: ../../server
       dockerfile: Dockerfile
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      DATABASE_URL: postgresql+asyncpg://openmemory:${POSTGRES_PASSWORD:-test}@postgres:5432/openmemory
+      DATABASE_URL: postgresql+asyncpg://totalreclaw:${POSTGRES_PASSWORD:-test}@postgres:5432/totalreclaw
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - openmemory-internal
+      - totalreclaw-internal
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
@@ -29,15 +29,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: openmemory
+      POSTGRES_USER: totalreclaw
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-test}
-      POSTGRES_DB: openmemory
+      POSTGRES_DB: totalreclaw
     volumes:
       - test-db-data:/var/lib/postgresql/data
     networks:
-      - openmemory-internal
+      - totalreclaw-internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U openmemory -d openmemory"]
+      test: ["CMD-SHELL", "pg_isready -U totalreclaw -d totalreclaw"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -47,8 +47,8 @@ services:
 
   # OpenClaw Test Instance
   # When running standalone (--no-deps), also connect to
-  # server_openmemory-internal network:
-  #   docker network connect server_openmemory-internal openclaw-test
+  # server_totalreclaw-internal network:
+  #   docker network connect server_totalreclaw-internal openclaw-test
   openclaw-test:
     build:
       context: ./openclaw
@@ -58,7 +58,7 @@ services:
       # Gateway WebSocket + Control UI on port 18789
       - "127.0.0.1:8081:18789"
     networks:
-      - openmemory-internal
+      - totalreclaw-internal
     security_opt:
       - no-new-privileges:true
     user: "0:0"
@@ -70,21 +70,21 @@ services:
         target: /config
       - type: bind
         source: ../../skill/SKILL.md
-        target: /app/skills/openmemory/SKILL.md
+        target: /app/skills/totalreclaw/SKILL.md
         read_only: true
       - type: bind
         source: ../../skill/plugin
-        target: /app/extensions/openmemory
+        target: /app/extensions/totalreclaw
         read_only: true
       - openclaw-state:/home/node/.openclaw
-      - openmemory-credentials:/home/node/.openmemory
+      - totalreclaw-credentials:/home/node/.totalreclaw
     environment:
       - OPENCLAW_LLM_PROVIDER=zai
       - OPENCLAW_LLM_MODEL=glm-5
       - ZAI_API_KEY=${ZAI_API_KEY}
       - OPENCLAW_CONFIG_PATH=/config/config.json5
-      - OPENMEMORY_SERVER_URL=http://openmemory-server:8080
-      - OPENMEMORY_MASTER_PASSWORD=${OPENMEMORY_MASTER_PASSWORD:-test-master-password-for-functional-tests}
+      - TOTALRECLAW_SERVER_URL=http://totalreclaw-server:8080
+      - TOTALRECLAW_MASTER_PASSWORD=${TOTALRECLAW_MASTER_PASSWORD:-test-master-password-for-functional-tests}
       - HOME=/home/node
     profiles:
       - functional-test
@@ -96,7 +96,7 @@ services:
       start_period: 20s
 
 networks:
-  openmemory-internal:
+  totalreclaw-internal:
     driver: bridge
 
 volumes:
@@ -104,5 +104,5 @@ volumes:
     driver: local
   openclaw-state:
     driver: local
-  openmemory-credentials:
+  totalreclaw-credentials:
     driver: local

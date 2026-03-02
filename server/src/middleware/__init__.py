@@ -1,5 +1,5 @@
 """
-Middleware for OpenMemory Server.
+Middleware for TotalReclaw Server.
 """
 from .rate_limit import RateLimitMiddleware
 

@@ -1,0 +1,251 @@
+# Memory Category Configuration
+# Defines distribution and characteristics for each memory category
+
+categories:
+  daily_conversation_logs:
+    id: daily_conversation_logs
+    name: Daily Conversation Logs
+    description: Chat interactions with AI assistant about software development
+    count: 450
+    percentage: 30
+    source_file: memory-daily
+    chunk_size_tokens: 400
+    overlap_tokens: 80
+    entities:
+      - error_codes
+      - api_endpoints
+      - function_names
+      - uuids
+      - timestamps
+
+  email_threads:
+    id: email_threads
+    name: Email Threads
+    description: Email conversations about technical decisions
+    count: 375
+    percentage: 25
+    source_file: memory-daily
+    chunk_size_tokens: 400
+    overlap_tokens: 80
+    entities:
+      - email_addresses
+      - dates
+      - project_names
+      - configuration_values
+
+  meeting_notes:
+    id: meeting_notes
+    name: Meeting Notes
+    description: Standups, 1:1s, planning sessions
+    count: 225
+    percentage: 15
+    source_file: memory-daily
+    chunk_size_tokens: 400
+    overlap_tokens: 80
+    entities:
+      - attendee_names
+      - email_addresses
+      - dates
+      - action_items
+
+  personal_preferences:
+    id: personal_preferences
+    name: Personal Preferences
+    description: Work schedule, environment setup, team info
+    count: 225
+    percentage: 15
+    source_file: MEMORY.md
+    chunk_size_tokens: 400
+    overlap_tokens: 80
+    entities:
+      - names
+      - email_addresses
+      - ports
+      - schedules
+
+  technical_documentation:
+    id: technical_documentation
+    name: Technical Documentation
+    description: API configs, deployment procedures
+    count: 150
+    percentage: 10
+    source_file: MEMORY.md
+    chunk_size_tokens: 400
+    overlap_tokens: 80
+    entities:
+      - api_endpoints
+      - configuration_values
+      - command_names
+      - service_names
+
+  configuration_details:
+    id: configuration_details
+    name: Configuration Details
+    description: API keys, endpoints, connection strings
+    count: 75
+    percentage: 5
+    source_file: MEMORY.md
+    chunk_size_tokens: 400
+    overlap_tokens: 80
+    entities:
+      - api_keys
+      - connection_strings
+      - environment_variables
+      - service_endpoints
+
+# Total memories to generate
+total_count: 1500
+
+# Query categories distribution
+query_categories:
+  contextual_fact_retrieval:
+    name: Contextual/Fact Retrieval
+    count: 45
+    percentage: 30
+    examples:
+      - "What did Sarah say about the API rate limit?"
+      - "Mike's recommendation on state management"
+      - "How did we fix the CORS error?"
+
+  configuration_setup:
+    name: Configuration & Setup
+    count: 30
+    percentage: 20
+    examples:
+      - "What's my API base URL?"
+      - "Database connection string"
+      - "Stripe secret key format"
+
+  temporal_recent:
+    name: Temporal/Recent Activity
+    count: 22
+    percentage: 15
+    examples:
+      - "What did we discuss yesterday?"
+      - "Deployment from last week"
+      - "Recent changes to authentication"
+
+  error_solution:
+    name: Error & Solution Lookup
+    count: 22
+    percentage: 15
+    examples:
+      - "How did we fix error 429?"
+      - "Timeout error solution"
+      - "CORS issue fix"
+
+  semantic_concept:
+    name: Semantic/Concept Queries
+    count: 18
+    percentage: 12
+    examples:
+      - "container orchestration"
+      - "CI/CD automation"
+      - "user authentication flow"
+
+  exact_keyword:
+    name: Exact/Keyword Queries
+    count: 13
+    percentage: 8
+    examples:
+      - "sk-proj-abc123"
+      - "memorySearch.query.hybrid"
+      - "a828e60"
+
+total_queries: 150
+
+# Entity extraction patterns
+entity_patterns:
+  email_addresses: |
+    \b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b
+
+  uuids: |
+    \b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b
+
+  api_keys: |
+    \b[A-Za-z0-9]{32,}\b
+
+  error_codes: |
+    \b[1-5]\d{2}\b
+
+  timestamps: |
+    \b\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}\b
+
+  dates: |
+    \b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}\b
+
+  function_names: |
+    \b[a-zA-Z_][a-zA-Z0-9_]*(?:\.|::)[a-zA-Z_][a-zA-Z0-9_]*\b
+
+# Common names for realistic data
+common_names:
+  first_names:
+    - Sarah
+    - Mike
+    - Jennifer
+    - David
+    - Alex
+    - Lisa
+    - James
+    - Emily
+    - Robert
+    - Amanda
+    - Chris
+    - Nicole
+    - Daniel
+    - Rachel
+    - Kevin
+
+  last_names:
+    - Rodriguez
+    - Chen
+    - Lopez
+    - Kim
+    - Turner
+    - Martinez
+    - Johnson
+    - Williams
+    - Taylor
+    - Anderson
+    - Thompson
+    - Garcia
+    - Davis
+    - Wilson
+
+  domains:
+    - techcorp.com
+    - company.io
+    - startup.co
+    - enterprise.net
+    - agency.org
+
+  role_prefixes:
+    - sarah.r
+    - mike.chen
+    - jen.lopez
+    - david.kim
+    - alex.turner
+    - lisa.m
+    - james.w
+    - emily.r
+
+# Common error codes
+common_error_codes:
+  - 400  # Bad Request
+  - 401  # Unauthorized
+  - 403  # Forbidden
+  - 404  # Not Found
+  - 409  # Conflict
+  - 429  # Too Many Requests
+  - 500  # Internal Server Error
+  - 502  # Bad Gateway
+  - 503  # Service Unavailable
+  - 504  # Gateway Timeout
+
+# Common API endpoint patterns
+api_endpoints:
+  - https://api.example.com/v1/graphql
+  - https://api.stripe.com/v1/charges
+  - https://api.github.com/repos
+  - https://slack.com/api/chat.postMessage
+  - https://api.openai.com/v1/completions

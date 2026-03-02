@@ -1,0 +1,66 @@
+{
+  "scenarios": {
+    "S1_bm25_only": {
+      "name": "BM25-Only",
+      "results": {
+        "precision_at_5": 0.18333,
+        "recall_at_5": 0.33889,
+        "f1_at_5": 0.23598,
+        "mrr": 0.52083,
+        "map": 0.27083,
+        "ndcg_at_5": 0.58429,
+        "latency": {
+          "p50_ms": 13.45
+        }
+      }
+    },
+    "S2_vector_only": {
+      "name": "Vector-Only",
+      "results": {
+        "precision_at_5": 0.12083,
+        "recall_at_5": 0.22361,
+        "f1_at_5": 0.15516,
+        "mrr": 0.41667,
+        "map": 0.21007,
+        "ndcg_at_5": 0.48392,
+        "latency": {
+          "p50_ms": 5.45
+        }
+      }
+    },
+    "S3_openclaw_hybrid": {
+      "name": "OpenClaw-Hybrid",
+      "results": {
+        "precision_at_5": 0.2,
+        "recall_at_5": 0.36944,
+        "f1_at_5": 0.25686,
+        "mrr": 0.52917,
+        "map": 0.28212,
+        "ndcg_at_5": 0.59454,
+        "latency": {
+          "p50_ms": 14.28
+        }
+      }
+    },
+    "S4_qmd_hybrid": {
+      "name": "QMD-Hybrid",
+      "results": {
+        "precision_at_5": 0.1875,
+        "recall_at_5": 0.35069,
+        "f1_at_5": 0.24008,
+        "mrr": 0.50833,
+        "map": 0.27378,
+        "ndcg_at_5": 0.57782,
+        "latency": {
+          "p50_ms": 206.65
+        }
+      }
+    }
+  },
+  "metadata": {
+    "testbed_version": "v2-realworld-data",
+    "timestamp": "2026-02-20",
+    "num_queries": 50,
+    "num_documents": 1162
+  }
+}

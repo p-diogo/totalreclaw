@@ -1,5 +1,5 @@
 """
-OpenMemory Server - Main FastAPI Application.
+TotalReclaw Server - Main FastAPI Application.
 
 Zero-knowledge encrypted memory vault server for Phase 4.
 """
@@ -21,7 +21,8 @@ from .handlers import (
     health_router,
     account_router,
     sync_router,
-    relay_router
+    relay_router,
+    observability_router,
 )
 from .metrics import record_request, get_metrics_response, update_db_pool_metrics
 from .middleware.rate_limit import RateLimitMiddleware
@@ -109,7 +110,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     Handles startup and shutdown events.
     """
     # Startup
-    logger.info("Starting OpenMemory Server...")
+    logger.info("Starting TotalReclaw Server...")
     logger.info(f"API Version: {settings.api_version}")
     logger.info(f"Debug Mode: {settings.debug}")
     logger.info(f"Environment: {settings.environment}")
@@ -126,14 +127,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     yield
 
     # Shutdown
-    logger.info("Shutting down OpenMemory Server...")
+    logger.info("Shutting down TotalReclaw Server...")
     await close_db()
     logger.info("Database connections closed")
 
 
 # Create FastAPI application
 app = FastAPI(
-    title="OpenMemory Server",
+    title="TotalReclaw Server",
     description="""
     Zero-knowledge encrypted memory vault API.
 
@@ -325,6 +326,7 @@ v1_router.include_router(search_router)
 v1_router.include_router(account_router)
 v1_router.include_router(sync_router)
 v1_router.include_router(relay_router)
+v1_router.include_router(observability_router)
 app.include_router(v1_router)
 
 
@@ -348,7 +350,7 @@ async def metrics():
 async def root():
     """Root endpoint - returns basic server info."""
     return {
-        "message": "OpenMemory API",
+        "message": "TotalReclaw API",
         "version": settings.api_version,
         "docs": "/docs" if settings.debug else "disabled"
     }
@@ -361,7 +363,7 @@ def main():
     import uvicorn
 
     uvicorn.run(
-        "openmemory.src.main:app",
+        "totalreclaw.src.main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug,

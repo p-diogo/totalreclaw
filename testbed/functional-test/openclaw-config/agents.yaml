@@ -1,14 +1,14 @@
 # TESTING ONLY — Do not use these settings in production
 #
 # OpenClaw Agent Configuration for Functional Testing
-# This configuration enables OpenMemory integration for testing
+# This configuration enables TotalReclaw integration for testing
 
 defaults:
   memory:
-    # OpenMemory integration settings
-    openmemory:
+    # TotalReclaw integration settings
+    totalreclaw:
       enabled: true
-      serverUrl: http://openmemory-server:8080
+      serverUrl: http://totalreclaw-server:8080
       # Auto-extract facts every N turns
       autoExtractEveryTurns: 5
       # Minimum importance score (1-10) for auto-storing memories
@@ -26,15 +26,15 @@ defaults:
 # Test agent configuration
 agents:
   - name: test-agent
-    description: Agent for functional testing of OpenMemory integration
+    description: Agent for functional testing of TotalReclaw integration
     systemPrompt: |
-      You are a test agent for validating OpenMemory integration.
+      You are a test agent for validating TotalReclaw integration.
       You should:
       1. Remember facts about the user across conversations
       2. Reference previously stored memories when relevant
       3. Extract important information for storage
     memory:
-      openmemory:
+      totalreclaw:
         enabled: true
         autoExtractEveryTurns: 1  # Extract every turn for testing
         minImportanceForAutoStore: 1  # Store everything for testing

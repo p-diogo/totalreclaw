@@ -1,0 +1,910 @@
+{
+  "algorithm_name": "BM25-Only",
+  "aggregate_metrics": {
+    "precision_at_5": 0.1875,
+    "recall_at_5": 0.35763888888888884,
+    "f1_at_5": 0.24156746031746035,
+    "mrr": 0.4996527777777778,
+    "map": 0.27314814814814814,
+    "ndcg_at_5": 0.5309192070205948,
+    "latency": {
+      "p50_ms": 87.95175002887845,
+      "p95_ms": 104.51707697939126,
+      "p99_ms": 130.0227624550462,
+      "mean_ms": 90.10266588302329,
+      "min_ms": 82.82624976709485,
+      "max_ms": 146.89791714772582
+    },
+    "queries_evaluated": 48
+  },
+  "per_query_results": {
+    "q1": {
+      "query": "What is pici cacio e pepe and can pregnant women eat it?",
+      "relevant_count": 3,
+      "retrieved": [
+        855,
+        849,
+        656,
+        491,
+        395
+      ],
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "f1": 0.5,
+      "ap": 0.6666666666666666,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 94.13445927202702
+    },
+    "q2": {
+      "query": "What documents did Vitor Martins send to Pedro in March 2025?",
+      "relevant_count": 3,
+      "retrieved": [
+        438,
+        425,
+        429,
+        437,
+        436
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 92.2402092255652
+    },
+    "q3": {
+      "query": "What happened on the A1 highway near Vagos in February 2026?",
+      "relevant_count": 3,
+      "retrieved": [
+        692,
+        36,
+        689,
+        370,
+        752
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.16666666666666666,
+      "rr": 0.5,
+      "ndcg": 1.0,
+      "latency_ms": 90.20820865407586
+    },
+    "q4": {
+      "query": "What safety advice did Pedro's father give him about traveling?",
+      "relevant_count": 3,
+      "retrieved": [
+        905,
+        491,
+        656,
+        780,
+        179
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 84.34812491759658
+    },
+    "q5": {
+      "query": "What was the funeral arrangement for Tio Pedro's friend's mother?",
+      "relevant_count": 3,
+      "retrieved": [
+        348,
+        780,
+        832,
+        179,
+        639
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 92.12695807218552
+    },
+    "q6": {
+      "query": "What's the best way to cook sea bass with lemon and salt?",
+      "relevant_count": 3,
+      "retrieved": [
+        348,
+        916,
+        26,
+        453,
+        656
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.1111111111111111,
+      "rr": 0.3333333333333333,
+      "ndcg": 0.6309297535714575,
+      "latency_ms": 89.74062511697412
+    },
+    "q7": {
+      "query": "How to access financial portal with NIF and password?",
+      "relevant_count": 3,
+      "retrieved": [
+        39,
+        116,
+        138,
+        453,
+        452
+      ],
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "f1": 0.5,
+      "ap": 0.5555555555555555,
+      "rr": 1.0,
+      "ndcg": 0.8154648767857288,
+      "latency_ms": 87.64487504959106
+    },
+    "q8": {
+      "query": "What's the weather like in Athens during summer?",
+      "relevant_count": 0,
+      "retrieved": [],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 0.0
+    },
+    "q9": {
+      "query": "What are some good barbecue rubs to buy?",
+      "relevant_count": 3,
+      "retrieved": [
+        501,
+        691,
+        554,
+        453,
+        656
+      ],
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "f1": 0.5,
+      "ap": 0.5555555555555555,
+      "rr": 1.0,
+      "ndcg": 0.8154648767857288,
+      "latency_ms": 86.73529233783484
+    },
+    "q10": {
+      "query": "What are some popular Greek islands to visit?",
+      "relevant_count": 2,
+      "retrieved": [
+        1027,
+        453,
+        656,
+        491,
+        738
+      ],
+      "precision": 0.4,
+      "recall": 1.0,
+      "f1": 0.5714285714285715,
+      "ap": 0.7,
+      "rr": 1.0,
+      "ndcg": 0.7153382790366966,
+      "latency_ms": 83.38774973526597
+    },
+    "q11": {
+      "query": "What are the best places to visit in northern Spain between Bilbao, San Sebastian, and Picos da Europa?",
+      "relevant_count": 3,
+      "retrieved": [
+        564,
+        851,
+        241,
+        1041,
+        237
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.3333333333333333,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 91.91866684705019
+    },
+    "q12": {
+      "query": "What traditional Portuguese music did the grandmother used to sing to help children sleep?",
+      "relevant_count": 3,
+      "retrieved": [
+        453,
+        917,
+        241,
+        442,
+        815
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.06666666666666667,
+      "rr": 0.2,
+      "ndcg": 0.43067655807339306,
+      "latency_ms": 88.25862500816584
+    },
+    "q13": {
+      "query": "What is 'Olderbrothercore' aesthetic and what does it represent?",
+      "relevant_count": 3,
+      "retrieved": [
+        656,
+        491,
+        1019,
+        1152,
+        395
+      ],
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "f1": 0.5,
+      "ap": 0.38888888888888884,
+      "rr": 0.5,
+      "ndcg": 0.8154648767857288,
+      "latency_ms": 88.26545812189579
+    },
+    "q14": {
+      "query": "What are some good travel recommendations for Crete, Greece?",
+      "relevant_count": 3,
+      "retrieved": [
+        554,
+        691,
+        656,
+        491,
+        836
+      ],
+      "precision": 0.6,
+      "recall": 1.0,
+      "f1": 0.7499999999999999,
+      "ap": 0.8666666666666667,
+      "rr": 1.0,
+      "ndcg": 0.9238850086262381,
+      "latency_ms": 84.3132077716291
+    },
+    "q15": {
+      "query": "What is the traditional Portuguese song 'Galandum Galundaina' about?",
+      "relevant_count": 2,
+      "retrieved": [
+        610,
+        905,
+        656,
+        491,
+        348
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 86.25870896503329
+    },
+    "q16": {
+      "query": "What is the menu for the dinner at S\u00e3o Braz caf\u00e9 tomorrow?",
+      "relevant_count": 3,
+      "retrieved": [
+        382,
+        348,
+        692,
+        1117,
+        851
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.3333333333333333,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 92.84487506374717
+    },
+    "q17": {
+      "query": "How can I transfer bonus money from Deel platform to my personal bank account?",
+      "relevant_count": 3,
+      "retrieved": [
+        433,
+        557,
+        540,
+        434,
+        452
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.3333333333333333,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 89.11995775997639
+    },
+    "q18": {
+      "query": "What is the new location of the classic restaurant in Matosinhos?",
+      "relevant_count": 3,
+      "retrieved": [
+        348,
+        851,
+        1158,
+        370,
+        692
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 90.70475026965141
+    },
+    "q19": {
+      "query": "What is the recipe from the book that Tiz and Ana gave?",
+      "relevant_count": 3,
+      "retrieved": [
+        348,
+        692,
+        1158,
+        689,
+        491
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 90.7502924092114
+    },
+    "q20": {
+      "query": "What are the memories from 10 years ago at Tasca da Carro\u00e7a?",
+      "relevant_count": 3,
+      "retrieved": [
+        361,
+        851,
+        885,
+        370,
+        656
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 89.46220809593797
+    },
+    "q21": {
+      "query": "What are some tips for using chopsticks properly?",
+      "relevant_count": 1,
+      "retrieved": [
+        739,
+        656,
+        491,
+        660,
+        524
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.33333333333333337,
+      "ap": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 83.46637478098273
+    },
+    "q22": {
+      "query": "What are some rustic patio furniture ideas?",
+      "relevant_count": 0,
+      "retrieved": [],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 0.0
+    },
+    "q23": {
+      "query": "How to organize a Woodstock-themed party?",
+      "relevant_count": 2,
+      "retrieved": [
+        241,
+        453,
+        465,
+        237,
+        288
+      ],
+      "precision": 0.4,
+      "recall": 1.0,
+      "f1": 0.5714285714285715,
+      "ap": 0.75,
+      "rr": 1.0,
+      "ndcg": 0.75,
+      "latency_ms": 85.02133283764124
+    },
+    "q24": {
+      "query": "What are some tips for cooking moussaka?",
+      "relevant_count": 1,
+      "retrieved": [
+        1037,
+        790,
+        656,
+        491,
+        1039
+      ],
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.33333333333333337,
+      "ap": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 109.28070778027177
+    },
+    "q25": {
+      "query": "What are some tips for taking care of pets while on vacation?",
+      "relevant_count": 3,
+      "retrieved": [
+        851,
+        348,
+        469,
+        656,
+        491
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 84.31941596791148
+    },
+    "q26": {
+      "query": "What are some tips for bringing plastic cups to Primavera Sound festival?",
+      "relevant_count": 3,
+      "retrieved": [
+        685,
+        639,
+        500,
+        453,
+        656
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.3333333333333333,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 86.92699996754527
+    },
+    "q27": {
+      "query": "When is the new season of Stranger Things coming out?",
+      "relevant_count": 3,
+      "retrieved": [
+        851,
+        348,
+        1158,
+        988,
+        1030
+      ],
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "f1": 0.5,
+      "ap": 0.3333333333333333,
+      "rr": 0.5,
+      "ndcg": 0.75,
+      "latency_ms": 90.4675000347197
+    },
+    "q28": {
+      "query": "What childhood food memories does Pedro have?",
+      "relevant_count": 3,
+      "retrieved": [
+        742,
+        491,
+        656,
+        185,
+        117
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 82.82624976709485
+    },
+    "q29": {
+      "query": "How can I watch Benfica vs Braga match if it's not available on mobile?",
+      "relevant_count": 3,
+      "retrieved": [
+        147,
+        1130,
+        752,
+        636,
+        348
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.3333333333333333,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 146.89791714772582
+    },
+    "q30": {
+      "query": "What is the deadline for paying IRC taxes for 2024?",
+      "relevant_count": 3,
+      "retrieved": [
+        660,
+        524,
+        266,
+        86,
+        297
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 93.85766694322228
+    },
+    "q31": {
+      "query": "How can I access Tugatv live streaming with username Ivone1 and password zmRBvVbRc8?",
+      "relevant_count": 3,
+      "retrieved": [
+        116,
+        124,
+        120,
+        557,
+        1130
+      ],
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "f1": 0.5,
+      "ap": 0.5555555555555555,
+      "rr": 1.0,
+      "ndcg": 0.8154648767857288,
+      "latency_ms": 91.15958400070667
+    },
+    "q32": {
+      "query": "What are some secret beaches near Ger\u00eas that require a 15-minute forest walk to access?",
+      "relevant_count": 3,
+      "retrieved": [
+        696,
+        241,
+        952,
+        491,
+        453
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.3333333333333333,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 89.73320806398988
+    },
+    "q33": {
+      "query": "What restaurants in Guimar\u00e3es center are recommended for a casual dinner?",
+      "relevant_count": 3,
+      "retrieved": [
+        752,
+        491,
+        656,
+        1144,
+        724
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.08333333333333333,
+      "rr": 0.25,
+      "ndcg": 0.5,
+      "latency_ms": 91.0188751295209
+    },
+    "q34": {
+      "query": "What are some good family-friendly activities in Porto for children who have already visited the Gaia and Maia zoos?",
+      "relevant_count": 3,
+      "retrieved": [
+        26,
+        752,
+        815,
+        266,
+        691
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.3333333333333333,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 95.67033406347036
+    },
+    "q35": {
+      "query": "What mountain restaurants in Portugal have good food, wine, and a relaxed atmosphere?",
+      "relevant_count": 3,
+      "retrieved": [
+        656,
+        742,
+        752,
+        554,
+        691
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 89.78025009855628
+    },
+    "q36": {
+      "query": "When did Vasco celebrate his birthday with friends?",
+      "relevant_count": 3,
+      "retrieved": [
+        331,
+        752,
+        280,
+        369,
+        283
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.3333333333333333,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 83.3161249756813
+    },
+    "q37": {
+      "query": "What restaurant did the family visit in Egypt?",
+      "relevant_count": 3,
+      "retrieved": [
+        752,
+        656,
+        491,
+        495,
+        1117
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 84.7128750756383
+    },
+    "q38": {
+      "query": "Who shared an Instagram reel about Wilson Cafe?",
+      "relevant_count": 3,
+      "retrieved": [
+        267,
+        579,
+        905,
+        379,
+        1001
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 86.00170910358429
+    },
+    "q39": {
+      "query": "What happened to Pedro Diogo's car?",
+      "relevant_count": 3,
+      "retrieved": [
+        453,
+        491,
+        780,
+        656,
+        179
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 85.82195825874805
+    },
+    "q40": {
+      "query": "When did Joao Pedro open his new business?",
+      "relevant_count": 3,
+      "retrieved": [
+        452,
+        407,
+        408,
+        240,
+        318
+      ],
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "f1": 0.5,
+      "ap": 0.38888888888888884,
+      "rr": 0.5,
+      "ndcg": 0.8154648767857288,
+      "latency_ms": 85.54491633549333
+    },
+    "q41": {
+      "query": "What are some popular costume choices for children in Portuguese families?",
+      "relevant_count": 3,
+      "retrieved": [
+        815,
+        1027,
+        752,
+        68,
+        656
+      ],
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "f1": 0.5,
+      "ap": 0.5,
+      "rr": 1.0,
+      "ndcg": 0.75,
+      "latency_ms": 87.12900010868907
+    },
+    "q42": {
+      "query": "Where can I find good restaurants in Braga for lunch?",
+      "relevant_count": 3,
+      "retrieved": [
+        752,
+        557,
+        691,
+        554,
+        1130
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 85.60795895755291
+    },
+    "q43": {
+      "query": "What are some recommended places to eat in Felgueiras that won't break the bank?",
+      "relevant_count": 3,
+      "retrieved": [
+        752,
+        241,
+        237,
+        996,
+        453
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 89.25499999895692
+    },
+    "q44": {
+      "query": "What are some popular seafood dishes to try in Portugal?",
+      "relevant_count": 2,
+      "retrieved": [
+        656,
+        1027,
+        752,
+        453,
+        241
+      ],
+      "precision": 0.2,
+      "recall": 0.5,
+      "f1": 0.28571428571428575,
+      "ap": 0.25,
+      "rr": 0.5,
+      "ndcg": 1.0,
+      "latency_ms": 84.49183404445648
+    },
+    "q45": {
+      "query": "What are some good places to watch football matches in Portugal?",
+      "relevant_count": 3,
+      "retrieved": [
+        656,
+        636,
+        903,
+        752,
+        554
+      ],
+      "precision": 0.4,
+      "recall": 0.6666666666666666,
+      "f1": 0.5,
+      "ap": 0.3,
+      "rr": 0.5,
+      "ndcg": 0.7153382790366966,
+      "latency_ms": 87.22562482580543
+    },
+    "q46": {
+      "query": "How to set up IPTV on PC",
+      "relevant_count": 3,
+      "retrieved": [
+        1043,
+        124,
+        182,
+        120,
+        453
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 110.99333269521594
+    },
+    "q47": {
+      "query": "What apps can play IPTV links",
+      "relevant_count": 3,
+      "retrieved": [
+        182,
+        656,
+        491,
+        290,
+        124
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.06666666666666667,
+      "rr": 0.2,
+      "ndcg": 0.43067655807339306,
+      "latency_ms": 86.0588327050209
+    },
+    "q48": {
+      "query": "Who is Marta Azevedo and why are people congratulating her",
+      "relevant_count": 3,
+      "retrieved": [
+        401,
+        402,
+        257,
+        393,
+        277
+      ],
+      "precision": 0.6,
+      "recall": 1.0,
+      "f1": 0.7499999999999999,
+      "ap": 0.8055555555555555,
+      "rr": 1.0,
+      "ndcg": 0.8099531166420328,
+      "latency_ms": 86.41591668128967
+    },
+    "q49": {
+      "query": "What are people's opinions about Portuguese presidential election candidates",
+      "relevant_count": 2,
+      "retrieved": [
+        905,
+        656,
+        491,
+        265,
+        780
+      ],
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "ap": 0.0,
+      "rr": 0.0,
+      "ndcg": 0.0,
+      "latency_ms": 84.01775034144521
+    },
+    "q50": {
+      "query": "What is Wollbox and why would someone install it",
+      "relevant_count": 3,
+      "retrieved": [
+        209,
+        395,
+        656,
+        491,
+        1000
+      ],
+      "precision": 0.2,
+      "recall": 0.3333333333333333,
+      "f1": 0.25,
+      "ap": 0.3333333333333333,
+      "rr": 1.0,
+      "ndcg": 1.0,
+      "latency_ms": 85.44545900076628
+    }
+  }
+}

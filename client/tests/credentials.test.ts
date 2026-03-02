@@ -67,11 +67,11 @@ describe('Keychain Credential Storage', () => {
     await storeCredentials('user-1', 'my-secret-password');
 
     expect(mockKeytar.setPassword).toHaveBeenCalledWith(
-      'openmemory',
+      'totalreclaw',
       'user-1',
       'my-secret-password'
     );
-    expect(mockStore.get('openmemory:user-1')).toBe('my-secret-password');
+    expect(mockStore.get('totalreclaw:user-1')).toBe('my-secret-password');
   });
 
   test('getCredentials should retrieve stored password', async () => {
@@ -79,7 +79,7 @@ describe('Keychain Credential Storage', () => {
     const password = await getCredentials('user-1');
 
     expect(password).toBe('my-secret-password');
-    expect(mockKeytar.getPassword).toHaveBeenCalledWith('openmemory', 'user-1');
+    expect(mockKeytar.getPassword).toHaveBeenCalledWith('totalreclaw', 'user-1');
   });
 
   test('getCredentials should return null for unknown user', async () => {
@@ -92,8 +92,8 @@ describe('Keychain Credential Storage', () => {
     const deleted = await deleteCredentials('user-1');
 
     expect(deleted).toBe(true);
-    expect(mockStore.has('openmemory:user-1')).toBe(false);
-    expect(mockKeytar.deletePassword).toHaveBeenCalledWith('openmemory', 'user-1');
+    expect(mockStore.has('totalreclaw:user-1')).toBe(false);
+    expect(mockKeytar.deletePassword).toHaveBeenCalledWith('totalreclaw', 'user-1');
   });
 
   test('deleteCredentials should return false for unknown user', async () => {

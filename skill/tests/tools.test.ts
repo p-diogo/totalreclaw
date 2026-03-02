@@ -1,7 +1,7 @@
 /**
- * OpenMemory Skill - Tools Tests
+ * TotalReclaw Skill - Tools Tests
  *
- * Tests for the four main OpenMemory tools:
+ * Tests for the four main TotalReclaw tools:
  * - remember: Store a memory
  * - recall: Search for memories
  * - forget: Delete a memory
@@ -9,18 +9,18 @@
  */
 
 import type {
-  OpenMemory,
+  TotalReclaw,
   Fact,
   RerankedResult,
   FactMetadata,
   ExportedData,
-} from '@openmemory/client';
+} from '@totalreclaw/client';
 import {
-  OpenMemorySkill,
-  createOpenMemorySkill,
-} from '../src/openmemory-skill';
+  TotalReclawSkill,
+  createTotalReclawSkill,
+} from '../src/totalreclaw-skill';
 import type {
-  OpenMemorySkillConfig,
+  TotalReclawSkillConfig,
   RememberToolParams,
   RecallToolParams,
   ForgetToolParams,
@@ -32,9 +32,9 @@ import type {
 // ============================================================================
 
 /**
- * Mock OpenMemory client
+ * Mock TotalReclaw client
  */
-class MockOpenMemoryClient {
+class MockTotalReclawClient {
   private facts: Map<string, Fact> = new Map();
   private userId: string | null = null;
   private salt: Buffer | null = null;
@@ -142,11 +142,11 @@ class MockOpenMemoryClient {
  * Create a mock skill with a mock client
  */
 async function createMockSkill(
-  config: Partial<OpenMemorySkillConfig> = {}
-): Promise<{ skill: OpenMemorySkill; client: MockOpenMemoryClient }> {
-  const mockClient = new MockOpenMemoryClient();
+  config: Partial<TotalReclawSkillConfig> = {}
+): Promise<{ skill: TotalReclawSkill; client: MockTotalReclawClient }> {
+  const mockClient = new MockTotalReclawClient();
 
-  const skill = new OpenMemorySkill({
+  const skill = new TotalReclawSkill({
     serverUrl: 'http://mock',
     masterPassword: 'test-password-123',
     ...config,
@@ -165,12 +165,12 @@ async function createMockSkill(
 // Remember Tool Tests
 // ============================================================================
 
-describe('openmemory_remember tool', () => {
-  let skill: OpenMemorySkill;
+describe('totalreclaw_remember tool', () => {
+  let skill: TotalReclawSkill;
   let isInitialized: boolean = false;
 
   beforeEach(async () => {
-    skill = new OpenMemorySkill({
+    skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password-123',
       minImportanceForAutoStore: 6,
@@ -282,12 +282,12 @@ describe('openmemory_remember tool', () => {
 // Recall Tool Tests
 // ============================================================================
 
-describe('openmemory_recall tool', () => {
-  let skill: OpenMemorySkill;
+describe('totalreclaw_recall tool', () => {
+  let skill: TotalReclawSkill;
   let isInitialized: boolean = false;
 
   beforeEach(async () => {
-    skill = new OpenMemorySkill({
+    skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password-123',
       maxMemoriesInContext: 8,
@@ -301,7 +301,7 @@ describe('openmemory_recall tool', () => {
       if (isInitialized) {
         await skill.remember({ text: 'User prefers TypeScript', importance: 7 });
         await skill.remember({ text: 'User uses VS Code as editor', importance: 5 });
-        await skill.remember({ text: 'User works on OpenMemory project', importance: 6 });
+        await skill.remember({ text: 'User works on TotalReclaw project', importance: 6 });
       }
     } catch {
       isInitialized = false;
@@ -400,12 +400,12 @@ describe('openmemory_recall tool', () => {
 // Forget Tool Tests
 // ============================================================================
 
-describe('openmemory_forget tool', () => {
-  let skill: OpenMemorySkill;
+describe('totalreclaw_forget tool', () => {
+  let skill: TotalReclawSkill;
   let isInitialized: boolean = false;
 
   beforeEach(async () => {
-    skill = new OpenMemorySkill({
+    skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password-123',
     });
@@ -469,12 +469,12 @@ describe('openmemory_forget tool', () => {
 // Export Tool Tests
 // ============================================================================
 
-describe('openmemory_export tool', () => {
-  let skill: OpenMemorySkill;
+describe('totalreclaw_export tool', () => {
+  let skill: TotalReclawSkill;
   let isInitialized: boolean = false;
 
   beforeEach(async () => {
-    skill = new OpenMemorySkill({
+    skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password-123',
     });
@@ -558,7 +558,7 @@ describe('openmemory_export tool', () => {
 
       const result = await skill.export(params);
 
-      expect(result).toContain('# OpenMemory Export');
+      expect(result).toContain('# TotalReclaw Export');
     });
 
     it('should not include LSH config in markdown export', async () => {
@@ -631,7 +631,7 @@ describe('openmemory_export tool', () => {
 
 describe('Tool Error Handling', () => {
   it('should throw if skill not initialized', async () => {
-    const skill = new OpenMemorySkill({
+    const skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       // No master password - will fail init
     });
@@ -645,7 +645,7 @@ describe('Tool Error Handling', () => {
   });
 
   it('should handle network errors gracefully', async () => {
-    const skill = new OpenMemorySkill({
+    const skill = new TotalReclawSkill({
       serverUrl: 'http://nonexistent-server:9999',
       masterPassword: 'test-password',
     });
@@ -665,10 +665,10 @@ describe('Tool Error Handling', () => {
 // ============================================================================
 
 describe('Tool Integration', () => {
-  let skill: OpenMemorySkill;
+  let skill: TotalReclawSkill;
 
   beforeEach(async () => {
-    skill = new OpenMemorySkill({
+    skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password-123',
     });

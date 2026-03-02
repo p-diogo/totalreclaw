@@ -1,0 +1,259 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "created": "2026-02-20T00:53:58.837724",
+    "description": "Test queries for v2 benchmark evaluation"
+  },
+  "queries": [
+    {
+      "id": "q1",
+      "text": "What is pici cacio e pepe and can pregnant women eat it?",
+      "type": "factual"
+    },
+    {
+      "id": "q2",
+      "text": "What documents did Vitor Martins send to Pedro in March 2025?",
+      "type": "factual"
+    },
+    {
+      "id": "q3",
+      "text": "What happened on the A1 highway near Vagos in February 2026?",
+      "type": "factual"
+    },
+    {
+      "id": "q4",
+      "text": "What safety advice did Pedro's father give him about traveling?",
+      "type": "factual"
+    },
+    {
+      "id": "q5",
+      "text": "What was the funeral arrangement for Tio Pedro's friend's mother?",
+      "type": "factual"
+    },
+    {
+      "id": "q6",
+      "text": "What's the best way to cook sea bass with lemon and salt?",
+      "type": "factual"
+    },
+    {
+      "id": "q7",
+      "text": "How to access financial portal with NIF and password?",
+      "type": "factual"
+    },
+    {
+      "id": "q8",
+      "text": "What's the weather like in Athens during summer?",
+      "type": "factual"
+    },
+    {
+      "id": "q9",
+      "text": "What are some good barbecue rubs to buy?",
+      "type": "factual"
+    },
+    {
+      "id": "q10",
+      "text": "What are some popular Greek islands to visit?",
+      "type": "factual"
+    },
+    {
+      "id": "q11",
+      "text": "What are the best places to visit in northern Spain between Bilbao, San Sebastian, and Picos da Europa?",
+      "type": "semantic"
+    },
+    {
+      "id": "q12",
+      "text": "What traditional Portuguese music did the grandmother used to sing to help children sleep?",
+      "type": "semantic"
+    },
+    {
+      "id": "q13",
+      "text": "What is 'Olderbrothercore' aesthetic and what does it represent?",
+      "type": "semantic"
+    },
+    {
+      "id": "q14",
+      "text": "What are some good travel recommendations for Crete, Greece?",
+      "type": "semantic"
+    },
+    {
+      "id": "q15",
+      "text": "What is the traditional Portuguese song 'Galandum Galundaina' about?",
+      "type": "semantic"
+    },
+    {
+      "id": "q16",
+      "text": "What is the menu for the dinner at São Braz café tomorrow?",
+      "type": "factual"
+    },
+    {
+      "id": "q17",
+      "text": "How can I transfer bonus money from Deel platform to my personal bank account?",
+      "type": "factual"
+    },
+    {
+      "id": "q18",
+      "text": "What is the new location of the classic restaurant in Matosinhos?",
+      "type": "factual"
+    },
+    {
+      "id": "q19",
+      "text": "What is the recipe from the book that Tiz and Ana gave?",
+      "type": "semantic"
+    },
+    {
+      "id": "q20",
+      "text": "What are the memories from 10 years ago at Tasca da Carroça?",
+      "type": "semantic"
+    },
+    {
+      "id": "q21",
+      "text": "What are some tips for using chopsticks properly?",
+      "type": "factual"
+    },
+    {
+      "id": "q22",
+      "text": "What are some rustic patio furniture ideas?",
+      "type": "semantic"
+    },
+    {
+      "id": "q23",
+      "text": "How to organize a Woodstock-themed party?",
+      "type": "factual"
+    },
+    {
+      "id": "q24",
+      "text": "What are some tips for cooking moussaka?",
+      "type": "keyword"
+    },
+    {
+      "id": "q25",
+      "text": "What are some tips for taking care of pets while on vacation?",
+      "type": "factual"
+    },
+    {
+      "id": "q26",
+      "text": "What are some tips for bringing plastic cups to Primavera Sound festival?",
+      "type": "factual"
+    },
+    {
+      "id": "q27",
+      "text": "When is the new season of Stranger Things coming out?",
+      "type": "temporal"
+    },
+    {
+      "id": "q28",
+      "text": "What childhood food memories does Pedro have?",
+      "type": "semantic"
+    },
+    {
+      "id": "q29",
+      "text": "How can I watch Benfica vs Braga match if it's not available on mobile?",
+      "type": "factual"
+    },
+    {
+      "id": "q30",
+      "text": "What is the deadline for paying IRC taxes for 2024?",
+      "type": "temporal"
+    },
+    {
+      "id": "q31",
+      "text": "How can I access Tugatv live streaming with username Ivone1 and password zmRBvVbRc8?",
+      "type": "factual"
+    },
+    {
+      "id": "q32",
+      "text": "What are some secret beaches near Gerês that require a 15-minute forest walk to access?",
+      "type": "factual"
+    },
+    {
+      "id": "q33",
+      "text": "What restaurants in Guimarães center are recommended for a casual dinner?",
+      "type": "factual"
+    },
+    {
+      "id": "q34",
+      "text": "What are some good family-friendly activities in Porto for children who have already visited the Gaia and Maia zoos?",
+      "type": "factual"
+    },
+    {
+      "id": "q35",
+      "text": "What mountain restaurants in Portugal have good food, wine, and a relaxed atmosphere?",
+      "type": "factual"
+    },
+    {
+      "id": "q36",
+      "text": "When did Vasco celebrate his birthday with friends?",
+      "type": "temporal"
+    },
+    {
+      "id": "q37",
+      "text": "What restaurant did the family visit in Egypt?",
+      "type": "factual"
+    },
+    {
+      "id": "q38",
+      "text": "Who shared an Instagram reel about Wilson Cafe?",
+      "type": "semantic"
+    },
+    {
+      "id": "q39",
+      "text": "What happened to Pedro Diogo's car?",
+      "type": "factual"
+    },
+    {
+      "id": "q40",
+      "text": "When did Joao Pedro open his new business?",
+      "type": "temporal"
+    },
+    {
+      "id": "q41",
+      "text": "What are some popular costume choices for children in Portuguese families?",
+      "type": "semantic"
+    },
+    {
+      "id": "q42",
+      "text": "Where can I find good restaurants in Braga for lunch?",
+      "type": "semantic"
+    },
+    {
+      "id": "q43",
+      "text": "What are some recommended places to eat in Felgueiras that won't break the bank?",
+      "type": "semantic"
+    },
+    {
+      "id": "q44",
+      "text": "What are some popular seafood dishes to try in Portugal?",
+      "type": "semantic"
+    },
+    {
+      "id": "q45",
+      "text": "What are some good places to watch football matches in Portugal?",
+      "type": "semantic"
+    },
+    {
+      "id": "q46",
+      "text": "How to set up IPTV on PC",
+      "type": "factual"
+    },
+    {
+      "id": "q47",
+      "text": "What apps can play IPTV links",
+      "type": "factual"
+    },
+    {
+      "id": "q48",
+      "text": "Who is Marta Azevedo and why are people congratulating her",
+      "type": "semantic"
+    },
+    {
+      "id": "q49",
+      "text": "What are people's opinions about Portuguese presidential election candidates",
+      "type": "semantic"
+    },
+    {
+      "id": "q50",
+      "text": "What is Wollbox and why would someone install it",
+      "type": "factual"
+    }
+  ]
+}

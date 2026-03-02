@@ -6,7 +6,7 @@ Last updated: 2026-02-24
 -->
 
 2. Technical Specification — TEE Edition (v1.0)
-Title: OpenMemory v1.0 TEE — Full-Hybrid Search Inside Confidential Enclave
+Title: TotalReclaw v1.0 TEE — Full-Hybrid Search Inside Confidential Enclave
 Target platforms: AWS Nitro Enclaves or Intel TDX (Azure/Google Confidential VMs)
 Key change: Server-side index lives entirely inside attested enclave → plaintext-level accuracy and speed while provider still cannot read data.
 2.1 Architecture Overview
@@ -31,7 +31,7 @@ Upload encrypted doc + encrypted embedding + blind indices (still kept for exact
 Search (client → TEE):
 
 Client encrypts query embedding with master key.
-Client calls https://tee.openmemory.dev/search with encrypted query + attestation nonce.
+Client calls https://tee.totalreclaw.dev/search with encrypted query + attestation nonce.
 Load balancer routes to healthy enclave.
 Enclave: decrypts query inside TEE, performs full ANN + BM25 on decrypted-in-memory index, returns only encrypted top results.
 Client decrypts final results.

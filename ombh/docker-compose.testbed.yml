@@ -1,0 +1,214 @@
+# TotalReclaw Benchmark Harness (OMBH) - Docker Compose Testbed
+#
+# SECURITY CRITICAL:
+#   - This setup is for LOCAL BENCHMARKING ONLY
+#   - Never expose to the internet
+#   - All ports bind to 127.0.0.1 (localhost only)
+#   - No privileged containers
+#   - Read-only config mounts
+#
+# Usage:
+#   docker compose -f docker-compose.testbed.yml up -d
+#   docker compose -f docker-compose.testbed.yml down
+#
+# Services:
+#   - openclaw-qmd:  Native OpenClaw with QMD backend (port 8081)
+#   - openclaw-mem0: OpenClaw with Mem0 plugin (port 8082)
+#
+# Prerequisites:
+#   - .env file in this directory with API keys
+#   - OpenClaw repository cloned to ./openclaw (or set OPENCLAW_CONTEXT)
+
+services:
+  # =========================================================================
+  # OpenClaw QMD Instance (Native Memory Backend)
+  # =========================================================================
+  openclaw-qmd:
+    build:
+      context: ${OPENCLAW_CONTEXT:-./openclaw}
+      dockerfile: Dockerfile
+    container_name: ombh-openclaw-qmd
+    hostname: openclaw-qmd
+    ports:
+      # Localhost ONLY - never expose to internet
+      - "127.0.0.1:${OPENCLAW_QMD_PORT:-8081}:8080"
+    networks:
+      - ombh-internal
+    volumes:
+      # Read-only config mount for security
+      - type: bind
+        source: ./config/qmd.yaml
+        target: /config/agents.yaml
+        read_only: true
+      # Persistent memory storage for QMD
+      - qmd-memory-data:/home/node/.openclaw/memory
+    environment:
+      # LLM Configuration
+      - OPENCLAW_LLM_PROVIDER=${OPENCLAW_LLM_PROVIDER:-zai}
+      - OPENCLAW_LLM_MODEL=${OPENCLAW_LLM_MODEL:-glm-5}
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - ZAI_BASE_URL=${ZAI_BASE_URL:-https://api.z.ai/v1}
+      # OpenClaw Configuration
+      - OPENCLAW_CONFIG_PATH=/config/agents.yaml
+      - NODE_ENV=production
+      # Memory Backend: QMD (native)
+      - OPENCLAW_MEMORY_BACKEND=qmd
+      - OPENCLAW_MEMORY_STORAGE_PATH=/home/node/.openclaw/memory
+      # Logging
+      - OPENCLAW_LOG_LEVEL=${OPENCLAW_LOG_LEVEL:-info}
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=100M,mode=1777
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    profiles:
+      - benchmark
+      - qmd
+
+  # =========================================================================
+  # OpenClaw Mem0 Instance (Mem0 Plugin Backend)
+  # =========================================================================
+  openclaw-mem0:
+    build:
+      context: ${OPENCLAW_CONTEXT:-./openclaw}
+      dockerfile: Dockerfile
+    container_name: ombh-openclaw-mem0
+    hostname: openclaw-mem0
+    ports:
+      # Localhost ONLY - never expose to internet
+      - "127.0.0.1:${OPENCLAW_MEM0_PORT:-8082}:8080"
+    networks:
+      - ombh-internal
+    volumes:
+      # Read-only config mount for security
+      - type: bind
+        source: ./config/mem0.yaml
+        target: /config/agents.yaml
+        read_only: true
+      # Persistent memory storage (for local caching)
+      - mem0-cache-data:/home/node/.openclaw/cache
+    environment:
+      # LLM Configuration
+      - OPENCLAW_LLM_PROVIDER=${OPENCLAW_LLM_PROVIDER:-zai}
+      - OPENCLAW_LLM_MODEL=${OPENCLAW_LLM_MODEL:-glm-5}
+      - ZAI_API_KEY=${ZAI_API_KEY}
+      - ZAI_BASE_URL=${ZAI_BASE_URL:-https://api.z.ai/v1}
+      # OpenClaw Configuration
+      - OPENCLAW_CONFIG_PATH=/config/agents.yaml
+      - NODE_ENV=production
+      # Memory Backend: Mem0 Plugin
+      - OPENCLAW_MEMORY_BACKEND=mem0
+      - MEM0_API_KEY=${MEM0_API_KEY}
+      - MEM0_BASE_URL=${MEM0_BASE_URL:-https://api.mem0.ai/v1}
+      # Logging
+      - OPENCLAW_LOG_LEVEL=${OPENCLAW_LOG_LEVEL:-info}
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=100M,mode=1777
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    profiles:
+      - benchmark
+      - mem0
+
+  # =========================================================================
+  # TotalReclaw E2EE Instance (Optional - for full benchmark comparison)
+  # =========================================================================
+  # Uncomment this section if you want to include TotalReclaw E2EE in benchmarks
+  # Requires TotalReclaw server to be built separately
+  #
+  # totalreclaw-e2ee:
+  #   build:
+  #     context: ${TOTALRECLAW_CONTEXT:-../server}
+  #     dockerfile: Dockerfile
+  #   container_name: ombh-totalreclaw-e2ee
+  #   hostname: totalreclaw-e2ee
+  #   ports:
+  #     - "127.0.0.1:${TOTALRECLAW_PORT:-8080}:8080"
+  #   networks:
+  #     - ombh-internal
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     - DATABASE_URL=postgresql+asyncpg://totalreclaw:benchmark@postgres:5432/totalreclaw
+  #     - TOTALRECLAW_ENV=benchmark
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   read_only: true
+  #   tmpfs:
+  #     - /tmp:size=50M,mode=1777
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+  #     start_period: 10s
+  #   profiles:
+  #     - benchmark
+  #     - totalreclaw
+
+  # =========================================================================
+  # PostgreSQL Database (for TotalReclaw E2EE)
+  # =========================================================================
+  # Uncomment if using TotalReclaw E2EE backend
+  #
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: ombh-postgres
+  #   environment:
+  #     POSTGRES_USER: totalreclaw
+  #     POSTGRES_PASSWORD: benchmark
+  #     POSTGRES_DB: totalreclaw
+  #   volumes:
+  #     - benchmark-db-data:/var/lib/postgresql/data
+  #   networks:
+  #     - ombh-internal
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U totalreclaw -d totalreclaw"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 5s
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   profiles:
+  #     - totalreclaw
+
+# =========================================================================
+# Networks
+# =========================================================================
+networks:
+  ombh-internal:
+    driver: bridge
+    # Internal network for service-to-service communication
+    # Note: internal: true would block outbound internet (for LLM API calls)
+    # Keep external access enabled for API calls but bind ports to localhost only
+
+# =========================================================================
+# Volumes
+# =========================================================================
+volumes:
+  # QMD persistent memory storage
+  qmd-memory-data:
+    driver: local
+  # Mem0 cache storage
+  mem0-cache-data:
+    driver: local
+  # PostgreSQL data (uncomment if using TotalReclaw E2EE)
+  # benchmark-db-data:
+  #   driver: local

@@ -1,0 +1,66 @@
+{
+  "generated_at": "2026-02-27T02:25:41.496505",
+  "seed": 42,
+  "conversations": {
+    "total": 981,
+    "empty": 0,
+    "avg_messages": 15.8,
+    "min_messages": 3,
+    "max_messages": 34,
+    "total_messages": 15541
+  },
+  "facts": {
+    "total": 8268,
+    "type_distribution": {
+      "factual": 3003,
+      "preference": 1737,
+      "decision": 1169,
+      "goal": 1627,
+      "episodic": 731,
+      "routine": 1
+    },
+    "importance_distribution": {
+      "8": 2378,
+      "7": 2576,
+      "9": 1691,
+      "6": 1162,
+      "5": 230,
+      "10": 212,
+      "4": 17,
+      "3": 2
+    },
+    "conversations_with_facts": 981,
+    "avg_facts_per_conversation": 8.43
+  },
+  "queries": {
+    "total": 3308,
+    "category_distribution": {
+      "factual": 827,
+      "semantic": 1652,
+      "cross_conversation": 827,
+      "negative": 2
+    },
+    "with_relevance_scores": 3306,
+    "total_relevance_pairs": 11810,
+    "avg_relevant_facts_per_query": 3.57
+  },
+  "quality": {
+    "orphan_facts_count": 1233,
+    "orphan_facts_pct": 14.9,
+    "empty_queries": 0,
+    "queries_with_no_relevance": 2
+  },
+  "personas": {
+    "total": 50
+  },
+  "llm_usage": {
+    "total_input_tokens": 0,
+    "total_output_tokens": 0,
+    "total_tokens": 0,
+    "total_calls": 0,
+    "total_errors": 0,
+    "total_retries": 0,
+    "total_latency_ms": 0.0,
+    "avg_latency_ms": 0.0
+  }
+}

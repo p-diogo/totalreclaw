@@ -17,12 +17,12 @@ import {
 } from '../types';
 
 /**
- * Protobuf schema definitions for OpenMemory API
+ * Protobuf schema definitions for TotalReclaw API
  */
 const PROTO_SCHEMA = `
 syntax = "proto3";
 
-package openmemory;
+package totalreclaw;
 
 // Registration
 message RegisterRequest {
@@ -95,7 +95,7 @@ message HealthResponse {
 `;
 
 /**
- * Protobuf serializer/deserializer for OpenMemory messages
+ * Protobuf serializer/deserializer for TotalReclaw messages
  */
 export class ProtobufSerializer {
   private root: protobuf.Root | null = null;
@@ -131,7 +131,7 @@ export class ProtobufSerializer {
    */
   serializeRegisterRequest(req: RegisterRequest): Buffer {
     this.ensureInitialized();
-    const MessageType = this.root!.lookupType('openmemory.RegisterRequest');
+    const MessageType = this.root!.lookupType('totalreclaw.RegisterRequest');
 
     const message = MessageType.create({
       user_id: req.userId,
@@ -148,7 +148,7 @@ export class ProtobufSerializer {
    */
   deserializeRegisterResponse(data: Buffer): RegisterResponse {
     this.ensureInitialized();
-    const MessageType = this.root!.lookupType('openmemory.RegisterResponse');
+    const MessageType = this.root!.lookupType('totalreclaw.RegisterResponse');
 
     const message = MessageType.decode(data);
     const obj = MessageType.toObject(message, { bytes: Buffer });
@@ -165,7 +165,7 @@ export class ProtobufSerializer {
    */
   serializeStoreRequest(req: StoreRequest): Buffer {
     this.ensureInitialized();
-    const MessageType = this.root!.lookupType('openmemory.StoreRequest');
+    const MessageType = this.root!.lookupType('totalreclaw.StoreRequest');
 
     const message = MessageType.create({
       user_id: req.userId,
@@ -191,7 +191,7 @@ export class ProtobufSerializer {
    */
   deserializeStoreResponse(data: Buffer): StoreResponse {
     this.ensureInitialized();
-    const MessageType = this.root!.lookupType('openmemory.StoreResponse');
+    const MessageType = this.root!.lookupType('totalreclaw.StoreResponse');
 
     const message = MessageType.decode(data);
     const obj = MessageType.toObject(message, { bytes: Buffer });
@@ -208,7 +208,7 @@ export class ProtobufSerializer {
    */
   serializeSearchRequest(req: SearchRequest): Buffer {
     this.ensureInitialized();
-    const MessageType = this.root!.lookupType('openmemory.SearchRequest');
+    const MessageType = this.root!.lookupType('totalreclaw.SearchRequest');
 
     const message = MessageType.create({
       user_id: req.userId,
@@ -226,7 +226,7 @@ export class ProtobufSerializer {
    */
   deserializeSearchResponse(data: Buffer): SearchResponse {
     this.ensureInitialized();
-    const MessageType = this.root!.lookupType('openmemory.SearchResponse');
+    const MessageType = this.root!.lookupType('totalreclaw.SearchResponse');
 
     const message = MessageType.decode(data);
     const obj = MessageType.toObject(message, { bytes: Buffer });
@@ -254,7 +254,7 @@ export class ProtobufSerializer {
    */
   deserializeHealthResponse(data: Buffer): { status: string; version: string; database: string } {
     this.ensureInitialized();
-    const MessageType = this.root!.lookupType('openmemory.HealthResponse');
+    const MessageType = this.root!.lookupType('totalreclaw.HealthResponse');
 
     const message = MessageType.decode(data);
     const obj = MessageType.toObject(message);

@@ -1,5 +1,5 @@
 """
-Shared FastAPI dependencies for OpenMemory Server.
+Shared FastAPI dependencies for TotalReclaw Server.
 
 Provides the common get_current_user dependency used across all
 authenticated endpoints. Centralizes auth validation logic to

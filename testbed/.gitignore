@@ -1,0 +1,13 @@
+# Raw data contains PII — never commit
+v2-realworld-data/raw/
+v2-realworld-data/processed/
+benchmark_results/
+
+# Config with real keys
+config/api_keys.env
+functional-test/.env
+
+# Large files
+*.npy
+*.sqlite
+*.zip

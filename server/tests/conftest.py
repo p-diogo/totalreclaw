@@ -1,5 +1,5 @@
 """
-Shared pytest fixtures for OpenMemory Server tests.
+Shared pytest fixtures for TotalReclaw Server tests.
 
 The 'client' fixture creates a FastAPI TestClient. When PostgreSQL is not
 running, the app lifespan's init_db() call will fail. We patch init_db and
@@ -36,7 +36,7 @@ from src.db import Database, init_db, close_db, get_db
 
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://openmemory:dev@localhost:5432/openmemory_test"
+    "postgresql+asyncpg://totalreclaw:dev@localhost:5432/totalreclaw_test"
 )
 
 
@@ -92,11 +92,15 @@ class _DefaultMockDB:
     async def store_fact(self, **kwargs):
         return type("Fact", (), {
             "id": kwargs.get("fact_id"),
-            "version": 1
+            "version": 1,
+            "encrypted_embedding": kwargs.get("encrypted_embedding"),
         })()
 
     async def search_facts_by_blind_indices(self, **kwargs):
-        return []
+        return [], 0
+
+    async def count_active_facts(self, user_id):
+        return 0
 
     async def update_last_seen(self, user_id):
         pass
@@ -142,6 +146,7 @@ def _patch_all_get_db(monkeypatch_or_patcher, mock):
         "src.handlers.register",
         "src.handlers.health",
         "src.handlers.account",
+        "src.handlers.observability",
     ]
     optional_modules = [
         "src.handlers.sync",

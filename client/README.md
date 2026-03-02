@@ -1,4 +1,4 @@
-# OpenMemory Client Library
+# TotalReclaw Client Library
 
 A TypeScript library for zero-knowledge memory operations. This library provides end-to-end encryption, LSH-based blind index search, and client-side reranking for secure and private memory storage.
 
@@ -13,16 +13,16 @@ A TypeScript library for zero-knowledge memory operations. This library provides
 ## Installation
 
 ```bash
-npm install @openmemory/client
+npm install @totalreclaw/client
 ```
 
 ## Quick Start
 
 ```typescript
-import { OpenMemory } from '@openmemory/client';
+import { TotalReclaw } from '@totalreclaw/client';
 
 // Create client instance
-const client = new OpenMemory({
+const client = new TotalReclaw({
   serverUrl: 'http://127.0.0.1:8080',
 });
 
@@ -47,7 +47,7 @@ for (const result of results) {
 ## Configuration
 
 ```typescript
-interface OpenMemoryConfig {
+interface TotalReclawConfig {
   // Server URL (required)
   serverUrl: string;
 
@@ -68,7 +68,7 @@ interface OpenMemoryConfig {
 
 ## API Reference
 
-### OpenMemory Class
+### TotalReclaw Class
 
 #### `init(): Promise<void>`
 
@@ -148,7 +148,7 @@ import {
   decrypt,
   generateBlindIndices,
   generateTrapdoors,
-} from '@openmemory/client';
+} from '@totalreclaw/client';
 
 // Generate salt
 const salt = generateSalt(32);
@@ -171,7 +171,7 @@ const indices = generateBlindIndices('text content', ['lsh-bucket-1', 'lsh-bucke
 The library implements Random Hyperplane LSH for approximate nearest neighbor search:
 
 ```typescript
-import { LSHIndex, createHashBasedEmbedding } from '@openmemory/client';
+import { LSHIndex, createHashBasedEmbedding } from '@totalreclaw/client';
 
 const index = new LSHIndex({
   n_bits_per_table: 64,
@@ -200,7 +200,7 @@ Default configuration based on validation results (TS v0.3):
 For larger corpora, the candidate pool scales logarithmically:
 
 ```typescript
-import { calculateCandidatePool } from '@openmemory/client';
+import { calculateCandidatePool } from '@totalreclaw/client';
 
 const pool = calculateCandidatePool(50000); // Returns ~5000
 ```
@@ -214,7 +214,7 @@ The library combines multiple ranking signals:
 3. **Decay Score**: Time-based importance decay
 
 ```typescript
-import { cosineSimilarity, BM25Scorer, rrfFusion, calculateDecayScore } from '@openmemory/client';
+import { cosineSimilarity, BM25Scorer, rrfFusion, calculateDecayScore } from '@totalreclaw/client';
 
 // Cosine similarity
 const sim = cosineSimilarity(queryEmbedding, docEmbedding);
@@ -297,4 +297,4 @@ MIT
 
 ## Contributing
 
-See the main [OpenMemory repository](https://github.com/openmemory/openmemory) for contribution guidelines.
+See the main [TotalReclaw repository](https://github.com/p-diogo/openmemory-poc) for contribution guidelines.

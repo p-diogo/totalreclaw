@@ -1,14 +1,14 @@
 /**
- * OpenMemory Skill for OpenClaw
+ * TotalReclaw Skill for OpenClaw
  *
  * Zero-knowledge encrypted memory for AI agents using MemOS-inspired
  * lifecycle hooks pattern.
  *
  * @example
  * ```typescript
- * import { OpenMemorySkill } from '@openmemory/skill';
+ * import { TotalReclawSkill } from '@totalreclaw/skill';
  *
- * const skill = new OpenMemorySkill({
+ * const skill = new TotalReclawSkill({
  *   serverUrl: 'http://127.0.0.1:8080',
  *   masterPassword: 'my-secure-password',
  * });
@@ -17,9 +17,9 @@
  * ```
  */
 
-export { OpenMemorySkill } from './openmemory-skill';
+export { TotalReclawSkill } from './totalreclaw-skill';
 export type {
-  OpenMemorySkillConfig,
+  TotalReclawSkillConfig,
   DEFAULT_SKILL_CONFIG,
   ExtractedFact,
   ExtractionAction,

@@ -1,14 +1,14 @@
 /**
- * OpenMemory Skill - Integration Tests
+ * TotalReclaw Skill - Integration Tests
  *
  * Tests the full flow with mock OpenClaw context, simulating
  * the complete lifecycle of the skill in an OpenClaw environment.
  */
 
 import {
-  OpenMemorySkill,
-  createOpenMemorySkill,
-} from '../src/openmemory-skill';
+  TotalReclawSkill,
+  createTotalReclawSkill,
+} from '../src/totalreclaw-skill';
 import {
   beforeAgentStart,
   formatMemoriesForContext,
@@ -32,16 +32,16 @@ import type {
   SkillState,
   ExtractedFact,
 } from '../src/types';
-import type { OpenMemory, RerankedResult, Fact } from '@openmemory/client';
+import type { TotalReclaw, RerankedResult, Fact } from '@totalreclaw/client';
 
 // ============================================================================
 // Mocks
 // ============================================================================
 
 /**
- * Mock OpenMemory client for integration testing
+ * Mock TotalReclaw client for integration testing
  */
-class MockOpenMemoryClient implements Partial<OpenMemory> {
+class MockTotalReclawClient implements Partial<TotalReclaw> {
   private facts: Map<string, Fact> = new Map();
   private userId: string | null = null;
 
@@ -190,17 +190,17 @@ function createSkillState(): SkillState {
 // Full Skill Integration Tests
 // ============================================================================
 
-describe('OpenMemorySkill Integration', () => {
-  let skill: OpenMemorySkill;
-  let mockClient: MockOpenMemoryClient;
+describe('TotalReclawSkill Integration', () => {
+  let skill: TotalReclawSkill;
+  let mockClient: MockTotalReclawClient;
   let mockLLM: MockLLMClient;
   let isInitialized: boolean = false;
 
   beforeEach(async () => {
-    mockClient = new MockOpenMemoryClient();
+    mockClient = new MockTotalReclawClient();
     mockLLM = new MockLLMClient();
 
-    skill = new OpenMemorySkill({
+    skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password-123',
       autoExtractEveryTurns: 3,
@@ -226,7 +226,7 @@ describe('OpenMemorySkill Integration', () => {
     });
 
     it('should register new user if no credentials provided', async () => {
-      const newSkill = new OpenMemorySkill({
+      const newSkill = new TotalReclawSkill({
         serverUrl: 'http://mock',
         masterPassword: 'new-user-password',
       });
@@ -385,13 +385,13 @@ describe('OpenMemorySkill Integration', () => {
 // ============================================================================
 
 describe('Lifecycle Hooks Integration', () => {
-  let mockClient: MockOpenMemoryClient;
+  let mockClient: MockTotalReclawClient;
   let mockLLM: MockLLMClient;
   let config: any;
   let state: SkillState;
 
   beforeEach(() => {
-    mockClient = new MockOpenMemoryClient();
+    mockClient = new MockTotalReclawClient();
     mockLLM = new MockLLMClient();
     config = {
       serverUrl: 'http://mock',
@@ -547,7 +547,7 @@ describe('Lifecycle Hooks Integration', () => {
       mockLLM.setResponse(JSON.stringify({
         facts: [
           {
-            factText: 'User is working on OpenMemory project',
+            factText: 'User is working on TotalReclaw project',
             type: 'fact',
             importance: 6,
             confidence: 0.8,
@@ -718,7 +718,7 @@ describe('formatMemoriesForContext', () => {
 
 describe('Error Recovery', () => {
   it('should handle hook failures gracefully', async () => {
-    const skill = new OpenMemorySkill({
+    const skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password',
     });
@@ -741,7 +741,7 @@ describe('Error Recovery', () => {
   });
 
   it('should continue after extraction errors', async () => {
-    const skill = new OpenMemorySkill({
+    const skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password',
     });
@@ -765,7 +765,7 @@ describe('Error Recovery', () => {
   });
 
   it('should handle concurrent hook calls', async () => {
-    const skill = new OpenMemorySkill({
+    const skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password',
     });
@@ -799,11 +799,11 @@ describe('Error Recovery', () => {
 // ============================================================================
 
 describe('State Management', () => {
-  let skill: OpenMemorySkill;
+  let skill: TotalReclawSkill;
   let isInitialized: boolean = false;
 
   beforeEach(async () => {
-    skill = new OpenMemorySkill({
+    skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password',
     });

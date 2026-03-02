@@ -1,8 +1,8 @@
-# OpenMemory — Task Tracker
+# TotalReclaw — Task Tracker
 
 > **Source of truth for all agents.** Read this file first. Claim tasks before starting work. Update status as you go.
 
-**Last updated:** 2026-02-26 (session 8 continued + session 9)
+**Last updated:** 2026-02-28 (session 13)
 **Roadmap:** See `docs/ROADMAP.md` for the full product roadmap.
 
 ---
@@ -31,6 +31,9 @@
 | Phase 10 | Server Production Hardening (MVP) | COMPLETED — 142 tests, SlowAPI replaced with per-user limits |
 | Phase 11 | Subgraph (Decentralized) | COMPLETED — 92 tests, code done, deployment blocked on credentials |
 | Phase 12 | MVP Polish & Ship | IN PROGRESS — /v1/ prefix, /export pagination, DB backup, OpenAPI, rate limit observability |
+| PoC v2 | LSH + Semantic Search | COMPLETED — 122 tests, local embeddings, BM25/cosine/RRF reranking |
+| Benchmark | 5-Way Memory Comparison | COMPLETED — 5-way benchmark done, retrieval improvements validated (+48% semantic recall) |
+| LSH Tuning Spec | Multi-Tenant SaaS LSH Guidance | COMPLETED — `docs/specs/totalreclaw/lsh-tuning.md` |
 
 ---
 
@@ -40,7 +43,7 @@
 |-------|-------|------------|
 | Phase 1-3 | T001-T029 | WhatsApp/Slack data processed, LSH validated, specs written |
 | Phase 4 | T030-T035 | Server (FastAPI+Postgres), Client (TS, E2EE, LSH), OpenClaw skill — 526 tests |
-| Phase 5 | T040-T048 | OMBH benchmark: OpenMemory 98.1% Recall@8 with full E2EE privacy |
+| Phase 5 | T040-T048 | OMBH benchmark: TotalReclaw 98.1% Recall@8 with full E2EE privacy |
 
 ---
 
@@ -50,7 +53,7 @@ Remaining tasks only. T050-T053, T055, T057 are completed (MCP server, NanoClaw 
 
 | ID | Task | Status | Owner | Blocker | Plan Reference |
 |----|------|--------|-------|---------|----------------|
-| T054 | Real server integration tests | blocked | — | Needs running OpenMemory server | — |
+| T054 | Real server integration tests | blocked | — | Needs running TotalReclaw server | — |
 | T056 | CLAUDE.md sync testing (preCompact hook) | pending | — | — | — |
 | T058 | Namespace migration tool | pending | — | — | — |
 | T059 | Rollback by import_id | pending | — | — | — |
@@ -73,7 +76,7 @@ Retrieval-only benchmark complete (T060-T064). E2E benchmark ran but results not
 
 | Backend | Recall@8 | Latency | Privacy |
 |---------|----------|---------|---------|
-| OpenMemory E2EE | 98.1% | 4.1ms | 100 |
+| TotalReclaw E2EE | 98.1% | 4.1ms | 100 |
 | Mem0 Platform | 0.0%* | 459ms | 0 |
 | Vector-only (baseline) | 100.0% | 1.0ms | 0 |
 
@@ -101,7 +104,7 @@ Retrieval-only benchmark complete (T060-T064). E2E benchmark ran but results not
 
 ## Phase 8: Repo Split & Deployment — COMPLETED
 
-**Repos pushed (private):** [openmemory-poc](https://github.com/p-diogo/openmemory-poc) (4.6MB, 196 files), [openmemory-specs](https://github.com/p-diogo/openmemory-specs) (11MB, 247 files)
+**Repos pushed (private):** [totalreclaw-poc](https://github.com/p-diogo/openmemory-poc) (4.6MB, 196 files), [totalreclaw-specs](https://github.com/p-diogo/openmemory-specs) (11MB, 247 files)
 
 | ID | Task | Status | Owner | Blocker | Plan Reference |
 |----|------|--------|-------|---------|----------------|
@@ -121,7 +124,7 @@ T080-T083 completed (YAML frontmatter, README, skill.json, CLAWHUB.md checklist)
 |----|------|--------|-------|---------|----------------|
 | T084 | Create screenshots (3-5, 1920x1080 PNG) | pending | — | Manual work | — |
 | T085 | Create demo video (30-90s) | pending | — | Manual work, optional | — |
-| T086 | Make openmemory-poc repo public | blocked | @pdiogo | User action required | — |
+| T086 | Make totalreclaw-poc repo public | blocked | @pdiogo | User action required | — |
 | T087 | Submit to Claw Hub for review | blocked | — | T086 (repo must be public) | — |
 | T088 | Test skill uses host agent's LLM | pending | — | — | Also in Phase 7B |
 
@@ -216,10 +219,10 @@ T080-T083 completed (YAML frontmatter, README, skill.json, CLAWHUB.md checklist)
 | T166 | E2E smoke test script (14 tests) | completed | Full API flow: register→store→search→dedup→export→sync→delete→account deletion |
 | T167 | Fix search endpoint CAST syntax (asyncpg compatibility) | completed | `::text[]` → `CAST(:trapdoors AS text[])` |
 | T168 | E2E flow documentation (docs/e2e-flow.md) | completed | |
-| T169 | Push security fixes + search fix to GitHub | completed | openmemory-poc repo updated |
+| T169 | Push security fixes + search fix to GitHub | completed | totalreclaw-poc repo updated |
 | T170 | Set up OpenClaw Docker container for E2E testing | completed | Using testbed/functional-test/ setup, security-hardened (127.0.0.1 only, no host FS, cap_drop ALL), Z.AI GLM-5 model |
-| T171 | Install OpenMemory SKILL.md in OpenClaw | completed | SKILL.md installed, shows as Ready (4/52 skills). Bind-mounted from skill/SKILL.md |
-| T172 | Install OpenMemory plugin (runtime tool bindings) | completed | Plugin created at `skill/plugin/` with 4 tools (remember, recall, forget, export), before_agent_start hook for auto-recall, self-contained crypto (@noble/hashes), credential persistence via Docker volume. Docker Compose updated with plugin mount + credential volume. |
+| T171 | Install TotalReclaw SKILL.md in OpenClaw | completed | SKILL.md installed, shows as Ready (4/52 skills). Bind-mounted from skill/SKILL.md |
+| T172 | Install TotalReclaw plugin (runtime tool bindings) | completed | Plugin created at `skill/plugin/` with 4 tools (remember, recall, forget, export), before_agent_start hook for auto-recall, self-contained crypto (@noble/hashes), credential persistence via Docker volume. Docker Compose updated with plugin mount + credential volume. |
 | T173 | E2E test: OpenClaw memory retention across container restart | completed | Full E2E validated: remember → restart → recall. All memories persisted. Credential persistence via Docker volume. |
 | T174 | E2E decryption proof (canary test) | completed | claude-opus | — | Prove recall actually decrypts from server, not conversation history |
 | T175 | LLM-based auto-extraction hooks (agent_end, before_compaction, before_reset) | completed | claude-opus | — | Automatic fact extraction using Z.AI/OpenAI LLM. 3 new hooks + LLM client + extractor module |
@@ -227,7 +230,7 @@ T080-T083 completed (YAML frontmatter, README, skill.json, CLAWHUB.md checklist)
 | T177 | Rewrite POC testing guide for beta testers | completed | claude-opus | — | docs/poc-testing-guide.md rewritten, .env.example created, docker-compose parameterized |
 | T178 | Remove API key field from plugin UI | completed | claude-opus | — | Emptied configSchema.properties in openclaw.plugin.json, removed primaryEnv from SKILL.md |
 
-**Note:** The OpenMemory plugin (`skill/plugin/`) is production-ready for beta testing. Full E2E flow validated end-to-end: remember → container restart → recall → decryption proof (canary test). All 4 tools working (remember, recall, forget, export), auto-recall hook functional, LLM-based auto-extraction hooks added (agent_end, before_compaction, before_reset), credentials persist via Docker volume. Clean rebuild from scratch takes ~47 seconds. POC testing guide rewritten for beta testers. Session 6 completed T174-T178 (5 tasks).
+**Note:** The TotalReclaw plugin (`skill/plugin/`) is production-ready for beta testing. Full E2E flow validated end-to-end: remember → container restart → recall → decryption proof (canary test). All 4 tools working (remember, recall, forget, export), auto-recall hook functional, LLM-based auto-extraction hooks added (agent_end, before_compaction, before_reset), credentials persist via Docker volume. Clean rebuild from scratch takes ~47 seconds. POC testing guide rewritten for beta testers. Session 6 completed T174-T178 (5 tasks).
 
 ### Session 7 — E2E Hook & Auto-Extraction Validation
 
@@ -264,13 +267,13 @@ T080-T083 completed (YAML frontmatter, README, skill.json, CLAWHUB.md checklist)
 |----|------|--------|-------|---------|-------|
 | T190 | Study NanoClaw architecture & hooks | completed | claude-opus-nanoclaw | — | Cloned repo, analyzed hooks/MCP/skills/Docker/groups |
 | T191 | Write NanoClaw integration plan | completed | claude-opus-nanoclaw | T190 | plans/2026-02-25-nanoclaw-integration.md |
-| T192 | Build NanoClaw OpenMemory skill (SKILL.md + hooks + MCP) | completed | claude-opus-nanoclaw | T191 | Self-contained MCP server (892 lines) + modified agent-runner + SKILL.md. Code reviewed, H1/H2 fixed |
+| T192 | Build NanoClaw TotalReclaw skill (SKILL.md + hooks + MCP) | completed | claude-opus-nanoclaw | T191 | Self-contained MCP server (892 lines) + modified agent-runner + SKILL.md. Code reviewed, H1/H2 fixed |
 | T193 | Create NanoClaw functional test Docker setup | completed | claude-opus-nanoclaw | T192 | docker-compose (3 services) + Dockerfile + run-tests.sh (4 scenarios) + .env.example |
 | T194 | Write NanoClaw POC testing guide | completed | claude-opus-nanoclaw | T193 | docs/nanoclaw-poc-testing-guide.md — same audience as OpenClaw guide |
 | T195 | E2E: NanoClaw memory storage test | completed | claude-opus-nanoclaw | T193 | Pipeline test: 3 facts encrypted+stored, blobs verified opaque, all decrypt correctly (32/32 tests) |
 | T196 | E2E: NanoClaw cross-session recall | completed | claude-opus-nanoclaw | T195 | Pipeline test: re-derived keys, blind index search finds all 3 facts across simulated sessions |
 | T197 | E2E: NanoClaw PreCompact memory flush | completed | claude-opus-nanoclaw | T195 | Pipeline test covers multi-fact store+export+dedup. Full agent PreCompact test deferred (needs API key) |
-| T198 | Fix base64→hex encoding mismatch in openmemory-mcp.ts | completed | claude-opus-nanoclaw | T195 | Server expects hex, MCP was sending base64. Added conversions at API boundary (3 locations) |
+| T198 | Fix base64→hex encoding mismatch in totalreclaw-mcp.ts | completed | claude-opus-nanoclaw | T195 | Server expects hex, MCP was sending base64. Added conversions at API boundary (3 locations) |
 | T199 | Add OAuth token support to NanoClaw test infra | completed | claude-opus-nanoclaw | T193 | run-tests.sh, .env.example, POC guide updated for CLAUDE_CODE_OAUTH_TOKEN |
 | T200 | Create direct pipeline test (no Anthropic key needed) | completed | claude-opus-nanoclaw | T193 | test-pipeline.ts (874 lines) + run-pipeline-test.sh — 32/32 TAP tests passing |
 | T201 | Fix TypeScript compilation in NanoClaw container | completed | claude-opus-nanoclaw | T200 | .js extensions for @noble/hashes imports (NodeNext), MCP SDK v1.26 handler signature, ToolResult index sig |
@@ -288,12 +291,12 @@ T080-T083 completed (YAML frontmatter, README, skill.json, CLAWHUB.md checklist)
 
 **Context:** The MVP roadmap requires an Ethereum wallet derived from the master secret for on-chain transaction signing via a relayer. By using a BIP-39 mnemonic as the master password now, the same secret can later derive both encryption keys AND an Ethereum wallet. The client library (`client/src/crypto/seed.ts`) already has BIP-39 support — this session brings it to the plugin and NanoClaw.
 
-**⚠️ NOTE TO NANOCLAW AGENT:** Session 9 has ALREADY modified the NanoClaw MCP server (`openmemory-mcp.ts`) to add BIP-39 mnemonic auto-detection. The changes are additive (BIP-39 check at top of `deriveKeys`, new `deriveKeysFromMnemonic` + `isBip39Mnemonic` helpers). The existing Argon2id path is untouched. If you need to modify crypto code in openmemory-mcp.ts, check the current state first.
+**⚠️ NOTE TO NANOCLAW AGENT:** Session 9 has ALREADY modified the NanoClaw MCP server (`totalreclaw-mcp.ts`) to add BIP-39 mnemonic auto-detection. The changes are additive (BIP-39 check at top of `deriveKeys`, new `deriveKeysFromMnemonic` + `isBip39Mnemonic` helpers). The existing Argon2id path is untouched. If you need to modify crypto code in totalreclaw-mcp.ts, check the current state first.
 
 | ID | Task | Status | Owner | Depends | Notes |
 |----|------|--------|-------|---------|-------|
 | T210 | Add BIP-39 mnemonic support to OpenClaw plugin crypto | completed | claude-opus | — | `skill/plugin/crypto.ts`: auto-detects mnemonic vs password, routes to BIP-39 seed path or Argon2id. Added `@scure/bip39` dep. |
-| T211 | Add BIP-39 mnemonic support to NanoClaw MCP | completed | claude-opus | T210 | `openmemory-mcp.ts`: same auto-detection logic. NanoClaw already had `@scure/bip39` in Dockerfile. |
+| T211 | Add BIP-39 mnemonic support to NanoClaw MCP | completed | claude-opus | T210 | `totalreclaw-mcp.ts`: same auto-detection logic. NanoClaw already had `@scure/bip39` in Dockerfile. |
 | T212 | Create mnemonic generation script | completed | claude-opus | — | `skill/plugin/generate-mnemonic.ts`: standalone script for beta testers. |
 | T213 | Update PoC testing guide for BIP-39 | completed | claude-opus | T210 | Updated docs/poc-testing-guide.md: mnemonic generation, .env instructions, persistence table, tech ref. |
 | T214 | Update .env.example for BIP-39 | completed | claude-opus | T210 | Updated testbed/functional-test/.env.example with mnemonic instructions + placeholder. |
@@ -303,42 +306,157 @@ T080-T083 completed (YAML frontmatter, README, skill.json, CLAWHUB.md checklist)
 
 ---
 
+### Session 10 — Landing Page, Repo Cleanup, Rebrand
+
+**Agent:** claude-opus (main session)
+**Goal:** Build landing page, clean up repo, push to GitHub, rebrand to TotalReclaw.
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T220 | Scan POC guides for issues | completed | claude-opus | — | poc-testing-guide.md: solid. nanoclaw guide: "recovery phrase" → "mnemonic" fix. poc-validation-guide.md: fundamentally broken (fake API endpoints) → DELETED. |
+| T221 | Repo cleanup (remove obsolete files) | completed | claude-opus | — | Deleted 8 root-level files (old READMEs, CLAUDE-poc/specs, demo_v02.py, .gitignore variants). Merged 3 .gitignore files into one. Removed .env files with real API keys. Cleaned caches + .DS_Store. |
+| T222 | Archive old testbed eval scripts | completed | claude-opus | — | Moved 18 old eval scripts to archive/testbed-old-evals/, then deleted entirely (user decision: not needed in repo). |
+| T223 | Fix NanoClaw guide terminology | completed | claude-opus | — | "Recovery phrase" → "BIP-39 mnemonic" (4 instances). |
+| T224 | Push all changes to totalreclaw-poc GitHub | completed | claude-opus | T221 | Synced 67 files (6 modified, 61 new) to totalreclaw-poc repo. Commit 6ee6581. |
+| T225 | Build landing page | completed | claude-opus | — | website/index.html — dark theme, Space Mono font, emerald green, split layout. Multiple iterations. |
+| T226 | Rebrand landing page to TotalReclaw | completed | claude-opus | T225 | TotalReclaw → TotalReclaw on landing page. Footer says "Formerly TotalReclaw." |
+| T227 | Full codebase rebrand (TotalReclaw → TotalReclaw) | pending | — | T226 | Rename throughout: code, docs, guides, env vars, server, specs. LOW PRIORITY — landing page done first. |
+| T228 | MCP auto-memory for Claude Desktop / generic hosts | pending | — | — | Research: how to enable automatic recall/storage in MCP hosts that lack hooks (Claude Desktop, Cursor, etc.). See session 10 notes. |
+
+---
+
+### Session 11 — PoC v2 (LSH + Semantic Search) + 4-Way Benchmark
+
+**Agent:** claude-opus (main session + 10+ parallel subagents)
+**Goal:** Implement full PoC v2 search pipeline (LSH + BM25/Cosine/RRF fusion + local embeddings) and set up 4-way benchmark (TotalReclaw vs Mem0 vs QMD vs LanceDB).
+
+**Key decisions:**
+- **Local embeddings only** — API-based embedding approach was removed entirely. Users should NOT need additional API keys. all-MiniLM-L6-v2 ONNX model (~22MB) runs client-side via `@huggingface/transformers`. Strengthens zero-knowledge guarantee.
+- **Mem0 included in benchmark** — Despite not being bundled with OpenClaw, custom Dockerfile installs `@mem0/openclaw-mem0`. Benchmark needed because of Mem0's online popularity.
+- **Synthetic data via funded OpenRouter** — Z.AI Coding Plan doesn't work via standard API. Free tier providers too slow/limited. $10 funded OpenRouter key used for Llama 3.3 70B.
+
+**PoC v2 — LSH + BM25/Cosine/RRF Fusion**
+Plan: `plans/2026-02-26-pocv2-lsh-reranking.md`
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T230 | Add embedding client to llm-client.ts | completed | claude-opus | — | **REPLACED**: API-based embeddings removed. Now uses local all-MiniLM-L6-v2 ONNX model via `@huggingface/transformers`. See T250. |
+| T231 | Implement LSH hasher (lsh.ts) | completed | claude-opus-lsh | — | Random hyperplane LSH, 64-bit x 12 tables, deterministic from master key via HKDF. 32/32 tests pass. 0.82ms/hash for 1536-dim. |
+| T232 | Implement BM25 + cosine + RRF reranker (reranker.ts) | completed | claude-opus | — | Replace naive textScore with proper Okapi BM25 + cosine similarity + RRF fusion. 52 tests. |
+| T233 | Update storage path (plugin + NanoClaw MCP) | completed | claude-opus | T230, T231 | Generate embeddings + LSH buckets during store. Merge LSH hashes into blind_indices. Encrypted embedding stored alongside fact. Graceful fallback to word-only indices. |
+| T234 | Server schema: add encrypted_embedding column | completed | claude-opus | — | Nullable TEXT column. Store/search/export/sync endpoints updated. Alembic migration 002. Protobuf updated. 19 tests. |
+| T235 | Update search/recall path (plugin + NanoClaw MCP) | completed | claude-opus | T230, T231, T232 | LSH trapdoors + word trapdoors. Decrypt embeddings. BM25+cosine+RRF re-rank. Plugin recall tool, before_agent_start hook, NanoClaw handleRecall all updated. Graceful fallback to word-only if embedding fails. |
+| T236 | Backward compatibility: v1 facts without embeddings | completed | claude-opus | T233, T235 | Verified: all 4 scenarios pass. Word trapdoors always generated, embedding optional throughout, reranker handles mixed v1/v2 gracefully, server schema nullable. No code changes needed. |
+| T237 | E2E test: paraphrased query recall | completed | claude-opus | T233, T235 | `skill/plugin/pocv2-e2e-test.ts` — 38 TAP tests (updated for local embeddings). No API key needed. Validates full store→search→rerank pipeline locally. Tests: exact match, paraphrased queries (3 scenarios), negative query, multi-fact ranking, v1 backward compat, mixed v1+v2, LSH mechanics + cosine verification, embedding encryption round-trip, content fingerprint dedup. |
+| T250 | Replace API embeddings with local all-MiniLM-L6-v2 | completed | claude-opus | T230 | Switched from API-based embeddings to local ONNX model. `skill/plugin/embedding.ts` (new), `client/src/embedding/onnx.ts` (rewritten), NanoClaw MCP updated. Removed all provider mapping code from llm-client.ts. Fixed dimensions from 384 (was provider-dependent: 768-2048). `@huggingface/transformers` handles model download, tokenization, inference. ~22MB download on first use, cached. Zero-knowledge preserved (no plaintext sent to API). 38/38 E2E tests pass, 32/32 LSH tests pass, 52/52 reranker tests pass. |
+
+**4-Way Memory System Benchmark** (branch: `feature/benchmark-4way`)
+Plan: `plans/2026-02-26-benchmark-4way.md`
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T240 | Generate synthetic conversation dataset | completed | claude-opus | — | 981 conversations, 8,268 facts (GPT-4.1 Mini), 3,308 queries (regenerated: 827 factual, 1652 semantic, 827 cross_conv, 2 negative). Query prompt fixed for cross_conversation. |
+| T241 | Docker setup: 5 OpenClaw instances | completed | claude-opus | — | `ombh/docker-compose.benchmark.yml` + custom Dockerfiles. 5 instances: TotalReclaw v2 (8081), Mem0 (8082), QMD (8083), LanceDB (8084), TotalReclaw v1 (8085). Shared postgres:5434 + totalreclaw-server:8090. |
+| T242 | Benchmark runner: feed conversations | completed | claude-opus | T240, T241 | `ombh/scripts/run_benchmark.py` — INGEST phase sends conversations via OpenAI-compat chat API. Dry run validated on all 4 instances (8/8 success). 4-way run in progress (50 convs). |
+| T243 | Benchmark runner: query + score | completed | claude-opus | T242 | QUERY phase sends test queries, SCORE phase does keyword overlap matching against ground truth. Dry run validated (12/12 queries, report generated). |
+| T244 | Benchmark report | completed | claude-opus | T243 | 5-way benchmark complete. Reports at ombh/synthetic-benchmark/benchmark-results/. |
+| T245 | Add Mem0 plugin support to 4-way benchmark | completed | claude-opus | T241 | Dockerfile.openclaw-mem0 installs @mem0/openclaw-mem0 (v0.1.2). |
+| T246 | Add TotalReclaw v1 (no embeddings) instance | completed | claude-opus | T241 | `Dockerfile.openclaw-totalreclaw-v1` — stub @huggingface/transformers forces BM25-only fallback. Port 8085. Plugin loads, memory works. |
+| T247 | Fix Docker platform issues | completed | claude-opus | T241 | Fixed: sharp linux-arm64 mismatch (custom Dockerfile for TotalReclaw), openai SDK missing (LanceDB Dockerfile), LanceDB embeddings via OpenRouter. |
+| T248 | Write v2 benchmark improvements spec | completed | claude-opus | — | `docs/specs/totalreclaw/benchmark-v2-improvements.md` — multi-session replay, fact evolution, compaction testing, LLM judge, negative queries, privacy audit, scale testing. |
+
+---
+
+### Session 13 — 5-Way Benchmark Complete + Retrieval Improvements
+
+**Agent:** claude-opus (main session)
+**Goal:** Complete 5-way benchmark, diagnose retrieval gap vs LanceDB, implement and validate improvements.
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T260 | Fix benchmark data mismatch | completed | claude-opus | — | Only 50/981 convs ingested but queries referenced all 981. Created `ombh/scripts/regenerate_queries_for_ingested.py` to generate 140 queries from the 415 actually-ingested facts. |
+| T261 | Benchmark speed optimizations | completed | claude-opus | — | glm-5 → glm-4.5-air, concurrency 2→8, max_tokens 2048→512. Query time ~13h → ~2h. |
+| T262 | Complete 5-way benchmark | completed | claude-opus | T260, T261 | All 5 systems benchmarked: TotalReclaw v2, v1, Mem0, QMD, LanceDB. Reports in `ombh/synthetic-benchmark/benchmark-results/`. |
+| T263 | Diagnose retrieval gap vs LanceDB | completed | claude-opus | T262 | LanceDB beat v2 by 2.8pp, entirely in semantic queries. Root cause: 64-bit LSH signatures too strict (~0% match at cosine 0.7), missing morphological variants. |
+| T264 | LSH parameter tuning (64-bit→32-bit×20) | completed | claude-opus | T263 | Tested 12-bit×28 (too coarse) and 32-bit×20 (sweet spot). Updated `skill/plugin/lsh.ts`. |
+| T265 | Stemmed blind indices (Porter stemmer) | completed | claude-opus | T263 | Added stemming to `skill/plugin/crypto.ts` blind index generation and `skill/plugin/reranker.ts` BM25 tokenizer. porter-stemmer dep added. |
+| T266 | Increase candidate pool 400→1200 | completed | claude-opus | T263 | Updated `skill/plugin/index.ts`. Larger pool gives reranker more material. |
+| T267 | Validate retrieval improvements | completed | claude-opus | T264, T265, T266 | Semantic recall +48% (16.4%→24.3%), now within 0.4% of LanceDB. Zero-knowledge E2EE maintained. |
+| T268 | Create standalone v1 ingest script | completed | claude-opus | — | `ombh/scripts/ingest_v1.py` — separate ingest for TotalReclaw v1. |
+| T269 | Create 5-way report generator | completed | claude-opus | — | `ombh/scripts/generate_5way_report.py` — generates comparison report from benchmark data. |
+
+---
+
+### Session 14 — Embedding Upgrade + Dynamic Pool + Server Metrics + NanoClaw Sync + MCP Spec + Rebrand
+
+**Agent:** claude-opus (main session + 8 parallel subagents)
+**Goal:** Upgrade embedding model, implement dynamic candidate pool (client + server), sync all improvements to NanoClaw, research MCP auto-memory, rebrand to TotalReclaw.
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T270 | Server `/v1/metrics` endpoint + `total_candidates_matched` | completed | agent-server-metrics | — | 27 new tests. In-memory per-user telemetry (deque maxlen=100). |
+| T271 | Plugin embedding upgrade (bge-small-en-v1.5) | completed | agent-embedding | — | +query prefix for searches. 384-dim preserved. 38/38 E2E tests pass. |
+| T272 | Plugin dynamic candidate pool sizing | completed | agent-pool | — | Formula: `min(max(factCount*3, 400), 5000)`. 5-min TTL cache. Falls back to 400 (=pool 1200). |
+| T273 | Sync ALL improvements to NanoClaw MCP | completed | agent-nanoclaw | T270-T272 | 6 changes: LSH 32×20, stemming, bge model, query prefix, dynamic pool, porter-stemmer dep. |
+| T274 | Run all tests | completed | agent-validation | T270-T273 | 343/343 pass (221 server + 38 E2E + 32 LSH + 52 reranker). |
+| T228 | MCP auto-memory research + spec | completed | agent-mcp-research | — | 836-line spec at `docs/specs/totalreclaw/mcp-auto-memory.md`. Hybrid 6-layer approach. |
+| T227 | Full codebase rebrand (OpenMemory → TotalReclaw) | completed | agent-rebrand | — | 319 files modified, 29 files/dirs renamed. HKDF protocol strings preserved. 343/343 tests pass post-rebrand. |
+| T275 | Clean stale build artifacts + fix client embedding | completed | claude-opus | T227 | Rebuilt client/mcp/skill/plugin. Fixed client embedding model (still had MiniLM). Zero @openmemory/ refs remaining. |
+
+---
+
 ## Notes for Next Agent
 
-- **Plans are in `docs/plans/`** — Each phase has a detailed implementation plan with exact code, file paths, test commands, and commit messages. Read the plan before starting work.
-- **ROADMAP is in `docs/ROADMAP.md`** — For the big picture (PoC -> MVP -> Subgraph -> TEE). Updated 2026-02-24 with current status of all gaps.
-- **Specs are in `docs/specs/`** — Organized by product: `openmemory/`, `subgraph/`, `tee/`, `archive/`.
-- **Rate limiting:** SlowAPI was removed and replaced with per-user rate limiting in `server/src/middleware/rate_limit.py`. Keyed on auth_hash, not IP. Cloudflare handles IP-level DDoS protection at the edge.
-- **Cloudflare free tier:** IP-based rate limiting only (1 rule, 10s window). Per-user/header-based rate limiting requires Enterprise. That's why we do per-user limiting at the app level.
-- **Subgraph (Phase 11):** Code moved to `feature/subgraph` branch. Not in PoC main. Testnet deployment blocked on Pimlico API key + Base Sepolia ETH.
-- **Mem0 benchmark (T066):** Deferred to pre-MVP. Current E2E results are not representative (29/500 facts indexed, 502 errors). See lessons learned in ROADMAP.md section 2.2.
-- **Security fixes and search fix pushed to GitHub** — All session 3 security audit fixes + session 4 search CAST fix are now in the openmemory-poc repo.
-- **E2E smoke test passes 14/14** — Full API flow tested: register, store, search, dedup, export, sync, delete, account deletion. Script in repo.
-- **OpenClaw Docker setup** — OpenClaw is running at 127.0.0.1:8081, healthy, using zai/glm-5 model.
-  - Gateway token: `e6a13aa43a07820b3a80755748a6c856fdb2cd9a8a6be0b6`
-  - SKILL.md is installed and Ready — agent sees the tools and instructions (4/52 skills).
-  - OpenMemory plugin (`skill/plugin/`) is fully functional and production-ready for beta testing. Full E2E flow validated: remember, recall, forget, export tools all working. Auto-recall hook (before_agent_start) fires on every query. LLM-based auto-extraction hooks (agent_end, before_compaction) working. Credentials persist via Docker volume.
-  - Docker setup files: `testbed/functional-test/docker-compose.functional-test.yml`, `openclaw-config/config.json5`
-  - The `.env` with API keys was deleted during security cleanup — user created new one from `.env.example`
-- **Zero-config LLM detection:** Session 7 rewrote llm-client.ts for zero-config provider auto-detection. The plugin reads api.config to detect the provider, derives a cheap model (e.g., glm-4.5-flash for Z.AI, claude-haiku for Anthropic, gpt-4.1-mini for OpenAI), and reads the API key from process.env. Supports 12 providers + Anthropic Messages API. Temperature set to 0 for deterministic dedup.
-- **Hook status:** before_agent_start (works), agent_end (works, after extractor.ts content array fix), before_compaction (works via /compact WebSocket RPC -- NOT via OpenAI-compat API), before_reset (does NOT fire in OpenClaw v2026.2.22).
-- **OpenAI-compat API limitation:** `/v1/chat/completions` does NOT process slash commands. Use WebSocket `gateway call chat.send` for /compact, /new, /reset. Helper script: `testbed/functional-test/ws-command.mjs`.
-- **BIP-39 mnemonic support (Session 9):** Both OpenClaw plugin (`skill/plugin/crypto.ts`) and NanoClaw MCP (`openmemory-mcp.ts`) now auto-detect if `OPENMEMORY_MASTER_PASSWORD` is a 12-word BIP-39 mnemonic. If so, keys are derived from the 512-bit BIP-39 seed via HKDF (no Argon2id). If it's an arbitrary password, the Argon2id path is used (backward compat). Added `@scure/bip39` dependency to the plugin. Generator script at `skill/plugin/generate-mnemonic.ts`.
-- **Next session priorities (in order):**
-  1. Complete T213-T217 (guide update, Docker rebuild, E2E tests with mnemonic, browser E2E)
-  2. T138: GitHub Actions CI workflow (still pending)
-  3. Test the new zero-config LLM detection with a non-Z.AI provider (e.g., Anthropic) to validate multi-provider support
-  4. T086: Make openmemory-poc repo public (needs @pdiogo action)
-  5. T084: Create screenshots for Claw Hub (manual work)
-  6. Load testing at 1M memories scale
-  7. Consider removing or documenting the `before_reset` hook as unsupported in current OpenClaw
-- **Completed session 9:** T210-T217 (BIP-39 mnemonic support + guide polish + Docker rebuild + E2E test + browser E2E via Playwright). 8 tasks completed.
-- **Completed session 8:** T190-T200 (NanoClaw integration + E2E testing). 11 tasks completed.
-- **Completed session 7:** T179-T185 (E2E hook validation + zero-config LLM rewrite). 7 tasks completed.
-- **Completed session 6:** T174-T178 (E2E decryption proof, LLM auto-extraction hooks, testing guide rewrite). 5 tasks completed.
-- **Completed session 5:** T172 (plugin created), T173 (memory retention E2E). 2 tasks completed.
-- **Completed session 4 (continued):** T170 (OpenClaw Docker setup), T171 (SKILL.md installed). 2 tasks completed.
-- **Completed session 4 (earlier):** T163 (sequence_id fix confirmed), T164 (README fix), T166 (E2E smoke test, 14 tests), T167 (search CAST fix), T168 (E2E flow docs), T169 (pushed to GitHub). 6 tasks completed.
-- **Completed session 3:** T135, T134, T136, T073-T077, T140 (deployment), T150-T162 (security audit + fixes). 21 tasks completed.
-- **Completed session 2:** T090-T095, T088 (Phase 7B), T100-T112 (Phase 10), T120-T127 (Phase 11), T130-T133, T139 (Phase 12). 33 tasks completed.
-- **Test count:** 836+ tests across all packages. 0 failures. 23 errors are pre-existing integration tests needing PostgreSQL (run inside Docker).
+- **Plans are in `plans/`** — Each phase has a detailed implementation plan. Read the plan before starting work.
+- **ROADMAP is in `docs/ROADMAP.md`** — For the big picture (PoC -> MVP -> Subgraph -> TEE).
+- **Specs are in `docs/specs/`** — Organized by product: `totalreclaw/`, `subgraph/`, `tee/`, `archive/`.
+
+### Current State (after Session 14)
+
+- **Codebase rebranded** — OpenMemory → TotalReclaw across 319 files, 29 dirs renamed. HKDF protocol strings preserved for backward compat.
+- **PoC v2 is DONE and validated** — Full LSH + BM25/Cosine/RRF pipeline. 343 tests pass. bge-small-en-v1.5 embeddings (upgraded from MiniLM-L6-v2). LSH tuned to 32-bit x 20 tables + stemmed blind indices. Dynamic candidate pool sizing.
+- **Server observability** — `/v1/metrics` endpoint returns per-user fact_count, avg_candidates_per_search, max_candidates_hit_rate, p95_search_latency_ms. Search response includes `total_candidates_matched`.
+- **NanoClaw MCP fully synced** — All 6 improvements from Sessions 13-14 synced to NanoClaw (LSH, stemming, bge model, query prefix, dynamic pool, porter-stemmer).
+- **MCP auto-memory spec** — `docs/specs/totalreclaw/mcp-auto-memory.md` — Hybrid 6-layer approach for generic MCP hosts. Ready for implementation.
+- **5-Way Benchmark COMPLETE** — TotalReclaw v2 within 0.4% of LanceDB on semantic recall while maintaining zero-knowledge E2EE.
+- **LSH Tuning Spec**: `docs/specs/totalreclaw/lsh-tuning.md` — per-user LSH tuning NOT needed. Only candidate pool scales per user.
+- **Subgraph:** Code on `feature/subgraph` branch. Testnet deployment blocked on credentials.
+- **Test count:** 343 tests across server + plugin. 0 failures.
+
+### Key Technical References
+
+- **OpenClaw plugin:** `skill/plugin/` — 4 tools (remember, recall, forget, export), 3 hooks (before_agent_start, agent_end, before_compaction), auto-extraction via LLM, zero-config provider detection, bge-small-en-v1.5 local embeddings with query prefix, LSH + BM25/cosine/RRF reranking, dynamic candidate pool.
+- **NanoClaw MCP:** `testbed/functional-test-nanoclaw/nanoclaw-totalreclaw-overlay/agent-runner-src/totalreclaw-mcp.ts` — self-contained MCP server, fully synced with plugin (all 6 improvements).
+- **Server:** `server/` — FastAPI + PostgreSQL, HKDF auth, blind index GIN search, content fingerprint dedup, /sync, encrypted_embedding column, `/v1/metrics` observability, `total_candidates_matched` in search. 221 tests.
+- **Crypto:** BIP-39 mnemonic auto-detection in plugin + NanoClaw. Same mnemonic derives encryption keys AND future Ethereum wallet.
+- **Hook status:** before_agent_start (works), agent_end (works), before_compaction (works via WebSocket RPC), before_reset (NOT supported in OpenClaw v2026.2.22).
+- **Zero-config LLM:** `skill/plugin/llm-client.ts` reads OpenClaw's api.config to auto-detect provider + model + API key. 12 providers supported.
+- **Docker test setups:**
+  - OpenClaw single-instance: `testbed/functional-test/`
+  - NanoClaw: `testbed/functional-test-nanoclaw/`
+  - 5-way benchmark: `ombh/docker-compose.benchmark.yml`
+
+### Pending Work
+
+| Priority | Task | Notes |
+|----------|------|-------|
+| **Next** | Implement MCP auto-memory | Spec ready at `docs/specs/totalreclaw/mcp-auto-memory.md`. Modify `mcp/src/` — add server instructions, enhanced tool descriptions, batch remember, memory context resource, prompt fallbacks. |
+| **Pending** | Re-run 5-way benchmark with bge-small-en-v1.5 | Validate if embedding upgrade improves recall further. Need to re-ingest + re-query all 5 systems. |
+| **Pending** | v2 benchmark improvements | Multi-session replay, LLM judge, etc. See spec. |
+| **Pending** | T138: GitHub Actions CI workflow | Basic pytest + npm test |
+| **Pending** | T086: Make totalreclaw-poc repo public | Needs @pdiogo action |
+| **Pending** | Load testing at 1M memories | Validate <140ms p95 target |
+| ~~Done~~ | ~~Clean stale build artifacts~~ | Completed in Session 14. All packages rebuilt with @totalreclaw/* names. |
+
+### Session History
+
+- **Session 14:** T270-T275 + T227-T228 (embedding upgrade bge-small-en-v1.5, dynamic pool sizing, server metrics, NanoClaw sync, MCP auto-memory spec, codebase rebrand, build artifact cleanup). 8 tasks completed.
+- **Session 13:** T260-T269 (5-way benchmark complete, retrieval gap diagnosis, LSH tuning 32-bit×20, stemmed indices, candidate pool 1200). 10 tasks completed.
+- **Session 12:** T242-T248 (benchmark runner, Docker fixes, v1 instance, query regen, v2 spec). 7 tasks completed, 1 in progress.
+- **Session 11:** T230-T237, T240-T245, T250 (PoC v2 full pipeline + benchmark setup + local embeddings). 14 tasks completed.
+- **Session 10:** T220-T226 (landing page, repo cleanup, rebrand). 7 tasks completed.
+- **Session 9:** T210-T217 (BIP-39 mnemonic + browser E2E). 8 tasks completed.
+- **Session 8:** T190-T205 (NanoClaw integration + E2E). 16 tasks completed.
+- **Session 7:** T179-T185 (E2E hooks + zero-config LLM). 7 tasks completed.
+- **Session 6:** T174-T178 (decryption proof, auto-extraction). 5 tasks completed.
+- **Sessions 2-5:** T030-T177 (core PoC, server hardening, Phase 11 subgraph code, Phase 12 polish). 64 tasks completed.

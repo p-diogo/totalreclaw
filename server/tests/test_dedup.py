@@ -1,7 +1,7 @@
 """
 Tests for content fingerprint dedup in /store endpoint (v0.3.1b).
 
-Spec: docs/specs/openmemory/server.md v0.3.1b section 8.2
+Spec: docs/specs/totalreclaw/server.md v0.3.1b section 8.2
 
 These are unit tests that test the store handler logic and pydantic models
 without requiring a running database.

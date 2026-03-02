@@ -5,7 +5,7 @@
  */
 
 import * as crypto from 'crypto';
-import { OpenMemoryError, OpenMemoryErrorCode } from '../types';
+import { TotalReclawError, TotalReclawErrorCode } from '../types';
 
 /**
  * Result of AES-256-GCM encryption
@@ -37,8 +37,8 @@ const KEY_LENGTH = 32;
  */
 export function encrypt(plaintext: Buffer, key: Buffer): EncryptedData {
   if (key.length !== KEY_LENGTH) {
-    throw new OpenMemoryError(
-      OpenMemoryErrorCode.ENCRYPTION_FAILED,
+    throw new TotalReclawError(
+      TotalReclawErrorCode.ENCRYPTION_FAILED,
       `Invalid key length: expected ${KEY_LENGTH} bytes, got ${key.length}`
     );
   }
@@ -67,8 +67,8 @@ export function encrypt(plaintext: Buffer, key: Buffer): EncryptedData {
       tag,
     };
   } catch (error) {
-    throw new OpenMemoryError(
-      OpenMemoryErrorCode.ENCRYPTION_FAILED,
+    throw new TotalReclawError(
+      TotalReclawErrorCode.ENCRYPTION_FAILED,
       `Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
@@ -90,22 +90,22 @@ export function decrypt(
   tag: Buffer
 ): Buffer {
   if (key.length !== KEY_LENGTH) {
-    throw new OpenMemoryError(
-      OpenMemoryErrorCode.DECRYPTION_FAILED,
+    throw new TotalReclawError(
+      TotalReclawErrorCode.DECRYPTION_FAILED,
       `Invalid key length: expected ${KEY_LENGTH} bytes, got ${key.length}`
     );
   }
 
   if (iv.length !== IV_LENGTH) {
-    throw new OpenMemoryError(
-      OpenMemoryErrorCode.DECRYPTION_FAILED,
+    throw new TotalReclawError(
+      TotalReclawErrorCode.DECRYPTION_FAILED,
       `Invalid IV length: expected ${IV_LENGTH} bytes, got ${iv.length}`
     );
   }
 
   if (tag.length !== TAG_LENGTH) {
-    throw new OpenMemoryError(
-      OpenMemoryErrorCode.DECRYPTION_FAILED,
+    throw new TotalReclawError(
+      TotalReclawErrorCode.DECRYPTION_FAILED,
       `Invalid tag length: expected ${TAG_LENGTH} bytes, got ${tag.length}`
     );
   }
@@ -127,8 +127,8 @@ export function decrypt(
 
     return plaintext;
   } catch (error) {
-    throw new OpenMemoryError(
-      OpenMemoryErrorCode.DECRYPTION_FAILED,
+    throw new TotalReclawError(
+      TotalReclawErrorCode.DECRYPTION_FAILED,
       `Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
@@ -219,8 +219,8 @@ export function serializeEncryptedData(data: EncryptedData): Buffer {
  */
 export function deserializeEncryptedData(buffer: Buffer): EncryptedData {
   if (buffer.length < IV_LENGTH + TAG_LENGTH) {
-    throw new OpenMemoryError(
-      OpenMemoryErrorCode.DECRYPTION_FAILED,
+    throw new TotalReclawError(
+      TotalReclawErrorCode.DECRYPTION_FAILED,
       'Buffer too short to contain encrypted data'
     );
   }

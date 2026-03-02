@@ -11,6 +11,6 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   moduleNameMapper: {
-    '^@openmemory/client$': '<rootDir>/../client/src/index.ts'
+    '^@totalreclaw/client$': '<rootDir>/../client/src/index.ts'
   }
 };

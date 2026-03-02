@@ -1,10 +1,10 @@
 """
-Sync endpoint for OpenMemory Server (v0.3.1b).
+Sync endpoint for TotalReclaw Server (v0.3.1b).
 
 Provides delta sync for agent reconnection.
 Returns all facts for a user since a given sequence_id.
 
-Spec: docs/specs/openmemory/server.md v0.3.1b section 4, 8.2
+Spec: docs/specs/totalreclaw/server.md v0.3.1b section 4, 8.2
 """
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
@@ -36,6 +36,7 @@ class SyncedFactJSON(BaseModel):
     agent_id: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+    encrypted_embedding: Optional[str] = None  # PoC v2: hex-encoded encrypted embedding
 
 
 class SyncResponseJSON(BaseModel):
@@ -90,6 +91,7 @@ async def sync(
                 agent_id=getattr(fact, 'agent_id', None),
                 created_at=fact.created_at.isoformat() if fact.created_at else None,
                 updated_at=fact.updated_at.isoformat() if fact.updated_at else None,
+                encrypted_embedding=getattr(fact, 'encrypted_embedding', None),
             ))
 
         return SyncResponseJSON(

@@ -1,5 +1,5 @@
 """
-Health check endpoint for OpenMemory Server.
+Health check endpoint for TotalReclaw Server.
 """
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Functional Test Runner for OpenMemory + OpenClaw Integration
+# Functional Test Runner for TotalReclaw + OpenClaw Integration
 # Usage: ./run-tests.sh [--skip-cleanup] [--verbose]
 
 set -e
@@ -109,11 +109,11 @@ if [[ ! -d "${SCRIPT_DIR}/openclaw" ]]; then
     error "OpenClaw repository required for functional testing"
 fi
 
-# Check for OpenMemory server Dockerfile
+# Check for TotalReclaw server Dockerfile
 if [[ ! -f "${SCRIPT_DIR}/../../server/Dockerfile" ]]; then
-    warn "OpenMemory server Dockerfile not found"
+    warn "TotalReclaw server Dockerfile not found"
     warn "Expected at: ${SCRIPT_DIR}/../../server/Dockerfile"
-    error "OpenMemory server Dockerfile required"
+    error "TotalReclaw server Dockerfile required"
 fi
 
 # Check for ZAI_API_KEY
@@ -151,7 +151,7 @@ info "Waiting for services to be healthy..."
 # Wait for PostgreSQL (max 30s)
 info "Waiting for PostgreSQL..."
 for i in {1..30}; do
-    if ${DOCKER_COMPOSE} -f "${COMPOSE_FILE}" exec -T postgres pg_isready -U openmemory -d openmemory &>/dev/null; then
+    if ${DOCKER_COMPOSE} -f "${COMPOSE_FILE}" exec -T postgres pg_isready -U totalreclaw -d totalreclaw &>/dev/null; then
         success "PostgreSQL is ready"
         break
     fi
@@ -161,15 +161,15 @@ for i in {1..30}; do
     sleep 1
 done
 
-# Wait for OpenMemory Server (max 60s)
-info "Waiting for OpenMemory server..."
+# Wait for TotalReclaw Server (max 60s)
+info "Waiting for TotalReclaw server..."
 for i in {1..60}; do
     if curl -sf http://127.0.0.1:8080/health &>/dev/null; then
-        success "OpenMemory server is ready"
+        success "TotalReclaw server is ready"
         break
     fi
     if [[ $i -eq 60 ]]; then
-        error "OpenMemory server failed to start within 60 seconds"
+        error "TotalReclaw server failed to start within 60 seconds"
     fi
     sleep 1
 done
@@ -200,10 +200,10 @@ TESTS_FAILED=0
 # Test 1: Health Check
 info "Test 1: Health Check"
 if curl -sf http://127.0.0.1:8080/health | grep -q "ok\|healthy\|UP"; then
-    success "  OpenMemory health check passed"
+    success "  TotalReclaw health check passed"
     ((TESTS_PASSED++))
 else
-    warn "  OpenMemory health check failed"
+    warn "  TotalReclaw health check failed"
     ((TESTS_FAILED++))
 fi
 
@@ -243,7 +243,7 @@ if [[ -n "${ZAI_API_KEY}" ]]; then
 
     sleep 2  # Allow time for processing
 
-    # Query OpenMemory directly to check if memory was stored
+    # Query TotalReclaw directly to check if memory was stored
     MEMORY_CHECK=$(curl -s http://127.0.0.1:8080/api/memories?query=cat%20whiskers 2>/dev/null || echo "{}")
 
     if [[ "${MEMORY_CHECK}" != *"error"* && "${MEMORY_CHECK}" != "{}" ]]; then
@@ -279,7 +279,7 @@ fi
 # ============================================
 info "Collecting logs..."
 
-${DOCKER_COMPOSE} -f "${COMPOSE_FILE}" logs openmemory-server > "${RESULTS_DIR}/openmemory-logs-${TIMESTAMP}.txt" 2>&1 || true
+${DOCKER_COMPOSE} -f "${COMPOSE_FILE}" logs totalreclaw-server > "${RESULTS_DIR}/totalreclaw-logs-${TIMESTAMP}.txt" 2>&1 || true
 ${DOCKER_COMPOSE} -f "${COMPOSE_FILE}" logs openclaw-test > "${RESULTS_DIR}/openclaw-logs-${TIMESTAMP}.txt" 2>&1 || true
 ${DOCKER_COMPOSE} -f "${COMPOSE_FILE}" logs postgres > "${RESULTS_DIR}/postgres-logs-${TIMESTAMP}.txt" 2>&1 || true
 

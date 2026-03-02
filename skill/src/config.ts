@@ -1,13 +1,13 @@
 /**
- * OpenMemory Skill - Configuration Module
+ * TotalReclaw Skill - Configuration Module
  *
  * Handles loading, merging, and validating configuration from multiple sources:
  * - skill.json defaults
- * - OpenClaw config (agents.defaults.openmemory.*)
- * - Environment variables (OPENMEMORY_*)
+ * - OpenClaw config (agents.defaults.totalreclaw.*)
+ * - Environment variables (TOTALRECLAW_*)
  */
 
-import type { OpenMemorySkillConfig } from './types';
+import type { TotalReclawSkillConfig } from './types';
 import { DEFAULT_SKILL_CONFIG } from './types';
 
 // ============================================================================
@@ -47,7 +47,7 @@ export interface ConfigValidationWarning {
 interface OpenClawConfig {
   agents?: {
     defaults?: {
-      openmemory?: Partial<OpenMemorySkillConfig>;
+      totalreclaw?: Partial<TotalReclawSkillConfig>;
     };
   };
 }
@@ -55,7 +55,7 @@ interface OpenClawConfig {
 /**
  * Skill.json configuration defaults (extracted from skill.json)
  */
-const SKILL_JSON_DEFAULTS: OpenMemorySkillConfig = {
+const SKILL_JSON_DEFAULTS: TotalReclawSkillConfig = {
   serverUrl: 'http://127.0.0.1:8080',
   autoExtractEveryTurns: 5,
   minImportanceForAutoStore: 6,
@@ -73,37 +73,37 @@ const SKILL_JSON_DEFAULTS: OpenMemorySkillConfig = {
  */
 const ENV_VAR_MAPPING: Record<
   string,
-  { key: keyof OpenMemorySkillConfig; parser: (value: string) => unknown }
+  { key: keyof TotalReclawSkillConfig; parser: (value: string) => unknown }
 > = {
-  OPENMEMORY_SERVER_URL: {
+  TOTALRECLAW_SERVER_URL: {
     key: 'serverUrl',
     parser: (v) => v,
   },
-  OPENMEMORY_AUTO_EXTRACT_EVERY_TURNS: {
+  TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS: {
     key: 'autoExtractEveryTurns',
     parser: (v) => parseInt(v, 10),
   },
-  OPENMEMORY_MIN_IMPORTANCE: {
+  TOTALRECLAW_MIN_IMPORTANCE: {
     key: 'minImportanceForAutoStore',
     parser: (v) => parseInt(v, 10),
   },
-  OPENMEMORY_MAX_MEMORIES: {
+  TOTALRECLAW_MAX_MEMORIES: {
     key: 'maxMemoriesInContext',
     parser: (v) => parseInt(v, 10),
   },
-  OPENMEMORY_FORGET_THRESHOLD: {
+  TOTALRECLAW_FORGET_THRESHOLD: {
     key: 'forgetThreshold',
     parser: (v) => parseFloat(v),
   },
-  OPENMEMORY_RERANKER_MODEL: {
+  TOTALRECLAW_RERANKER_MODEL: {
     key: 'rerankerModel',
     parser: (v) => v,
   },
-  OPENMEMORY_MASTER_PASSWORD: {
+  TOTALRECLAW_MASTER_PASSWORD: {
     key: 'masterPassword',
     parser: (v) => v,
   },
-  OPENMEMORY_USER_ID: {
+  TOTALRECLAW_USER_ID: {
     key: 'userId',
     parser: (v) => v,
   },
@@ -118,8 +118,8 @@ const ENV_VAR_MAPPING: Record<
  *
  * @returns Partial config from environment variables
  */
-function loadFromEnv(): Partial<OpenMemorySkillConfig> {
-  const config: Partial<OpenMemorySkillConfig> = {};
+function loadFromEnv(): Partial<TotalReclawSkillConfig> {
+  const config: Partial<TotalReclawSkillConfig> = {};
 
   for (const [envVar, mapping] of Object.entries(ENV_VAR_MAPPING)) {
     const value = process.env[envVar];
@@ -142,8 +142,8 @@ function loadFromEnv(): Partial<OpenMemorySkillConfig> {
  * @param openclawConfig - OpenClaw configuration object
  * @returns Partial config from OpenClaw
  */
-function loadFromOpenClaw(openclawConfig?: OpenClawConfig): Partial<OpenMemorySkillConfig> {
-  return openclawConfig?.agents?.defaults?.openmemory ?? {};
+function loadFromOpenClaw(openclawConfig?: OpenClawConfig): Partial<TotalReclawSkillConfig> {
+  return openclawConfig?.agents?.defaults?.totalreclaw ?? {};
 }
 
 /**
@@ -151,7 +151,7 @@ function loadFromOpenClaw(openclawConfig?: OpenClawConfig): Partial<OpenMemorySk
  *
  * @returns Default configuration from skill.json
  */
-function loadFromSkillJson(): OpenMemorySkillConfig {
+function loadFromSkillJson(): TotalReclawSkillConfig {
   return { ...SKILL_JSON_DEFAULTS };
 }
 
@@ -162,7 +162,7 @@ function loadFromSkillJson(): OpenMemorySkillConfig {
  * @param sources - Configuration sources to merge (in priority order, lowest first)
  * @returns Merged configuration
  */
-function mergeConfigs(...sources: Partial<OpenMemorySkillConfig>[]): OpenMemorySkillConfig {
+function mergeConfigs(...sources: Partial<TotalReclawSkillConfig>[]): TotalReclawSkillConfig {
   const result = { ...DEFAULT_SKILL_CONFIG };
 
   for (const source of sources) {
@@ -181,8 +181,8 @@ function mergeConfigs(...sources: Partial<OpenMemorySkillConfig>[]): OpenMemoryS
  *
  * Priority order (highest last):
  * 1. skill.json defaults
- * 2. OpenClaw config (agents.defaults.openmemory.*)
- * 3. Environment variables (OPENMEMORY_*)
+ * 2. OpenClaw config (agents.defaults.totalreclaw.*)
+ * 3. Environment variables (TOTALRECLAW_*)
  * 4. Explicit overrides (passed to this function)
  *
  * @param options - Loading options
@@ -192,8 +192,8 @@ export function loadConfig(options?: {
   /** OpenClaw configuration object */
   openclawConfig?: OpenClawConfig;
   /** Explicit configuration overrides */
-  overrides?: Partial<OpenMemorySkillConfig>;
-}): OpenMemorySkillConfig {
+  overrides?: Partial<TotalReclawSkillConfig>;
+}): TotalReclawSkillConfig {
   const { openclawConfig, overrides } = options ?? {};
 
   // Load from all sources (in priority order, lowest to highest)
@@ -240,7 +240,7 @@ function isInRange(value: number, min: number, max: number): boolean {
  * Field validators for configuration
  */
 const FIELD_VALIDATORS: Record<
-  keyof OpenMemorySkillConfig,
+  keyof TotalReclawSkillConfig,
   {
     validate: (value: unknown) => boolean;
     getError: (value: unknown) => string;
@@ -324,13 +324,13 @@ const FIELD_VALIDATORS: Record<
  * @param config - Configuration to validate
  * @returns Validation result with errors and warnings
  */
-export function validateConfig(config: OpenMemorySkillConfig): ConfigValidationResult {
+export function validateConfig(config: TotalReclawSkillConfig): ConfigValidationResult {
   const errors: ConfigValidationError[] = [];
   const warnings: ConfigValidationWarning[] = [];
 
   // Validate each field
   for (const [field, validator] of Object.entries(FIELD_VALIDATORS)) {
-    const value = config[field as keyof OpenMemorySkillConfig];
+    const value = config[field as keyof TotalReclawSkillConfig];
 
     // Check required fields
     if (validator.required && value === undefined) {
@@ -399,17 +399,17 @@ export function validateConfig(config: OpenMemorySkillConfig): ConfigValidationR
  * @param config - Configuration to validate
  * @throws Error if configuration is invalid
  */
-export function assertValidConfig(config: OpenMemorySkillConfig): void {
+export function assertValidConfig(config: TotalReclawSkillConfig): void {
   const result = validateConfig(config);
 
   if (!result.valid) {
     const errorMessages = result.errors.map((e) => `  - ${e.field}: ${e.message}`).join('\n');
-    throw new Error(`Invalid OpenMemory configuration:\n${errorMessages}`);
+    throw new Error(`Invalid TotalReclaw configuration:\n${errorMessages}`);
   }
 
   // Log warnings
   for (const warning of result.warnings) {
-    console.warn(`[OpenMemory] Config warning - ${warning.field}: ${warning.message}`);
+    console.warn(`[TotalReclaw] Config warning - ${warning.field}: ${warning.message}`);
   }
 }
 
@@ -422,9 +422,9 @@ export function assertValidConfig(config: OpenMemorySkillConfig): void {
  * @throws Error if resulting configuration is invalid
  */
 export function createConfig(
-  partial?: Partial<OpenMemorySkillConfig>,
+  partial?: Partial<TotalReclawSkillConfig>,
   options?: Parameters<typeof loadConfig>[0],
-): OpenMemorySkillConfig {
+): TotalReclawSkillConfig {
   const config = loadConfig({
     ...options,
     overrides: partial,

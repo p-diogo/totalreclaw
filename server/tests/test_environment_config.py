@@ -67,7 +67,7 @@ class TestEnvironmentConfig:
     def test_cors_origins_not_wildcard_in_production(self):
         """Production must NOT use wildcard CORS origins."""
         os.environ["ENVIRONMENT"] = "production"
-        os.environ["CORS_ORIGINS"] = "https://app.openmemory.dev"
+        os.environ["CORS_ORIGINS"] = "https://app.totalreclaw.dev"
         from src.config import get_settings
         get_settings.cache_clear()
         settings = get_settings()

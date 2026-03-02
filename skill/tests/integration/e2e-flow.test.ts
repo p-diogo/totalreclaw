@@ -1,17 +1,17 @@
 /**
- * OpenMemory Skill - End-to-End Flow Tests
+ * TotalReclaw Skill - End-to-End Flow Tests
  *
  * Tests the complete flow from skill initialization through
  * memory operations, verifying correct behavior at each step.
  */
 
 import {
-  OpenMemorySkill,
-  createOpenMemorySkill,
+  TotalReclawSkill,
+  createTotalReclawSkill,
   type InitResult,
-} from '../../src/openmemory-skill';
+} from '../../src/totalreclaw-skill';
 import type {
-  OpenMemorySkillConfig,
+  TotalReclawSkillConfig,
   OpenClawContext,
   ConversationTurn,
   RememberToolParams,
@@ -19,7 +19,7 @@ import type {
   ForgetToolParams,
   ExportToolParams,
 } from '../../src/types';
-import type { Fact, RerankedResult, FactMetadata } from '@openmemory/client';
+import type { Fact, RerankedResult, FactMetadata } from '@totalreclaw/client';
 import { DEFAULT_SKILL_CONFIG } from '../../src/types';
 
 // ============================================================================
@@ -27,10 +27,10 @@ import { DEFAULT_SKILL_CONFIG } from '../../src/types';
 // ============================================================================
 
 /**
- * Mock OpenMemory client for E2E testing
+ * Mock TotalReclaw client for E2E testing
  * Simulates the full client behavior with in-memory storage
  */
-class MockOpenMemoryClient {
+class MockTotalReclawClient {
   private facts: Map<string, Fact> = new Map();
   private userId: string | null = null;
   private salt: Buffer | null = null;
@@ -271,12 +271,12 @@ function createContext(overrides: Partial<OpenClawContext> = {}): OpenClawContex
  * Create a test skill with mock client
  */
 async function createTestSkill(
-  config: Partial<OpenMemorySkillConfig> = {}
-): Promise<{ skill: OpenMemorySkill; client: MockOpenMemoryClient; llm: MockLLMClient }> {
-  const client = new MockOpenMemoryClient();
+  config: Partial<TotalReclawSkillConfig> = {}
+): Promise<{ skill: TotalReclawSkill; client: MockTotalReclawClient; llm: MockLLMClient }> {
+  const client = new MockTotalReclawClient();
   const llm = new MockLLMClient();
 
-  const skill = new OpenMemorySkill({
+  const skill = new TotalReclawSkill({
     serverUrl: 'http://mock',
     masterPassword: 'test-password-123',
     ...config,
@@ -293,16 +293,16 @@ async function createTestSkill(
 // ============================================================================
 
 describe('End-to-End Flow Tests', () => {
-  let skill: OpenMemorySkill;
-  let mockClient: MockOpenMemoryClient;
+  let skill: TotalReclawSkill;
+  let mockClient: MockTotalReclawClient;
   let mockLLM: MockLLMClient;
   let isInitialized: boolean = false;
 
   beforeEach(async () => {
-    mockClient = new MockOpenMemoryClient();
+    mockClient = new MockTotalReclawClient();
     mockLLM = new MockLLMClient();
 
-    skill = new OpenMemorySkill({
+    skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password-123',
       autoExtractEveryTurns: 3,
@@ -329,7 +329,7 @@ describe('End-to-End Flow Tests', () => {
 
   describe('Initialization', () => {
     it('should initialize skill successfully', async () => {
-      const testSkill = new OpenMemorySkill({
+      const testSkill = new TotalReclawSkill({
         serverUrl: 'http://mock',
         masterPassword: 'secure-password',
       });
@@ -343,7 +343,7 @@ describe('End-to-End Flow Tests', () => {
     });
 
     it('should register new user on first init', async () => {
-      const testSkill = new OpenMemorySkill({
+      const testSkill = new TotalReclawSkill({
         serverUrl: 'http://mock',
         masterPassword: 'new-user-password',
       });
@@ -356,7 +356,7 @@ describe('End-to-End Flow Tests', () => {
 
     it('should login existing user with credentials', async () => {
       // First, register a user
-      const firstSkill = new OpenMemorySkill({
+      const firstSkill = new TotalReclawSkill({
         serverUrl: 'http://mock',
         masterPassword: 'existing-password',
       });
@@ -369,7 +369,7 @@ describe('End-to-End Flow Tests', () => {
       }
 
       // Now login with same credentials
-      const secondSkill = new OpenMemorySkill({
+      const secondSkill = new TotalReclawSkill({
         serverUrl: 'http://mock',
         masterPassword: 'existing-password',
         userId: firstResult.userId,
@@ -383,7 +383,7 @@ describe('End-to-End Flow Tests', () => {
     });
 
     it('should provide access to user ID and salt after init', async () => {
-      const testSkill = new OpenMemorySkill({
+      const testSkill = new TotalReclawSkill({
         serverUrl: 'http://mock',
         masterPassword: 'password',
       });
@@ -485,7 +485,7 @@ describe('End-to-End Flow Tests', () => {
       await skill.remember({ text: 'User prefers TypeScript for projects', importance: 8 });
       await skill.remember({ text: 'User uses VS Code as editor', importance: 7 });
       await skill.remember({ text: 'User likes dark mode', importance: 6 });
-      await skill.remember({ text: 'User works on OpenMemory project', importance: 7 });
+      await skill.remember({ text: 'User works on TotalReclaw project', importance: 7 });
     });
 
     it('should search and retrieve memories via recall tool', async () => {
@@ -859,7 +859,7 @@ describe('End-to-End Flow Tests', () => {
       const params: ExportToolParams = { format: 'markdown' };
       const result = await skill.export(params);
 
-      expect(result).toContain('# OpenMemory Export');
+      expect(result).toContain('# TotalReclaw Export');
       expect(result).toContain('Version:');
     });
 
@@ -1074,11 +1074,11 @@ describe('End-to-End Flow Tests', () => {
 // ============================================================================
 
 describe('Performance E2E Tests', () => {
-  let skill: OpenMemorySkill;
+  let skill: TotalReclawSkill;
   let isInitialized: boolean = false;
 
   beforeEach(async () => {
-    skill = new OpenMemorySkill({
+    skill = new TotalReclawSkill({
       serverUrl: 'http://mock',
       masterPassword: 'test-password',
     });

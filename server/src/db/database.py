@@ -1,5 +1,5 @@
 """
-Database connection and session management for OpenMemory Server.
+Database connection and session management for TotalReclaw Server.
 """
 import os
 import re
@@ -48,7 +48,7 @@ def validate_trapdoors(trapdoors: list) -> list:
 
 class Database:
     """
-    Database manager for OpenMemory Server.
+    Database manager for TotalReclaw Server.
 
     Handles connection pooling, session management, and common queries.
     """
@@ -211,7 +211,8 @@ class Database:
         decay_score: float,
         source: str,
         content_fp: str = None,
-        agent_id: str = None
+        agent_id: str = None,
+        encrypted_embedding: str = None
     ) -> Fact:
         """
         Store a new fact.
@@ -225,6 +226,7 @@ class Database:
             source: Origin of fact (conversation, explicit, etc.)
             content_fp: HMAC-SHA256 content fingerprint for dedup (v0.3.1b)
             agent_id: Identifier of the creating agent (v0.3.1b)
+            encrypted_embedding: AES-256-GCM encrypted embedding, hex-encoded (PoC v2)
 
         Returns:
             Created Fact object
@@ -238,14 +240,14 @@ class Database:
                 text("""
                     INSERT INTO facts (id, user_id, encrypted_blob, blind_indices,
                                        decay_score, source, content_fp, agent_id,
-                                       is_active, version)
+                                       encrypted_embedding, is_active, version)
                     VALUES (:id, :user_id, :blob, :indices,
                             :decay, :source, :content_fp, :agent_id,
-                            true, 1)
+                            :encrypted_embedding, true, 1)
                     RETURNING id, user_id, encrypted_blob, blind_indices,
                               decay_score, is_active, version, source,
                               created_at, updated_at, sequence_id,
-                              content_fp, agent_id
+                              content_fp, agent_id, encrypted_embedding
                 """),
                 {
                     "id": fact_id,
@@ -256,6 +258,7 @@ class Database:
                     "source": source,
                     "content_fp": content_fp,
                     "agent_id": agent_id,
+                    "encrypted_embedding": encrypted_embedding,
                 }
             )
             row = result.fetchone()
@@ -274,6 +277,7 @@ class Database:
             fact.sequence_id = row.sequence_id
             fact.content_fp = row.content_fp
             fact.agent_id = row.agent_id
+            fact.encrypted_embedding = row.encrypted_embedding
             return fact
 
     async def find_fact_by_fingerprint(
@@ -331,7 +335,7 @@ class Database:
                     SELECT id, user_id, encrypted_blob, blind_indices,
                            decay_score, is_active, version, source,
                            created_at, updated_at, sequence_id,
-                           content_fp, agent_id
+                           content_fp, agent_id, encrypted_embedding
                     FROM facts
                     WHERE user_id = :user_id
                       AND (sequence_id > :since_seq OR :since_seq = 0)
@@ -367,6 +371,7 @@ class Database:
                 fact.sequence_id = row.sequence_id
                 fact.content_fp = row.content_fp
                 fact.agent_id = row.agent_id
+                fact.encrypted_embedding = row.encrypted_embedding
                 facts.append(fact)
 
             # Get latest sequence for this user
@@ -388,7 +393,7 @@ class Database:
         trapdoors: list,
         max_candidates: int = 3000,
         min_decay_score: float = 0.0
-    ) -> list:
+    ) -> tuple:
         """
         Search facts using blind index GIN query.
 
@@ -402,7 +407,9 @@ class Database:
             min_decay_score: Minimum decay score filter
 
         Returns:
-            List of matching Fact objects
+            Tuple of (list of matching Fact objects, total_candidates_matched int)
+            total_candidates_matched is the count of ALL matching facts before
+            the LIMIT is applied, useful for observability.
 
         Raises:
             ValueError: If all trapdoors are invalid
@@ -411,12 +418,32 @@ class Database:
         validated_trapdoors = validate_trapdoors(trapdoors) if trapdoors else []
 
         async with self.session() as session:
+            # First, count total matching candidates (before LIMIT)
+            count_query = text("""
+                SELECT COUNT(*) as total
+                FROM facts
+                WHERE user_id = :user_id
+                  AND is_active = true
+                  AND decay_score >= :min_decay
+                  AND blind_indices && CAST(:trapdoors AS text[])
+            """)
+            count_result = await session.execute(
+                count_query,
+                {
+                    "user_id": user_id,
+                    "min_decay": min_decay_score,
+                    "trapdoors": validated_trapdoors
+                }
+            )
+            total_matched = count_result.fetchone().total
+
             # Use parameterized array with CAST() function — no f-string interpolation.
             # NOTE: We use CAST(:trapdoors AS text[]) instead of :trapdoors::text[]
             # because the :: cast syntax conflicts with SQLAlchemy's named-parameter
             # parsing when using asyncpg (which uses positional $N parameters).
             query = text("""
-                SELECT id, encrypted_blob, decay_score, created_at, version
+                SELECT id, encrypted_blob, decay_score, created_at, version,
+                       encrypted_embedding
                 FROM facts
                 WHERE user_id = :user_id
                   AND is_active = true
@@ -435,16 +462,38 @@ class Database:
                 }
             )
             rows = result.fetchall()
-            return [
-                Fact(
+            facts = []
+            for row in rows:
+                fact = Fact(
                     id=row.id,
                     encrypted_blob=row.encrypted_blob,
                     decay_score=row.decay_score,
                     created_at=row.created_at,
                     version=row.version
                 )
-                for row in rows
-            ]
+                fact.encrypted_embedding = row.encrypted_embedding
+                facts.append(fact)
+            return facts, total_matched
+
+    async def count_active_facts(self, user_id: str) -> int:
+        """
+        Count active (non-deleted) facts for a user.
+
+        Args:
+            user_id: User's ID
+
+        Returns:
+            Count of active facts
+        """
+        async with self.session() as session:
+            result = await session.execute(
+                text("""
+                    SELECT COUNT(*) as cnt FROM facts
+                    WHERE user_id = :user_id AND is_active = true
+                """),
+                {"user_id": user_id}
+            )
+            return result.fetchone().cnt
 
     async def get_fact_by_id(self, fact_id: str, user_id: str) -> Optional[Fact]:
         """Get a specific fact by ID for a user."""
@@ -566,8 +615,9 @@ class Database:
                 {"user_id": user_id}
             )
             rows = result.fetchall()
-            return [
-                Fact(
+            facts = []
+            for row in rows:
+                fact = Fact(
                     id=row.id,
                     user_id=row.user_id,
                     encrypted_blob=row.encrypted_blob,
@@ -579,8 +629,9 @@ class Database:
                     created_at=row.created_at,
                     updated_at=row.updated_at
                 )
-                for row in rows
-            ]
+                fact.encrypted_embedding = getattr(row, 'encrypted_embedding', None)
+                facts.append(fact)
+            return facts
 
     async def get_facts_paginated(
         self,
@@ -664,8 +715,9 @@ class Database:
             if has_more:
                 rows = rows[:limit]
 
-            facts = [
-                Fact(
+            facts = []
+            for row in rows:
+                fact = Fact(
                     id=row.id,
                     user_id=row.user_id,
                     encrypted_blob=row.encrypted_blob,
@@ -677,8 +729,8 @@ class Database:
                     created_at=row.created_at,
                     updated_at=row.updated_at
                 )
-                for row in rows
-            ]
+                fact.encrypted_embedding = getattr(row, 'encrypted_embedding', None)
+                facts.append(fact)
 
             next_cursor = facts[-1].id if facts and has_more else None
 

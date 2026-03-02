@@ -1,0 +1,37 @@
+{
+  "totalreclaw": {
+    "label": "TotalReclaw v2 (E2EE + Embeddings)",
+    "total_queries": 140,
+    "successful_queries": 139,
+    "avg_keyword_recall": 0.3089,
+    "category_metrics": {
+      "factual": {
+        "count": 42,
+        "avg_recall": 0.2726190476190476,
+        "hits": 37,
+        "total": 142
+      },
+      "semantic": {
+        "count": 42,
+        "avg_recall": 0.24285714285714283,
+        "hits": 30,
+        "total": 133
+      },
+      "cross_conversation": {
+        "count": 42,
+        "avg_recall": 0.18083900226757368,
+        "hits": 36,
+        "total": 208
+      },
+      "negative": {
+        "count": 14,
+        "avg_recall": 1.0,
+        "hits": 0,
+        "total": 0
+      }
+    },
+    "latency_p50_ms": 16560.5,
+    "latency_p95_ms": 39373.8,
+    "latency_p99_ms": 42744.5
+  }
+}

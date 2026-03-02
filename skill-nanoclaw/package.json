@@ -1,7 +1,7 @@
 {
-  "name": "@openmemory/skill-nanoclaw",
+  "name": "@totalreclaw/skill-nanoclaw",
   "version": "0.3.0",
-  "description": "NanoClaw skill for OpenMemory integration",
+  "description": "NanoClaw skill for TotalReclaw integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -12,16 +12,16 @@
     "clean": "rm -rf dist"
   },
   "keywords": [
-    "openmemory",
+    "totalreclaw",
     "nanoclaw",
     "skill",
     "memory",
     "encryption"
   ],
-  "author": "OpenMemory Team",
+  "author": "TotalReclaw Team",
   "license": "MIT",
   "dependencies": {
-    "@openmemory/client": "file:../client"
+    "@totalreclaw/client": "file:../client"
   },
   "devDependencies": {
     "typescript": "^5.3.0",

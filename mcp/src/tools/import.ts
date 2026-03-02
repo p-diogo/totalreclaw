@@ -1,5 +1,5 @@
-import { OpenMemory, FactMetadata } from '@openmemory/client';
-import { IMPORT_TOOL_DESCRIPTION } from '../prompts';
+import { TotalReclaw, FactMetadata } from '@totalreclaw/client';
+import { IMPORT_TOOL_DESCRIPTION } from '../prompts.js';
 
 export interface ImportInput {
   content: string;
@@ -34,7 +34,7 @@ interface ParsedFact {
 }
 
 export const importToolDefinition = {
-  name: 'openmemory_import',
+  name: 'totalreclaw_import',
   description: IMPORT_TOOL_DESCRIPTION,
   inputSchema: {
     type: 'object',
@@ -69,6 +69,11 @@ export const importToolDefinition = {
       },
     },
     required: ['content'],
+  },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
   },
 };
 
@@ -162,7 +167,7 @@ function generateImportId(): string {
 }
 
 export async function handleImport(
-  client: OpenMemory,
+  client: TotalReclaw,
   args: unknown,
   defaultNamespace: string
 ): Promise<{ content: Array<{ type: string; text: string }> }> {

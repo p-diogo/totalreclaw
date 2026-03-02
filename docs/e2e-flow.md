@@ -1,6 +1,6 @@
-# OpenMemory End-to-End Flow
+# TotalReclaw End-to-End Flow
 
-> Complete reference for the OpenMemory zero-knowledge encrypted memory vault.
+> Complete reference for the TotalReclaw zero-knowledge encrypted memory vault.
 > Covers every API endpoint, the cryptographic pipeline, blind search, delta sync,
 > content dedup, and authentication -- with request/response examples.
 
@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-OpenMemory is a zero-knowledge encrypted memory vault for AI agents. It allows
+TotalReclaw is a zero-knowledge encrypted memory vault for AI agents. It allows
 AI agents (OpenClaw, Claude Desktop, any MCP-compatible client) to persist and
 retrieve structured "facts" without the server ever seeing plaintext data.
 
@@ -50,7 +50,7 @@ All versioned endpoints live under the `/v1/` prefix. Infrastructure endpoints
 ```
 master_password  --->  Argon2id  --->  ikm (input key material)
                                           |
-                              HKDF-SHA256(salt, ikm, info="openmemory-auth-v1")
+                              HKDF-SHA256(salt, ikm, info="totalreclaw-auth-v1")
                                           |
                            +--------------+--------------+
                            |                             |
@@ -64,7 +64,7 @@ master_password  --->  Argon2id  --->  ikm (input key material)
 - `salt`: 32 cryptographically random bytes, generated once at registration,
   stored on both client (OS keychain) and server.
 - The server **never** receives the master password or the encryption key.
-- The HKDF info string is `"openmemory-auth-v1"` (see `server/src/auth.py`).
+- The HKDF info string is `"totalreclaw-auth-v1"` (see `server/src/auth.py`).
 
 ### 3.2 Registration
 

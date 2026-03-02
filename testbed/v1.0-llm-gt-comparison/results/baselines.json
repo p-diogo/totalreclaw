@@ -1,0 +1,104 @@
+{
+  "scenarios": {
+    "S1_bm25_only": {
+      "name": "BM25-Only",
+      "algorithm_id": "bm25_only",
+      "results": {
+        "precision_at_5": 0.6072727272727274,
+        "recall_at_5": 0.15868368808644165,
+        "f1_at_5": 0.23754439888898585,
+        "mrr": 0.6557575757575757,
+        "map": 0.1406648937039343,
+        "ndcg_at_5": 0.7016923920020314,
+        "latency": {
+          "p50_ms": 25.07650014013052,
+          "p95_ms": 27.01271679252386,
+          "p99_ms": 32.4153058230877,
+          "mean_ms": 25.403940965506163,
+          "min_ms": 22.37629098817706,
+          "max_ms": 37.2253330424428
+        },
+        "queries_evaluated": 55
+      }
+    },
+    "S2_vector_only": {
+      "name": "Vector-Only",
+      "algorithm_id": "vector_only",
+      "results": {
+        "precision_at_5": 0.2727272727272727,
+        "recall_at_5": 0.0850281636314156,
+        "f1_at_5": 0.12021884791433689,
+        "mrr": 0.3975757575757575,
+        "map": 0.06520260450809098,
+        "ndcg_at_5": 0.469288801573864,
+        "latency": {
+          "p50_ms": 7.272874936461449,
+          "p95_ms": 31.853800313547254,
+          "p99_ms": 77.3863206617535,
+          "mean_ms": 13.237809025767175,
+          "min_ms": 4.023584071546793,
+          "max_ms": 129.76170796900988
+        },
+        "queries_evaluated": 55
+      }
+    },
+    "S3_openclaw_hybrid": {
+      "name": "OpenClaw-Hybrid",
+      "algorithm_id": "openclaw_hybrid",
+      "results": {
+        "precision_at_5": 0.47636363636363654,
+        "recall_at_5": 0.14613369475881957,
+        "f1_at_5": 0.20904935799569038,
+        "mrr": 0.7212121212121213,
+        "map": 0.12300578998385597,
+        "ndcg_at_5": 0.7497827467016278,
+        "latency": {
+          "p50_ms": 33.402333967387676,
+          "p95_ms": 40.7723873388022,
+          "p99_ms": 57.539085038006306,
+          "mean_ms": 34.41106749021194,
+          "min_ms": 29.95604183524847,
+          "max_ms": 58.01212461665273
+        },
+        "queries_evaluated": 55
+      }
+    },
+    "S4_qmd_hybrid": {
+      "name": "QMD-Hybrid",
+      "algorithm_id": "qmd_hybrid",
+      "results": {
+        "precision_at_5": 0.4363636363636363,
+        "recall_at_5": 0.12500689765839165,
+        "f1_at_5": 0.1801107042574692,
+        "mrr": 0.5687878787878788,
+        "map": 0.08747846931196289,
+        "ndcg_at_5": 0.6728578660593197,
+        "latency": {
+          "p50_ms": 71.17312494665384,
+          "p95_ms": 108.15552482381463,
+          "p99_ms": 116.7784950323403,
+          "mean_ms": 74.91746969859709,
+          "min_ms": 33.630999736487865,
+          "max_ms": 125.16374979168177
+        },
+        "queries_evaluated": 55
+      }
+    }
+  },
+  "metadata": {
+    "testbed_version": "v1.0-llm-gt-comparison",
+    "timestamp": "2026-02-19 20:51:59",
+    "total_evaluation_time_seconds": 8.14,
+    "num_queries": 150,
+    "num_documents": 1480,
+    "embedding_model": "all-MiniLM-L6-v2",
+    "embedding_dimension": 384,
+    "top_k": 5,
+    "ground_truth_stats": {
+      "queries_with_zero_relevant": 95,
+      "queries_with_relevant": 55,
+      "avg_relevant_per_query": 6.966666666666667,
+      "total_relevant_judgments": 1045
+    }
+  }
+}

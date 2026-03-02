@@ -1,7 +1,7 @@
 /**
  * Host Agent LLM Integration Test (T088)
  *
- * Validates that the OpenMemory skill can use the host agent's LLM
+ * Validates that the TotalReclaw skill can use the host agent's LLM
  * for fact extraction, without needing a separate LLM API key.
  *
  * This is the production architecture:

@@ -1,0 +1,80 @@
+# TotalReclaw Production Caddyfile
+#
+# Caddy provides:
+# - Automatic HTTPS via Let's Encrypt
+# - TLS termination
+# - HTTP/2 and HTTP/3
+# - Request size limits (defense in depth)
+# - Security headers (defense in depth)
+#
+# Usage:
+# - Development: Replace {$DOMAIN} with localhost
+# - Production: Set DOMAIN env var to your domain (e.g., api.totalreclaw.dev)
+
+{$DOMAIN:localhost} {
+    # ============ TLS Configuration ============
+    # Caddy auto-provisions Let's Encrypt certificates for production domains.
+    # For localhost, it uses a self-signed certificate.
+
+    # ============ Request Limits ============
+    request_body {
+        max_size 50MB
+    }
+
+    # ============ Security Headers ============
+    header {
+        # HSTS - tell browsers to always use HTTPS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+
+        # Prevent clickjacking
+        X-Frame-Options "DENY"
+
+        # XSS protection
+        X-XSS-Protection "1; mode=block"
+
+        # Referrer policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+
+        # Content Security Policy
+        Content-Security-Policy "default-src 'none'; frame-ancestors 'none'"
+
+        # Remove server identification
+        -Server
+    }
+
+    # ============ Logging ============
+    log {
+        output stdout
+        format json
+        level INFO
+    }
+
+    # ============ Rate Limiting (Defense in Depth) ============
+    # Primary rate limiting is done by per-user middleware in FastAPI.
+    # Caddy rate limiting is a secondary defense layer.
+    # Requires the caddy-ratelimit plugin (optional).
+
+    # ============ Reverse Proxy ============
+    reverse_proxy totalreclaw-server:8080 {
+        # Health check
+        health_uri /health
+        health_interval 30s
+        health_timeout 10s
+
+        # Timeouts
+        transport http {
+            dial_timeout 10s
+            response_header_timeout 60s
+            read_timeout 120s
+            write_timeout 120s
+        }
+
+        # Pass client IP to backend
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}

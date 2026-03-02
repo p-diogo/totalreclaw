@@ -1,5 +1,5 @@
 #!/bin/bash
-# Setup script for OpenMemory OpenClaw plugin
+# Setup script for TotalReclaw OpenClaw plugin
 # Run this on the HOST before starting Docker containers
 
 set -e
@@ -16,4 +16,4 @@ echo "  cd testbed/functional-test"
 echo "  docker compose -f docker-compose.functional-test.yml up -d"
 echo ""
 echo "The plugin will auto-register on first use."
-echo "Set OPENMEMORY_MASTER_PASSWORD in your .env file."
+echo "Set TOTALRECLAW_MASTER_PASSWORD in your .env file."

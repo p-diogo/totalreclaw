@@ -1,0 +1,16 @@
+# Extends the NanoClaw agent container to add TotalReclaw dependencies.
+# The overlay files (modified index.ts, totalreclaw-mcp.ts, skills) are
+# mounted via docker-compose volumes, NOT baked into this image.
+
+FROM nanoclaw-agent:latest
+
+# Add TotalReclaw crypto dependencies
+USER root
+WORKDIR /app
+RUN npm install @noble/hashes@^2.0.0 @scure/bip39@^2.0.0 @huggingface/transformers porter-stemmer
+
+# Create credentials directory owned by node user (for TotalReclaw MCP server)
+RUN mkdir -p /workspace/.totalreclaw && chown node:node /workspace/.totalreclaw
+
+USER node
+WORKDIR /workspace/group

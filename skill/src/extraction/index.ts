@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - Extraction Module
+ * TotalReclaw Skill - Extraction Module
  *
  * Fact extraction, deduplication, and entity/relation extraction
  */

@@ -12,7 +12,7 @@
 4. [Session Continuity](#session-continuity)
 5. [Memory Hierarchy](#memory-hierarchy)
 6. [Comparison with OpenClaw](#comparison-with-openclaw)
-7. [Integration Points for OpenMemory](#integration-points-for-openmemory)
+7. [Integration Points for TotalReclaw](#integration-points-for-totalreclaw)
 
 ---
 
@@ -434,11 +434,11 @@ User Message --> Agent Processing --> Response
 
 ---
 
-## Integration Points for OpenMemory
+## Integration Points for TotalReclaw
 
-### Where OpenMemory Can Add Value
+### Where TotalReclaw Can Add Value
 
-1. **Semantic Search** - NanoClaw lacks vector search; OpenMemory can provide encrypted semantic retrieval
+1. **Semantic Search** - NanoClaw lacks vector search; TotalReclaw can provide encrypted semantic retrieval
 2. **Fact Extraction** - Automated extraction and deduplication from conversations
 3. **Memory Decay** - Importance-based forgetting instead of manual curation
 4. **Cross-Device Sync** - Encrypted memory that syncs across instances
@@ -454,7 +454,7 @@ User Message --> Agent Processing --> Response
         |  MCP / Skill
         v
 +-------------------+
-|  OpenMemory       |
+|  TotalReclaw       |
 |  (in container    |
 |   or as MCP       |
 |   server)         |
@@ -463,7 +463,7 @@ User Message --> Agent Processing --> Response
         |  Protobuf/HTTP
         v
 +-------------------+
-| OpenMemory Server |
+| TotalReclaw Server |
 | (encrypted store) |
 +-------------------+
 ```
@@ -472,18 +472,18 @@ User Message --> Agent Processing --> Response
 
 | File | Purpose | Integration Point |
 |------|---------|-------------------|
-| `container/agent-runner/src/index.ts` | Agent execution | Add OpenMemory MCP server |
-| `src/db.ts` | SQLite operations | Sync with OpenMemory |
-| `src/container-runner.ts` | Container config | Mount OpenMemory config |
-| `groups/*/CLAUDE.md` | Memory files | Sync with OpenMemory |
+| `container/agent-runner/src/index.ts` | Agent execution | Add TotalReclaw MCP server |
+| `src/db.ts` | SQLite operations | Sync with TotalReclaw |
+| `src/container-runner.ts` | Container config | Mount TotalReclaw config |
+| `groups/*/CLAUDE.md` | Memory files | Sync with TotalReclaw |
 
-### Data Flow for OpenMemory Integration
+### Data Flow for TotalReclaw Integration
 
 ```
 1. Message received
        |
        v
-2. OpenMemory recall (pre-agent hook)
+2. TotalReclaw recall (pre-agent hook)
    - Query encrypted memories
    - Inject into context
        |
@@ -491,7 +491,7 @@ User Message --> Agent Processing --> Response
 3. Agent processes with memory context
        |
        v
-4. OpenMemory remember (post-agent hook)
+4. TotalReclaw remember (post-agent hook)
    - Extract facts from conversation
    - Encrypt and store
        |

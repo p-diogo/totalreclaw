@@ -1,5 +1,5 @@
 """
-Registration endpoint for OpenMemory Server.
+Registration endpoint for TotalReclaw Server.
 
 Implements user registration with HKDF-derived auth keys.
 """

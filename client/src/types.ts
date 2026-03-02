@@ -1,5 +1,5 @@
 /**
- * OpenMemory Client - Type Definitions
+ * TotalReclaw Client - Type Definitions
  *
  * Core types for the zero-knowledge memory client library.
  */
@@ -30,9 +30,9 @@ export const DEFAULT_LSH_CONFIG: LSHConfig = {
 };
 
 /**
- * OpenMemory client configuration
+ * TotalReclaw client configuration
  */
-export interface OpenMemoryConfig {
+export interface TotalReclawConfig {
   /** Server URL (e.g., http://127.0.0.1:8080) */
   serverUrl: string;
   /** Path to ONNX model file (optional, will use default if not provided) */
@@ -266,9 +266,9 @@ export interface ExportedData {
 // ============================================================================
 
 /**
- * OpenMemory error codes
+ * TotalReclaw error codes
  */
-export enum OpenMemoryErrorCode {
+export enum TotalReclawErrorCode {
   ENCRYPTION_FAILED = 'ENCRYPTION_FAILED',
   DECRYPTION_FAILED = 'DECRYPTION_FAILED',
   KEY_DERIVATION_FAILED = 'KEY_DERIVATION_FAILED',
@@ -283,15 +283,15 @@ export enum OpenMemoryErrorCode {
 }
 
 /**
- * OpenMemory error class
+ * TotalReclaw error class
  */
-export class OpenMemoryError extends Error {
+export class TotalReclawError extends Error {
   constructor(
-    public readonly code: OpenMemoryErrorCode,
+    public readonly code: TotalReclawErrorCode,
     message: string,
     public readonly cause?: Error
   ) {
     super(message);
-    this.name = 'OpenMemoryError';
+    this.name = 'TotalReclawError';
   }
 }

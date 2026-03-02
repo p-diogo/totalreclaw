@@ -1,20 +1,20 @@
 /**
- * OpenMemory Skill - Type Definitions
+ * TotalReclaw Skill - Type Definitions
  *
  * Types for the OpenClaw skill integration.
  */
 
-import type { Fact, RerankedResult, FactMetadata } from '@openmemory/client';
+import type { Fact, RerankedResult, FactMetadata } from '@totalreclaw/client';
 
 // ============================================================================
 // Skill Configuration
 // ============================================================================
 
 /**
- * OpenMemory skill configuration
+ * TotalReclaw skill configuration
  */
-export interface OpenMemorySkillConfig {
-  /** OpenMemory server URL */
+export interface TotalReclawSkillConfig {
+  /** TotalReclaw server URL */
   serverUrl: string;
   /** Number of turns between automatic extractions */
   autoExtractEveryTurns: number;
@@ -37,7 +37,7 @@ export interface OpenMemorySkillConfig {
 /**
  * Default skill configuration
  */
-export const DEFAULT_SKILL_CONFIG: OpenMemorySkillConfig = {
+export const DEFAULT_SKILL_CONFIG: TotalReclawSkillConfig = {
   serverUrl: 'http://127.0.0.1:8080',
   autoExtractEveryTurns: 5,
   minImportanceForAutoStore: 6,
@@ -178,7 +178,7 @@ export interface PreCompactionResult {
 // ============================================================================
 
 /**
- * Parameters for openmemory_remember tool
+ * Parameters for totalreclaw_remember tool
  */
 export interface RememberToolParams {
   text: string;
@@ -187,7 +187,7 @@ export interface RememberToolParams {
 }
 
 /**
- * Parameters for openmemory_recall tool
+ * Parameters for totalreclaw_recall tool
  */
 export interface RecallToolParams {
   query: string;
@@ -195,14 +195,14 @@ export interface RecallToolParams {
 }
 
 /**
- * Parameters for openmemory_forget tool
+ * Parameters for totalreclaw_forget tool
  */
 export interface ForgetToolParams {
   factId: string;
 }
 
 /**
- * Parameters for openmemory_export tool
+ * Parameters for totalreclaw_export tool
  */
 export interface ExportToolParams {
   format?: 'json' | 'markdown';

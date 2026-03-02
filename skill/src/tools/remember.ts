@@ -1,8 +1,8 @@
 /**
- * OpenMemory Skill - Remember Tool
+ * TotalReclaw Skill - Remember Tool
  *
- * Tool for explicitly storing memories in OpenMemory.
- * This is the openmemory_remember tool implementation.
+ * Tool for explicitly storing memories in TotalReclaw.
+ * This is the totalreclaw_remember tool implementation.
  *
  * @example
  * ```typescript
@@ -15,9 +15,9 @@
  * ```
  */
 
-import type { OpenMemory, FactMetadata } from '@openmemory/client';
+import type { TotalReclaw, FactMetadata } from '@totalreclaw/client';
 import type { RememberToolParams } from '../types';
-import { OpenMemoryError, OpenMemoryErrorCode } from '@openmemory/client';
+import { TotalReclawError, TotalReclawErrorCode } from '@totalreclaw/client';
 
 /**
  * Result of the remember tool operation
@@ -37,13 +37,13 @@ export interface RememberToolResult {
 const DEFAULT_IMPORTANCE = 7;
 
 /**
- * Store a memory in OpenMemory
+ * Store a memory in TotalReclaw
  *
- * @param client - The OpenMemory client instance
+ * @param client - The TotalReclaw client instance
  * @param params - Tool parameters (text, type?, importance?)
  * @returns Result containing success status and fact ID
  *
- * @throws {OpenMemoryError} If the client is not initialized or operation fails
+ * @throws {TotalReclawError} If the client is not initialized or operation fails
  *
  * @example
  * ```typescript
@@ -54,14 +54,14 @@ const DEFAULT_IMPORTANCE = 7;
  *
  * // With all options
  * const result = await rememberTool(client, {
- *   text: 'User is working on the OpenMemory project',
+ *   text: 'User is working on the TotalReclaw project',
  *   type: 'fact',
  *   importance: 9,
  * });
  * ```
  */
 export async function rememberTool(
-  client: OpenMemory,
+  client: TotalReclaw,
   params: RememberToolParams
 ): Promise<RememberToolResult> {
   // Validate input
@@ -112,10 +112,10 @@ export async function rememberTool(
     };
   } catch (error) {
     // Handle known error types
-    if (error instanceof OpenMemoryError) {
+    if (error instanceof TotalReclawError) {
       return {
         success: false,
-        error: `OpenMemory error (${error.code}): ${error.message}`,
+        error: `TotalReclaw error (${error.code}): ${error.message}`,
       };
     }
 
@@ -133,10 +133,10 @@ export async function rememberTool(
  *
  * Useful for creating a tool that's pre-bound to a client instance.
  *
- * @param client - The OpenMemory client instance
+ * @param client - The TotalReclaw client instance
  * @returns A function that accepts RememberToolParams and returns RememberToolResult
  */
-export function createRememberTool(client: OpenMemory): (params: RememberToolParams) => Promise<RememberToolResult> {
+export function createRememberTool(client: TotalReclaw): (params: RememberToolParams) => Promise<RememberToolResult> {
   return (params: RememberToolParams) => rememberTool(client, params);
 }
 

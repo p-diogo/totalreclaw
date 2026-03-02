@@ -1,4 +1,4 @@
-import type { OpenMemory } from '@openmemory/client';
+import type { TotalReclaw } from '@totalreclaw/client';
 
 export interface BeforeAgentStartInput {
   userMessage: string;
@@ -17,7 +17,7 @@ export interface BeforeAgentStartOutput {
 }
 
 export async function beforeAgentStart(
-  client: OpenMemory,
+  client: TotalReclaw,
   input: BeforeAgentStartInput,
   maxMemories: number = 8
 ): Promise<BeforeAgentStartOutput> {

@@ -1,5 +1,5 @@
-import { OpenMemory } from '@openmemory/client';
-import { EXPORT_TOOL_DESCRIPTION } from '../prompts';
+import { TotalReclaw } from '@totalreclaw/client';
+import { EXPORT_TOOL_DESCRIPTION } from '../prompts.js';
 
 export interface ExportInput {
   format?: 'markdown' | 'json';
@@ -15,7 +15,7 @@ export interface ExportOutput {
 }
 
 export const exportToolDefinition = {
-  name: 'openmemory_export',
+  name: 'totalreclaw_export',
   description: EXPORT_TOOL_DESCRIPTION,
   inputSchema: {
     type: 'object',
@@ -37,10 +37,15 @@ export const exportToolDefinition = {
       },
     },
   },
+  annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+  },
 };
 
 export async function handleExport(
-  client: OpenMemory,
+  client: TotalReclaw,
   args: unknown,
   defaultNamespace: string
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
@@ -80,7 +85,7 @@ export async function handleExport(
       content = JSON.stringify(jsonData, null, 2);
     } else {
       const lines: string[] = [
-        `# OpenMemory Export`,
+        `# TotalReclaw Export`,
         ``,
         `**Exported:** ${exportedAt}`,
         `**Namespace:** ${ns}`,

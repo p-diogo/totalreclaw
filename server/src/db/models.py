@@ -1,11 +1,11 @@
 """
-SQLAlchemy models for OpenMemory Server.
+SQLAlchemy models for TotalReclaw Server.
 """
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import (
     Column, String, LargeBinary, Float, Boolean, Integer,
-    DateTime, BigInteger, ForeignKey, Text, Index
+    DateTime, BigInteger, ForeignKey, Text, Index, Sequence
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -47,6 +47,11 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"<User(user_id={self.user_id})>"
+
+
+# Sequence for facts.sequence_id — must be defined before the Fact model
+# so that Base.metadata.create_all() creates it before the table.
+facts_sequence_id_seq = Sequence("facts_sequence_id_seq", metadata=Base.metadata)
 
 
 class Fact(Base):
@@ -92,11 +97,16 @@ class Fact(Base):
     # --- Added in v0.3.1b ---
     sequence_id: Mapped[Optional[int]] = mapped_column(
         BigInteger,
-        server_default=text("nextval('facts_sequence_id_seq')"),
+        facts_sequence_id_seq,
+        server_default=facts_sequence_id_seq.next_value(),
         nullable=True  # nullable for backward compat with existing rows
     )
     content_fp: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     agent_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # --- Added in PoC v2 (LSH + reranking) ---
+    encrypted_embedding: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True
+    )  # AES-256-GCM encrypted embedding, hex-encoded. Server never decrypts.
 
     # Indexes
     __table_args__ = (

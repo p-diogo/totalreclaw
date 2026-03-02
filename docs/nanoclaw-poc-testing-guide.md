@@ -1,8 +1,8 @@
-# OpenMemory Beta Testing Guide (NanoClaw)
+# TotalReclaw Beta Testing Guide (NanoClaw)
 
 ## What You Are Testing
 
-OpenMemory is an encrypted memory vault for AI agents. Memories are AES-256-GCM encrypted on your device before they leave it -- the server only ever sees ciphertext. When a NanoClaw container starts a new conversation, it recalls relevant memories from the encrypted vault, giving the agent continuity across ephemeral sessions. You are testing whether this actually works end-to-end with a real Claude agent.
+TotalReclaw is an encrypted memory vault for AI agents. Memories are AES-256-GCM encrypted on your device before they leave it -- the server only ever sees ciphertext. When a NanoClaw container starts a new conversation, it recalls relevant memories from the encrypted vault, giving the agent continuity across ephemeral sessions. You are testing whether this actually works end-to-end with a real Claude agent.
 
 **You are the first people running the full agent integration.** The encryption pipeline (32/32 tests passing) and server infrastructure are validated. What has NOT been validated yet is the complete experience: NanoClaw building from source on your machine, Claude using MCP tools during conversation, SKILL.md driving auto-recall/remember, and cross-session memory feeling natural. Your feedback on the real experience is exactly what we need.
 
@@ -31,7 +31,7 @@ Auth is only needed for the full agent test (Step 5). The pipeline test in Step 
 
 ```bash
 git clone https://github.com/p-diogo/openmemory-poc.git
-cd openmemory-poc/testbed/functional-test-nanoclaw
+cd totalreclaw-poc/testbed/functional-test-nanoclaw
 git clone https://github.com/qwibitai/nanoclaw.git nanoclaw
 ```
 
@@ -58,7 +58,7 @@ Edit `.env` and fill in:
 |---|---|---|
 | `CLAUDE_CODE_OAUTH_TOKEN` | One of these two | OAuth token — run `claude setup-token` to get it |
 | `ANTHROPIC_API_KEY` | One of these two | Anthropic API key from console.anthropic.com |
-| `OPENMEMORY_MASTER_PASSWORD` | Yes | Your 12-word BIP-39 mnemonic from `generate-seed.mjs` |
+| `TOTALRECLAW_MASTER_PASSWORD` | Yes | Your 12-word BIP-39 mnemonic from `generate-seed.mjs` |
 | `POSTGRES_PASSWORD` | No | Defaults to `test` |
 
 ### 3. Build the NanoClaw base image
@@ -67,10 +67,10 @@ Edit `.env` and fill in:
 cd nanoclaw/container && ./build.sh && cd ../..
 ```
 
-### 4. Build the extended image (adds OpenMemory crypto)
+### 4. Build the extended image (adds TotalReclaw crypto)
 
 ```bash
-docker build -f Dockerfile.nanoclaw-openmemory -t nanoclaw-openmemory:latest .
+docker build -f Dockerfile.nanoclaw-totalreclaw -t nanoclaw-totalreclaw:latest .
 ```
 
 ### 5. Start the infrastructure
@@ -86,7 +86,7 @@ curl http://localhost:8090/health
 docker compose -f docker-compose.nanoclaw-test.yml ps
 ```
 
-Both `postgres` and `openmemory-server` should show healthy.
+Both `postgres` and `totalreclaw-server` should show healthy.
 
 ---
 
@@ -137,7 +137,7 @@ To have a freeform conversation with the agent, adapt the `docker run` command f
   "isMain": true,
   "assistantName": "TestBot",
   "secrets": {
-    "OPENMEMORY_MASTER_PASSWORD": "your-passphrase-here",
+    "TOTALRECLAW_MASTER_PASSWORD": "your-passphrase-here",
     "CLAUDE_CODE_OAUTH_TOKEN": "your-token-here"
   }
 }
@@ -147,13 +147,13 @@ Then run:
 
 ```bash
 cat my-prompt.json | docker run --rm -i \
-  --network nanoclaw-openmemory-test_nanoclaw-test \
-  -e OPENMEMORY_SERVER_URL=http://openmemory-server:8080 \
-  -v "$(pwd)/nanoclaw-openmemory-overlay/agent-runner-src/index.ts:/app/src/index.ts:ro" \
-  -v "$(pwd)/nanoclaw-openmemory-overlay/agent-runner-src/openmemory-mcp.ts:/app/src/openmemory-mcp.ts:ro" \
-  -v "$(pwd)/nanoclaw-openmemory-overlay/skills/openmemory:/app/skills/openmemory:ro" \
-  -v nanoclaw-openmemory-credentials:/workspace/.openmemory \
-  nanoclaw-openmemory:latest
+  --network nanoclaw-totalreclaw-test_nanoclaw-test \
+  -e TOTALRECLAW_SERVER_URL=http://totalreclaw-server:8080 \
+  -v "$(pwd)/nanoclaw-totalreclaw-overlay/agent-runner-src/index.ts:/app/src/index.ts:ro" \
+  -v "$(pwd)/nanoclaw-totalreclaw-overlay/agent-runner-src/totalreclaw-mcp.ts:/app/src/totalreclaw-mcp.ts:ro" \
+  -v "$(pwd)/nanoclaw-totalreclaw-overlay/skills/totalreclaw:/app/skills/totalreclaw:ro" \
+  -v nanoclaw-totalreclaw-credentials:/workspace/.totalreclaw \
+  nanoclaw-totalreclaw:latest
 ```
 
 Each run is a fresh container. Change the `prompt` field to say different things. The agent should auto-recall relevant memories at the start and store new facts as the conversation progresses.
@@ -162,14 +162,14 @@ Each run is a fresh container. Change the `prompt` field to say different things
 
 ## What to Look For
 
-- [ ] **Auto-store**: The agent stores facts without being explicitly asked. Tell it your name, job, and preferences in natural conversation and check if it calls `openmemory_remember` on its own.
+- [ ] **Auto-store**: The agent stores facts without being explicitly asked. Tell it your name, job, and preferences in natural conversation and check if it calls `totalreclaw_remember` on its own.
 
 - [ ] **Cross-session recall**: Start a new container and ask "What do you know about me?" The agent should recall facts from the previous session without any prompting.
 
 - [ ] **No plaintext on the server**: Run this to inspect the database directly:
   ```bash
   docker exec -it $(docker ps -qf name=postgres) \
-    psql -U openmemory -d openmemory \
+    psql -U totalreclaw -d totalreclaw \
     -c "SELECT id, substring(encrypted_blob, 1, 80) AS blob_preview, blind_indices FROM facts LIMIT 5;"
   ```
   You should see hex-encoded ciphertext in `encrypted_blob` and SHA-256 hashes in `blind_indices` -- no readable text.
@@ -178,7 +178,7 @@ Each run is a fresh container. Change the `prompt` field to say different things
 
 - [ ] **No plaintext in logs**: Check server logs for leaked memory content:
   ```bash
-  docker logs $(docker ps -qf name=openmemory-server) 2>&1 | head -50
+  docker logs $(docker ps -qf name=totalreclaw-server) 2>&1 | head -50
   ```
 
 - [ ] **Indirect recall**: After storing several facts, ask questions using different words than you used to store them (e.g., store "I prefer Python" then ask "What should I use for my next backend project?").
@@ -190,7 +190,7 @@ Each run is a fresh container. Change the `prompt` field to say different things
 **Server won't start**
 
 ```bash
-docker compose -f docker-compose.nanoclaw-test.yml logs openmemory-server
+docker compose -f docker-compose.nanoclaw-test.yml logs totalreclaw-server
 docker compose -f docker-compose.nanoclaw-test.yml logs postgres
 ```
 
@@ -203,14 +203,14 @@ Verify the `nanoclaw/container/` directory exists and contains `build.sh`. Docke
 **Agent container exits immediately**
 
 ```bash
-docker logs $(docker ps -alqf ancestor=nanoclaw-openmemory)
+docker logs $(docker ps -alqf ancestor=nanoclaw-totalreclaw)
 ```
 
 Usually means auth is missing or invalid. Verify your `.env` has a valid `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`, and that the server is healthy (`curl http://localhost:8090/health`).
 
 **No memories recalled in new session**
 
-The passphrase must match between sessions. A different `OPENMEMORY_MASTER_PASSWORD` derives different keys, making old memories unreadable. Check that your `.env` hasn't changed.
+The passphrase must match between sessions. A different `TOTALRECLAW_MASTER_PASSWORD` derives different keys, making old memories unreadable. Check that your `.env` hasn't changed.
 
 **"Register failed: 409"**
 
@@ -218,7 +218,7 @@ The server already has credentials from a different passphrase. Reset:
 
 ```bash
 docker compose -f docker-compose.nanoclaw-test.yml down
-docker volume rm nanoclaw-openmemory-credentials 2>/dev/null
+docker volume rm nanoclaw-totalreclaw-credentials 2>/dev/null
 docker compose -f docker-compose.nanoclaw-test.yml up -d
 ```
 

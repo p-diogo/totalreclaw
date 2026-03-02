@@ -1,0 +1,4212 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-02-27T23:05:26.705859",
+    "total_facts": 415,
+    "ingested_conversations": [
+      "conv-0001",
+      "conv-0002",
+      "conv-0003",
+      "conv-0004",
+      "conv-0005",
+      "conv-0006",
+      "conv-0007",
+      "conv-0008",
+      "conv-0009",
+      "conv-0010",
+      "conv-0013",
+      "conv-0014",
+      "conv-0015",
+      "conv-0016",
+      "conv-0017",
+      "conv-0018",
+      "conv-0019",
+      "conv-0020",
+      "conv-0021",
+      "conv-0022",
+      "conv-0025",
+      "conv-0026",
+      "conv-0027",
+      "conv-0028",
+      "conv-0029",
+      "conv-0030",
+      "conv-0031",
+      "conv-0032",
+      "conv-0033",
+      "conv-0034",
+      "conv-0035",
+      "conv-0036",
+      "conv-0037",
+      "conv-0038",
+      "conv-0039",
+      "conv-0040",
+      "conv-0041",
+      "conv-0042",
+      "conv-0043",
+      "conv-0044",
+      "conv-0045",
+      "conv-0046",
+      "conv-0047",
+      "conv-0048",
+      "conv-0049",
+      "conv-0050",
+      "conv-0051",
+      "conv-0052",
+      "conv-0053",
+      "conv-0054"
+    ],
+    "description": "Facts filtered to only include those from ingested conversations"
+  },
+  "facts": [
+    {
+      "id": "fact-0001",
+      "text": "The user is a Senior Software Engineer at Nexus Labs in San Diego.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0001"
+      ],
+      "first_mentioned": "conv-0001"
+    },
+    {
+      "id": "fact-0002",
+      "text": "The user rents an apartment with two roommates and splits expenses three ways.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0001"
+      ],
+      "first_mentioned": "conv-0001"
+    },
+    {
+      "id": "fact-0003",
+      "text": "The user spends the most money on food and going out, including buying ingredients for baking sourdough bread and visiting local breweries with friends.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0001"
+      ],
+      "first_mentioned": "conv-0001"
+    },
+    {
+      "id": "fact-0004",
+      "text": "The user has recently downloaded a budgeting app to help track spending.",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0001"
+      ],
+      "first_mentioned": "conv-0001"
+    },
+    {
+      "id": "fact-0005",
+      "text": "The user wants to buy a house in a few years and take a trip to Japan to visit places from sci-fi novels.",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0001"
+      ],
+      "first_mentioned": "conv-0001"
+    },
+    {
+      "id": "fact-0006",
+      "text": "The user is currently contributing only the minimum to their 401k and wants to increase contributions.",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0001"
+      ],
+      "first_mentioned": "conv-0001"
+    },
+    {
+      "id": "fact-0007",
+      "text": "The user practices archery once a week and is trying to improve at gardening as hobbies.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0001"
+      ],
+      "first_mentioned": "conv-0001"
+    },
+    {
+      "id": "fact-0008",
+      "text": "The user is 32 years old.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0002"
+      ],
+      "first_mentioned": "conv-0002"
+    },
+    {
+      "id": "fact-0009",
+      "text": "The user works as a Product Designer at a fintech startup.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0002"
+      ],
+      "first_mentioned": "conv-0002"
+    },
+    {
+      "id": "fact-0010",
+      "text": "The user is planning a wedding scheduled for next June, about six months away.",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0002"
+      ],
+      "first_mentioned": "conv-0002"
+    },
+    {
+      "id": "fact-0011",
+      "text": "The user and their partner are saving for a down payment on a house.",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0002"
+      ],
+      "first_mentioned": "conv-0002"
+    },
+    {
+      "id": "fact-0012",
+      "text": "The user pays $2,400 monthly rent for a two-bedroom apartment in the Mission District.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0002"
+      ],
+      "first_mentioned": "conv-0002"
+    },
+    {
+      "id": "fact-0013",
+      "text": "The user spends about $400 monthly on subscriptions for streaming services and apps.",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0002"
+      ],
+      "first_mentioned": "conv-0002"
+    },
+    {
+      "id": "fact-0014",
+      "text": "The user has recently invested in home automation gadgets including smart lights and a thermostat and plans to add more.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0002"
+      ],
+      "first_mentioned": "conv-0002"
+    },
+    {
+      "id": "fact-0015",
+      "text": "The user plays tennis twice a week and has recently gotten into painting.",
+      "type": "preference",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0002"
+      ],
+      "first_mentioned": "conv-0002"
+    },
+    {
+      "id": "fact-0016",
+      "text": "The user has started gardening and cooking more at home using fresh vegetables from their garden.",
+      "type": "preference",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0002"
+      ],
+      "first_mentioned": "conv-0002"
+    },
+    {
+      "id": "fact-0017",
+      "text": "The user is interested in buying a 1970s Mercedes vintage car currently for sale locally.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0002"
+      ],
+      "first_mentioned": "conv-0002"
+    },
+    {
+      "id": "fact-0018",
+      "text": "The user is 24 years old",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0003"
+      ],
+      "first_mentioned": "conv-0003"
+    },
+    {
+      "id": "fact-0019",
+      "text": "The user is currently a junior data scientist at a smaller biotech startup",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0003"
+      ],
+      "first_mentioned": "conv-0003"
+    },
+    {
+      "id": "fact-0020",
+      "text": "The user has been at their current job for one year",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0003"
+      ],
+      "first_mentioned": "conv-0003"
+    },
+    {
+      "id": "fact-0021",
+      "text": "The user has been offered a senior data scientist position at BioGenesis Pharma with a 40% salary increase",
+      "type": "decision",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0003"
+      ],
+      "first_mentioned": "conv-0003"
+    },
+    {
+      "id": "fact-0022",
+      "text": "The BioGenesis Pharma position is located in San Francisco",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0003"
+      ],
+      "first_mentioned": "conv-0003"
+    },
+    {
+      "id": "fact-0023",
+      "text": "The user is getting married next year and plans to move to Colorado after the wedding",
+      "type": "episodic",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0003"
+      ],
+      "first_mentioned": "conv-0003"
+    },
+    {
+      "id": "fact-0024",
+      "text": "The user's fiancé is supportive of the user's career decision but excited about moving to Colorado",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0003"
+      ],
+      "first_mentioned": "conv-0003"
+    },
+    {
+      "id": "fact-0025",
+      "text": "The user and their fiancé share a hobby of mountain biking and have started looking at mountain biking trails in Colorado",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0003"
+      ],
+      "first_mentioned": "conv-0003"
+    },
+    {
+      "id": "fact-0026",
+      "text": "The user's long-term career goal is to work in pharmaceutical data science, making BioGenesis a dream company",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0003"
+      ],
+      "first_mentioned": "conv-0003"
+    },
+    {
+      "id": "fact-0027",
+      "text": "The user enjoys leatherworking and hopes to set up a proper workshop in their new home",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0003"
+      ],
+      "first_mentioned": "conv-0003"
+    },
+    {
+      "id": "fact-0028",
+      "text": "The user is 62 years old.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0004"
+      ],
+      "first_mentioned": "conv-0004"
+    },
+    {
+      "id": "fact-0029",
+      "text": "The user recently adopted a golden retriever named Coco from the shelter.",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0004"
+      ],
+      "first_mentioned": "conv-0004"
+    },
+    {
+      "id": "fact-0030",
+      "text": "The user is a freelance graphic designer with 20 years of experience.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0004"
+      ],
+      "first_mentioned": "conv-0004"
+    },
+    {
+      "id": "fact-0031",
+      "text": "The user is considering scaling back their freelance work to have a more structured routine for Coco.",
+      "type": "decision",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0004"
+      ],
+      "first_mentioned": "conv-0004"
+    },
+    {
+      "id": "fact-0032",
+      "text": "The user is interested in travel blogging and combining photography with travel writing.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0004"
+      ],
+      "first_mentioned": "conv-0004"
+    },
+    {
+      "id": "fact-0033",
+      "text": "The user enjoys salsa dancing and misses having weeknights free for classes.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0004"
+      ],
+      "first_mentioned": "conv-0004"
+    },
+    {
+      "id": "fact-0034",
+      "text": "The user is considering specializing in branding for travel and lifestyle companies to align with their blogging.",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0004"
+      ],
+      "first_mentioned": "conv-0004"
+    },
+    {
+      "id": "fact-0035",
+      "text": "The user plans to propose a retainer model to their top three clients next month to create a more stable routine.",
+      "type": "decision",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0004"
+      ],
+      "first_mentioned": "conv-0004"
+    },
+    {
+      "id": "fact-0036",
+      "text": "The user makes leather wallets and bags that they sometimes sell at craft fairs.",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0004"
+      ],
+      "first_mentioned": "conv-0004"
+    },
+    {
+      "id": "fact-0037",
+      "text": "Coco's adoption fee was $350 and monthly expenses are about $80 for food and supplies.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0004"
+      ],
+      "first_mentioned": "conv-0004"
+    },
+    {
+      "id": "fact-0038",
+      "text": "The user is planning a trip to visit their sister in Portland in the second week of October.",
+      "type": "decision",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0005"
+      ],
+      "first_mentioned": "conv-0005"
+    },
+    {
+      "id": "fact-0039",
+      "text": "The user has a break from teaching during the second week of October.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0005"
+      ],
+      "first_mentioned": "conv-0005"
+    },
+    {
+      "id": "fact-0040",
+      "text": "The user's sister has been working at a tech company downtown in Portland for about three years.",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0005"
+      ],
+      "first_mentioned": "conv-0005"
+    },
+    {
+      "id": "fact-0041",
+      "text": "The user and their sister usually go hiking together, and last time they hiked the Columbia River Gorge.",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0005"
+      ],
+      "first_mentioned": "conv-0005"
+    },
+    {
+      "id": "fact-0042",
+      "text": "The user wants to try coastal trails near Portland this time, possibly Cannon Beach.",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0005"
+      ],
+      "first_mentioned": "conv-0005"
+    },
+    {
+      "id": "fact-0043",
+      "text": "The user plans to bring their drone to capture aerial shots during the trip.",
+      "type": "decision",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0005"
+      ],
+      "first_mentioned": "conv-0005"
+    },
+    {
+      "id": "fact-0044",
+      "text": "The user will probably stay with their sister but might treat them to a night at a nice hotel downtown.",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0005"
+      ],
+      "first_mentioned": "conv-0005"
+    },
+    {
+      "id": "fact-0045",
+      "text": "The user has diabetes and needs to watch their food portions.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0005"
+      ],
+      "first_mentioned": "conv-0005"
+    },
+    {
+      "id": "fact-0046",
+      "text": "The user plans to fly to Portland using airline miles and bring camera gear.",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0005"
+      ],
+      "first_mentioned": "conv-0005"
+    },
+    {
+      "id": "fact-0047",
+      "text": "The user's mother is 78 years old and lives alone in San Antonio",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0006"
+      ],
+      "first_mentioned": "conv-0006"
+    },
+    {
+      "id": "fact-0048",
+      "text": "The user's mother is having a hip replacement surgery next week",
+      "type": "episodic",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0006"
+      ],
+      "first_mentioned": "conv-0006"
+    },
+    {
+      "id": "fact-0049",
+      "text": "The user works crazy hours at the ER and is the only child of their mother",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0006"
+      ],
+      "first_mentioned": "conv-0006"
+    },
+    {
+      "id": "fact-0050",
+      "text": "The user hired a part-time caregiver through an agency to help their mother during recovery",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0006"
+      ],
+      "first_mentioned": "conv-0006"
+    },
+    {
+      "id": "fact-0051",
+      "text": "The user runs a YouTube channel focused on philosophy discussions and book reviews with over 10,000 subscribers",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0006"
+      ],
+      "first_mentioned": "conv-0006"
+    },
+    {
+      "id": "fact-0052",
+      "text": "The user is worried about balancing work, caregiving, and their YouTube channel",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0006"
+      ],
+      "first_mentioned": "conv-0006"
+    },
+    {
+      "id": "fact-0053",
+      "text": "The user is considering talking to their supervisor about adjusting their hospital shifts to spend more time with their mother",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0006"
+      ],
+      "first_mentioned": "conv-0006"
+    },
+    {
+      "id": "fact-0054",
+      "text": "The user has taught their mother how to use Zoom but she is not very tech-savvy",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0006"
+      ],
+      "first_mentioned": "conv-0006"
+    },
+    {
+      "id": "fact-0055",
+      "text": "The user has experience with plants from volunteer firefighting days involving controlled burns and vegetation management",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0007"
+      ],
+      "first_mentioned": "conv-0007"
+    },
+    {
+      "id": "fact-0056",
+      "text": "The user has worked at Tesla as a mechanical engineer for the past 8 years",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0007"
+      ],
+      "first_mentioned": "conv-0007"
+    },
+    {
+      "id": "fact-0057",
+      "text": "The user is starting a community garden project in their neighborhood with about 15 neighbors interested",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0007"
+      ],
+      "first_mentioned": "conv-0007"
+    },
+    {
+      "id": "fact-0058",
+      "text": "The user plans to set up a small aquaponics system inspired by a visit to an aquarium in Monterey last year",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0007"
+      ],
+      "first_mentioned": "conv-0007"
+    },
+    {
+      "id": "fact-0059",
+      "text": "The user is considering approaching the local community center to use unused land for the garden",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0007"
+      ],
+      "first_mentioned": "conv-0007"
+    },
+    {
+      "id": "fact-0060",
+      "text": "The user plans to plant tomatoes, herbs, and native plants to support local pollinators",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0007"
+      ],
+      "first_mentioned": "conv-0007"
+    },
+    {
+      "id": "fact-0061",
+      "text": "The user is balancing the garden project with work by using vacation days and weekends, and their manager at Tesla is understanding",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0007"
+      ],
+      "first_mentioned": "conv-0007"
+    },
+    {
+      "id": "fact-0062",
+      "text": "The user plans to document the community garden project on their travel blog",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0007"
+      ],
+      "first_mentioned": "conv-0007"
+    },
+    {
+      "id": "fact-0063",
+      "text": "The user's partner is about 6 months pregnant and they are expecting the baby in early June.",
+      "type": "factual",
+      "importance": 10,
+      "source_conversations": [
+        "conv-0008"
+      ],
+      "first_mentioned": "conv-0008"
+    },
+    {
+      "id": "fact-0064",
+      "text": "The user has been doing woodworking for about 15 years and is currently making a crib and a changing table for the baby.",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0008"
+      ],
+      "first_mentioned": "conv-0008"
+    },
+    {
+      "id": "fact-0065",
+      "text": "The user enjoys mushroom foraging, especially looking for morels in spring.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0008"
+      ],
+      "first_mentioned": "conv-0008"
+    },
+    {
+      "id": "fact-0066",
+      "text": "The user has been experimenting with different IPA home brewing recipes for the past year.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0008"
+      ],
+      "first_mentioned": "conv-0008"
+    },
+    {
+      "id": "fact-0067",
+      "text": "The user has cut back on stand-up comedy nights, previously performing at an open mic every Thursday, due to baby preparation.",
+      "type": "decision",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0008"
+      ],
+      "first_mentioned": "conv-0008"
+    },
+    {
+      "id": "fact-0068",
+      "text": "The user is reading 'Meditations' by Marcus Aurelius to stay grounded during this life change.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0008"
+      ],
+      "first_mentioned": "conv-0008"
+    },
+    {
+      "id": "fact-0069",
+      "text": "The user plans to convert part of the garage into a workshop to work on projects while watching the baby.",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0008"
+      ],
+      "first_mentioned": "conv-0008"
+    },
+    {
+      "id": "fact-0070",
+      "text": "The user is almost finished with the nursery, needing only to paint the walls and assemble the crib, using leftover wood from brewing setup for custom shelving.",
+      "type": "episodic",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0008"
+      ],
+      "first_mentioned": "conv-0008"
+    },
+    {
+      "id": "fact-0071",
+      "text": "The user dreams of building a treehouse in the backyard for their child to grow up with, but plans to wait until the child is older.",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0008"
+      ],
+      "first_mentioned": "conv-0008"
+    },
+    {
+      "id": "fact-0072",
+      "text": "The user looks forward to sharing their love of nature, woodworking, and home brewing with their child when they are old enough.",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0008"
+      ],
+      "first_mentioned": "conv-0008"
+    },
+    {
+      "id": "fact-0073",
+      "text": "The user is a PhD student in computational linguistics",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0009"
+      ],
+      "first_mentioned": "conv-0009"
+    },
+    {
+      "id": "fact-0074",
+      "text": "The user lives in Amsterdam and bikes to work through the canals",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0009"
+      ],
+      "first_mentioned": "conv-0009"
+    },
+    {
+      "id": "fact-0075",
+      "text": "The user trains for the Rotterdam Marathon next month with long runs of 15 to 25 miles on weekends and shorter recovery runs during the week",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0009"
+      ],
+      "first_mentioned": "conv-0009"
+    },
+    {
+      "id": "fact-0076",
+      "text": "The user usually wakes up around 6 AM for morning runs and works in the lab by 9 AM",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0009"
+      ],
+      "first_mentioned": "conv-0009"
+    },
+    {
+      "id": "fact-0077",
+      "text": "The user is considering switching to mechanical keyboards with brown switches to reduce typing fatigue",
+      "type": "decision",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0009"
+      ],
+      "first_mentioned": "conv-0009"
+    },
+    {
+      "id": "fact-0078",
+      "text": "The user enjoys cooking Japanese food and has been perfecting a tonkotsu broth recipe that takes about 12 hours",
+      "type": "preference",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0009"
+      ],
+      "first_mentioned": "conv-0009"
+    },
+    {
+      "id": "fact-0079",
+      "text": "The user collects vintage car magazines focused on 1960s European models and is obsessed with the Mercedes 300SL Gullwing",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0009"
+      ],
+      "first_mentioned": "conv-0009"
+    },
+    {
+      "id": "fact-0080",
+      "text": "The user is thinking of moving runs to the evenings to have more energy for research during the day",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0009"
+      ],
+      "first_mentioned": "conv-0009"
+    },
+    {
+      "id": "fact-0081",
+      "text": "The user switched careers from journalism to being a chef and now owns a small restaurant in Portland.",
+      "type": "decision",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0010"
+      ],
+      "first_mentioned": "conv-0010"
+    },
+    {
+      "id": "fact-0082",
+      "text": "The user starts their mornings at 5 AM by checking on their beekeeping setup.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0010"
+      ],
+      "first_mentioned": "conv-0010"
+    },
+    {
+      "id": "fact-0083",
+      "text": "The user started beekeeping three years ago with two hives and now has six hives.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0010"
+      ],
+      "first_mentioned": "conv-0010"
+    },
+    {
+      "id": "fact-0084",
+      "text": "The user forages for chanterelle and morel mushrooms around Mt. Hood on weekends and uses them in their tasting menu.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0010"
+      ],
+      "first_mentioned": "conv-0010"
+    },
+    {
+      "id": "fact-0085",
+      "text": "The user teaches cooking classes focused on farm-to-table techniques and preserving seasonal ingredients at 11 AM before lunch service at 1 PM.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0010"
+      ],
+      "first_mentioned": "conv-0010"
+    },
+    {
+      "id": "fact-0086",
+      "text": "The user is 48 years old.",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0010"
+      ],
+      "first_mentioned": "conv-0010"
+    },
+    {
+      "id": "fact-0087",
+      "text": "The user reads philosophy in the evenings and is currently on their third reading of 'Being and Time' by Heidegger.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0010"
+      ],
+      "first_mentioned": "conv-0010"
+    },
+    {
+      "id": "fact-0088",
+      "text": "The user took up salsa dancing last year and attends classes twice a week at a studio downtown.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0010"
+      ],
+      "first_mentioned": "conv-0010"
+    },
+    {
+      "id": "fact-0089",
+      "text": "The user grows most of the herbs for their restaurant in their home garden.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0010"
+      ],
+      "first_mentioned": "conv-0010"
+    },
+    {
+      "id": "fact-0090",
+      "text": "The user is recovering from a knee injury and has been stuck at home for the past month",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0013"
+      ],
+      "first_mentioned": "conv-0013"
+    },
+    {
+      "id": "fact-0091",
+      "text": "The user works as a veterinarian at a rural practice",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0013"
+      ],
+      "first_mentioned": "conv-0013"
+    },
+    {
+      "id": "fact-0092",
+      "text": "The user enjoys hiking and going to the gym but needs activities that can be done while sitting down due to injury",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0013"
+      ],
+      "first_mentioned": "conv-0013"
+    },
+    {
+      "id": "fact-0093",
+      "text": "The user has been listening to a lot of podcasts lately",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0013"
+      ],
+      "first_mentioned": "conv-0013"
+    },
+    {
+      "id": "fact-0094",
+      "text": "The user used to knit when younger and learned the basics from their grandmother",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0013"
+      ],
+      "first_mentioned": "conv-0013"
+    },
+    {
+      "id": "fact-0095",
+      "text": "The user is part of a board game group that meets monthly",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0013"
+      ],
+      "first_mentioned": "conv-0013"
+    },
+    {
+      "id": "fact-0096",
+      "text": "The user decided to start knitting again and plans to order supplies soon",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0013"
+      ],
+      "first_mentioned": "conv-0013"
+    },
+    {
+      "id": "fact-0097",
+      "text": "The user wants to knit scarves for farmers they work with and toys for kids who bring in their pets",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0013"
+      ],
+      "first_mentioned": "conv-0013"
+    },
+    {
+      "id": "fact-0098",
+      "text": "The user wants to knit a scarf for their colleague Sarah who has been bringing them meals during recovery",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0013"
+      ],
+      "first_mentioned": "conv-0013"
+    },
+    {
+      "id": "fact-0099",
+      "text": "The user moved to Berlin last month",
+      "type": "episodic",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0100",
+      "text": "The user works as a technology journalist",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0101",
+      "text": "The user is currently living in a house undergoing renovation",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0102",
+      "text": "The user wants to learn a new tactile skill related to electronics, specifically building or modifying mechanical keyboards",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0103",
+      "text": "The user has been watching YouTube videos about keyboard building but is worried about lacking DIY skills",
+      "type": "episodic",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0104",
+      "text": "The user enjoys crossword puzzles and problem-solving",
+      "type": "preference",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0105",
+      "text": "The user is trying to learn German since moving to Berlin",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0106",
+      "text": "The user wants to label keyboard keys in German to help with language learning",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0107",
+      "text": "The user is interested in getting involved in Berlin-based maker communities and local workshops",
+      "type": "goal",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0108",
+      "text": "The user enjoys birdwatching but has had little time for it due to renovation and work",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0109",
+      "text": "The user plans to start with building a keyboard and then move on to bird-related projects like building a bird feeder or birdhouse",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0014"
+      ],
+      "first_mentioned": "conv-0014"
+    },
+    {
+      "id": "fact-0110",
+      "text": "The user is planning to redo their kitchen with a sustainable approach",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0015"
+      ],
+      "first_mentioned": "conv-0015"
+    },
+    {
+      "id": "fact-0111",
+      "text": "The user lives in a rental with two roommates in Pittsburgh",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0015"
+      ],
+      "first_mentioned": "conv-0015"
+    },
+    {
+      "id": "fact-0112",
+      "text": "The user's budget for the kitchen renovation is around $15,000",
+      "type": "decision",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0015"
+      ],
+      "first_mentioned": "conv-0015"
+    },
+    {
+      "id": "fact-0113",
+      "text": "The user works at a sustainable design firm downtown",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0015"
+      ],
+      "first_mentioned": "conv-0015"
+    },
+    {
+      "id": "fact-0114",
+      "text": "The user is training for a triathlon in June and wants the kitchen renovation done before then",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0015"
+      ],
+      "first_mentioned": "conv-0015"
+    },
+    {
+      "id": "fact-0115",
+      "text": "The user usually trains early mornings and weekends",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0015"
+      ],
+      "first_mentioned": "conv-0015"
+    },
+    {
+      "id": "fact-0116",
+      "text": "The user is restoring a 1965 Mustang in their spare time, stored in their uncle's garage",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0015"
+      ],
+      "first_mentioned": "conv-0015"
+    },
+    {
+      "id": "fact-0117",
+      "text": "The user is a music producer and DJ who frequently works in a home studio.",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0016"
+      ],
+      "first_mentioned": "conv-0016"
+    },
+    {
+      "id": "fact-0118",
+      "text": "The user needs to soundproof their entire 200 square foot basement studio which has its own door.",
+      "type": "goal",
+      "importance": 10,
+      "source_conversations": [
+        "conv-0016"
+      ],
+      "first_mentioned": "conv-0016"
+    },
+    {
+      "id": "fact-0119",
+      "text": "The user volunteers at an animal shelter on weekends and only has evenings available to work on the soundproofing project.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0016"
+      ],
+      "first_mentioned": "conv-0016"
+    },
+    {
+      "id": "fact-0120",
+      "text": "The user is 57 years old and started running marathons last year to clear their head between producing sessions.",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0016"
+      ],
+      "first_mentioned": "conv-0016"
+    },
+    {
+      "id": "fact-0121",
+      "text": "The user plays piano and needs soundproofing that works for both electronic and acoustic setups.",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0016"
+      ],
+      "first_mentioned": "conv-0016"
+    },
+    {
+      "id": "fact-0122",
+      "text": "The user has a budget of around $3,000 for the soundproofing project, saved from recent gigs.",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0016"
+      ],
+      "first_mentioned": "conv-0016"
+    },
+    {
+      "id": "fact-0123",
+      "text": "The user wants to complete the soundproofing before their next album release in September.",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0016"
+      ],
+      "first_mentioned": "conv-0016"
+    },
+    {
+      "id": "fact-0124",
+      "text": "The user brews their own beer and is considering incorporating a small bar area in the studio.",
+      "type": "preference",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0016"
+      ],
+      "first_mentioned": "conv-0016"
+    },
+    {
+      "id": "fact-0125",
+      "text": "The user has been experimenting with sourdough bread baking and initially had dense results but is improving.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0017"
+      ],
+      "first_mentioned": "conv-0017"
+    },
+    {
+      "id": "fact-0126",
+      "text": "The user started their sourdough starter with all-purpose flour but switched to a mix of bread flour and whole wheat for better flavor.",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0017"
+      ],
+      "first_mentioned": "conv-0017"
+    },
+    {
+      "id": "fact-0127",
+      "text": "The user is currently enrolled in an MBA program and dedicates weekends to baking due to a busy weekday schedule.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0017"
+      ],
+      "first_mentioned": "conv-0017"
+    },
+    {
+      "id": "fact-0128",
+      "text": "The user practices physical therapy in Phoenix, specializing in sports injuries and works with athletes.",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0017"
+      ],
+      "first_mentioned": "conv-0017"
+    },
+    {
+      "id": "fact-0129",
+      "text": "The user finds baking sourdough bread to be a stress reliever after long workdays.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0017"
+      ],
+      "first_mentioned": "conv-0017"
+    },
+    {
+      "id": "fact-0130",
+      "text": "The user took their sourdough starter on a hiking trip to the Superstition Mountains and baked a small loaf at base camp.",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0017"
+      ],
+      "first_mentioned": "conv-0017"
+    },
+    {
+      "id": "fact-0131",
+      "text": "The user is interested in combining hobbies, such as archery and baking, but mostly uses the local Phoenix air for wild yeast.",
+      "type": "preference",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0017"
+      ],
+      "first_mentioned": "conv-0017"
+    },
+    {
+      "id": "fact-0132",
+      "text": "The user moved from the US to Portugal three years ago",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0018"
+      ],
+      "first_mentioned": "conv-0018"
+    },
+    {
+      "id": "fact-0133",
+      "text": "The user has been trying to cook traditional Portuguese dishes, including bacalhau à brás",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0018"
+      ],
+      "first_mentioned": "conv-0018"
+    },
+    {
+      "id": "fact-0134",
+      "text": "The user's parents are visiting from Florida and staying for a month while the user helps them with paperwork",
+      "type": "episodic",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0018"
+      ],
+      "first_mentioned": "conv-0018"
+    },
+    {
+      "id": "fact-0135",
+      "text": "The user's dad misses American breakfast foods and the user made him sourdough pancakes using their starter",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0018"
+      ],
+      "first_mentioned": "conv-0018"
+    },
+    {
+      "id": "fact-0136",
+      "text": "The user runs a startup focused on building AI tools and balances cooking to unwind from work",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0018"
+      ],
+      "first_mentioned": "conv-0018"
+    },
+    {
+      "id": "fact-0137",
+      "text": "The user has started 3D printing custom cookie cutters, initially with geometric patterns and now working on azulejo tile designs",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0018"
+      ],
+      "first_mentioned": "conv-0018"
+    },
+    {
+      "id": "fact-0138",
+      "text": "The user's mom does origami with kids the user mentors, and they are planning a combined baking and paper-folding afternoon next weekend",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0018"
+      ],
+      "first_mentioned": "conv-0018"
+    },
+    {
+      "id": "fact-0139",
+      "text": "The user used to work as a park ranger at Yellowstone.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0140",
+      "text": "The user has moved to Melbourne and is struggling to maintain a fitness routine.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0141",
+      "text": "The user is 44 years old.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0142",
+      "text": "The user enjoys hiking and cross-country skiing.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0143",
+      "text": "The user is considering joining a local gym with cardio equipment and group fitness classes.",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0144",
+      "text": "The user is trying to eat healthier by cooking more at home and experimenting with Thai recipes like pad thai and green curry.",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0145",
+      "text": "The user has a pet rabbit named Coco who enjoys vegetable scraps.",
+      "type": "factual",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0146",
+      "text": "The user is thinking about taking up piano again and is interested in finding a good weighted keyboard for practice, considering brands like Yamaha and Casio.",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0147",
+      "text": "The user volunteers as a firefighter on weekends and wants to balance fitness training to meet the physical demands of firefighting.",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0148",
+      "text": "The user is interested in workouts focusing on strength, endurance, functional fitness, and grip strength to support firefighting duties.",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0149",
+      "text": "The user is interested in finding skiing opportunities and possibly skiing buddies near Melbourne, such as in the Victorian Alps.",
+      "type": "goal",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0019"
+      ],
+      "first_mentioned": "conv-0019"
+    },
+    {
+      "id": "fact-0150",
+      "text": "The user works long hours at Goldman Sachs.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0020"
+      ],
+      "first_mentioned": "conv-0020"
+    },
+    {
+      "id": "fact-0151",
+      "text": "The user recently bought a house in Salt Lake City, Utah.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0020"
+      ],
+      "first_mentioned": "conv-0020"
+    },
+    {
+      "id": "fact-0152",
+      "text": "The user enjoys mountain biking and wants to make it a more serious part of their fitness routine.",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0020"
+      ],
+      "first_mentioned": "conv-0020"
+    },
+    {
+      "id": "fact-0153",
+      "text": "The user is considering getting into surfing but is unsure about its practicality living in Utah.",
+      "type": "goal",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0020"
+      ],
+      "first_mentioned": "conv-0020"
+    },
+    {
+      "id": "fact-0154",
+      "text": "The user has a 3D printer that is still unused and bought it as a creative outlet and for printing replacement parts for the house.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0020"
+      ],
+      "first_mentioned": "conv-0020"
+    },
+    {
+      "id": "fact-0155",
+      "text": "The user has started home brewing beer, mainly experimenting with IPAs, and finds it relaxing after work.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0020"
+      ],
+      "first_mentioned": "conv-0020"
+    },
+    {
+      "id": "fact-0156",
+      "text": "The user is 48 years old and aware that their metabolism has slowed down.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0020"
+      ],
+      "first_mentioned": "conv-0020"
+    },
+    {
+      "id": "fact-0157",
+      "text": "The user enjoys reading sci-fi novels, recently finished 'Project Hail Mary', and is a fan of Asimov and Clarke.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0020"
+      ],
+      "first_mentioned": "conv-0020"
+    },
+    {
+      "id": "fact-0158",
+      "text": "The user is thinking about joining a local book club to meet people in their new neighborhood.",
+      "type": "goal",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0020"
+      ],
+      "first_mentioned": "conv-0020"
+    },
+    {
+      "id": "fact-0159",
+      "text": "The user recently moved to Phoenix from the Bay Area",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0021"
+      ],
+      "first_mentioned": "conv-0021"
+    },
+    {
+      "id": "fact-0160",
+      "text": "The user is interested in social events to meet new people",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0021"
+      ],
+      "first_mentioned": "conv-0021"
+    },
+    {
+      "id": "fact-0161",
+      "text": "The user enjoys DJing and board games",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0021"
+      ],
+      "first_mentioned": "conv-0021"
+    },
+    {
+      "id": "fact-0162",
+      "text": "The user plans to visit 'Roll for Adventure', a board game café in downtown Phoenix",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0021"
+      ],
+      "first_mentioned": "conv-0021"
+    },
+    {
+      "id": "fact-0163",
+      "text": "The user is considering attending the 'Desert Beats' electronic music festival at the Phoenix Convention Center this Saturday",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0021"
+      ],
+      "first_mentioned": "conv-0021"
+    },
+    {
+      "id": "fact-0164",
+      "text": "The user wants to get back into DJing since leaving the Bay Area",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0021"
+      ],
+      "first_mentioned": "conv-0021"
+    },
+    {
+      "id": "fact-0165",
+      "text": "The user recently moved to Chicago from the Bay Area",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0022"
+      ],
+      "first_mentioned": "conv-0022"
+    },
+    {
+      "id": "fact-0166",
+      "text": "The user is looking for social events in Chicago this weekend",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0022"
+      ],
+      "first_mentioned": "conv-0022"
+    },
+    {
+      "id": "fact-0167",
+      "text": "The user is interested in aquariums",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0022"
+      ],
+      "first_mentioned": "conv-0022"
+    },
+    {
+      "id": "fact-0168",
+      "text": "The user is interested in 3D printing",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0022"
+      ],
+      "first_mentioned": "conv-0022"
+    },
+    {
+      "id": "fact-0169",
+      "text": "The user plans to visit the Shedd Aquarium in Chicago",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0022"
+      ],
+      "first_mentioned": "conv-0022"
+    },
+    {
+      "id": "fact-0170",
+      "text": "The user plans to attend a weekend workshop at Chicago Maker Lab",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0022"
+      ],
+      "first_mentioned": "conv-0022"
+    },
+    {
+      "id": "fact-0171",
+      "text": "The user is planning a ski trip to Park City next month with his wife",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0025"
+      ],
+      "first_mentioned": "conv-0025"
+    },
+    {
+      "id": "fact-0172",
+      "text": "The user is an intermediate skier and his wife is a beginner",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0025"
+      ],
+      "first_mentioned": "conv-0025"
+    },
+    {
+      "id": "fact-0173",
+      "text": "The user is a DevOps Engineer at a cloud platform company and can work remotely during the trip",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0025"
+      ],
+      "first_mentioned": "conv-0025"
+    },
+    {
+      "id": "fact-0174",
+      "text": "The user has been working on home automation projects using Rust programming, focusing on smart lighting and temperature controls",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0025"
+      ],
+      "first_mentioned": "conv-0025"
+    },
+    {
+      "id": "fact-0175",
+      "text": "The user recently adopted a parrot named Milo from a shelter",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0025"
+      ],
+      "first_mentioned": "conv-0025"
+    },
+    {
+      "id": "fact-0176",
+      "text": "The user owns a 55-gallon aquarium with rare tropical fish",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0025"
+      ],
+      "first_mentioned": "conv-0025"
+    },
+    {
+      "id": "fact-0177",
+      "text": "The user and his wife plan to try a new farm-to-table restaurant and visit local breweries in Park City",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0025"
+      ],
+      "first_mentioned": "conv-0025"
+    },
+    {
+      "id": "fact-0178",
+      "text": "The user plans to explore Salt Lake City with his wife, who wants to visit art galleries",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0025"
+      ],
+      "first_mentioned": "conv-0025"
+    },
+    {
+      "id": "fact-0179",
+      "text": "The user is a real estate agent in Austin with about three years of experience",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0026"
+      ],
+      "first_mentioned": "conv-0026"
+    },
+    {
+      "id": "fact-0180",
+      "text": "The user recently spent an amazing week in Thailand, particularly enjoying street food in Bangkok near Khao San Road",
+      "type": "episodic",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0026"
+      ],
+      "first_mentioned": "conv-0026"
+    },
+    {
+      "id": "fact-0181",
+      "text": "The user is into travel blogging and posts urban sketches and writing on their blog",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0026"
+      ],
+      "first_mentioned": "conv-0026"
+    },
+    {
+      "id": "fact-0182",
+      "text": "The user is taking care of their aging parents who live in Denver while working remotely from Austin",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0026"
+      ],
+      "first_mentioned": "conv-0026"
+    },
+    {
+      "id": "fact-0183",
+      "text": "The user has an interest in vintage cars, specifically 1960s muscle cars, and is restoring a 1967 Mustang",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0026"
+      ],
+      "first_mentioned": "conv-0026"
+    },
+    {
+      "id": "fact-0184",
+      "text": "The user is planning to travel to Vietnam next to explore the food scene in Hanoi and Ho Chi Minh City and enjoy some beach time",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0026"
+      ],
+      "first_mentioned": "conv-0026"
+    },
+    {
+      "id": "fact-0185",
+      "text": "The user is interested in architecture and urban development, noting the mix of modern and traditional architecture in Thailand and French colonial architecture in Hanoi",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0026"
+      ],
+      "first_mentioned": "conv-0026"
+    },
+    {
+      "id": "fact-0186",
+      "text": "The user works long hours as a documentary filmmaker",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0027"
+      ],
+      "first_mentioned": "conv-0027"
+    },
+    {
+      "id": "fact-0187",
+      "text": "The user is taking care of their aging parents who live in Lisbon",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0027"
+      ],
+      "first_mentioned": "conv-0027"
+    },
+    {
+      "id": "fact-0188",
+      "text": "The user's parents have a 12-year-old terrier named Biscuit",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0027"
+      ],
+      "first_mentioned": "conv-0027"
+    },
+    {
+      "id": "fact-0189",
+      "text": "The user helps walk Biscuit when visiting their parents",
+      "type": "episodic",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0027"
+      ],
+      "first_mentioned": "conv-0027"
+    },
+    {
+      "id": "fact-0190",
+      "text": "The user lives in a small apartment near the Baixa district in Lisbon",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0027"
+      ],
+      "first_mentioned": "conv-0027"
+    },
+    {
+      "id": "fact-0191",
+      "text": "The user's apartment building allows pets",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0027"
+      ],
+      "first_mentioned": "conv-0027"
+    },
+    {
+      "id": "fact-0192",
+      "text": "The user prefers dogs but is considering adopting or fostering an older, calm dog due to their busy schedule",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0027"
+      ],
+      "first_mentioned": "conv-0027"
+    },
+    {
+      "id": "fact-0193",
+      "text": "The user is considering fostering a dog first to see how it fits with their documentary shooting schedule, which often requires being away for 2-3 days at a time",
+      "type": "decision",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0027"
+      ],
+      "first_mentioned": "conv-0027"
+    },
+    {
+      "id": "fact-0194",
+      "text": "The user's cat is named Luna and is 9 months old",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0028"
+      ],
+      "first_mentioned": "conv-0028"
+    },
+    {
+      "id": "fact-0195",
+      "text": "The user is a cybersecurity consultant concerned about IoT device security",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0028"
+      ],
+      "first_mentioned": "conv-0028"
+    },
+    {
+      "id": "fact-0196",
+      "text": "The user has a separate VLAN for smart devices including Luna's pet camera and brewing sensors, called a 'hobby network'",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0028"
+      ],
+      "first_mentioned": "conv-0028"
+    },
+    {
+      "id": "fact-0197",
+      "text": "The user started a YouTube channel last month focused on drone photography tutorials",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0028"
+      ],
+      "first_mentioned": "conv-0028"
+    },
+    {
+      "id": "fact-0198",
+      "text": "The user runs Home Assistant for smart lights and thermostat and is interested in pet cameras compatible with Home Assistant",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0028"
+      ],
+      "first_mentioned": "conv-0028"
+    },
+    {
+      "id": "fact-0199",
+      "text": "The user is into home brewing beer as a hobby and uses fermentation monitors on the hobby network",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0028"
+      ],
+      "first_mentioned": "conv-0028"
+    },
+    {
+      "id": "fact-0200",
+      "text": "Luna likes freeze-dried chicken treats and the user is trying to teach her tricks",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0028"
+      ],
+      "first_mentioned": "conv-0028"
+    },
+    {
+      "id": "fact-0201",
+      "text": "The user wants to create 'day in the life of a cybersecurity cat' videos featuring Luna for their YouTube channel",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0028"
+      ],
+      "first_mentioned": "conv-0028"
+    },
+    {
+      "id": "fact-0202",
+      "text": "The user wants to improve their school's STEM program by adding more hands-on learning opportunities.",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0029"
+      ],
+      "first_mentioned": "conv-0029"
+    },
+    {
+      "id": "fact-0203",
+      "text": "The user is particularly interested in enhancing robotics and coding units for fifth graders.",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0029"
+      ],
+      "first_mentioned": "conv-0029"
+    },
+    {
+      "id": "fact-0204",
+      "text": "The user is considering using LEGO Mindstorms and Raspberry Pi projects for the STEM program.",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0029"
+      ],
+      "first_mentioned": "conv-0029"
+    },
+    {
+      "id": "fact-0205",
+      "text": "The user has a 45-minute commute each way from their home in Pittsburgh.",
+      "type": "factual",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0029"
+      ],
+      "first_mentioned": "conv-0029"
+    },
+    {
+      "id": "fact-0206",
+      "text": "The user has a budget of about $15,000 allocated for the STEM initiative.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0029"
+      ],
+      "first_mentioned": "conv-0029"
+    },
+    {
+      "id": "fact-0207",
+      "text": "The user plans to partner with local tech companies for mentorship programs.",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0029"
+      ],
+      "first_mentioned": "conv-0029"
+    },
+    {
+      "id": "fact-0208",
+      "text": "The user aims to have the STEM program ready by fall and plans a family STEM night in October.",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0029"
+      ],
+      "first_mentioned": "conv-0029"
+    },
+    {
+      "id": "fact-0209",
+      "text": "Sarah, a third-grade teacher, is helping the user and is excited about developing an astronomy unit.",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0029"
+      ],
+      "first_mentioned": "conv-0029"
+    },
+    {
+      "id": "fact-0210",
+      "text": "The user is considering a field trip to the Carnegie Science Center's planetarium to complement the astronomy unit.",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0029"
+      ],
+      "first_mentioned": "conv-0029"
+    },
+    {
+      "id": "fact-0211",
+      "text": "The user has a personal positive memory of visiting the Carnegie Science Center as a child, which sparked their interest in science.",
+      "type": "episodic",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0029"
+      ],
+      "first_mentioned": "conv-0029"
+    },
+    {
+      "id": "fact-0212",
+      "text": "The user is working on the propulsion system redesign for the Starship project at the Hawthorne facility",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0030"
+      ],
+      "first_mentioned": "conv-0030"
+    },
+    {
+      "id": "fact-0213",
+      "text": "The user is trying to improve fuel efficiency while maintaining thrust in the propulsion system",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0030"
+      ],
+      "first_mentioned": "conv-0030"
+    },
+    {
+      "id": "fact-0214",
+      "text": "The user brings homemade Thai food for lunch, specifically Pad Kra Pao, which they learned to cook during a trip to Bangkok last year",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0030"
+      ],
+      "first_mentioned": "conv-0030"
+    },
+    {
+      "id": "fact-0215",
+      "text": "The user is planning a wedding next June at a vineyard in Napa",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0030"
+      ],
+      "first_mentioned": "conv-0030"
+    },
+    {
+      "id": "fact-0216",
+      "text": "The user is working on calligraphy for the wedding invitations and focusing on design elements while their fiancé handles logistics",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0030"
+      ],
+      "first_mentioned": "conv-0030"
+    },
+    {
+      "id": "fact-0217",
+      "text": "The user is teaching themselves Rust programming and codes for about an hour after dinner to unwind",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0030"
+      ],
+      "first_mentioned": "conv-0030"
+    },
+    {
+      "id": "fact-0218",
+      "text": "The user knits as a hobby and finds it helps with engineering problem-solving",
+      "type": "preference",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0030"
+      ],
+      "first_mentioned": "conv-0030"
+    },
+    {
+      "id": "fact-0219",
+      "text": "The user is restoring a 1967 Mustang, having rebuilt the engine and currently working on the interior as a weekend project",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0030"
+      ],
+      "first_mentioned": "conv-0030"
+    },
+    {
+      "id": "fact-0220",
+      "text": "The user's YouTube channel will focus on beekeeping and pastry-making.",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0031"
+      ],
+      "first_mentioned": "conv-0031"
+    },
+    {
+      "id": "fact-0221",
+      "text": "The user has been a pastry chef at Le Jardin for 7 years but is new to video content creation.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0031"
+      ],
+      "first_mentioned": "conv-0031"
+    },
+    {
+      "id": "fact-0222",
+      "text": "The user plans to name the channel 'Hive & Hearth' to combine beekeeping and pastry themes.",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0031"
+      ],
+      "first_mentioned": "conv-0031"
+    },
+    {
+      "id": "fact-0223",
+      "text": "The user owns a Canon EOS M50 Mark II camera and plans to set up a small studio in their garage near their beehives.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0031"
+      ],
+      "first_mentioned": "conv-0031"
+    },
+    {
+      "id": "fact-0224",
+      "text": "The user is training for a triathlon and may create videos about nutrition and energy foods related to triathlon training.",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0031"
+      ],
+      "first_mentioned": "conv-0031"
+    },
+    {
+      "id": "fact-0225",
+      "text": "The user aims for a soft launch of the channel in about 6 weeks and is also setting up a pottery studio to make custom ceramic bee-themed serving pieces.",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0031"
+      ],
+      "first_mentioned": "conv-0031"
+    },
+    {
+      "id": "fact-0226",
+      "text": "The user plans to post videos twice a week, on Mondays for pastry tutorials and Thursdays for beekeeping tips, to build a consistent schedule.",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0031"
+      ],
+      "first_mentioned": "conv-0031"
+    },
+    {
+      "id": "fact-0227",
+      "text": "The user is considering creating a Patreon for exclusive content including behind-the-scenes triathlon training and advanced pastry techniques.",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0031"
+      ],
+      "first_mentioned": "conv-0031"
+    },
+    {
+      "id": "fact-0228",
+      "text": "The user is a social worker based in Raleigh.",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0032"
+      ],
+      "first_mentioned": "conv-0032"
+    },
+    {
+      "id": "fact-0229",
+      "text": "The user is the primary caregiver for their parents who are in their late 70s and live about 20 minutes away.",
+      "type": "factual",
+      "importance": 10,
+      "source_conversations": [
+        "conv-0032"
+      ],
+      "first_mentioned": "conv-0032"
+    },
+    {
+      "id": "fact-0230",
+      "text": "The user uses an iPhone and a MacBook Pro and is considering purchasing an iPad Air for portability and travel blogging.",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0032"
+      ],
+      "first_mentioned": "conv-0032"
+    },
+    {
+      "id": "fact-0231",
+      "text": "The user has been practicing archery at the Raleigh Archery Club for about 2 years as a stress relief method.",
+      "type": "episodic",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0032"
+      ],
+      "first_mentioned": "conv-0032"
+    },
+    {
+      "id": "fact-0232",
+      "text": "The user is interested in starting stand-up comedy and plans to perform at Goodnights Comedy Club open mic nights in Raleigh.",
+      "type": "goal",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0032"
+      ],
+      "first_mentioned": "conv-0032"
+    },
+    {
+      "id": "fact-0233",
+      "text": "The user is considering buying a Sony A6400 camera with video capability for travel photography and YouTube content creation.",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0032"
+      ],
+      "first_mentioned": "conv-0032"
+    },
+    {
+      "id": "fact-0234",
+      "text": "The user needs at least 2TB of cloud storage and is considering VPN services like NordVPN or ExpressVPN for secure remote work.",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0032"
+      ],
+      "first_mentioned": "conv-0032"
+    },
+    {
+      "id": "fact-0235",
+      "text": "The user is the primary caregiver with a sister in Charlotte who is busy with her own family and does not assist much.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0032"
+      ],
+      "first_mentioned": "conv-0032"
+    },
+    {
+      "id": "fact-0236",
+      "text": "User moved to Raleigh for a new job at MIT",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0033"
+      ],
+      "first_mentioned": "conv-0033"
+    },
+    {
+      "id": "fact-0237",
+      "text": "User rents a two-bedroom place in Raleigh for $1800/month to have space for a home office due to remote work",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0033"
+      ],
+      "first_mentioned": "conv-0033"
+    },
+    {
+      "id": "fact-0238",
+      "text": "User has hobbies in photography and home brewing beer, with recent expenses of $800 on a camera lens and $300 on brewing equipment",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0033"
+      ],
+      "first_mentioned": "conv-0033"
+    },
+    {
+      "id": "fact-0239",
+      "text": "User has a border collie named Ziggy and spends about $150/month on food and supplies plus $200 every few months on vet visits",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0033"
+      ],
+      "first_mentioned": "conv-0033"
+    },
+    {
+      "id": "fact-0240",
+      "text": "User drives a paid-off 2018 Subaru Outback and pays $120/month for insurance",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0033"
+      ],
+      "first_mentioned": "conv-0033"
+    },
+    {
+      "id": "fact-0241",
+      "text": "User pays $25/month for a local photography club membership and $35/month for Spotify and Adobe Creative Cloud subscriptions",
+      "type": "factual",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0033"
+      ],
+      "first_mentioned": "conv-0033"
+    },
+    {
+      "id": "fact-0242",
+      "text": "User wants to save $4000 over 10 months for a two-week culinary trip to Japan next spring",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0033"
+      ],
+      "first_mentioned": "conv-0033"
+    },
+    {
+      "id": "fact-0243",
+      "text": "User is deciding whether to spend $500 to upgrade brewing equipment or save that money for the Japan trip",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0033"
+      ],
+      "first_mentioned": "conv-0033"
+    },
+    {
+      "id": "fact-0244",
+      "text": "The user runs a true crime podcast that generates about $2,500 per month from ads and Patreon",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0034"
+      ],
+      "first_mentioned": "conv-0034"
+    },
+    {
+      "id": "fact-0245",
+      "text": "The user is in the second year of an MBA program that costs $15,000 per year",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0034"
+      ],
+      "first_mentioned": "conv-0034"
+    },
+    {
+      "id": "fact-0246",
+      "text": "The user took out $20,000 in student loans last year to help cover MBA expenses",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0034"
+      ],
+      "first_mentioned": "conv-0034"
+    },
+    {
+      "id": "fact-0247",
+      "text": "The user uses about half of their podcast income, roughly $1,250 per month, to pay for this year's MBA tuition",
+      "type": "decision",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0034"
+      ],
+      "first_mentioned": "conv-0034"
+    },
+    {
+      "id": "fact-0248",
+      "text": "The user lives in Salt Lake City, sharing a two-bedroom apartment near downtown with a roommate, paying $700 per month for rent",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0034"
+      ],
+      "first_mentioned": "conv-0034"
+    },
+    {
+      "id": "fact-0249",
+      "text": "The user's monthly utilities cost about $150 and groceries cost around $400",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0034"
+      ],
+      "first_mentioned": "conv-0034"
+    },
+    {
+      "id": "fact-0250",
+      "text": "The user spends $83 per month on a TRAX pass for transportation and $65 per month on their phone bill",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0034"
+      ],
+      "first_mentioned": "conv-0034"
+    },
+    {
+      "id": "fact-0251",
+      "text": "The user plays tennis weekly, spending about $40 per month on court time and equipment",
+      "type": "preference",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0034"
+      ],
+      "first_mentioned": "conv-0034"
+    },
+    {
+      "id": "fact-0252",
+      "text": "The user has a calligraphy hobby that costs about $30 per month on specialty paper and ink",
+      "type": "preference",
+      "importance": 4,
+      "source_conversations": [
+        "conv-0034"
+      ],
+      "first_mentioned": "conv-0034"
+    },
+    {
+      "id": "fact-0253",
+      "text": "The user is 28 years old.",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0035"
+      ],
+      "first_mentioned": "conv-0035"
+    },
+    {
+      "id": "fact-0254",
+      "text": "The user works in agricultural science and has been with the institute for 4 years.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0035"
+      ],
+      "first_mentioned": "conv-0035"
+    },
+    {
+      "id": "fact-0255",
+      "text": "The user is experiencing worsening back pain that makes fieldwork difficult.",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0035"
+      ],
+      "first_mentioned": "conv-0035"
+    },
+    {
+      "id": "fact-0256",
+      "text": "The user enjoys the research side of agricultural science, especially developing drought-resistant crops.",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0035"
+      ],
+      "first_mentioned": "conv-0035"
+    },
+    {
+      "id": "fact-0257",
+      "text": "The user is considering transitioning to roles focused on lab or data analysis to reduce physical strain.",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0035"
+      ],
+      "first_mentioned": "conv-0035"
+    },
+    {
+      "id": "fact-0258",
+      "text": "The user is interested in teaching plant genetics or sustainable agriculture and has prior experience as a teaching assistant in grad school.",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0035"
+      ],
+      "first_mentioned": "conv-0035"
+    },
+    {
+      "id": "fact-0259",
+      "text": "The user participates in speedcubing competitions on weekends and recently placed 3rd in a local competition.",
+      "type": "episodic",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0035"
+      ],
+      "first_mentioned": "conv-0035"
+    },
+    {
+      "id": "fact-0260",
+      "text": "The user has a colleague named Dr. Chen who transitioned from fieldwork to lab/data roles successfully last year.",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0035"
+      ],
+      "first_mentioned": "conv-0035"
+    },
+    {
+      "id": "fact-0261",
+      "text": "The user is considering proposing a hybrid role combining research, teaching, and lab work to reduce physical demands without leaving the field completely.",
+      "type": "decision",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0035"
+      ],
+      "first_mentioned": "conv-0035"
+    },
+    {
+      "id": "fact-0262",
+      "text": "The user has a friend named Alex who is a painter and encourages taking more risks.",
+      "type": "factual",
+      "importance": 4,
+      "source_conversations": [
+        "conv-0035"
+      ],
+      "first_mentioned": "conv-0035"
+    },
+    {
+      "id": "fact-0263",
+      "text": "The user left their buying job in San Francisco to work remotely from Pittsburgh.",
+      "type": "decision",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0264",
+      "text": "The user was paying $3200 for a one-bedroom apartment in San Francisco.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0265",
+      "text": "The user's rent in Pittsburgh is $1400 for a two-bedroom with a home office.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0266",
+      "text": "The user has been doing drone photography for about 2 years and enjoys shooting industrial sites and cityscapes.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0267",
+      "text": "The user picked up DJing as a hobby as a creative outlet different from their day job.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0268",
+      "text": "The user is 36 years old and felt burned out working in San Francisco.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0269",
+      "text": "The user misses the diversity of restaurants in San Francisco, especially a Vietnamese place near their old apartment.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0270",
+      "text": "The user is trying to get involved in the local tennis scene in Pittsburgh, playing at Frick Park on weekends.",
+      "type": "goal",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0271",
+      "text": "The user has a neighbor's kid whom they taught to solve the 3x3 speedcube and is trying to get back into speedcubing.",
+      "type": "episodic",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0272",
+      "text": "The user has started getting into origami and is considering starting an origami club with a friend from work.",
+      "type": "goal",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0273",
+      "text": "The user's friend Jordan, who is also in fashion, moved to Austin last year and loves it.",
+      "type": "factual",
+      "importance": 4,
+      "source_conversations": [
+        "conv-0036"
+      ],
+      "first_mentioned": "conv-0036"
+    },
+    {
+      "id": "fact-0274",
+      "text": "The user works as a paramedic in the city with unpredictable shifts",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0037"
+      ],
+      "first_mentioned": "conv-0037"
+    },
+    {
+      "id": "fact-0275",
+      "text": "The user's wife's name is Sarah",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0037"
+      ],
+      "first_mentioned": "conv-0037"
+    },
+    {
+      "id": "fact-0276",
+      "text": "The user has a daughter named Emma who is interested in aquariums",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0037"
+      ],
+      "first_mentioned": "conv-0037"
+    },
+    {
+      "id": "fact-0277",
+      "text": "The user plans to take Emma to the city aquarium this weekend if not on call",
+      "type": "decision",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0037"
+      ],
+      "first_mentioned": "conv-0037"
+    },
+    {
+      "id": "fact-0278",
+      "text": "The user has a son named Max who recently turned 12 and enjoys playing board games like Catan",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0037"
+      ],
+      "first_mentioned": "conv-0037"
+    },
+    {
+      "id": "fact-0279",
+      "text": "The user and Sarah celebrate birthdays simply with dinner at home and sometimes a small gathering with grandparents",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0037"
+      ],
+      "first_mentioned": "conv-0037"
+    },
+    {
+      "id": "fact-0280",
+      "text": "The user's brother lives in Brazil and they are planning to visit next year",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0037"
+      ],
+      "first_mentioned": "conv-0037"
+    },
+    {
+      "id": "fact-0281",
+      "text": "The user has been learning Mandarin for about six months as a mental break and interest in writing systems",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0037"
+      ],
+      "first_mentioned": "conv-0037"
+    },
+    {
+      "id": "fact-0282",
+      "text": "The user had meniscus surgery about six weeks ago and is recovering from a knee injury",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0038"
+      ],
+      "first_mentioned": "conv-0038"
+    },
+    {
+      "id": "fact-0283",
+      "text": "The user used to practice Brazilian jiu-jitsu three times a week but currently cannot spar for at least three more months",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0038"
+      ],
+      "first_mentioned": "conv-0038"
+    },
+    {
+      "id": "fact-0284",
+      "text": "The user has been doing speedcubing during recovery and can solve a 3x3 Rubik's cube in about 45 seconds",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0038"
+      ],
+      "first_mentioned": "conv-0038"
+    },
+    {
+      "id": "fact-0285",
+      "text": "The user's 10-year-old daughter Lily also does speedcubing and can solve a 3x3 Rubik's cube in about 2 minutes",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0038"
+      ],
+      "first_mentioned": "conv-0038"
+    },
+    {
+      "id": "fact-0286",
+      "text": "The user works as a QA lead at a healthcare company and can mostly work from home during recovery",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0038"
+      ],
+      "first_mentioned": "conv-0038"
+    },
+    {
+      "id": "fact-0287",
+      "text": "The user's team at work is testing a new patient management system and has started a podcast club focused on health tech topics",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0038"
+      ],
+      "first_mentioned": "conv-0038"
+    },
+    {
+      "id": "fact-0288",
+      "text": "The user enjoys listening to podcasts about medical software innovations and patient data security to stay current in the field",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0038"
+      ],
+      "first_mentioned": "conv-0038"
+    },
+    {
+      "id": "fact-0289",
+      "text": "The user's name is Kit",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0039"
+      ],
+      "first_mentioned": "conv-0039"
+    },
+    {
+      "id": "fact-0290",
+      "text": "Kit is a professional rock climber and guide with over 20 years of climbing experience",
+      "type": "factual",
+      "importance": 10,
+      "source_conversations": [
+        "conv-0039"
+      ],
+      "first_mentioned": "conv-0039"
+    },
+    {
+      "id": "fact-0291",
+      "text": "Kit grew up near Yosemite and started climbing as a teenager",
+      "type": "episodic",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0039"
+      ],
+      "first_mentioned": "conv-0039"
+    },
+    {
+      "id": "fact-0292",
+      "text": "Kit enjoys origami as a hobby and incorporates origami paper cranes into climbing gear for good luck",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0039"
+      ],
+      "first_mentioned": "conv-0039"
+    },
+    {
+      "id": "fact-0293",
+      "text": "Kit performs stand-up comedy once a month at an open mic night at a club downtown",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0039"
+      ],
+      "first_mentioned": "conv-0039"
+    },
+    {
+      "id": "fact-0294",
+      "text": "Kit's comedy material mostly covers climbing stories and outdoor life observations",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0039"
+      ],
+      "first_mentioned": "conv-0039"
+    },
+    {
+      "id": "fact-0295",
+      "text": "Kit is learning Spanish and plans to move to Taiwan next year to explore the climbing scene",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0039"
+      ],
+      "first_mentioned": "conv-0039"
+    },
+    {
+      "id": "fact-0296",
+      "text": "The user's name is Sage.",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0040"
+      ],
+      "first_mentioned": "conv-0040"
+    },
+    {
+      "id": "fact-0297",
+      "text": "Sage works as a librarian at the university research library in their town.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0040"
+      ],
+      "first_mentioned": "conv-0040"
+    },
+    {
+      "id": "fact-0298",
+      "text": "Sage enjoys a quiet work environment.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0040"
+      ],
+      "first_mentioned": "conv-0040"
+    },
+    {
+      "id": "fact-0299",
+      "text": "Sage surfs about once a month and drives approximately 3 hours to the coast for surfing.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0040"
+      ],
+      "first_mentioned": "conv-0040"
+    },
+    {
+      "id": "fact-0300",
+      "text": "Sage also does rock climbing to build upper body strength for surfing.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0040"
+      ],
+      "first_mentioned": "conv-0040"
+    },
+    {
+      "id": "fact-0301",
+      "text": "Sage listens to about 5 podcasts during their commute, including a favorite true crime podcast called 'Unsolved Files.'",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0040"
+      ],
+      "first_mentioned": "conv-0040"
+    },
+    {
+      "id": "fact-0302",
+      "text": "Sage is training for a 5K run next month as a personal challenge despite not usually being a runner.",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0040"
+      ],
+      "first_mentioned": "conv-0040"
+    },
+    {
+      "id": "fact-0303",
+      "text": "Sage has recently gotten into baking sourdough bread and has a starter named 'Bubbles' that they have been feeding for months.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0040"
+      ],
+      "first_mentioned": "conv-0040"
+    },
+    {
+      "id": "fact-0304",
+      "text": "User wakes up at 5:30 AM every day to do long runs before work",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0041"
+      ],
+      "first_mentioned": "conv-0041"
+    },
+    {
+      "id": "fact-0305",
+      "text": "User runs a 12-mile loop around Laurelhurst Park and the Springwater Corridor in Portland",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0041"
+      ],
+      "first_mentioned": "conv-0041"
+    },
+    {
+      "id": "fact-0306",
+      "text": "User makes homemade energy bars with dates, almonds, and chia seeds based on a running blog recipe",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0041"
+      ],
+      "first_mentioned": "conv-0041"
+    },
+    {
+      "id": "fact-0307",
+      "text": "User is into leatherworking and makes custom pouches to carry energy bars",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0041"
+      ],
+      "first_mentioned": "conv-0041"
+    },
+    {
+      "id": "fact-0308",
+      "text": "User works on leather wallets, small EDC organizers, and is currently making a custom belt for their dad",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0041"
+      ],
+      "first_mentioned": "conv-0041"
+    },
+    {
+      "id": "fact-0309",
+      "text": "User's dad is recovering from hip surgery",
+      "type": "episodic",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0041"
+      ],
+      "first_mentioned": "conv-0041"
+    },
+    {
+      "id": "fact-0310",
+      "text": "User's mom is managing her diabetes well",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0041"
+      ],
+      "first_mentioned": "conv-0041"
+    },
+    {
+      "id": "fact-0311",
+      "text": "User works at a DeFi protocol and usually works from home in the afternoons to balance caregiving",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0041"
+      ],
+      "first_mentioned": "conv-0041"
+    },
+    {
+      "id": "fact-0312",
+      "text": "The user recently returned from a trip to Eastern Europe, including Budapest, Prague, and Romania",
+      "type": "episodic",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0042"
+      ],
+      "first_mentioned": "conv-0042"
+    },
+    {
+      "id": "fact-0313",
+      "text": "The user enjoys fresh langos from Budapest and has been trying to recreate them at home",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0042"
+      ],
+      "first_mentioned": "conv-0042"
+    },
+    {
+      "id": "fact-0314",
+      "text": "The user brewed a Czech-style pilsner inspired by the beer scene in Prague",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0042"
+      ],
+      "first_mentioned": "conv-0042"
+    },
+    {
+      "id": "fact-0315",
+      "text": "The user works in interior design and is trying to incorporate Eastern European architectural ideas despite client preferences for traditional designs",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0042"
+      ],
+      "first_mentioned": "conv-0042"
+    },
+    {
+      "id": "fact-0316",
+      "text": "The user is working on a chess set with Baltic-inspired patterns and enjoys designing the knights",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0042"
+      ],
+      "first_mentioned": "conv-0042"
+    },
+    {
+      "id": "fact-0317",
+      "text": "The user plays chess occasionally with their brother and participated in a memorable tournament in a small town in Romania",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0042"
+      ],
+      "first_mentioned": "conv-0042"
+    },
+    {
+      "id": "fact-0318",
+      "text": "The user is perfecting pad kra pao and learned about balancing flavors from spice markets in Bangkok",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0042"
+      ],
+      "first_mentioned": "conv-0042"
+    },
+    {
+      "id": "fact-0319",
+      "text": "The user maintains a travel blog where they plan to post about how travel influences their design work and cooking",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0042"
+      ],
+      "first_mentioned": "conv-0042"
+    },
+    {
+      "id": "fact-0320",
+      "text": "The user has established a daily routine with mornings for design work, afternoons for hobbies, and evenings for cooking experiments",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0042"
+      ],
+      "first_mentioned": "conv-0042"
+    },
+    {
+      "id": "fact-0321",
+      "text": "The user is a pediatrician",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0043"
+      ],
+      "first_mentioned": "conv-0043"
+    },
+    {
+      "id": "fact-0322",
+      "text": "The user adopted a golden retriever named Finn from a shelter last month",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0043"
+      ],
+      "first_mentioned": "conv-0043"
+    },
+    {
+      "id": "fact-0323",
+      "text": "The user is training for the Twin Cities Marathon in October",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0043"
+      ],
+      "first_mentioned": "conv-0043"
+    },
+    {
+      "id": "fact-0324",
+      "text": "The user listens to podcasts like 'Radiolab' and 'This American Life' during runs",
+      "type": "preference",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0043"
+      ],
+      "first_mentioned": "conv-0043"
+    },
+    {
+      "id": "fact-0325",
+      "text": "The user has started beekeeping with a hive in their backyard",
+      "type": "episodic",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0043"
+      ],
+      "first_mentioned": "conv-0043"
+    },
+    {
+      "id": "fact-0326",
+      "text": "The user is concerned about ethical issues in pediatric practice such as vaccine hesitancy, parental refusal of treatment, and explaining complex diagnoses to children and families",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0043"
+      ],
+      "first_mentioned": "conv-0043"
+    },
+    {
+      "id": "fact-0327",
+      "text": "The user tries to meet families where they are, use age-appropriate language, and involve the child when possible during difficult medical conversations",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0043"
+      ],
+      "first_mentioned": "conv-0043"
+    },
+    {
+      "id": "fact-0328",
+      "text": "The user recently finished reading 'Ready Player Two' and was disappointed by it",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0044"
+      ],
+      "first_mentioned": "conv-0044"
+    },
+    {
+      "id": "fact-0329",
+      "text": "The user has been speedrunning games for about 5 years, starting in college",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0044"
+      ],
+      "first_mentioned": "conv-0044"
+    },
+    {
+      "id": "fact-0330",
+      "text": "The user streams video game content Tuesday through Thursday evenings",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0044"
+      ],
+      "first_mentioned": "conv-0044"
+    },
+    {
+      "id": "fact-0331",
+      "text": "The user has two children named Emma (6 years old) and Liam (3 years old)",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0044"
+      ],
+      "first_mentioned": "conv-0044"
+    },
+    {
+      "id": "fact-0332",
+      "text": "The user's children play educational games and Mario Kart, with Emma being good at Tetris",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0044"
+      ],
+      "first_mentioned": "conv-0044"
+    },
+    {
+      "id": "fact-0333",
+      "text": "The user participates in family game nights on weekends, recently playing Overcooked",
+      "type": "episodic",
+      "importance": 5,
+      "source_conversations": [
+        "conv-0044"
+      ],
+      "first_mentioned": "conv-0044"
+    },
+    {
+      "id": "fact-0334",
+      "text": "The user uses speedrunning to connect with the gaming community and raise money for charity",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0044"
+      ],
+      "first_mentioned": "conv-0044"
+    },
+    {
+      "id": "fact-0335",
+      "text": "The user's name is Casey",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0045"
+      ],
+      "first_mentioned": "conv-0045"
+    },
+    {
+      "id": "fact-0336",
+      "text": "Casey is 46 years old",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0045"
+      ],
+      "first_mentioned": "conv-0045"
+    },
+    {
+      "id": "fact-0337",
+      "text": "Casey works as an environmental policy advisor",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0045"
+      ],
+      "first_mentioned": "conv-0045"
+    },
+    {
+      "id": "fact-0338",
+      "text": "Casey has been living in Berlin for about six months after moving from Portland",
+      "type": "episodic",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0045"
+      ],
+      "first_mentioned": "conv-0045"
+    },
+    {
+      "id": "fact-0339",
+      "text": "Casey has a border collie named Thor who is energetic and enjoys long walks",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0045"
+      ],
+      "first_mentioned": "conv-0045"
+    },
+    {
+      "id": "fact-0340",
+      "text": "Casey is interested in starting a freshwater aquarium with a community tank including tetras and a dwarf cichlid",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0045"
+      ],
+      "first_mentioned": "conv-0045"
+    },
+    {
+      "id": "fact-0341",
+      "text": "Casey is interested in learning drone photography and plans to combine it with environmental work by documenting local ecosystems",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0045"
+      ],
+      "first_mentioned": "conv-0045"
+    },
+    {
+      "id": "fact-0342",
+      "text": "Casey is currently obsessed with baking sourdough bread and has built a small proofing box for the kitchen",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0045"
+      ],
+      "first_mentioned": "conv-0045"
+    },
+    {
+      "id": "fact-0343",
+      "text": "The user's name is Finley and they are 46 years old.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0046"
+      ],
+      "first_mentioned": "conv-0046"
+    },
+    {
+      "id": "fact-0344",
+      "text": "Finley works as an opera singer and travels internationally for performances.",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0046"
+      ],
+      "first_mentioned": "conv-0046"
+    },
+    {
+      "id": "fact-0345",
+      "text": "Finley adopted a golden retriever named Willow from a shelter.",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0046"
+      ],
+      "first_mentioned": "conv-0046"
+    },
+    {
+      "id": "fact-0346",
+      "text": "Finley has a small vegetable garden in Vienna where they practice companion planting.",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0046"
+      ],
+      "first_mentioned": "conv-0046"
+    },
+    {
+      "id": "fact-0347",
+      "text": "Finley is teaching themselves Thai cooking and grows Thai herbs in their garden.",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0046"
+      ],
+      "first_mentioned": "conv-0046"
+    },
+    {
+      "id": "fact-0348",
+      "text": "Finley enjoys doing crossword puzzles and recently started learning chess online to improve strategic thinking.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0046"
+      ],
+      "first_mentioned": "conv-0046"
+    },
+    {
+      "id": "fact-0349",
+      "text": "Finley practices calligraphy as a way to relax and has noticed it improves their Thai handwriting.",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0046"
+      ],
+      "first_mentioned": "conv-0046"
+    },
+    {
+      "id": "fact-0350",
+      "text": "Finley manages their garden with automated systems and uses reliable pet sitters for Willow during travel.",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0046"
+      ],
+      "first_mentioned": "conv-0046"
+    },
+    {
+      "id": "fact-0351",
+      "text": "The user has lived in their current home for 20 years and the kitchen has not been remodeled since then",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0047"
+      ],
+      "first_mentioned": "conv-0047"
+    },
+    {
+      "id": "fact-0352",
+      "text": "The user wants to redo their kitchen to include an induction cooktop, more counter space, and pull-out shelves",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0047"
+      ],
+      "first_mentioned": "conv-0047"
+    },
+    {
+      "id": "fact-0353",
+      "text": "The user has been practicing speedcubing for about 8 years, starting during recovery from back surgery",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0047"
+      ],
+      "first_mentioned": "conv-0047"
+    },
+    {
+      "id": "fact-0354",
+      "text": "The user needs more counter space in the kitchen specifically for speedcubing practice",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0047"
+      ],
+      "first_mentioned": "conv-0047"
+    },
+    {
+      "id": "fact-0355",
+      "text": "The user currently tracks beekeeping hive data in the kitchen and has seven hives",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0047"
+      ],
+      "first_mentioned": "conv-0047"
+    },
+    {
+      "id": "fact-0356",
+      "text": "The user is planning to complete the kitchen renovation before their triathlon next month",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0047"
+      ],
+      "first_mentioned": "conv-0047"
+    },
+    {
+      "id": "fact-0357",
+      "text": "The user is training for the Lake Placid triathlon, which is a bucket list event for them",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0047"
+      ],
+      "first_mentioned": "conv-0047"
+    },
+    {
+      "id": "fact-0358",
+      "text": "The user's nephew is coming to cheer them on at the Lake Placid triathlon",
+      "type": "episodic",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0047"
+      ],
+      "first_mentioned": "conv-0047"
+    },
+    {
+      "id": "fact-0359",
+      "text": "User is experiencing back pain likely caused by their current office setup",
+      "type": "factual",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0048"
+      ],
+      "first_mentioned": "conv-0048"
+    },
+    {
+      "id": "fact-0360",
+      "text": "User saw a physical therapist last week who recommended a chair with good lumbar support due to poor posture",
+      "type": "episodic",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0048"
+      ],
+      "first_mentioned": "conv-0048"
+    },
+    {
+      "id": "fact-0361",
+      "text": "User is an AI ethics researcher at a think tank downtown working on a report about algorithmic bias in hiring tools",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0048"
+      ],
+      "first_mentioned": "conv-0048"
+    },
+    {
+      "id": "fact-0362",
+      "text": "User sits for hours researching AI ethics papers",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0048"
+      ],
+      "first_mentioned": "conv-0048"
+    },
+    {
+      "id": "fact-0363",
+      "text": "User tried using a standing desk for a month but missed their urban sketching setup by the window",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0048"
+      ],
+      "first_mentioned": "conv-0048"
+    },
+    {
+      "id": "fact-0364",
+      "text": "User enjoys urban sketching cityscapes on weekends in a corner by the window",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0048"
+      ],
+      "first_mentioned": "conv-0048"
+    },
+    {
+      "id": "fact-0365",
+      "text": "User is training for the Chicago Marathon in October and is trying to stay active despite back issues",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0048"
+      ],
+      "first_mentioned": "conv-0048"
+    },
+    {
+      "id": "fact-0366",
+      "text": "User has modified their long runs and focused more on form due to back pain, and their physical therapist suggested swimming which they enjoy",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0048"
+      ],
+      "first_mentioned": "conv-0048"
+    },
+    {
+      "id": "fact-0367",
+      "text": "The user is planning a special 25th anniversary dinner for her husband next week",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0049"
+      ],
+      "first_mentioned": "conv-0049"
+    },
+    {
+      "id": "fact-0368",
+      "text": "The user's husband enjoys Italian food, especially pasta dishes",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0049"
+      ],
+      "first_mentioned": "conv-0049"
+    },
+    {
+      "id": "fact-0369",
+      "text": "The user plans to make homemade fettuccine alfredo with grilled chicken for the anniversary dinner",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0049"
+      ],
+      "first_mentioned": "conv-0049"
+    },
+    {
+      "id": "fact-0370",
+      "text": "The user owns a pasta maker received last Christmas, recommended by her sister-in-law",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0049"
+      ],
+      "first_mentioned": "conv-0049"
+    },
+    {
+      "id": "fact-0371",
+      "text": "The user has three weddings booked for her wedding planning business next month",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0049"
+      ],
+      "first_mentioned": "conv-0049"
+    },
+    {
+      "id": "fact-0372",
+      "text": "The user wants to make a chocolate lava cake for dessert because it is her husband's favorite",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0049"
+      ],
+      "first_mentioned": "conv-0049"
+    },
+    {
+      "id": "fact-0373",
+      "text": "The user usually surfs on Saturday mornings but plans to do a lava cake test run on Saturday afternoon",
+      "type": "decision",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0049"
+      ],
+      "first_mentioned": "conv-0049"
+    },
+    {
+      "id": "fact-0374",
+      "text": "The user has been travel blogging for about five years and wants to expand into food content",
+      "type": "goal",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0049"
+      ],
+      "first_mentioned": "conv-0049"
+    },
+    {
+      "id": "fact-0375",
+      "text": "The user recently completed a six-month sabbatical traveling through South America, visiting Argentina, Chile, Bolivia, Peru, and Colombia",
+      "type": "episodic",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0050"
+      ],
+      "first_mentioned": "conv-0050"
+    },
+    {
+      "id": "fact-0376",
+      "text": "The user considers the empanadas in Salta, Argentina, the best they have ever had",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0050"
+      ],
+      "first_mentioned": "conv-0050"
+    },
+    {
+      "id": "fact-0377",
+      "text": "The user has been home brewing beer for about three years",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0050"
+      ],
+      "first_mentioned": "conv-0050"
+    },
+    {
+      "id": "fact-0378",
+      "text": "The user plans to make authentic Salteñas-style empanadas with ingredients including ground beef, onions, hard-boiled eggs, cumin, and paprika",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0050"
+      ],
+      "first_mentioned": "conv-0050"
+    },
+    {
+      "id": "fact-0379",
+      "text": "The user learned to make chimichurri sauce from a chef in Buenos Aires and plans to make it as a side dish",
+      "type": "episodic",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0050"
+      ],
+      "first_mentioned": "conv-0050"
+    },
+    {
+      "id": "fact-0380",
+      "text": "The user hosts a weekly podcast about geology and travel and wants to document their South America trip for their listeners",
+      "type": "goal",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0050"
+      ],
+      "first_mentioned": "conv-0050"
+    },
+    {
+      "id": "fact-0381",
+      "text": "The user uses origami, specifically cranes and geometric shapes, as a stress relief and plans to make origami decorations for the dinner table",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0050"
+      ],
+      "first_mentioned": "conv-0050"
+    },
+    {
+      "id": "fact-0382",
+      "text": "The user recently took up archery and practices at a range near their house to clear their head",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0050"
+      ],
+      "first_mentioned": "conv-0050"
+    },
+    {
+      "id": "fact-0383",
+      "text": "The user sits at a desk coding all day and wants to be more physically active",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0051"
+      ],
+      "first_mentioned": "conv-0051"
+    },
+    {
+      "id": "fact-0384",
+      "text": "The user enjoys chess and archery",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0051"
+      ],
+      "first_mentioned": "conv-0051"
+    },
+    {
+      "id": "fact-0385",
+      "text": "The user has a small garden on their apartment balcony where they grow herbs and vegetables",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0051"
+      ],
+      "first_mentioned": "conv-0051"
+    },
+    {
+      "id": "fact-0386",
+      "text": "The user lives near San Diego and is interested in hiking the Torrey Pines trail",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0051"
+      ],
+      "first_mentioned": "conv-0051"
+    },
+    {
+      "id": "fact-0387",
+      "text": "The user has low endurance and gets winded climbing stairs to their third-floor apartment",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0051"
+      ],
+      "first_mentioned": "conv-0051"
+    },
+    {
+      "id": "fact-0388",
+      "text": "The user bakes sourdough bread as a weekend ritual",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0051"
+      ],
+      "first_mentioned": "conv-0051"
+    },
+    {
+      "id": "fact-0389",
+      "text": "The user's typical diet includes skipping breakfast, eating a burrito for lunch near Nexus Labs, snacking on chips or cookies, and having easy dinners like pasta",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0051"
+      ],
+      "first_mentioned": "conv-0051"
+    },
+    {
+      "id": "fact-0390",
+      "text": "The user works at Nexus Labs, where there is a step challenge wellness initiative they did not participate in but are considering joining",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0051"
+      ],
+      "first_mentioned": "conv-0051"
+    },
+    {
+      "id": "fact-0391",
+      "text": "The user enjoys hard sci-fi novels by authors like Asimov and Clarke",
+      "type": "preference",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0051"
+      ],
+      "first_mentioned": "conv-0051"
+    },
+    {
+      "id": "fact-0392",
+      "text": "The user used to play tennis in college but stopped when starting their design career",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0052"
+      ],
+      "first_mentioned": "conv-0052"
+    },
+    {
+      "id": "fact-0393",
+      "text": "The user recently moved to a new apartment in the Mission District of San Francisco last month",
+      "type": "episodic",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0052"
+      ],
+      "first_mentioned": "conv-0052"
+    },
+    {
+      "id": "fact-0394",
+      "text": "There is a public tennis court about 10 minutes away from the user's new apartment",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0052"
+      ],
+      "first_mentioned": "conv-0052"
+    },
+    {
+      "id": "fact-0395",
+      "text": "The user is currently not in great fitness condition due to focusing on wedding planning",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0052"
+      ],
+      "first_mentioned": "conv-0052"
+    },
+    {
+      "id": "fact-0396",
+      "text": "The user is getting married next June in Napa",
+      "type": "episodic",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0052"
+      ],
+      "first_mentioned": "conv-0052"
+    },
+    {
+      "id": "fact-0397",
+      "text": "The user wants to improve fitness to feel good in their suit and have energy for wedding planning",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0052"
+      ],
+      "first_mentioned": "conv-0052"
+    },
+    {
+      "id": "fact-0398",
+      "text": "The user enjoys hiking and vintage cars, including restoring a classic Mercedes in their garage",
+      "type": "preference",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0052"
+      ],
+      "first_mentioned": "conv-0052"
+    },
+    {
+      "id": "fact-0399",
+      "text": "The user plans to create a small workout area in their spacious garage with resistance bands and a yoga mat",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0052"
+      ],
+      "first_mentioned": "conv-0052"
+    },
+    {
+      "id": "fact-0400",
+      "text": "The user is planning a small get-together for next weekend with a group of 6-8 people consisting mostly of friends and a couple of coworkers from BioGenesis Pharma",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0053"
+      ],
+      "first_mentioned": "conv-0053"
+    },
+    {
+      "id": "fact-0401",
+      "text": "The user is considering an outdoor activity like hiking the Eagle Ridge trail, which is about 4 miles round trip and has a nice view at the top",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0053"
+      ],
+      "first_mentioned": "conv-0053"
+    },
+    {
+      "id": "fact-0402",
+      "text": "The user has a fiancé and they have done the Eagle Ridge trail a few times while training for mountain biking season",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0053"
+      ],
+      "first_mentioned": "conv-0053"
+    },
+    {
+      "id": "fact-0403",
+      "text": "The user is currently fermenting a batch of sourdough dough and is trying to perfect a rosemary olive oil version for the picnic",
+      "type": "episodic",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0053"
+      ],
+      "first_mentioned": "conv-0053"
+    },
+    {
+      "id": "fact-0404",
+      "text": "The user is planning a wedding aiming for late September next year with an outdoor ceremony to capture fall colors and avoid the rainy season",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0053"
+      ],
+      "first_mentioned": "conv-0053"
+    },
+    {
+      "id": "fact-0405",
+      "text": "The wedding venue the user is leaning toward is a vineyard about an hour outside the city with an outdoor space and allows bringing in own vendors",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0053"
+      ],
+      "first_mentioned": "conv-0053"
+    },
+    {
+      "id": "fact-0406",
+      "text": "The wedding food plan includes a mix of stations with BBQ options reflecting the fiancé's Texas family background and vegetarian options for friends",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0053"
+      ],
+      "first_mentioned": "conv-0053"
+    },
+    {
+      "id": "fact-0407",
+      "text": "The user works full-time at BioGenesis Pharma and finds coordinating wedding planning stressful",
+      "type": "factual",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0053"
+      ],
+      "first_mentioned": "conv-0053"
+    },
+    {
+      "id": "fact-0408",
+      "text": "User is planning their 62nd birthday celebration for next month",
+      "type": "goal",
+      "importance": 9,
+      "source_conversations": [
+        "conv-0054"
+      ],
+      "first_mentioned": "conv-0054"
+    },
+    {
+      "id": "fact-0409",
+      "text": "User prefers an active celebration involving salsa dancing",
+      "type": "preference",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0054"
+      ],
+      "first_mentioned": "conv-0054"
+    },
+    {
+      "id": "fact-0410",
+      "text": "User wants to host a dance-themed party with around 15-20 guests",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0054"
+      ],
+      "first_mentioned": "conv-0054"
+    },
+    {
+      "id": "fact-0411",
+      "text": "User often goes on photography walks with friends around the city",
+      "type": "factual",
+      "importance": 6,
+      "source_conversations": [
+        "conv-0054"
+      ],
+      "first_mentioned": "conv-0054"
+    },
+    {
+      "id": "fact-0412",
+      "text": "User plans a photo scavenger hunt starting at the waterfront park",
+      "type": "decision",
+      "importance": 8,
+      "source_conversations": [
+        "conv-0054"
+      ],
+      "first_mentioned": "conv-0054"
+    },
+    {
+      "id": "fact-0413",
+      "text": "User has a young, energetic golden retriever named Coco adopted last spring",
+      "type": "factual",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0054"
+      ],
+      "first_mentioned": "conv-0054"
+    },
+    {
+      "id": "fact-0414",
+      "text": "User is considering renting a dance studio for the salsa lesson",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0054"
+      ],
+      "first_mentioned": "conv-0054"
+    },
+    {
+      "id": "fact-0415",
+      "text": "User plans to ask friend Miguel to DJ with Latin music from his travel blogging",
+      "type": "decision",
+      "importance": 7,
+      "source_conversations": [
+        "conv-0054"
+      ],
+      "first_mentioned": "conv-0054"
+    }
+  ]
+}

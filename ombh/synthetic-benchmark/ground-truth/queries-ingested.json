@@ -1,0 +1,4431 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-02-27T23:10:05.566667",
+    "total_queries": 140,
+    "description": "Queries generated from facts of ingested conversations only",
+    "generation_stats": {
+      "total_queries": 140,
+      "category_distribution": {
+        "factual": 42,
+        "semantic": 42,
+        "cross_conversation": 42,
+        "negative": 14
+      },
+      "total_fact_references": 483,
+      "invalid_fact_references": 0,
+      "avg_facts_per_query": 3.45
+    }
+  },
+  "queries": [
+    {
+      "id": "query-i0001",
+      "text": "What are the user's current living arrangements and how do they manage their expenses?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0002",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0003",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0004",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0001",
+        "fact-0002",
+        "fact-0003",
+        "fact-0004",
+        "fact-0005",
+        "fact-0006",
+        "fact-0007",
+        "fact-0008",
+        "fact-0009",
+        "fact-0010"
+      ]
+    },
+    {
+      "id": "query-i0002",
+      "text": "How does the user plan to improve their financial stability and personal goals in the near future?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0005",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0006",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0010",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0001",
+        "fact-0002",
+        "fact-0003",
+        "fact-0004",
+        "fact-0005",
+        "fact-0006",
+        "fact-0007",
+        "fact-0008",
+        "fact-0009",
+        "fact-0010"
+      ]
+    },
+    {
+      "id": "query-i0003",
+      "text": "What are the user's hobbies and how do they integrate their home environment and fitness goals?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0007",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0355",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0082",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0357",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0001",
+        "fact-0002",
+        "fact-0003",
+        "fact-0004",
+        "fact-0005",
+        "fact-0006",
+        "fact-0007",
+        "fact-0008",
+        "fact-0009",
+        "fact-0010"
+      ]
+    },
+    {
+      "id": "query-i0004",
+      "text": "How much does the user pay monthly for rent and subscriptions, and what is their current job status?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0012",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0013",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0019",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0020",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0011",
+        "fact-0012",
+        "fact-0013",
+        "fact-0014",
+        "fact-0015",
+        "fact-0016",
+        "fact-0017",
+        "fact-0018",
+        "fact-0019",
+        "fact-0020"
+      ]
+    },
+    {
+      "id": "query-i0005",
+      "text": "What leisure activities and home technology investments has the user recently embraced?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0014",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0015",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0016",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0011",
+        "fact-0012",
+        "fact-0013",
+        "fact-0014",
+        "fact-0015",
+        "fact-0016",
+        "fact-0017",
+        "fact-0018",
+        "fact-0019",
+        "fact-0020"
+      ]
+    },
+    {
+      "id": "query-i0006",
+      "text": "What are the user's outdoor recreational plans and how do they relate to their current living and work situation?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0019",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0015",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0041",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0042",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0046",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0011",
+        "fact-0012",
+        "fact-0013",
+        "fact-0014",
+        "fact-0015",
+        "fact-0016",
+        "fact-0017",
+        "fact-0018",
+        "fact-0019",
+        "fact-0020"
+      ]
+    },
+    {
+      "id": "query-i0007",
+      "text": "What details are known about the user's new job offer at BioGenesis Pharma and their upcoming move plans?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0021",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0022",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0023",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0024",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0021",
+        "fact-0022",
+        "fact-0023",
+        "fact-0024",
+        "fact-0025",
+        "fact-0026",
+        "fact-0027",
+        "fact-0028",
+        "fact-0029",
+        "fact-0030"
+      ]
+    },
+    {
+      "id": "query-i0008",
+      "text": "How is the user balancing their professional ambitions in pharmaceutical data science with personal life changes and hobbies?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0026",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0023",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0025",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0027",
+          "relevance": 0.6
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0021",
+        "fact-0022",
+        "fact-0023",
+        "fact-0024",
+        "fact-0025",
+        "fact-0026",
+        "fact-0027",
+        "fact-0028",
+        "fact-0029",
+        "fact-0030"
+      ]
+    },
+    {
+      "id": "query-i0009",
+      "text": "How do the user's age and health conditions compare across different conversations, and what impact might this have on their career and activities?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0028",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0253",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0255",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0021",
+          "relevance": 0.6
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0021",
+        "fact-0022",
+        "fact-0023",
+        "fact-0024",
+        "fact-0025",
+        "fact-0026",
+        "fact-0027",
+        "fact-0028",
+        "fact-0029",
+        "fact-0030"
+      ]
+    },
+    {
+      "id": "query-i0010",
+      "text": "What plans does the user have to create a more stable routine involving their freelance work and clients?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0031",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0035",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0031",
+        "fact-0032",
+        "fact-0033",
+        "fact-0034",
+        "fact-0035",
+        "fact-0036",
+        "fact-0037",
+        "fact-0038",
+        "fact-0039",
+        "fact-0040"
+      ]
+    },
+    {
+      "id": "query-i0011",
+      "text": "How is the user intending to integrate their passion for travel and lifestyle into their professional branding and content creation?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0032",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0034",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0031",
+        "fact-0032",
+        "fact-0033",
+        "fact-0034",
+        "fact-0035",
+        "fact-0036",
+        "fact-0037",
+        "fact-0038",
+        "fact-0039",
+        "fact-0040"
+      ]
+    },
+    {
+      "id": "query-i0012",
+      "text": "How do the user's current hobbies and professional goals connect with their lifestyle changes and family plans?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0031",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0033",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0067",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0072",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0031",
+        "fact-0032",
+        "fact-0033",
+        "fact-0034",
+        "fact-0035",
+        "fact-0036",
+        "fact-0037",
+        "fact-0038",
+        "fact-0039",
+        "fact-0040"
+      ]
+    },
+    {
+      "id": "query-i0013",
+      "text": "What are the user's plans for their upcoming trip to Portland, including travel, accommodation, and activities?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0042",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0043",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0044",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0046",
+          "relevance": 0.95
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0041",
+        "fact-0042",
+        "fact-0043",
+        "fact-0044",
+        "fact-0045",
+        "fact-0046",
+        "fact-0047",
+        "fact-0048",
+        "fact-0049",
+        "fact-0050"
+      ]
+    },
+    {
+      "id": "query-i0014",
+      "text": "How does the user intend to manage their mother's post-surgery care while balancing their demanding ER job and personal health considerations?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0045",
+          "relevance": 0.85
+        },
+        {
+          "fact_id": "fact-0048",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0049",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0050",
+          "relevance": 0.95
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0041",
+        "fact-0042",
+        "fact-0043",
+        "fact-0044",
+        "fact-0045",
+        "fact-0046",
+        "fact-0047",
+        "fact-0048",
+        "fact-0049",
+        "fact-0050"
+      ]
+    },
+    {
+      "id": "query-i0015",
+      "text": "What are the user's recreational interests and how do they integrate their family relationships and professional life?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0041",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0317",
+          "relevance": 0.85
+        },
+        {
+          "fact_id": "fact-0320",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0049",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0315",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0041",
+        "fact-0042",
+        "fact-0043",
+        "fact-0044",
+        "fact-0045",
+        "fact-0046",
+        "fact-0047",
+        "fact-0048",
+        "fact-0049",
+        "fact-0050"
+      ]
+    },
+    {
+      "id": "query-i0016",
+      "text": "What are the user's plans for their community garden and how do they intend to support local pollinators?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0057",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0060",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0059",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0051",
+        "fact-0052",
+        "fact-0053",
+        "fact-0054",
+        "fact-0055",
+        "fact-0056",
+        "fact-0057",
+        "fact-0058",
+        "fact-0059",
+        "fact-0060"
+      ]
+    },
+    {
+      "id": "query-i0017",
+      "text": "How is the user managing their responsibilities between caregiving, their engineering career, and their online content creation?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0052",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0053",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0056",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0051",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0051",
+        "fact-0052",
+        "fact-0053",
+        "fact-0054",
+        "fact-0055",
+        "fact-0056",
+        "fact-0057",
+        "fact-0058",
+        "fact-0059",
+        "fact-0060"
+      ]
+    },
+    {
+      "id": "query-i0018",
+      "text": "How does the user's home life and hobbies, including their plans for a nursery and community projects, intersect with their professional and creative activities?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0057",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0058",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0069",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0070",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0051",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0051",
+        "fact-0052",
+        "fact-0053",
+        "fact-0054",
+        "fact-0055",
+        "fact-0056",
+        "fact-0057",
+        "fact-0058",
+        "fact-0059",
+        "fact-0060"
+      ]
+    },
+    {
+      "id": "query-i0019",
+      "text": "How is the user managing their garden project alongside work, and what woodworking projects are they making for their baby?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0061",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0063",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0064",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0061",
+        "fact-0062",
+        "fact-0063",
+        "fact-0064",
+        "fact-0065",
+        "fact-0066",
+        "fact-0067",
+        "fact-0068",
+        "fact-0069",
+        "fact-0070"
+      ]
+    },
+    {
+      "id": "query-i0020",
+      "text": "What strategies is the user employing to juggle family preparations and creative hobbies while maintaining personal growth?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0067",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0068",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0064",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0061",
+        "fact-0062",
+        "fact-0063",
+        "fact-0064",
+        "fact-0065",
+        "fact-0066",
+        "fact-0067",
+        "fact-0068",
+        "fact-0069",
+        "fact-0070"
+      ]
+    },
+    {
+      "id": "query-i0021",
+      "text": "What are the user's gardening interests and work environments, and how do these relate to their social and recreational plans in different cities?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0061",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0065",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0385",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0386",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0166",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0390",
+          "relevance": 0.6
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0061",
+        "fact-0062",
+        "fact-0063",
+        "fact-0064",
+        "fact-0065",
+        "fact-0066",
+        "fact-0067",
+        "fact-0068",
+        "fact-0069",
+        "fact-0070"
+      ]
+    },
+    {
+      "id": "query-i0022",
+      "text": "What are the user's current training routines and upcoming marathon plans?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0075",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0076",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0080",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0071",
+        "fact-0072",
+        "fact-0073",
+        "fact-0074",
+        "fact-0075",
+        "fact-0076",
+        "fact-0077",
+        "fact-0078",
+        "fact-0079",
+        "fact-0080"
+      ]
+    },
+    {
+      "id": "query-i0023",
+      "text": "How does the user intend to share their passions with their child when they grow older?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0071",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0072",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0071",
+        "fact-0072",
+        "fact-0073",
+        "fact-0074",
+        "fact-0075",
+        "fact-0076",
+        "fact-0077",
+        "fact-0078",
+        "fact-0079",
+        "fact-0080"
+      ]
+    },
+    {
+      "id": "query-i0024",
+      "text": "What are the user's interests and plans related to home improvement and social activities in different cities?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0074",
+          "relevance": 0.6
+        },
+        {
+          "fact_id": "fact-0351",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0352",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0166",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0169",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0071",
+        "fact-0072",
+        "fact-0073",
+        "fact-0074",
+        "fact-0075",
+        "fact-0076",
+        "fact-0077",
+        "fact-0078",
+        "fact-0079",
+        "fact-0080"
+      ]
+    },
+    {
+      "id": "query-i0025",
+      "text": "What are the details of the user's beekeeping activities and how do they incorporate foraged mushrooms into their restaurant menu?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0082",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0083",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0084",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0081",
+        "fact-0082",
+        "fact-0083",
+        "fact-0084",
+        "fact-0085",
+        "fact-0086",
+        "fact-0087",
+        "fact-0088",
+        "fact-0089",
+        "fact-0090"
+      ]
+    },
+    {
+      "id": "query-i0026",
+      "text": "How does the user combine their early morning agricultural routines with their culinary teaching schedule and home gardening efforts?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0082",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0085",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0089",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0081",
+        "fact-0082",
+        "fact-0083",
+        "fact-0084",
+        "fact-0085",
+        "fact-0086",
+        "fact-0087",
+        "fact-0088",
+        "fact-0089",
+        "fact-0090"
+      ]
+    },
+    {
+      "id": "query-i0027",
+      "text": "How does the user's lifestyle in Portland, including their restaurant ownership and beekeeping, relate to their travel and outdoor activities like hiking and drone photography?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0081",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0083",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0043",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0041",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0046",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0081",
+        "fact-0082",
+        "fact-0083",
+        "fact-0084",
+        "fact-0085",
+        "fact-0086",
+        "fact-0087",
+        "fact-0088",
+        "fact-0089",
+        "fact-0090"
+      ]
+    },
+    {
+      "id": "query-i0028",
+      "text": "What are the user's current hobbies and recent decisions related to knitting and social activities?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0092",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0094",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0096",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0095",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0091",
+        "fact-0092",
+        "fact-0093",
+        "fact-0094",
+        "fact-0095",
+        "fact-0096",
+        "fact-0097",
+        "fact-0098",
+        "fact-0099",
+        "fact-0100"
+      ]
+    },
+    {
+      "id": "query-i0029",
+      "text": "How has the user resumed crafting and what are their motivations for creating handmade items for people they know?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0094",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0096",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0097",
+          "relevance": 0.95
+        },
+        {
+          "fact_id": "fact-0098",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0091",
+        "fact-0092",
+        "fact-0093",
+        "fact-0094",
+        "fact-0095",
+        "fact-0096",
+        "fact-0097",
+        "fact-0098",
+        "fact-0099",
+        "fact-0100"
+      ]
+    },
+    {
+      "id": "query-i0030",
+      "text": "What are the user's professional roles and leisure interests across different locations, including their new neighborhood activities?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0091",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0099",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0158",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0315",
+          "relevance": 0.85
+        },
+        {
+          "fact_id": "fact-0093",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0091",
+        "fact-0092",
+        "fact-0093",
+        "fact-0094",
+        "fact-0095",
+        "fact-0096",
+        "fact-0097",
+        "fact-0098",
+        "fact-0099",
+        "fact-0100"
+      ]
+    },
+    {
+      "id": "query-i0031",
+      "text": "What tactile electronics skills is the user trying to learn, and how do they plan to integrate German language learning with keyboard building?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0102",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0105",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0106",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0101",
+        "fact-0102",
+        "fact-0103",
+        "fact-0104",
+        "fact-0105",
+        "fact-0106",
+        "fact-0107",
+        "fact-0108",
+        "fact-0109",
+        "fact-0110"
+      ]
+    },
+    {
+      "id": "query-i0032",
+      "text": "How is the user combining their passion for problem-solving and hands-on projects during their home renovation?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0101",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0104",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0109",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0101",
+        "fact-0102",
+        "fact-0103",
+        "fact-0104",
+        "fact-0105",
+        "fact-0106",
+        "fact-0107",
+        "fact-0108",
+        "fact-0109",
+        "fact-0110"
+      ]
+    },
+    {
+      "id": "query-i0033",
+      "text": "How do the user's current hobbies and goals, such as learning German and building keyboards, relate to their personal background and work-life balance including family care and past activities?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0105",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0106",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0109",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0047",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0053",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0283",
+          "relevance": 0.6
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0101",
+        "fact-0102",
+        "fact-0103",
+        "fact-0104",
+        "fact-0105",
+        "fact-0106",
+        "fact-0107",
+        "fact-0108",
+        "fact-0109",
+        "fact-0110"
+      ]
+    },
+    {
+      "id": "query-i0034",
+      "text": "What is the user's budget for renovating the kitchen and their timeline related to triathlon training?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0112",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0114",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0111",
+        "fact-0112",
+        "fact-0113",
+        "fact-0114",
+        "fact-0115",
+        "fact-0116",
+        "fact-0117",
+        "fact-0118",
+        "fact-0119",
+        "fact-0120"
+      ]
+    },
+    {
+      "id": "query-i0035",
+      "text": "How does the user balance their early morning and weekend training routine with their volunteer work and soundproofing project schedule?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0115",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0118",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0119",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0111",
+        "fact-0112",
+        "fact-0113",
+        "fact-0114",
+        "fact-0115",
+        "fact-0116",
+        "fact-0117",
+        "fact-0118",
+        "fact-0119",
+        "fact-0120"
+      ]
+    },
+    {
+      "id": "query-i0036",
+      "text": "What are the user's creative hobbies and content creation interests, including DJing, triathlon training videos, and pastry-making?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0117",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0224",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0227",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0267",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0220",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0111",
+        "fact-0112",
+        "fact-0113",
+        "fact-0114",
+        "fact-0115",
+        "fact-0116",
+        "fact-0117",
+        "fact-0118",
+        "fact-0119",
+        "fact-0120"
+      ]
+    },
+    {
+      "id": "query-i0037",
+      "text": "What soundproofing options does the user need for their piano setup, and what is the budget and timeline for this project?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0121",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0122",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0123",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0121",
+        "fact-0122",
+        "fact-0123",
+        "fact-0124",
+        "fact-0125",
+        "fact-0126",
+        "fact-0127",
+        "fact-0128",
+        "fact-0129",
+        "fact-0130"
+      ]
+    },
+    {
+      "id": "query-i0038",
+      "text": "How is the user balancing their weekend baking hobby with their busy schedule and MBA studies, and what changes have they made to improve their sourdough bread?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0125",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0126",
+          "relevance": 0.95
+        },
+        {
+          "fact_id": "fact-0127",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0129",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0121",
+        "fact-0122",
+        "fact-0123",
+        "fact-0124",
+        "fact-0125",
+        "fact-0126",
+        "fact-0127",
+        "fact-0128",
+        "fact-0129",
+        "fact-0130"
+      ]
+    },
+    {
+      "id": "query-i0039",
+      "text": "What are the user's current professional roles and hobbies, including their physical therapy practice in Phoenix and their living situation in Salt Lake City?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0128",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0248",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0246",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0121",
+        "fact-0122",
+        "fact-0123",
+        "fact-0124",
+        "fact-0125",
+        "fact-0126",
+        "fact-0127",
+        "fact-0128",
+        "fact-0129",
+        "fact-0130"
+      ]
+    },
+    {
+      "id": "query-i0040",
+      "text": "What traditional Portuguese dishes has the user been trying to cook since moving from the US to Portugal three years ago?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0132",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0133",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0131",
+        "fact-0132",
+        "fact-0133",
+        "fact-0134",
+        "fact-0135",
+        "fact-0136",
+        "fact-0137",
+        "fact-0138",
+        "fact-0139",
+        "fact-0140"
+      ]
+    },
+    {
+      "id": "query-i0041",
+      "text": "How does the user integrate their passion for unique hobbies like archery and baking using local resources such as wild yeast from Phoenix air?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0131",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0131",
+        "fact-0132",
+        "fact-0133",
+        "fact-0134",
+        "fact-0135",
+        "fact-0136",
+        "fact-0137",
+        "fact-0138",
+        "fact-0139",
+        "fact-0140"
+      ]
+    },
+    {
+      "id": "query-i0042",
+      "text": "How does the user's work in AI and their personal interests in cooking and fitness compare across their moves from the US to Portugal and then to Melbourne?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0132",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0136",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0140",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0361",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0362",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0131",
+        "fact-0132",
+        "fact-0133",
+        "fact-0134",
+        "fact-0135",
+        "fact-0136",
+        "fact-0137",
+        "fact-0138",
+        "fact-0139",
+        "fact-0140"
+      ]
+    },
+    {
+      "id": "query-i0043",
+      "text": "What are the user's current fitness and dietary goals, including any specific activities and cuisines they are focusing on?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0144",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0148",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0142",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0141",
+        "fact-0142",
+        "fact-0143",
+        "fact-0144",
+        "fact-0145",
+        "fact-0146",
+        "fact-0147",
+        "fact-0148",
+        "fact-0149",
+        "fact-0150"
+      ]
+    },
+    {
+      "id": "query-i0044",
+      "text": "How is the individual balancing their weekend volunteer firefighting duties with physical conditioning and nutritional changes?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0147",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0148",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0144",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0141",
+        "fact-0142",
+        "fact-0143",
+        "fact-0144",
+        "fact-0145",
+        "fact-0146",
+        "fact-0147",
+        "fact-0148",
+        "fact-0149",
+        "fact-0150"
+      ]
+    },
+    {
+      "id": "query-i0045",
+      "text": "What are the user's hobbies and work situations across different periods, including their fitness interests, professional roles, and creative activities?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0142",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0147",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0150",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0284",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0283",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0009",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0064",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0141",
+        "fact-0142",
+        "fact-0143",
+        "fact-0144",
+        "fact-0145",
+        "fact-0146",
+        "fact-0147",
+        "fact-0148",
+        "fact-0149",
+        "fact-0150"
+      ]
+    },
+    {
+      "id": "query-i0046",
+      "text": "What are the user's recent hobbies and fitness interests, including any new activities they are considering?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0152",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0153",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0155",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0151",
+        "fact-0152",
+        "fact-0153",
+        "fact-0154",
+        "fact-0155",
+        "fact-0156",
+        "fact-0157",
+        "fact-0158",
+        "fact-0159",
+        "fact-0160"
+      ]
+    },
+    {
+      "id": "query-i0047",
+      "text": "How is the user balancing creative projects and physical activities in their lifestyle after relocating?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0154",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0152",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0159",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0151",
+        "fact-0152",
+        "fact-0153",
+        "fact-0154",
+        "fact-0155",
+        "fact-0156",
+        "fact-0157",
+        "fact-0158",
+        "fact-0159",
+        "fact-0160"
+      ]
+    },
+    {
+      "id": "query-i0048",
+      "text": "How does the user's work-from-home routine and caregiving responsibilities relate to their fitness and social goals in their new city?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0152",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0160",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0311",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0159",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0151",
+        "fact-0152",
+        "fact-0153",
+        "fact-0154",
+        "fact-0155",
+        "fact-0156",
+        "fact-0157",
+        "fact-0158",
+        "fact-0159",
+        "fact-0160"
+      ]
+    },
+    {
+      "id": "query-i0049",
+      "text": "What are the user's plans for attending events and visiting places in Chicago and Phoenix this weekend?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0162",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0163",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0166",
+          "relevance": 0.85
+        },
+        {
+          "fact_id": "fact-0169",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0170",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0161",
+        "fact-0162",
+        "fact-0163",
+        "fact-0164",
+        "fact-0165",
+        "fact-0166",
+        "fact-0167",
+        "fact-0168",
+        "fact-0169",
+        "fact-0170"
+      ]
+    },
+    {
+      "id": "query-i0050",
+      "text": "How is the user planning to reengage with their musical interests and social activities after relocating from the West Coast?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0161",
+          "relevance": 0.85
+        },
+        {
+          "fact_id": "fact-0164",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0165",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0166",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0161",
+        "fact-0162",
+        "fact-0163",
+        "fact-0164",
+        "fact-0165",
+        "fact-0166",
+        "fact-0167",
+        "fact-0168",
+        "fact-0169",
+        "fact-0170"
+      ]
+    },
+    {
+      "id": "query-i0051",
+      "text": "How do the user's lifestyle changes, including moving cities and planning major life events, reflect in their hobbies and work environment?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0161",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0165",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0404",
+          "relevance": 0.85
+        },
+        {
+          "fact_id": "fact-0405",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0390",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0113",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0161",
+        "fact-0162",
+        "fact-0163",
+        "fact-0164",
+        "fact-0165",
+        "fact-0166",
+        "fact-0167",
+        "fact-0168",
+        "fact-0169",
+        "fact-0170"
+      ]
+    },
+    {
+      "id": "query-i0052",
+      "text": "What are the details of the user's upcoming ski trip to Park City including skill levels and planned activities?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0171",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0172",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0177",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0178",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0171",
+        "fact-0172",
+        "fact-0173",
+        "fact-0174",
+        "fact-0175",
+        "fact-0176",
+        "fact-0177",
+        "fact-0178",
+        "fact-0179",
+        "fact-0180"
+      ]
+    },
+    {
+      "id": "query-i0053",
+      "text": "How does the user balance remote work in cloud engineering with personal interests like smart home projects and pet care?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0173",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0174",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0175",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0171",
+        "fact-0172",
+        "fact-0173",
+        "fact-0174",
+        "fact-0175",
+        "fact-0176",
+        "fact-0177",
+        "fact-0178",
+        "fact-0179",
+        "fact-0180"
+      ]
+    },
+    {
+      "id": "query-i0054",
+      "text": "What hobbies and travel experiences has the user shared across different conversations, including baking, hiking, and recent trips?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0171",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0180",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0125",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0130",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0041",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0171",
+        "fact-0172",
+        "fact-0173",
+        "fact-0174",
+        "fact-0175",
+        "fact-0176",
+        "fact-0177",
+        "fact-0178",
+        "fact-0179",
+        "fact-0180"
+      ]
+    },
+    {
+      "id": "query-i0055",
+      "text": "What are the details about the user's care for their aging parents and their living situation?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0182",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0187",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0190",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0188",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0181",
+        "fact-0182",
+        "fact-0183",
+        "fact-0184",
+        "fact-0185",
+        "fact-0186",
+        "fact-0187",
+        "fact-0188",
+        "fact-0189",
+        "fact-0190"
+      ]
+    },
+    {
+      "id": "query-i0056",
+      "text": "How does the user combine their passion for classic automobiles and urban artistic expression in their lifestyle?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0183",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0181",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0185",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0181",
+        "fact-0182",
+        "fact-0183",
+        "fact-0184",
+        "fact-0185",
+        "fact-0186",
+        "fact-0187",
+        "fact-0188",
+        "fact-0189",
+        "fact-0190"
+      ]
+    },
+    {
+      "id": "query-i0057",
+      "text": "How do the user's caregiving responsibilities and pet ownership relate to their age and lifestyle preferences?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0187",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0188",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0028",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0029",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0181",
+        "fact-0182",
+        "fact-0183",
+        "fact-0184",
+        "fact-0185",
+        "fact-0186",
+        "fact-0187",
+        "fact-0188",
+        "fact-0189",
+        "fact-0190"
+      ]
+    },
+    {
+      "id": "query-i0058",
+      "text": "What are the user's current pet preferences and how do they plan to manage fostering a dog with their schedule?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0192",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0193",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0191",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0191",
+        "fact-0192",
+        "fact-0193",
+        "fact-0194",
+        "fact-0195",
+        "fact-0196",
+        "fact-0197",
+        "fact-0198",
+        "fact-0199",
+        "fact-0200"
+      ]
+    },
+    {
+      "id": "query-i0059",
+      "text": "How does the user integrate their smart home setup with their pet care and brewing hobbies while ensuring network security?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0195",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0196",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0199",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0198",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0191",
+        "fact-0192",
+        "fact-0193",
+        "fact-0194",
+        "fact-0195",
+        "fact-0196",
+        "fact-0197",
+        "fact-0198",
+        "fact-0199",
+        "fact-0200"
+      ]
+    },
+    {
+      "id": "query-i0060",
+      "text": "How does the user's daily routine and location influence their pet care and outdoor activity plans?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0193",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0192",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0076",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0074",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0401",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0080",
+          "relevance": 0.6
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0191",
+        "fact-0192",
+        "fact-0193",
+        "fact-0194",
+        "fact-0195",
+        "fact-0196",
+        "fact-0197",
+        "fact-0198",
+        "fact-0199",
+        "fact-0200"
+      ]
+    },
+    {
+      "id": "query-i0061",
+      "text": "What are the user's plans and resources for enhancing the STEM program, including specific projects and budget?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0202",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0203",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0204",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0206",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0201",
+        "fact-0202",
+        "fact-0203",
+        "fact-0204",
+        "fact-0205",
+        "fact-0206",
+        "fact-0207",
+        "fact-0208",
+        "fact-0209",
+        "fact-0210"
+      ]
+    },
+    {
+      "id": "query-i0062",
+      "text": "How does the user intend to integrate experiential learning and community engagement into their upcoming educational initiatives?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0202",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0207",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0208",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0201",
+        "fact-0202",
+        "fact-0203",
+        "fact-0204",
+        "fact-0205",
+        "fact-0206",
+        "fact-0207",
+        "fact-0208",
+        "fact-0209",
+        "fact-0210"
+      ]
+    },
+    {
+      "id": "query-i0063",
+      "text": "How does the user's budget for the STEM program compare to their MBA tuition, and what are their commitments regarding time and pet care?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0206",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0245",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0193",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0192",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0201",
+        "fact-0202",
+        "fact-0203",
+        "fact-0204",
+        "fact-0205",
+        "fact-0206",
+        "fact-0207",
+        "fact-0208",
+        "fact-0209",
+        "fact-0210"
+      ]
+    },
+    {
+      "id": "query-i0064",
+      "text": "What are the user's current goals related to the Starship propulsion system and their wedding plans?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0212",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0213",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0215",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0216",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0211",
+        "fact-0212",
+        "fact-0213",
+        "fact-0214",
+        "fact-0215",
+        "fact-0216",
+        "fact-0217",
+        "fact-0218",
+        "fact-0219",
+        "fact-0220"
+      ]
+    },
+    {
+      "id": "query-i0065",
+      "text": "How does the user balance their engineering work with creative hobbies and culinary interests?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0213",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0214",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0216",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0218",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0211",
+        "fact-0212",
+        "fact-0213",
+        "fact-0214",
+        "fact-0215",
+        "fact-0216",
+        "fact-0217",
+        "fact-0218",
+        "fact-0219",
+        "fact-0220"
+      ]
+    },
+    {
+      "id": "query-i0066",
+      "text": "What are the user's various projects and activities involving sustainability, cooking, and community engagement across different locations?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0212",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0214",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0058",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0059",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0062",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0133",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0135",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0211",
+        "fact-0212",
+        "fact-0213",
+        "fact-0214",
+        "fact-0215",
+        "fact-0216",
+        "fact-0217",
+        "fact-0218",
+        "fact-0219",
+        "fact-0220"
+      ]
+    },
+    {
+      "id": "query-i0067",
+      "text": "What is the user's plan for their new video channel including the name, posting schedule, and content themes?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0222",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0226",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0224",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0221",
+        "fact-0222",
+        "fact-0223",
+        "fact-0224",
+        "fact-0225",
+        "fact-0226",
+        "fact-0227",
+        "fact-0228",
+        "fact-0229",
+        "fact-0230"
+      ]
+    },
+    {
+      "id": "query-i0068",
+      "text": "How is the user integrating their culinary skills, beekeeping hobby, and athletic training into their upcoming multimedia projects?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0221",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0222",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0224",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0225",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0221",
+        "fact-0222",
+        "fact-0223",
+        "fact-0224",
+        "fact-0225",
+        "fact-0226",
+        "fact-0227",
+        "fact-0228",
+        "fact-0229",
+        "fact-0230"
+      ]
+    },
+    {
+      "id": "query-i0069",
+      "text": "How does the user's professional background and caregiving responsibilities relate to their planned creative projects and upcoming travel?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0228",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0229",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0225",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0038",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0039",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0221",
+        "fact-0222",
+        "fact-0223",
+        "fact-0224",
+        "fact-0225",
+        "fact-0226",
+        "fact-0227",
+        "fact-0228",
+        "fact-0229",
+        "fact-0230"
+      ]
+    },
+    {
+      "id": "query-i0070",
+      "text": "What are the user's current hobbies and recent related expenses?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0238",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0231",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0239",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0231",
+        "fact-0232",
+        "fact-0233",
+        "fact-0234",
+        "fact-0235",
+        "fact-0236",
+        "fact-0237",
+        "fact-0238",
+        "fact-0239",
+        "fact-0240"
+      ]
+    },
+    {
+      "id": "query-i0071",
+      "text": "Which equipment and services is the user considering to enhance their remote work and creative projects?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0233",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0234",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0237",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0231",
+        "fact-0232",
+        "fact-0233",
+        "fact-0234",
+        "fact-0235",
+        "fact-0236",
+        "fact-0237",
+        "fact-0238",
+        "fact-0239",
+        "fact-0240"
+      ]
+    },
+    {
+      "id": "query-i0072",
+      "text": "How does the user's family caregiving role and health recovery relate to their work and personal interests?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0235",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0282",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0274",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0236",
+          "relevance": 0.6
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0231",
+        "fact-0232",
+        "fact-0233",
+        "fact-0234",
+        "fact-0235",
+        "fact-0236",
+        "fact-0237",
+        "fact-0238",
+        "fact-0239",
+        "fact-0240"
+      ]
+    },
+    {
+      "id": "query-i0073",
+      "text": "How does the user allocate their monthly income towards MBA tuition, podcast earnings, and living expenses including rent and utilities?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0244",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0247",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0245",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0248",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0249",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0241",
+        "fact-0242",
+        "fact-0243",
+        "fact-0244",
+        "fact-0245",
+        "fact-0246",
+        "fact-0247",
+        "fact-0248",
+        "fact-0249",
+        "fact-0250"
+      ]
+    },
+    {
+      "id": "query-i0074",
+      "text": "What financial choices is the user weighing regarding upgrading their coffee brewing setup versus saving for an international culinary vacation?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0242",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0243",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0241",
+        "fact-0242",
+        "fact-0243",
+        "fact-0244",
+        "fact-0245",
+        "fact-0246",
+        "fact-0247",
+        "fact-0248",
+        "fact-0249",
+        "fact-0250"
+      ]
+    },
+    {
+      "id": "query-i0075",
+      "text": "What are the user’s caregiving responsibilities and how do they balance these with their educational expenses and creative hobbies?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0245",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0249",
+          "relevance": 0.5
+        },
+        {
+          "fact_id": "fact-0229",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0235",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0241",
+        "fact-0242",
+        "fact-0243",
+        "fact-0244",
+        "fact-0245",
+        "fact-0246",
+        "fact-0247",
+        "fact-0248",
+        "fact-0249",
+        "fact-0250"
+      ]
+    },
+    {
+      "id": "query-i0076",
+      "text": "What are the user's current hobbies and their monthly costs?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0251",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0252",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0251",
+        "fact-0252",
+        "fact-0253",
+        "fact-0254",
+        "fact-0255",
+        "fact-0256",
+        "fact-0257",
+        "fact-0258",
+        "fact-0259",
+        "fact-0260"
+      ]
+    },
+    {
+      "id": "query-i0077",
+      "text": "How is the user planning to shift their career to less physically demanding roles while leveraging their experience in agricultural science?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0254",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0255",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0257",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0251",
+        "fact-0252",
+        "fact-0253",
+        "fact-0254",
+        "fact-0255",
+        "fact-0256",
+        "fact-0257",
+        "fact-0258",
+        "fact-0259",
+        "fact-0260"
+      ]
+    },
+    {
+      "id": "query-i0078",
+      "text": "How do the user's work experiences and personal interests compare across their agricultural science role and other activities like pet care and crafting?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0254",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0251",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0308",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0413",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0029",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0251",
+        "fact-0252",
+        "fact-0253",
+        "fact-0254",
+        "fact-0255",
+        "fact-0256",
+        "fact-0257",
+        "fact-0258",
+        "fact-0259",
+        "fact-0260"
+      ]
+    },
+    {
+      "id": "query-i0079",
+      "text": "What are the user's current living expenses and recent job changes including their move from San Francisco to Pittsburgh?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0263",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0264",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0265",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0268",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0261",
+        "fact-0262",
+        "fact-0263",
+        "fact-0264",
+        "fact-0265",
+        "fact-0266",
+        "fact-0267",
+        "fact-0268",
+        "fact-0269",
+        "fact-0270"
+      ]
+    },
+    {
+      "id": "query-i0080",
+      "text": "How is the user balancing their professional and creative pursuits while managing physical work demands?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0261",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0266",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0267",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0261",
+        "fact-0262",
+        "fact-0263",
+        "fact-0264",
+        "fact-0265",
+        "fact-0266",
+        "fact-0267",
+        "fact-0268",
+        "fact-0269",
+        "fact-0270"
+      ]
+    },
+    {
+      "id": "query-i0081",
+      "text": "What hobbies and personal goals does Casey have, including their work situation and interests in Pittsburgh and Berlin?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0266",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0267",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0270",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0100",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0102",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0105",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0335",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0261",
+        "fact-0262",
+        "fact-0263",
+        "fact-0264",
+        "fact-0265",
+        "fact-0266",
+        "fact-0267",
+        "fact-0268",
+        "fact-0269",
+        "fact-0270"
+      ]
+    },
+    {
+      "id": "query-i0082",
+      "text": "What are the names and interests of the user's children, and what are the user's weekend plans involving them?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0276",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0277",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0278",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0271",
+        "fact-0272",
+        "fact-0273",
+        "fact-0274",
+        "fact-0275",
+        "fact-0276",
+        "fact-0277",
+        "fact-0278",
+        "fact-0279",
+        "fact-0280"
+      ]
+    },
+    {
+      "id": "query-i0083",
+      "text": "How is the user balancing their unpredictable emergency medical work schedule with family activities and hobbies like teaching puzzle solving and crafting paper art?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0271",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0272",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0274",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0271",
+        "fact-0272",
+        "fact-0273",
+        "fact-0274",
+        "fact-0275",
+        "fact-0276",
+        "fact-0277",
+        "fact-0278",
+        "fact-0279",
+        "fact-0280"
+      ]
+    },
+    {
+      "id": "query-i0084",
+      "text": "What creative pursuits and family details does the user have, including their paramedic job, speedcubing teaching, and video content creation plans?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0271",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0274",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0221",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0329",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0330",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0271",
+        "fact-0272",
+        "fact-0273",
+        "fact-0274",
+        "fact-0275",
+        "fact-0276",
+        "fact-0277",
+        "fact-0278",
+        "fact-0279",
+        "fact-0280"
+      ]
+    },
+    {
+      "id": "query-i0085",
+      "text": "What is Kit's current recovery status and how has it affected his Brazilian jiu-jitsu practice and speedcubing hobby?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0282",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0283",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0284",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0281",
+        "fact-0282",
+        "fact-0283",
+        "fact-0284",
+        "fact-0285",
+        "fact-0286",
+        "fact-0287",
+        "fact-0288",
+        "fact-0289",
+        "fact-0290"
+      ]
+    },
+    {
+      "id": "query-i0086",
+      "text": "How has Kit been engaging his mind and body during his knee rehabilitation period, including language learning and puzzle solving?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0281",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0282",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0284",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0281",
+        "fact-0282",
+        "fact-0283",
+        "fact-0284",
+        "fact-0285",
+        "fact-0286",
+        "fact-0287",
+        "fact-0288",
+        "fact-0289",
+        "fact-0290"
+      ]
+    },
+    {
+      "id": "query-i0087",
+      "text": "What are Kit's main hobbies and professional activities, including his work in healthcare QA, podcasting, and physical sports?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0286",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0287",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0244",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0289",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0290",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0251",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0281",
+        "fact-0282",
+        "fact-0283",
+        "fact-0284",
+        "fact-0285",
+        "fact-0286",
+        "fact-0287",
+        "fact-0288",
+        "fact-0289",
+        "fact-0290"
+      ]
+    },
+    {
+      "id": "query-i0088",
+      "text": "What are Kit's hobbies and how do they relate to climbing and comedy?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0292",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0293",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0294",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0291",
+        "fact-0292",
+        "fact-0293",
+        "fact-0294",
+        "fact-0295",
+        "fact-0296",
+        "fact-0297",
+        "fact-0298",
+        "fact-0299",
+        "fact-0300"
+      ]
+    },
+    {
+      "id": "query-i0089",
+      "text": "How does Kit integrate their passion for paper folding and outdoor adventures into their entertainment routine?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0292",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0293",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0294",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0291",
+        "fact-0292",
+        "fact-0293",
+        "fact-0294",
+        "fact-0295",
+        "fact-0296",
+        "fact-0297",
+        "fact-0298",
+        "fact-0299",
+        "fact-0300"
+      ]
+    },
+    {
+      "id": "query-i0090",
+      "text": "What are the user's various physical activities and hobbies, and how do they balance these with their work and caregiving responsibilities?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0299",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0300",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0297",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0187",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0291",
+        "fact-0292",
+        "fact-0293",
+        "fact-0294",
+        "fact-0295",
+        "fact-0296",
+        "fact-0297",
+        "fact-0298",
+        "fact-0299",
+        "fact-0300"
+      ]
+    },
+    {
+      "id": "query-i0091",
+      "text": "What podcasts does Sage listen to during their commute, and what running routines do they follow?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0301",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0302",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0304",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0305",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0301",
+        "fact-0302",
+        "fact-0303",
+        "fact-0304",
+        "fact-0305",
+        "fact-0306",
+        "fact-0307",
+        "fact-0308",
+        "fact-0309",
+        "fact-0310"
+      ]
+    },
+    {
+      "id": "query-i0092",
+      "text": "How is the user incorporating physical fitness and culinary hobbies into their daily lifestyle?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0302",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0303",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0306",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0304",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0301",
+        "fact-0302",
+        "fact-0303",
+        "fact-0304",
+        "fact-0305",
+        "fact-0306",
+        "fact-0307",
+        "fact-0308",
+        "fact-0309",
+        "fact-0310"
+      ]
+    },
+    {
+      "id": "query-i0093",
+      "text": "How do the user's culinary interests, like baking sourdough and brewing beer, connect with their travel blogging and food content goals?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0303",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0003",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0314",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0374",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0319",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0301",
+        "fact-0302",
+        "fact-0303",
+        "fact-0304",
+        "fact-0305",
+        "fact-0306",
+        "fact-0307",
+        "fact-0308",
+        "fact-0309",
+        "fact-0310"
+      ]
+    },
+    {
+      "id": "query-i0094",
+      "text": "What Eastern European countries did the user visit recently, and how have these trips influenced their cooking and design projects?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0312",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0313",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0314",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0315",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0319",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0311",
+        "fact-0312",
+        "fact-0313",
+        "fact-0314",
+        "fact-0315",
+        "fact-0316",
+        "fact-0317",
+        "fact-0318",
+        "fact-0319",
+        "fact-0320"
+      ]
+    },
+    {
+      "id": "query-i0095",
+      "text": "How does the user integrate inspirations from their travels and culinary experiments into their daily creative routines and design work?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0319",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0320",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0313",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0318",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0315",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0311",
+        "fact-0312",
+        "fact-0313",
+        "fact-0314",
+        "fact-0315",
+        "fact-0316",
+        "fact-0317",
+        "fact-0318",
+        "fact-0319",
+        "fact-0320"
+      ]
+    },
+    {
+      "id": "query-i0096",
+      "text": "What are the user's creative hobbies and professional interests, including their work in interior design, music production, and recreational activities?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0315",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0316",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0161",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0117",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0121",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0311",
+        "fact-0312",
+        "fact-0313",
+        "fact-0314",
+        "fact-0315",
+        "fact-0316",
+        "fact-0317",
+        "fact-0318",
+        "fact-0319",
+        "fact-0320"
+      ]
+    },
+    {
+      "id": "query-i0097",
+      "text": "What ethical challenges does the user face in pediatric practice, and how do they approach difficult medical conversations with families and children?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0326",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0327",
+          "relevance": 0.95
+        },
+        {
+          "fact_id": "fact-0321",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0321",
+        "fact-0322",
+        "fact-0323",
+        "fact-0324",
+        "fact-0325",
+        "fact-0326",
+        "fact-0327",
+        "fact-0328",
+        "fact-0329",
+        "fact-0330"
+      ]
+    },
+    {
+      "id": "query-i0098",
+      "text": "How does the individual balance their passion for running with their interests in audio storytelling and animal care?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0323",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0324",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0322",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0325",
+          "relevance": 0.6
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0321",
+        "fact-0322",
+        "fact-0323",
+        "fact-0324",
+        "fact-0325",
+        "fact-0326",
+        "fact-0327",
+        "fact-0328",
+        "fact-0329",
+        "fact-0330"
+      ]
+    },
+    {
+      "id": "query-i0099",
+      "text": "How does the user's caregiving responsibilities for elderly parents intersect with their professional and personal goals such as marathon training and pediatric ethics?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0321",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0323",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0229",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0053",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0047",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0321",
+        "fact-0322",
+        "fact-0323",
+        "fact-0324",
+        "fact-0325",
+        "fact-0326",
+        "fact-0327",
+        "fact-0328",
+        "fact-0329",
+        "fact-0330"
+      ]
+    },
+    {
+      "id": "query-i0100",
+      "text": "What are the names and ages of Casey's children, and what games do they enjoy playing?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0331",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0332",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0335",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0331",
+        "fact-0332",
+        "fact-0333",
+        "fact-0334",
+        "fact-0335",
+        "fact-0336",
+        "fact-0337",
+        "fact-0338",
+        "fact-0339",
+        "fact-0340"
+      ]
+    },
+    {
+      "id": "query-i0101",
+      "text": "How does Casey engage with the gaming community and what recent family activities involve video games?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0333",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0334",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0335",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0331",
+        "fact-0332",
+        "fact-0333",
+        "fact-0334",
+        "fact-0335",
+        "fact-0336",
+        "fact-0337",
+        "fact-0338",
+        "fact-0339",
+        "fact-0340"
+      ]
+    },
+    {
+      "id": "query-i0102",
+      "text": "How do Casey's work and living locations compare to Sage's job and recent moves?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0337",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0338",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0236",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0296",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0297",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0331",
+        "fact-0332",
+        "fact-0333",
+        "fact-0334",
+        "fact-0335",
+        "fact-0336",
+        "fact-0337",
+        "fact-0338",
+        "fact-0339",
+        "fact-0340"
+      ]
+    },
+    {
+      "id": "query-i0103",
+      "text": "What are Finley's main activities and interests including their pet and gardening habits?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0345",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0346",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0347",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0349",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0341",
+        "fact-0342",
+        "fact-0343",
+        "fact-0344",
+        "fact-0345",
+        "fact-0346",
+        "fact-0347",
+        "fact-0348",
+        "fact-0349",
+        "fact-0350"
+      ]
+    },
+    {
+      "id": "query-i0104",
+      "text": "How does Casey integrate aerial imaging skills with environmental conservation efforts and what culinary hobby are they passionate about?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0341",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0342",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0341",
+        "fact-0342",
+        "fact-0343",
+        "fact-0344",
+        "fact-0345",
+        "fact-0346",
+        "fact-0347",
+        "fact-0348",
+        "fact-0349",
+        "fact-0350"
+      ]
+    },
+    {
+      "id": "query-i0105",
+      "text": "How do the user's professional travels and hobbies like drone photography and gardening compare across different conversations?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0344",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0346",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0197",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0312",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0341",
+        "fact-0342",
+        "fact-0343",
+        "fact-0344",
+        "fact-0345",
+        "fact-0346",
+        "fact-0347",
+        "fact-0348",
+        "fact-0349",
+        "fact-0350"
+      ]
+    },
+    {
+      "id": "query-i0106",
+      "text": "What kitchen renovations does the user want to complete before their triathlon, and how long have they lived in their current home without remodeling the kitchen?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0351",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0352",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0356",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0351",
+        "fact-0352",
+        "fact-0353",
+        "fact-0354",
+        "fact-0355",
+        "fact-0356",
+        "fact-0357",
+        "fact-0358",
+        "fact-0359",
+        "fact-0360"
+      ]
+    },
+    {
+      "id": "query-i0107",
+      "text": "How has the user's kitchen setup evolved to support their speedcubing hobby and beekeeping activities over the years?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0354",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0355",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0351",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0351",
+        "fact-0352",
+        "fact-0353",
+        "fact-0354",
+        "fact-0355",
+        "fact-0356",
+        "fact-0357",
+        "fact-0358",
+        "fact-0359",
+        "fact-0360"
+      ]
+    },
+    {
+      "id": "query-i0108",
+      "text": "What are the user's culinary interests and hobbies, and how do they balance these with their kitchen renovation and athletic training plans?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0352",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0356",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0377",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0379",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0368",
+          "relevance": 0.6
+        },
+        {
+          "fact_id": "fact-0357",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0351",
+        "fact-0352",
+        "fact-0353",
+        "fact-0354",
+        "fact-0355",
+        "fact-0356",
+        "fact-0357",
+        "fact-0358",
+        "fact-0359",
+        "fact-0360"
+      ]
+    },
+    {
+      "id": "query-i0109",
+      "text": "What is the user planning for their husband's 25th anniversary dinner and what food preferences does he have?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0367",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0368",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0369",
+          "relevance": 0.95
+        },
+        {
+          "fact_id": "fact-0370",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0361",
+        "fact-0362",
+        "fact-0363",
+        "fact-0364",
+        "fact-0365",
+        "fact-0366",
+        "fact-0367",
+        "fact-0368",
+        "fact-0369",
+        "fact-0370"
+      ]
+    },
+    {
+      "id": "query-i0110",
+      "text": "How does the user balance their physical activity routine while managing back pain and what alternative exercises have they adopted?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0365",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0366",
+          "relevance": 0.95
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0361",
+        "fact-0362",
+        "fact-0363",
+        "fact-0364",
+        "fact-0365",
+        "fact-0366",
+        "fact-0367",
+        "fact-0368",
+        "fact-0369",
+        "fact-0370"
+      ]
+    },
+    {
+      "id": "query-i0111",
+      "text": "What are the user's hobbies and work interests combining their AI ethics research downtown and their creative pursuits like photography and beekeeping?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0361",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0364",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0223",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0222",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0361",
+        "fact-0362",
+        "fact-0363",
+        "fact-0364",
+        "fact-0365",
+        "fact-0366",
+        "fact-0367",
+        "fact-0368",
+        "fact-0369",
+        "fact-0370"
+      ]
+    },
+    {
+      "id": "query-i0112",
+      "text": "What desserts and dishes is the user planning to prepare related to their recent South America trip and husband’s favorite?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0372",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0378",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0379",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0375",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0371",
+        "fact-0372",
+        "fact-0373",
+        "fact-0374",
+        "fact-0375",
+        "fact-0376",
+        "fact-0377",
+        "fact-0378",
+        "fact-0379",
+        "fact-0380"
+      ]
+    },
+    {
+      "id": "query-i0113",
+      "text": "How does the user intend to blend their travel experiences with culinary creations and podcast content?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0374",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0380",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0375",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0379",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0371",
+        "fact-0372",
+        "fact-0373",
+        "fact-0374",
+        "fact-0375",
+        "fact-0376",
+        "fact-0377",
+        "fact-0378",
+        "fact-0379",
+        "fact-0380"
+      ]
+    },
+    {
+      "id": "query-i0114",
+      "text": "What are the user’s hobbies and professional interests combining their travel, brewing, and teaching experiences?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0377",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0375",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0258",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0257",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0260",
+          "relevance": 0.6
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0371",
+        "fact-0372",
+        "fact-0373",
+        "fact-0374",
+        "fact-0375",
+        "fact-0376",
+        "fact-0377",
+        "fact-0378",
+        "fact-0379",
+        "fact-0380"
+      ]
+    },
+    {
+      "id": "query-i0115",
+      "text": "What activities does the user do for stress relief and physical fitness, and what are their dietary habits?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0381",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0382",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0389",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0381",
+        "fact-0382",
+        "fact-0383",
+        "fact-0384",
+        "fact-0385",
+        "fact-0386",
+        "fact-0387",
+        "fact-0388",
+        "fact-0389",
+        "fact-0390"
+      ]
+    },
+    {
+      "id": "query-i0116",
+      "text": "How does the user combine creative hobbies and physical challenges to improve well-being and manage daily routines?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0381",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0382",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0383",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0381",
+        "fact-0382",
+        "fact-0383",
+        "fact-0384",
+        "fact-0385",
+        "fact-0386",
+        "fact-0387",
+        "fact-0388",
+        "fact-0389",
+        "fact-0390"
+      ]
+    },
+    {
+      "id": "query-i0117",
+      "text": "What are the user's hobbies and work environments across different contexts, including their engineering interests and wellness activities?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0382",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0384",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0390",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0218",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0150",
+          "relevance": 0.6
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0381",
+        "fact-0382",
+        "fact-0383",
+        "fact-0384",
+        "fact-0385",
+        "fact-0386",
+        "fact-0387",
+        "fact-0388",
+        "fact-0389",
+        "fact-0390"
+      ]
+    },
+    {
+      "id": "query-i0118",
+      "text": "What are the user's recent life changes, fitness goals, and plans for social gatherings?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0393",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0395",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0397",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0400",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0391",
+        "fact-0392",
+        "fact-0393",
+        "fact-0394",
+        "fact-0395",
+        "fact-0396",
+        "fact-0397",
+        "fact-0398",
+        "fact-0399",
+        "fact-0400"
+      ]
+    },
+    {
+      "id": "query-i0119",
+      "text": "How is the user balancing physical health improvement with upcoming personal celebrations and hobbies involving classic automobiles and outdoor activities?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0395",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0396",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0397",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0398",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0391",
+        "fact-0392",
+        "fact-0393",
+        "fact-0394",
+        "fact-0395",
+        "fact-0396",
+        "fact-0397",
+        "fact-0398",
+        "fact-0399",
+        "fact-0400"
+      ]
+    },
+    {
+      "id": "query-i0120",
+      "text": "How do the user's current fitness ambitions and lifestyle changes relate to their family planning and creative interests from previous conversations?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0395",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0397",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0063",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0072",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0067",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0391",
+        "fact-0392",
+        "fact-0393",
+        "fact-0394",
+        "fact-0395",
+        "fact-0396",
+        "fact-0397",
+        "fact-0398",
+        "fact-0399",
+        "fact-0400"
+      ]
+    },
+    {
+      "id": "query-i0121",
+      "text": "What are the details of the user's wedding plans including the venue, date, and food options?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0404",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0405",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0406",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0401",
+        "fact-0402",
+        "fact-0403",
+        "fact-0404",
+        "fact-0405",
+        "fact-0406",
+        "fact-0407",
+        "fact-0408",
+        "fact-0409",
+        "fact-0410"
+      ]
+    },
+    {
+      "id": "query-i0122",
+      "text": "How is the user preparing for an outdoor celebration that combines physical activity and social dancing?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0409",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0410",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0408",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0401",
+        "fact-0402",
+        "fact-0403",
+        "fact-0404",
+        "fact-0405",
+        "fact-0406",
+        "fact-0407",
+        "fact-0408",
+        "fact-0409",
+        "fact-0410"
+      ]
+    },
+    {
+      "id": "query-i0123",
+      "text": "How does the user's work and family life intersect with their outdoor hobbies and pet care?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0401",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0402",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0274",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0322",
+          "relevance": 0.9
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0401",
+        "fact-0402",
+        "fact-0403",
+        "fact-0404",
+        "fact-0405",
+        "fact-0406",
+        "fact-0407",
+        "fact-0408",
+        "fact-0409",
+        "fact-0410"
+      ]
+    },
+    {
+      "id": "query-i0124",
+      "text": "What are the user's plans involving photography walks, the photo scavenger hunt, and their golden retriever Coco?",
+      "category": "factual",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0411",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0412",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0413",
+          "relevance": 0.8
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0411",
+        "fact-0412",
+        "fact-0413",
+        "fact-0414",
+        "fact-0415"
+      ]
+    },
+    {
+      "id": "query-i0125",
+      "text": "Which activities is the user organizing that include a dance studio rental and inviting Miguel to provide Latin music for an event?",
+      "category": "semantic",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0414",
+          "relevance": 1.0
+        },
+        {
+          "fact_id": "fact-0415",
+          "relevance": 1.0
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0411",
+        "fact-0412",
+        "fact-0413",
+        "fact-0414",
+        "fact-0415"
+      ]
+    },
+    {
+      "id": "query-i0126",
+      "text": "How does the user's interest in photography and travel, including plans for a scavenger hunt and camera gear, relate to their use of smart home tech and hobby networks?",
+      "category": "cross_conversation",
+      "relevant_facts": [
+        {
+          "fact_id": "fact-0412",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0233",
+          "relevance": 0.9
+        },
+        {
+          "fact_id": "fact-0046",
+          "relevance": 0.8
+        },
+        {
+          "fact_id": "fact-0198",
+          "relevance": 0.7
+        },
+        {
+          "fact_id": "fact-0196",
+          "relevance": 0.7
+        }
+      ],
+      "source_fact_batch": [
+        "fact-0411",
+        "fact-0412",
+        "fact-0413",
+        "fact-0414",
+        "fact-0415"
+      ]
+    },
+    {
+      "id": "query-i0127",
+      "text": "What breed is the user's cat and what are its favorite toys?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0128",
+      "text": "Has the user ever traveled to Japan and what places did they visit there?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0129",
+      "text": "Does the user have any allergies or chronic health conditions?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0130",
+      "text": "What musical instruments does the user play besides piano?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0131",
+      "text": "Has the user ever participated in a marathon or other endurance race besides the triathlon?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0132",
+      "text": "What languages other than Mandarin is the user learning or interested in?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0133",
+      "text": "Does the user have any siblings and what are their professions?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0134",
+      "text": "Has the user ever taken cooking classes for cuisines other than Thai?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0135",
+      "text": "What kind of pets does the user have besides their border collie Ziggy?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0136",
+      "text": "Has the user ever been involved in community theater or acting?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0137",
+      "text": "What are the user's favorite hiking trails or national parks to visit?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0138",
+      "text": "Does the user practice any meditation or mindfulness techniques?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0139",
+      "text": "Has the user ever taken photography classes unrelated to drone photography?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    },
+    {
+      "id": "query-i0140",
+      "text": "What is the user's favorite genre of books besides philosophy?",
+      "category": "negative",
+      "relevant_facts": [],
+      "source_fact_batch": []
+    }
+  ]
+}

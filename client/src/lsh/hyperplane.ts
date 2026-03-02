@@ -7,7 +7,7 @@
  */
 
 import * as crypto from 'crypto';
-import { LSHConfig, OpenMemoryError, OpenMemoryErrorCode } from '../types';
+import { LSHConfig, TotalReclawError, TotalReclawErrorCode } from '../types';
 import { mergeLSHConfig } from './config';
 
 /**
@@ -109,8 +109,8 @@ export class LSHIndex {
    */
   buildIndex(embeddings: number[][], seed?: number): void {
     if (embeddings.length === 0) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.LSH_HASH_FAILED,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.LSH_HASH_FAILED,
         'Cannot build index with empty embeddings'
       );
     }
@@ -152,8 +152,8 @@ export class LSHIndex {
    */
   private computeBucketId(vector: Float64Array, tableIndex: number): string {
     if (!this.isBuilt) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.LSH_HASH_FAILED,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.LSH_HASH_FAILED,
         'LSH index not initialized. Call buildIndex() or initialize() first.'
       );
     }
@@ -176,15 +176,15 @@ export class LSHIndex {
    */
   hashVector(vector: number[]): string[] {
     if (!this.isBuilt) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.LSH_HASH_FAILED,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.LSH_HASH_FAILED,
         'LSH index not initialized. Call buildIndex() or initialize() first.'
       );
     }
 
     if (vector.length !== this.embeddingDim) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.LSH_HASH_FAILED,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.LSH_HASH_FAILED,
         `Vector dimension mismatch: expected ${this.embeddingDim}, got ${vector.length}`
       );
     }
@@ -258,8 +258,8 @@ export class LSHIndex {
     hyperplanes: number[][][];
   } {
     if (!this.isBuilt) {
-      throw new OpenMemoryError(
-        OpenMemoryErrorCode.LSH_HASH_FAILED,
+      throw new TotalReclawError(
+        TotalReclawErrorCode.LSH_HASH_FAILED,
         'Cannot export: index not initialized'
       );
     }

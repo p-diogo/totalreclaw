@@ -1,5 +1,5 @@
 """
-Per-user rate limiting middleware for OpenMemory Server.
+Per-user rate limiting middleware for TotalReclaw Server.
 
 Design:
 - In-memory sliding window counter

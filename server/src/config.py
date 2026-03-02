@@ -1,5 +1,5 @@
 """
-Configuration management for OpenMemory Server.
+Configuration management for TotalReclaw Server.
 """
 import os
 from typing import Optional
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     environment: str = "development"  # development | staging | production
 
     # Database configuration
-    database_url: str = "postgresql+asyncpg://openmemory:dev@localhost:5432/openmemory"
+    database_url: str = "postgresql+asyncpg://totalreclaw:dev@localhost:5432/totalreclaw"
     database_pool_size: int = 20
     database_max_overflow: int = 30
     database_pool_recycle: int = 3600     # Recycle connections after 1 hour

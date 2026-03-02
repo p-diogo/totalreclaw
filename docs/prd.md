@@ -1,11 +1,11 @@
 <!--
-Product: OpenMemory
-Formerly: tech specs/OpenMemory-PRD.md
+Product: TotalReclaw
+Formerly: tech specs/TotalReclaw-PRD.md
 Version: 1.0.0
 Last updated: 2026-02-24
 -->
 
-# Product Requirements Document: OpenMemory
+# Product Requirements Document: TotalReclaw
 
 **Version:** 1.0.0
 **Status:** Draft
@@ -17,7 +17,7 @@ Last updated: 2026-02-24
 
 ### 1.1 Product Vision
 
-OpenMemory is a zero-knowledge encrypted memory vault for AI agents that provides true cross-device sync and data portability. It is the "password manager for AI memory" — enabling users to maintain a single, portable memory that works across all their AI agents (OpenClaw, Claude Desktop, and any MCP-compatible tool).
+TotalReclaw is a zero-knowledge encrypted memory vault for AI agents that provides true cross-device sync and data portability. It is the "password manager for AI memory" — enabling users to maintain a single, portable memory that works across all their AI agents (OpenClaw, Claude Desktop, and any MCP-compatible tool).
 
 ### 1.2 The Problem
 
@@ -32,7 +32,7 @@ The result: a fragmented digital brain scattered across different companies' ser
 
 ### 1.3 Our Solution
 
-OpenMemory is a universal memory layer for AI agents with three core promises:
+TotalReclaw is a universal memory layer for AI agents with three core promises:
 
 1. **Encrypted** — Zero-knowledge E2EE. We can never read your memories.
 2. **Portable** — One-click plain-text export. Leave anytime, no lock-in.
@@ -67,7 +67,7 @@ The AI memory lock-in problem is real and already emerging:
 |----------|----------|------------|
 | **Local-First** (engram, QMD, memsearch) | Privacy, accuracy, no vendor | No cross-device sync, requires technical setup, single-device only |
 | **Hosted** (Mem0, platform-hosted) | Easy to use, instant value | Vendor lock-in, they can read your data, switching = starting over |
-| **OpenMemory** | Encrypted + portable + cross-device sync | New to market, requires local client install |
+| **TotalReclaw** | Encrypted + portable + cross-device sync | New to market, requires local client install |
 
 **The Gap:** No one offers encrypted cross-device sync with guaranteed data portability.
 
@@ -139,7 +139,7 @@ The AI memory lock-in problem is real and already emerging:
 - Local BM25 reranking
 - OS Keychain integration for master password storage
 
-**Server-Side (OpenMemory SaaS):**
+**Server-Side (TotalReclaw SaaS):**
 - PostgreSQL + pgvector for storage
 - Stores: ciphertext, embeddings, blind indices
 - mTLS for secure communication
@@ -168,7 +168,7 @@ Pass 2 (Client, ~500ms): Decrypt → BM25 on plaintext → RRF fusion → Top 3-
 
 ### 4.1 Onboarding Flow
 
-1. **Install:** `npm install -g @openmemory/cli` or download macOS/Windows app
+1. **Install:** `npm install -g @totalreclaw/cli` or download macOS/Windows app
 2. **Create account:** Generate API token (or skip for local-only mode)
 3. **Set master password:** Used to derive encryption keys (stored in OS Keychain)
 4. **Install agent integration:** OpenClaw skill OR MCP server
@@ -178,19 +178,19 @@ Pass 2 (Client, ~500ms): Decrypt → BM25 on plaintext → RRF fusion → Top 3-
 
 **Journey 1: Cross-Device Sync**
 1. User has OpenClaw on desktop and laptop
-2. Both devices configured with same OpenMemory account
+2. Both devices configured with same TotalReclaw account
 3. User adds memory on desktop → automatically syncs to laptop
 4. User switches to laptop → memory immediately available
 
 **Journey 2: Agent Switching**
 1. User uses OpenClaw for work, Claude Desktop for coding
-2. Both agents connected to same OpenMemory vault
+2. Both agents connected to same TotalReclaw vault
 3. Memory added in OpenClaw → available in Claude Desktop
 4. Unified context across all agents
 
 **Journey 3: Data Export**
-1. User decides to leave OpenMemory
-2. Runs `openmemory export` or clicks Export in UI
+1. User decides to leave TotalReclaw
+2. Runs `totalreclaw export` or clicks Export in UI
 3. Receives plain-text Markdown files + folder structure
 4. Imports into alternative system or keeps for backup
 
@@ -212,7 +212,7 @@ Pass 2 (Client, ~500ms): Decrypt → BM25 on plaintext → RRF fusion → Top 3-
 **Focus:** Decentralization, censorship resistance
 
 - Migrate storage to The Graph Horizon Data Service
-- Graph Indexers run OpenMemory nodes
+- Graph Indexers run TotalReclaw nodes
 - No central point of failure
 - GRT token for payments/incentives
 
@@ -310,4 +310,4 @@ Pass 2 (Client, ~500ms): Decrypt → BM25 on plaintext → RRF fusion → Top 3-
 
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
-| 1.0.0 | 2026-02-18 | Initial PRD based on stakeholder discussions | OpenMemory Team |
+| 1.0.0 | 2026-02-18 | Initial PRD based on stakeholder discussions | TotalReclaw Team |

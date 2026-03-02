@@ -1,3 +1,3 @@
 """
-Tests for OpenMemory Server.
+Tests for TotalReclaw Server.
 """

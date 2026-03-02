@@ -1,4 +1,4 @@
-# OpenMemory - Project Guide for AI Agents
+# TotalReclaw - Project Guide for AI Agents
 
 > **CRITICAL: All agents MUST read this file at the start of every session.**
 > **CRITICAL: All agents MUST update TASKS.md and CHANGELOG.md as they work.**
@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-**OpenMemory** is a zero-knowledge encrypted memory vault for AI agents — the "password manager for AI memory."
+**TotalReclaw** is a zero-knowledge encrypted memory vault for AI agents — the "password manager for AI memory."
 
 ### Core Value Proposition
 1. **Encrypted** — Zero-knowledge E2EE. Server never sees plaintext.
@@ -37,7 +37,7 @@
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        SERVER (OpenMemory PoC)                          │
+│                        SERVER (TotalReclaw PoC)                          │
 ├─────────────────────────────────────────────────────────────────────────┤
 │  PostgreSQL Tables:                                                     │
 │  • raw_events (immutable log, future DataEdge events)                  │
@@ -60,7 +60,7 @@
 ## Repository Structure
 
 ```
-/openmemory
+/totalreclaw
 ├── CLAUDE.md              # THIS FILE - Read first!
 ├── TASKS.md               # Live task tracking (todo, in-progress, blocked)
 ├── CHANGELOG.md           # Complete change history
@@ -70,7 +70,7 @@
 │   ├── prd.md             # Product Requirements Document
 │   ├── ROADMAP.md         # Phased roadmap
 │   ├── specs/
-│   │   ├── openmemory/    # Core E2EE product specs
+│   │   ├── totalreclaw/    # Core E2EE product specs
 │   │   │   ├── architecture.md      # E2EE with LSH + Blind Buckets
 │   │   │   ├── server.md            # Server PoC v0.3.1b (Auth + Dedup)
 │   │   │   ├── skill-openclaw.md    # OpenClaw skill integration
@@ -141,13 +141,19 @@
 
 6. **ALWAYS DELEGATE TO SUBAGENTS — NEVER DO IMPLEMENTATION IN THE MAIN SESSION** — Use the Task tool to delegate ALL implementation work, research, and testing to subagents. The main session is ONLY for coordination, decision-making, and user communication. This is a hard rule, not a suggestion. Launch multiple agents in parallel when tasks are independent.
 
+7. **COMPACTION PROTOCOL** — Whenever the user says "prepare for compaction" (or similar), you MUST:
+   - Update TASKS.md with current status of all in-progress work
+   - Update CHANGELOG.md with everything done in the current session
+   - Update MEMORY.md with any new learnings
+   - This is mandatory because multiple agents work on this project in parallel — the files are the shared state.
+
 ---
 
 ## Current Technical Specifications
 
 Specs are organized by product area under `docs/specs/`:
 
-### OpenMemory (E2EE) — `docs/specs/openmemory/`
+### TotalReclaw (E2EE) — `docs/specs/totalreclaw/`
 | Spec | File | Status |
 |------|------|--------|
 | E2EE Architecture (LSH + Blind Buckets) | `architecture.md` | Implemented, validated |
@@ -156,6 +162,7 @@ Specs are organized by product area under `docs/specs/`:
 | NanoClaw Skill | `skill-nanoclaw.md` | Implemented |
 | MCP Server | `mcp-server.md` | Implemented |
 | Benchmark Harness (OMBH) | `benchmark.md` | Implemented |
+| LSH Tuning (Multi-Tenant SaaS) | `lsh-tuning.md` | Complete |
 | Conflict Resolution v0.3.2 | `conflict-resolution.md` | Draft spec |
 
 ### Subgraph (Decentralized) — `docs/specs/subgraph/`
@@ -232,7 +239,7 @@ If you're a new agent picking up this project:
 2. **Current Phase**: Check TASKS.md for current phase
 
 3. **Key Files**:
-   - Tech specs: `/docs/specs/openmemory/` (core), `/docs/specs/subgraph/`, `/docs/specs/tee/`
+   - Tech specs: `/docs/specs/totalreclaw/` (core), `/docs/specs/subgraph/`, `/docs/specs/tee/`
    - PRD: `/docs/prd.md`
    - Roadmap: `/docs/ROADMAP.md`
    - Data: `/testbed/v2-realworld-data/processed/`

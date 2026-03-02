@@ -1,0 +1,5804 @@
+{
+  "query_results": [
+    {
+      "query_id": "q001",
+      "query_text": "What did we decide regarding Tom's suggestion about the deployment strategy?",
+      "category": "contextual_fact",
+      "retrieved": [
+        763,
+        511,
+        651,
+        539,
+        735
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 1.6005742829293013,
+        "pass1_blind_check_ms": 0.17784158699214458,
+        "pass2_decrypt_ms": 0.5628331564366817,
+        "pass2_bm25_ms": 3.2071247696876526,
+        "pass2_rrf_ms": 0.12404099106788635,
+        "pass1_total_ms": 1.7784158699214458,
+        "pass2_total_ms": 3.8939989171922207,
+        "total_ms": 5.6724147871136665
+      }
+    },
+    {
+      "query_id": "q002",
+      "query_text": "What was the conclusion about performance optimization that Emma mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        331,
+        373,
+        184,
+        16,
+        149
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5890499800443649,
+        "pass1_blind_check_ms": 0.06544999778270721,
+        "pass2_decrypt_ms": 0.44912518933415413,
+        "pass2_bm25_ms": 5.188792012631893,
+        "pass2_rrf_ms": 0.1278342679142952,
+        "pass1_total_ms": 0.6544999778270721,
+        "pass2_total_ms": 5.7657514698803425,
+        "total_ms": 6.420251447707415
+      }
+    },
+    {
+      "query_id": "q003",
+      "query_text": "We encountered 429 rate limit - what resolved it?",
+      "category": "error_solution",
+      "retrieved": [
+        124,
+        1435,
+        187,
+        110,
+        341
+      ],
+      "relevant": [
+        0,
+        28,
+        56,
+        84,
+        112,
+        140,
+        166,
+        168,
+        180,
+        196,
+        201,
+        208,
+        215,
+        217,
+        222,
+        224,
+        229,
+        236,
+        243,
+        250,
+        252,
+        280,
+        299,
+        308,
+        313,
+        320,
+        336,
+        364,
+        369,
+        376,
+        383,
+        385,
+        390,
+        392,
+        1430,
+        1450
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5737131927162409,
+        "pass1_blind_check_ms": 0.06374591030180454,
+        "pass2_decrypt_ms": 0.4048328846693039,
+        "pass2_bm25_ms": 2.986582927405834,
+        "pass2_rrf_ms": 0.12262538075447083,
+        "pass1_total_ms": 0.6374591030180454,
+        "pass2_total_ms": 3.514041192829609,
+        "total_ms": 4.151500295847654
+      }
+    },
+    {
+      "query_id": "q004",
+      "query_text": "How did we fix the CORS issue?",
+      "category": "error_solution",
+      "retrieved": [
+        954,
+        986,
+        922,
+        890,
+        858
+      ],
+      "relevant": [
+        1357,
+        1358,
+        1365,
+        1366,
+        1373,
+        1374,
+        1381,
+        1382,
+        1389
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5687255412340164,
+        "pass1_blind_check_ms": 0.0631917268037796,
+        "pass2_decrypt_ms": 0.42450008913874626,
+        "pass2_bm25_ms": 3.8345828652381897,
+        "pass2_rrf_ms": 0.1315828412771225,
+        "pass1_total_ms": 0.631917268037796,
+        "pass2_total_ms": 4.3906657956540585,
+        "total_ms": 5.0225830636918545
+      }
+    },
+    {
+      "query_id": "q005",
+      "query_text": "deadlock - what's the fix?",
+      "category": "error_solution",
+      "retrieved": [
+        786,
+        818,
+        946,
+        978,
+        914
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5675256717950106,
+        "pass1_blind_check_ms": 0.0630584079772234,
+        "pass2_decrypt_ms": 0.4163328558206558,
+        "pass2_bm25_ms": 3.349625039845705,
+        "pass2_rrf_ms": 0.13504130765795708,
+        "pass1_total_ms": 0.630584079772234,
+        "pass2_total_ms": 3.900999203324318,
+        "total_ms": 4.531583283096552
+      }
+    },
+    {
+      "query_id": "q006",
+      "query_text": "What was the conclusion about testing methodology that Alex mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        658,
+        686,
+        630,
+        490,
+        546
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5442373920232058,
+        "pass1_blind_check_ms": 0.06047082133591175,
+        "pass2_decrypt_ms": 0.40562497451901436,
+        "pass2_bm25_ms": 2.2018342278897762,
+        "pass2_rrf_ms": 0.09954208508133888,
+        "pass1_total_ms": 0.6047082133591175,
+        "pass2_total_ms": 2.7070012874901295,
+        "total_ms": 3.311709500849247
+      }
+    },
+    {
+      "query_id": "q007",
+      "query_text": "What did Tom say in the last discussion?",
+      "category": "temporal",
+      "retrieved": [
+        954,
+        986,
+        794,
+        826,
+        922
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5415002815425396,
+        "pass1_blind_check_ms": 0.060166697949171066,
+        "pass2_decrypt_ms": 0.4116250202059746,
+        "pass2_bm25_ms": 4.351707641035318,
+        "pass2_rrf_ms": 0.11404091492295265,
+        "pass1_total_ms": 0.6016669794917107,
+        "pass2_total_ms": 4.877373576164246,
+        "total_ms": 5.479040555655956
+      }
+    },
+    {
+      "query_id": "q008",
+      "query_text": "ECONNRESET",
+      "category": "exact_keyword",
+      "retrieved": [
+        1127,
+        1141,
+        1015,
+        1120,
+        1113
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5600997246801853,
+        "pass1_blind_check_ms": 0.06223330274224281,
+        "pass2_decrypt_ms": 0.40112482383847237,
+        "pass2_bm25_ms": 1.7660828307271004,
+        "pass2_rrf_ms": 0.11266721412539482,
+        "pass1_total_ms": 0.6223330274224281,
+        "pass2_total_ms": 2.2798748686909676,
+        "total_ms": 2.9022078961133957
+      }
+    },
+    {
+      "query_id": "q009",
+      "query_text": "What bugs did we fix recently?",
+      "category": "temporal",
+      "retrieved": [
+        954,
+        986,
+        922,
+        858,
+        890
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5587129388004541,
+        "pass1_blind_check_ms": 0.06207921542227268,
+        "pass2_decrypt_ms": 0.44225016608834267,
+        "pass2_bm25_ms": 6.599042098969221,
+        "pass2_rrf_ms": 0.12008287012577057,
+        "pass1_total_ms": 0.6207921542227268,
+        "pass2_total_ms": 7.161375135183334,
+        "total_ms": 7.782167289406061
+      }
+    },
+    {
+      "query_id": "q010",
+      "query_text": "What did we decide regarding Lisa's suggestion about the new feature timeline?",
+      "category": "contextual_fact",
+      "retrieved": [
+        644,
+        672,
+        728,
+        700,
+        560
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5592753645032644,
+        "pass1_blind_check_ms": 0.06214170716702938,
+        "pass2_decrypt_ms": 0.43074972927570343,
+        "pass2_bm25_ms": 6.577999796718359,
+        "pass2_rrf_ms": 0.12450013309717178,
+        "pass1_total_ms": 0.6214170716702938,
+        "pass2_total_ms": 7.133249659091234,
+        "total_ms": 7.754666730761528
+      }
+    },
+    {
+      "query_id": "q011",
+      "query_text": "What was decided in the last standup?",
+      "category": "temporal",
+      "retrieved": [
+        769,
+        699,
+        524,
+        580,
+        573
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.537374708801508,
+        "pass1_blind_check_ms": 0.05970830097794533,
+        "pass2_decrypt_ms": 0.3805002197623253,
+        "pass2_bm25_ms": 1.0087923146784306,
+        "pass2_rrf_ms": 0.09454181417822838,
+        "pass1_total_ms": 0.5970830097794533,
+        "pass2_total_ms": 1.4838343486189842,
+        "total_ms": 2.0809173583984375
+      }
+    },
+    {
+      "query_id": "q012",
+      "query_text": "Tom's opinion on database schema changes",
+      "category": "contextual_fact",
+      "retrieved": [
+        665,
+        693,
+        637,
+        721,
+        749
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5350122693926096,
+        "pass1_blind_check_ms": 0.059445807710289955,
+        "pass2_decrypt_ms": 0.39341673254966736,
+        "pass2_bm25_ms": 5.182750057429075,
+        "pass2_rrf_ms": 0.1309998333454132,
+        "pass1_total_ms": 0.5944580771028996,
+        "pass2_total_ms": 5.707166623324156,
+        "total_ms": 6.301624700427055
+      }
+    },
+    {
+      "query_id": "q013",
+      "query_text": "serverless computing setup guide",
+      "category": "semantic",
+      "retrieved": [
+        1100,
+        1037,
+        1170,
+        1065,
+        1177
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5774624180048704,
+        "pass1_blind_check_ms": 0.06416249088943005,
+        "pass2_decrypt_ms": 0.4315418191254139,
+        "pass2_bm25_ms": 4.362583160400391,
+        "pass2_rrf_ms": 0.1104581169784069,
+        "pass1_total_ms": 0.6416249088943005,
+        "pass2_total_ms": 4.904583096504211,
+        "total_ms": 5.546208005398512
+      }
+    },
+    {
+      "query_id": "q014",
+      "query_text": "Jen's opinion on performance optimization",
+      "category": "contextual_fact",
+      "retrieved": [
+        371,
+        399,
+        315,
+        287,
+        343
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5788492038846016,
+        "pass1_blind_check_ms": 0.06431657820940018,
+        "pass2_decrypt_ms": 0.4404997453093529,
+        "pass2_bm25_ms": 8.026792202144861,
+        "pass2_rrf_ms": 0.12991717085242271,
+        "pass1_total_ms": 0.6431657820940018,
+        "pass2_total_ms": 8.597209118306637,
+        "total_ms": 9.240374900400639
+      }
+    },
+    {
+      "query_id": "q015",
+      "query_text": "How to implement message queue?",
+      "category": "semantic",
+      "retrieved": [
+        402,
+        143,
+        108,
+        150,
+        129
+      ],
+      "relevant": [
+        31,
+        38,
+        45,
+        52,
+        59,
+        66,
+        73
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5689870566129684,
+        "pass1_blind_check_ms": 0.0632207840681076,
+        "pass2_decrypt_ms": 0.4098336212337017,
+        "pass2_bm25_ms": 3.8742078468203545,
+        "pass2_rrf_ms": 0.11862488463521004,
+        "pass1_total_ms": 0.632207840681076,
+        "pass2_total_ms": 4.402666352689266,
+        "total_ms": 5.034874193370342
+      }
+    },
+    {
+      "query_id": "q016",
+      "query_text": "According to John, what's the best approach for the API rate limit?",
+      "category": "contextual_fact",
+      "retrieved": [
+        96,
+        224,
+        40,
+        252,
+        257
+      ],
+      "relevant": [
+        168,
+        196,
+        224
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.3333333333333333,
+        "f1@5": 0.25,
+        "ap": 0.16666666666666666,
+        "rr": 0.5,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5514001473784447,
+        "pass1_blind_check_ms": 0.06126668304204941,
+        "pass2_decrypt_ms": 0.4315418191254139,
+        "pass2_bm25_ms": 6.119208876043558,
+        "pass2_rrf_ms": 0.13804109767079353,
+        "pass1_total_ms": 0.6126668304204941,
+        "pass2_total_ms": 6.6887917928397655,
+        "total_ms": 7.30145862326026
+      }
+    },
+    {
+      "query_id": "q017",
+      "query_text": "Sarah's opinion on database schema changes",
+      "category": "contextual_fact",
+      "retrieved": [
+        665,
+        693,
+        637,
+        721,
+        749
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5473500117659569,
+        "pass1_blind_check_ms": 0.06081666797399521,
+        "pass2_decrypt_ms": 0.4188329912722111,
+        "pass2_bm25_ms": 4.720416851341724,
+        "pass2_rrf_ms": 0.12637488543987274,
+        "pass1_total_ms": 0.6081666797399521,
+        "pass2_total_ms": 5.265624728053808,
+        "total_ms": 5.87379140779376
+      }
+    },
+    {
+      "query_id": "q018",
+      "query_text": "According to Alex, what's the best approach for the new feature timeline?",
+      "category": "contextual_fact",
+      "retrieved": [
+        1080,
+        1087,
+        1101,
+        1199,
+        1094
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5604752339422703,
+        "pass1_blind_check_ms": 0.06227502599358559,
+        "pass2_decrypt_ms": 0.39570825174450874,
+        "pass2_bm25_ms": 1.5824162401258945,
+        "pass2_rrf_ms": 0.11808332055807114,
+        "pass1_total_ms": 0.6227502599358559,
+        "pass2_total_ms": 2.0962078124284744,
+        "total_ms": 2.7189580723643303
+      }
+    },
+    {
+      "query_id": "q019",
+      "query_text": "What was the solution for timeout error?",
+      "category": "error_solution",
+      "retrieved": [
+        882,
+        850,
+        914,
+        834,
+        818
+      ],
+      "relevant": [
+        7,
+        35,
+        63,
+        91,
+        119,
+        133,
+        147,
+        161,
+        175,
+        203,
+        231,
+        245,
+        259,
+        287,
+        315,
+        343,
+        371,
+        399,
+        898,
+        914,
+        922,
+        930,
+        946,
+        962,
+        978,
+        994,
+        1437,
+        1457
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.03571428571428571,
+        "f1@5": 0.06060606060606061,
+        "ap": 0.011904761904761904,
+        "rr": 0.3333333333333333,
+        "ndcg@5": 0.6309297535714575
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5588629748672247,
+        "pass1_blind_check_ms": 0.0620958860963583,
+        "pass2_decrypt_ms": 0.4459172487258911,
+        "pass2_bm25_ms": 9.33633279055357,
+        "pass2_rrf_ms": 0.1494167372584343,
+        "pass1_total_ms": 0.620958860963583,
+        "pass2_total_ms": 9.931666776537895,
+        "total_ms": 10.552625637501478
+      }
+    },
+    {
+      "query_id": "q020",
+      "query_text": "What was decided in the last standup?",
+      "category": "temporal",
+      "retrieved": [
+        769,
+        699,
+        524,
+        580,
+        573
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5846624728292227,
+        "pass1_blind_check_ms": 0.06496249698102474,
+        "pass2_decrypt_ms": 0.3999159671366215,
+        "pass2_bm25_ms": 0.9992076084017754,
+        "pass2_rrf_ms": 0.10091718286275864,
+        "pass1_total_ms": 0.6496249698102474,
+        "pass2_total_ms": 1.5000407584011555,
+        "total_ms": 2.149665728211403
+      }
+    },
+    {
+      "query_id": "q021",
+      "query_text": "What's the base URL for the API?",
+      "category": "configuration",
+      "retrieved": [
+        245,
+        217,
+        273,
+        189,
+        161
+      ],
+      "relevant": [
+        0,
+        28,
+        56,
+        77,
+        84,
+        112,
+        140,
+        168,
+        196,
+        224,
+        245,
+        252,
+        280,
+        308,
+        336,
+        364,
+        385,
+        392,
+        1358,
+        1359,
+        1366,
+        1374,
+        1382,
+        1390,
+        1430,
+        1450
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.038461538461538464,
+        "f1@5": 0.06451612903225806,
+        "ap": 0.038461538461538464,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5420631263405085,
+        "pass1_blind_check_ms": 0.060229236260056496,
+        "pass2_decrypt_ms": 0.42495783418416977,
+        "pass2_bm25_ms": 7.238207850605249,
+        "pass2_rrf_ms": 0.1360829919576645,
+        "pass1_total_ms": 0.602292362600565,
+        "pass2_total_ms": 7.799248676747084,
+        "total_ms": 8.401541039347649
+      }
+    },
+    {
+      "query_id": "q022",
+      "query_text": "What's the database endpoint?",
+      "category": "configuration",
+      "retrieved": [
+        563,
+        626,
+        528,
+        535,
+        675
+      ],
+      "relevant": [
+        7,
+        35,
+        63,
+        91,
+        119,
+        147,
+        175,
+        203,
+        231,
+        259,
+        287,
+        315,
+        343,
+        371,
+        399,
+        423,
+        441,
+        535,
+        549,
+        556,
+        721,
+        749,
+        1437,
+        1457
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.041666666666666664,
+        "f1@5": 0.06896551724137931,
+        "ap": 0.010416666666666666,
+        "rr": 0.25,
+        "ndcg@5": 0.5
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5534998141229153,
+        "pass1_blind_check_ms": 0.061499979346990585,
+        "pass2_decrypt_ms": 0.4064999520778656,
+        "pass2_bm25_ms": 2.579249907284975,
+        "pass2_rrf_ms": 0.10575028136372566,
+        "pass1_total_ms": 0.6149997934699059,
+        "pass2_total_ms": 3.0915001407265663,
+        "total_ms": 3.706499934196472
+      }
+    },
+    {
+      "query_id": "q023",
+      "query_text": "Workaround for memory leak",
+      "category": "error_solution",
+      "retrieved": [
+        259,
+        231,
+        315,
+        287,
+        343
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5392882972955704,
+        "pass1_blind_check_ms": 0.05992092192173004,
+        "pass2_decrypt_ms": 0.41566602885723114,
+        "pass2_bm25_ms": 6.379458121955395,
+        "pass2_rrf_ms": 0.12174993753433228,
+        "pass1_total_ms": 0.5992092192173004,
+        "pass2_total_ms": 6.916874088346958,
+        "total_ms": 7.516083307564259
+      }
+    },
+    {
+      "query_id": "q024",
+      "query_text": "ETIMEDOUT",
+      "category": "exact_keyword",
+      "retrieved": [
+        1001,
+        1120,
+        1029,
+        1141,
+        1036
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5208003334701061,
+        "pass1_blind_check_ms": 0.05786670371890068,
+        "pass2_decrypt_ms": 0.38154236972332,
+        "pass2_bm25_ms": 0.2782498486340046,
+        "pass2_rrf_ms": 0.09804219007492065,
+        "pass1_total_ms": 0.5786670371890068,
+        "pass2_total_ms": 0.7578344084322453,
+        "total_ms": 1.336501445621252
+      }
+    },
+    {
+      "query_id": "q025",
+      "query_text": "What's the timeout setting for S3 bucket?",
+      "category": "configuration",
+      "retrieved": [
+        1250,
+        1205,
+        1349,
+        1214,
+        1295
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5694002844393253,
+        "pass1_blind_check_ms": 0.06326669827103615,
+        "pass2_decrypt_ms": 0.4696659743785858,
+        "pass2_bm25_ms": 11.649083811789751,
+        "pass2_rrf_ms": 0.16629183664917946,
+        "pass1_total_ms": 0.6326669827103615,
+        "pass2_total_ms": 12.285041622817516,
+        "total_ms": 12.917708605527878
+      }
+    },
+    {
+      "query_id": "q026",
+      "query_text": "Mike's opinion on database schema changes",
+      "category": "contextual_fact",
+      "retrieved": [
+        693,
+        665,
+        637,
+        749,
+        721
+      ],
+      "relevant": [
+        567,
+        581,
+        595,
+        609,
+        623,
+        624,
+        637,
+        651,
+        665,
+        679
+      ],
+      "metrics": {
+        "precision@5": 0.4,
+        "recall@5": 0.2,
+        "f1@5": 0.26666666666666666,
+        "ap": 0.11666666666666665,
+        "rr": 0.5,
+        "ndcg@5": 0.8154648767857288
+      },
+      "timing": {
+        "pass1_knn_ms": 0.542474677786231,
+        "pass1_blind_check_ms": 0.060274964198470116,
+        "pass2_decrypt_ms": 0.4116669297218323,
+        "pass2_bm25_ms": 6.23770896345377,
+        "pass2_rrf_ms": 0.1293332315981388,
+        "pass1_total_ms": 0.6027496419847012,
+        "pass2_total_ms": 6.778709124773741,
+        "total_ms": 7.381458766758442
+      }
+    },
+    {
+      "query_id": "q027",
+      "query_text": "123e4567-e89b-12d3-a456-426614174000",
+      "category": "exact_keyword",
+      "retrieved": [
+        739,
+        697,
+        669,
+        676,
+        473
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6044249050319195,
+        "pass1_blind_check_ms": 0.06715832278132439,
+        "pass2_decrypt_ms": 0.3855419345200062,
+        "pass2_bm25_ms": 1.1361250653862953,
+        "pass2_rrf_ms": 0.10145828127861023,
+        "pass1_total_ms": 0.6715832278132439,
+        "pass2_total_ms": 1.6231252811849117,
+        "total_ms": 2.2947085089981556
+      }
+    },
+    {
+      "query_id": "q028",
+      "query_text": "What was the conclusion about performance optimization that Lisa mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        212,
+        23,
+        275,
+        79,
+        268
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.7093122694641352,
+        "pass1_blind_check_ms": 0.07881247438490391,
+        "pass2_decrypt_ms": 0.473707914352417,
+        "pass2_bm25_ms": 5.217667203396559,
+        "pass2_rrf_ms": 0.13149995356798172,
+        "pass1_total_ms": 0.7881247438490391,
+        "pass2_total_ms": 5.8228750713169575,
+        "total_ms": 6.6109998151659966
+      }
+    },
+    {
+      "query_id": "q029",
+      "query_text": "We encountered timeout error - what resolved it?",
+      "category": "error_solution",
+      "retrieved": [
+        259,
+        231,
+        147,
+        203,
+        175
+      ],
+      "relevant": [
+        7,
+        35,
+        49,
+        63,
+        91,
+        119,
+        147,
+        175,
+        203,
+        231,
+        245,
+        259,
+        287,
+        315,
+        343,
+        357,
+        371,
+        399,
+        770,
+        786
+      ],
+      "metrics": {
+        "precision@5": 1.0,
+        "recall@5": 0.25,
+        "f1@5": 0.4,
+        "ap": 0.25,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6844134069979191,
+        "pass1_blind_check_ms": 0.0760459341108799,
+        "pass2_decrypt_ms": 0.5210419185459614,
+        "pass2_bm25_ms": 11.924833059310913,
+        "pass2_rrf_ms": 0.15912484377622604,
+        "pass1_total_ms": 0.760459341108799,
+        "pass2_total_ms": 12.6049998216331,
+        "total_ms": 13.3654591627419
+      }
+    },
+    {
+      "query_id": "q030",
+      "query_text": "How do I connect to load balancer?",
+      "category": "configuration",
+      "retrieved": [
+        227,
+        108,
+        101,
+        269,
+        59
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5445374641567469,
+        "pass1_blind_check_ms": 0.060504162684082985,
+        "pass2_decrypt_ms": 0.4042079672217369,
+        "pass2_bm25_ms": 2.756041008979082,
+        "pass2_rrf_ms": 0.10716728866100311,
+        "pass1_total_ms": 0.6050416268408298,
+        "pass2_total_ms": 3.267416264861822,
+        "total_ms": 3.872457891702652
+      }
+    },
+    {
+      "query_id": "q031",
+      "query_text": "What was the solution for timeout error?",
+      "category": "error_solution",
+      "retrieved": [
+        882,
+        850,
+        914,
+        834,
+        818
+      ],
+      "relevant": [
+        7,
+        35,
+        63,
+        91,
+        119,
+        133,
+        147,
+        161,
+        175,
+        203,
+        231,
+        245,
+        259,
+        287,
+        315,
+        343,
+        371,
+        399,
+        770,
+        786,
+        898,
+        914,
+        922,
+        930,
+        946,
+        962,
+        978,
+        994,
+        1437,
+        1457
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.03333333333333333,
+        "f1@5": 0.05714285714285715,
+        "ap": 0.01111111111111111,
+        "rr": 0.3333333333333333,
+        "ndcg@5": 0.6309297535714575
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5584870465099812,
+        "pass1_blind_check_ms": 0.062054116278886795,
+        "pass2_decrypt_ms": 0.4271250218153,
+        "pass2_bm25_ms": 9.174542035907507,
+        "pass2_rrf_ms": 0.13012485578656197,
+        "pass1_total_ms": 0.620541162788868,
+        "pass2_total_ms": 9.731791913509369,
+        "total_ms": 10.352333076298237
+      }
+    },
+    {
+      "query_id": "q032",
+      "query_text": "Alternatives to Docker for container orchestration",
+      "category": "semantic",
+      "retrieved": [
+        1352,
+        1262,
+        1334,
+        1271,
+        1244
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5788123235106468,
+        "pass1_blind_check_ms": 0.06431248039007187,
+        "pass2_decrypt_ms": 0.39183301851153374,
+        "pass2_bm25_ms": 2.479125279933214,
+        "pass2_rrf_ms": 0.122124794870615,
+        "pass1_total_ms": 0.6431248039007187,
+        "pass2_total_ms": 2.993083093315363,
+        "total_ms": 3.6362078972160816
+      }
+    },
+    {
+      "query_id": "q033",
+      "query_text": "HTTP 429",
+      "category": "exact_keyword",
+      "retrieved": [
+        309,
+        351,
+        344,
+        36,
+        337
+      ],
+      "relevant": [
+        1388,
+        1396,
+        1404,
+        1412
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6180371157824993,
+        "pass1_blind_check_ms": 0.06867079064249992,
+        "pass2_decrypt_ms": 0.4375828430056572,
+        "pass2_bm25_ms": 3.7465831264853477,
+        "pass2_rrf_ms": 0.12370804324746132,
+        "pass1_total_ms": 0.6867079064249992,
+        "pass2_total_ms": 4.307874012738466,
+        "total_ms": 4.9945819191634655
+      }
+    },
+    {
+      "query_id": "q034",
+      "query_text": "What was the solution for 429 rate limit?",
+      "category": "error_solution",
+      "retrieved": [
+        334,
+        19,
+        159,
+        376,
+        152
+      ],
+      "relevant": [
+        0,
+        28,
+        56,
+        77,
+        84,
+        89,
+        96,
+        110,
+        112,
+        140,
+        168,
+        196,
+        208,
+        215,
+        222,
+        224,
+        229,
+        252,
+        280,
+        308,
+        313,
+        320,
+        336,
+        364,
+        369,
+        376,
+        383,
+        385,
+        413,
+        1430,
+        1450
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.03225806451612903,
+        "f1@5": 0.05555555555555555,
+        "ap": 0.008064516129032258,
+        "rr": 0.25,
+        "ndcg@5": 0.5
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5616746842861176,
+        "pass1_blind_check_ms": 0.06240829825401306,
+        "pass2_decrypt_ms": 0.38012489676475525,
+        "pass2_bm25_ms": 1.5860828571021557,
+        "pass2_rrf_ms": 0.12295786291360855,
+        "pass1_total_ms": 0.6240829825401306,
+        "pass2_total_ms": 2.0891656167805195,
+        "total_ms": 2.71324859932065
+      }
+    },
+    {
+      "query_id": "q035",
+      "query_text": "Alternatives to MongoDB for document database",
+      "category": "semantic",
+      "retrieved": [
+        371,
+        399,
+        665,
+        259,
+        637
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5555994808673859,
+        "pass1_blind_check_ms": 0.06173327565193176,
+        "pass2_decrypt_ms": 0.45183300971984863,
+        "pass2_bm25_ms": 8.548124693334103,
+        "pass2_rrf_ms": 0.1410837285220623,
+        "pass1_total_ms": 0.6173327565193176,
+        "pass2_total_ms": 9.141041431576014,
+        "total_ms": 9.758374188095331
+      }
+    },
+    {
+      "query_id": "q036",
+      "query_text": "Workaround for memory leak",
+      "category": "error_solution",
+      "retrieved": [
+        259,
+        231,
+        315,
+        287,
+        343
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5433002952486277,
+        "pass1_blind_check_ms": 0.06036669947206974,
+        "pass2_decrypt_ms": 0.4388340748846531,
+        "pass2_bm25_ms": 6.483582779765129,
+        "pass2_rrf_ms": 0.11399993672966957,
+        "pass1_total_ms": 0.6036669947206974,
+        "pass2_total_ms": 7.036416791379452,
+        "total_ms": 7.640083786100149
+      }
+    },
+    {
+      "query_id": "q037",
+      "query_text": "What was the conclusion about the API rate limit that Lisa mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        858,
+        922,
+        890,
+        986,
+        954
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5603624973446131,
+        "pass1_blind_check_ms": 0.06226249970495701,
+        "pass2_decrypt_ms": 0.4421249032020569,
+        "pass2_bm25_ms": 6.637999787926674,
+        "pass2_rrf_ms": 0.1527923159301281,
+        "pass1_total_ms": 0.6226249970495701,
+        "pass2_total_ms": 7.232917007058859,
+        "total_ms": 7.855542004108429
+      }
+    },
+    {
+      "query_id": "q038",
+      "query_text": "How do I connect to API?",
+      "category": "configuration",
+      "retrieved": [
+        1411,
+        1371,
+        1355,
+        1363,
+        1427
+      ],
+      "relevant": [
+        616,
+        644,
+        665,
+        672,
+        700,
+        714,
+        721,
+        728,
+        756,
+        1355,
+        1363,
+        1371,
+        1379,
+        1387,
+        1395,
+        1403,
+        1411,
+        1419,
+        1427,
+        1460
+      ],
+      "metrics": {
+        "precision@5": 1.0,
+        "recall@5": 0.25,
+        "f1@5": 0.4,
+        "ap": 0.25,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5527500528842211,
+        "pass1_blind_check_ms": 0.06141667254269123,
+        "pass2_decrypt_ms": 0.4337076097726822,
+        "pass2_bm25_ms": 6.7029171623289585,
+        "pass2_rrf_ms": 0.12812530621886253,
+        "pass1_total_ms": 0.6141667254269123,
+        "pass2_total_ms": 7.264750078320503,
+        "total_ms": 7.8789168037474155
+      }
+    },
+    {
+      "query_id": "q039",
+      "query_text": "What did we work on yesterday?",
+      "category": "temporal",
+      "retrieved": [
+        1058,
+        1100,
+        1093,
+        1086,
+        1079
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5575122311711311,
+        "pass1_blind_check_ms": 0.061945803463459015,
+        "pass2_decrypt_ms": 0.4115002229809761,
+        "pass2_bm25_ms": 4.25129197537899,
+        "pass2_rrf_ms": 0.13258308172225952,
+        "pass1_total_ms": 0.6194580346345901,
+        "pass2_total_ms": 4.795375280082226,
+        "total_ms": 5.414833314716816
+      }
+    },
+    {
+      "query_id": "q040",
+      "query_text": "How do I connect to API?",
+      "category": "configuration",
+      "retrieved": [
+        1411,
+        1371,
+        1355,
+        1363,
+        1427
+      ],
+      "relevant": [
+        518,
+        532,
+        560,
+        588,
+        616,
+        644,
+        665,
+        672,
+        700,
+        714,
+        721,
+        728,
+        756,
+        1355
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.07142857142857142,
+        "f1@5": 0.10526315789473682,
+        "ap": 0.023809523809523808,
+        "rr": 0.3333333333333333,
+        "ndcg@5": 0.6309297535714575
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5967378616333008,
+        "pass1_blind_check_ms": 0.06630420684814453,
+        "pass2_decrypt_ms": 0.44458359479904175,
+        "pass2_bm25_ms": 6.731249857693911,
+        "pass2_rrf_ms": 0.13358285650610924,
+        "pass1_total_ms": 0.6630420684814453,
+        "pass2_total_ms": 7.309416308999062,
+        "total_ms": 7.972458377480507
+      }
+    },
+    {
+      "query_id": "q041",
+      "query_text": "What's the base URL for the API?",
+      "category": "configuration",
+      "retrieved": [
+        245,
+        217,
+        273,
+        189,
+        161
+      ],
+      "relevant": [
+        0,
+        28,
+        56,
+        77,
+        84,
+        112,
+        140,
+        168,
+        196,
+        224,
+        245,
+        252,
+        280,
+        308,
+        336,
+        364,
+        385,
+        392,
+        1358,
+        1359,
+        1366,
+        1367,
+        1368,
+        1374,
+        1375,
+        1376,
+        1382,
+        1383,
+        1390,
+        1391,
+        1398,
+        1399,
+        1406,
+        1407,
+        1414,
+        1415,
+        1422,
+        1423,
+        1430,
+        1450
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.025,
+        "f1@5": 0.04444444444444445,
+        "ap": 0.025,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5685750860720873,
+        "pass1_blind_check_ms": 0.06317500956356525,
+        "pass2_decrypt_ms": 0.42908312752842903,
+        "pass2_bm25_ms": 7.134333718568087,
+        "pass2_rrf_ms": 0.12295925989747047,
+        "pass1_total_ms": 0.6317500956356525,
+        "pass2_total_ms": 7.686376105993986,
+        "total_ms": 8.318126201629639
+      }
+    },
+    {
+      "query_id": "q042",
+      "query_text": "Compare API gateway implementations",
+      "category": "semantic",
+      "retrieved": [
+        672,
+        644,
+        504,
+        532,
+        700
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5311125889420509,
+        "pass1_blind_check_ms": 0.059012509882450104,
+        "pass2_decrypt_ms": 0.45891711488366127,
+        "pass2_bm25_ms": 11.068583931773901,
+        "pass2_rrf_ms": 0.1482078805565834,
+        "pass1_total_ms": 0.590125098824501,
+        "pass2_total_ms": 11.675708927214146,
+        "total_ms": 12.265834026038647
+      }
+    },
+    {
+      "query_id": "q043",
+      "query_text": "Jen's opinion on performance optimization",
+      "category": "contextual_fact",
+      "retrieved": [
+        371,
+        399,
+        315,
+        287,
+        343
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.695774657651782,
+        "pass1_blind_check_ms": 0.07730829529464245,
+        "pass2_decrypt_ms": 0.5208747461438179,
+        "pass2_bm25_ms": 9.49866697192192,
+        "pass2_rrf_ms": 0.18349988386034966,
+        "pass1_total_ms": 0.7730829529464245,
+        "pass2_total_ms": 10.203041601926088,
+        "total_ms": 10.976124554872513
+      }
+    },
+    {
+      "query_id": "q044",
+      "query_text": "What's the base URL for the load balancer?",
+      "category": "configuration",
+      "retrieved": [
+        986,
+        954,
+        890,
+        858,
+        922
+      ],
+      "relevant": [
+        1358,
+        1366,
+        1374,
+        1382
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5739751271903515,
+        "pass1_blind_check_ms": 0.06377501413226128,
+        "pass2_decrypt_ms": 0.41441619396209717,
+        "pass2_bm25_ms": 5.335291847586632,
+        "pass2_rrf_ms": 0.12554088607430458,
+        "pass1_total_ms": 0.6377501413226128,
+        "pass2_total_ms": 5.8752489276230335,
+        "total_ms": 6.512999068945646
+      }
+    },
+    {
+      "query_id": "q045",
+      "query_text": "API gateway setup guide",
+      "category": "semantic",
+      "retrieved": [
+        532,
+        588,
+        616,
+        504,
+        560
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5405627656728029,
+        "pass1_blind_check_ms": 0.060062529519200325,
+        "pass2_decrypt_ms": 0.4604998975992203,
+        "pass2_bm25_ms": 11.468292213976383,
+        "pass2_rrf_ms": 0.14458317309617996,
+        "pass1_total_ms": 0.6006252951920033,
+        "pass2_total_ms": 12.073375284671783,
+        "total_ms": 12.674000579863787
+      }
+    },
+    {
+      "query_id": "q046",
+      "query_text": "What's the base URL for the CDN?",
+      "category": "configuration",
+      "retrieved": [
+        598,
+        577,
+        710,
+        738,
+        570
+      ],
+      "relevant": [
+        1359,
+        1367,
+        1375,
+        1383,
+        1391
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5790373776108027,
+        "pass1_blind_check_ms": 0.0643374864012003,
+        "pass2_decrypt_ms": 0.385332852602005,
+        "pass2_bm25_ms": 1.3893749564886093,
+        "pass2_rrf_ms": 0.10237516835331917,
+        "pass1_total_ms": 0.643374864012003,
+        "pass2_total_ms": 1.8770829774439335,
+        "total_ms": 2.5204578414559364
+      }
+    },
+    {
+      "query_id": "q047",
+      "query_text": "What did Tom say about database schema changes?",
+      "category": "contextual_fact",
+      "retrieved": [
+        665,
+        637,
+        693,
+        553,
+        721
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.534899951890111,
+        "pass1_blind_check_ms": 0.05943332798779011,
+        "pass2_decrypt_ms": 0.3997916355729103,
+        "pass2_bm25_ms": 4.243624862283468,
+        "pass2_rrf_ms": 0.13350043445825577,
+        "pass1_total_ms": 0.5943332798779011,
+        "pass2_total_ms": 4.776916932314634,
+        "total_ms": 5.371250212192535
+      }
+    },
+    {
+      "query_id": "q048",
+      "query_text": "What did Jen say about performance optimization?",
+      "category": "contextual_fact",
+      "retrieved": [
+        378,
+        406,
+        350,
+        322,
+        294
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5654247477650642,
+        "pass1_blind_check_ms": 0.06282497197389603,
+        "pass2_decrypt_ms": 0.415249727666378,
+        "pass2_bm25_ms": 4.92025027051568,
+        "pass2_rrf_ms": 0.1370408572256565,
+        "pass1_total_ms": 0.6282497197389603,
+        "pass2_total_ms": 5.472540855407715,
+        "total_ms": 6.100790575146675
+      }
+    },
+    {
+      "query_id": "q049",
+      "query_text": "According to Sarah, what's the best approach for the new feature timeline?",
+      "category": "contextual_fact",
+      "retrieved": [
+        1157,
+        891,
+        1164,
+        859,
+        1080
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5627630744129419,
+        "pass1_blind_check_ms": 0.06252923049032688,
+        "pass2_decrypt_ms": 0.38795825093984604,
+        "pass2_bm25_ms": 1.6220835968852043,
+        "pass2_rrf_ms": 0.11341692879796028,
+        "pass1_total_ms": 0.6252923049032688,
+        "pass2_total_ms": 2.1234587766230106,
+        "total_ms": 2.7487510815262794
+      }
+    },
+    {
+      "query_id": "q050",
+      "query_text": "What's the base URL for the database?",
+      "category": "configuration",
+      "retrieved": [
+        682,
+        675,
+        535,
+        689,
+        528
+      ],
+      "relevant": [
+        7,
+        35,
+        63,
+        91,
+        119,
+        147,
+        175,
+        203,
+        217,
+        231,
+        245,
+        259,
+        287,
+        315,
+        329,
+        343,
+        371,
+        399,
+        542,
+        682,
+        1399,
+        1400,
+        1407,
+        1408,
+        1415,
+        1416,
+        1423,
+        1437,
+        1457
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.034482758620689655,
+        "f1@5": 0.0588235294117647,
+        "ap": 0.034482758620689655,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5487003363668919,
+        "pass1_blind_check_ms": 0.06096670404076576,
+        "pass2_decrypt_ms": 0.3964169882237911,
+        "pass2_bm25_ms": 3.105957992374897,
+        "pass2_rrf_ms": 0.11666584759950638,
+        "pass1_total_ms": 0.6096670404076576,
+        "pass2_total_ms": 3.6190408281981945,
+        "total_ms": 4.228707868605852
+      }
+    },
+    {
+      "query_id": "q051",
+      "query_text": "What did Sarah say in the last discussion?",
+      "category": "temporal",
+      "retrieved": [
+        891,
+        923,
+        955,
+        827,
+        1009
+      ],
+      "relevant": [
+        420,
+        448,
+        476,
+        504,
+        532,
+        560,
+        588,
+        616,
+        756,
+        769,
+        858,
+        890,
+        922,
+        954,
+        986,
+        1460
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.590849993750453,
+        "pass1_blind_check_ms": 0.06564999930560589,
+        "pass2_decrypt_ms": 0.46495813876390457,
+        "pass2_bm25_ms": 2.335208933800459,
+        "pass2_rrf_ms": 0.11691730469465256,
+        "pass1_total_ms": 0.6564999930560589,
+        "pass2_total_ms": 2.917084377259016,
+        "total_ms": 3.573584370315075
+      }
+    },
+    {
+      "query_id": "q052",
+      "query_text": "How did we fix the deadlock?",
+      "category": "error_solution",
+      "retrieved": [
+        986,
+        954,
+        794,
+        826,
+        922
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5457373335957527,
+        "pass1_blind_check_ms": 0.06063748151063919,
+        "pass2_decrypt_ms": 0.4140827804803848,
+        "pass2_bm25_ms": 5.4422905668616295,
+        "pass2_rrf_ms": 0.11916598305106163,
+        "pass1_total_ms": 0.6063748151063919,
+        "pass2_total_ms": 5.975539330393076,
+        "total_ms": 6.581914145499468
+      }
+    },
+    {
+      "query_id": "q053",
+      "query_text": "container orchestration tools",
+      "category": "semantic",
+      "retrieved": [
+        803,
+        931,
+        811,
+        907,
+        851
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5412375088781118,
+        "pass1_blind_check_ms": 0.06013750098645687,
+        "pass2_decrypt_ms": 0.39229122921824455,
+        "pass2_bm25_ms": 1.824874896556139,
+        "pass2_rrf_ms": 0.09962497279047966,
+        "pass1_total_ms": 0.6013750098645687,
+        "pass2_total_ms": 2.316791098564863,
+        "total_ms": 2.918166108429432
+      }
+    },
+    {
+      "query_id": "q054",
+      "query_text": "How do I connect to Redis cache?",
+      "category": "configuration",
+      "retrieved": [
+        63,
+        35,
+        273,
+        1437,
+        1457
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5621256306767464,
+        "pass1_blind_check_ms": 0.062458403408527374,
+        "pass2_decrypt_ms": 0.44341711327433586,
+        "pass2_bm25_ms": 10.654209181666374,
+        "pass2_rrf_ms": 0.14879228547215462,
+        "pass1_total_ms": 0.6245840340852737,
+        "pass2_total_ms": 11.246418580412865,
+        "total_ms": 11.871002614498138
+      }
+    },
+    {
+      "query_id": "q055",
+      "query_text": "What's the base URL for the CDN?",
+      "category": "configuration",
+      "retrieved": [
+        598,
+        577,
+        710,
+        738,
+        570
+      ],
+      "relevant": [
+        1359,
+        1367,
+        1375,
+        1383,
+        1391
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5484375637024641,
+        "pass1_blind_check_ms": 0.06093750707805157,
+        "pass2_decrypt_ms": 0.39779162034392357,
+        "pass2_bm25_ms": 1.4079581014811993,
+        "pass2_rrf_ms": 0.10487530380487442,
+        "pass1_total_ms": 0.6093750707805157,
+        "pass2_total_ms": 1.9106250256299973,
+        "total_ms": 2.520000096410513
+      }
+    },
+    {
+      "query_id": "q056",
+      "query_text": "What's my API configuration?",
+      "category": "configuration",
+      "retrieved": [
+        672,
+        588,
+        532,
+        616,
+        1403
+      ],
+      "relevant": [
+        700,
+        728,
+        756,
+        1355,
+        1356,
+        1363,
+        1364,
+        1371,
+        1372,
+        1379,
+        1380,
+        1387,
+        1388,
+        1395,
+        1396,
+        1403,
+        1404,
+        1411,
+        1412,
+        1419,
+        1420,
+        1427,
+        1428,
+        1460
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.041666666666666664,
+        "f1@5": 0.06896551724137931,
+        "ap": 0.008333333333333333,
+        "rr": 0.2,
+        "ndcg@5": 0.43067655807339306
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5617870017886162,
+        "pass1_blind_check_ms": 0.06242077797651291,
+        "pass2_decrypt_ms": 0.4437500610947609,
+        "pass2_bm25_ms": 10.806499980390072,
+        "pass2_rrf_ms": 0.15308428555727005,
+        "pass1_total_ms": 0.6242077797651291,
+        "pass2_total_ms": 11.403334327042103,
+        "total_ms": 12.027542106807232
+      }
+    },
+    {
+      "query_id": "q057",
+      "query_text": "What's the latest update on database migration?",
+      "category": "temporal",
+      "retrieved": [
+        563,
+        633,
+        766,
+        619,
+        430
+      ],
+      "relevant": [
+        437,
+        444,
+        451,
+        458,
+        479,
+        493,
+        500,
+        504,
+        507,
+        532,
+        535,
+        553,
+        556,
+        560,
+        563,
+        612,
+        619,
+        647,
+        682,
+        693,
+        696,
+        700,
+        717,
+        728,
+        745,
+        752,
+        756,
+        759,
+        1460
+      ],
+      "metrics": {
+        "precision@5": 0.4,
+        "recall@5": 0.06896551724137931,
+        "f1@5": 0.1176470588235294,
+        "ap": 0.05172413793103448,
+        "rr": 1.0,
+        "ndcg@5": 0.75
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5431125406175852,
+        "pass1_blind_check_ms": 0.060345837846398354,
+        "pass2_decrypt_ms": 0.3933338448405266,
+        "pass2_bm25_ms": 3.6620828323066235,
+        "pass2_rrf_ms": 0.13749999925494194,
+        "pass1_total_ms": 0.6034583784639835,
+        "pass2_total_ms": 4.192916676402092,
+        "total_ms": 4.7963750548660755
+      }
+    },
+    {
+      "query_id": "q058",
+      "query_text": "CI/CD pipeline setup guide",
+      "category": "semantic",
+      "retrieved": [
+        1288,
+        1039,
+        1342,
+        1193,
+        1234
+      ],
+      "relevant": [
+        1004,
+        1011,
+        1018,
+        1025,
+        1039,
+        1046,
+        1053,
+        1060,
+        1067,
+        1088,
+        1207,
+        1216,
+        1217,
+        1225,
+        1234,
+        1243,
+        1252,
+        1261,
+        1262,
+        1270,
+        1279,
+        1288,
+        1297,
+        1306,
+        1315,
+        1324,
+        1333,
+        1334,
+        1342,
+        1351,
+        1476
+      ],
+      "metrics": {
+        "precision@5": 0.8,
+        "recall@5": 0.12903225806451613,
+        "f1@5": 0.2222222222222222,
+        "ap": 0.12258064516129032,
+        "rr": 1.0,
+        "ndcg@5": 0.9778585125241057
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5379375535994768,
+        "pass1_blind_check_ms": 0.05977083928883076,
+        "pass2_decrypt_ms": 0.39574969559907913,
+        "pass2_bm25_ms": 3.6104582250118256,
+        "pass2_rrf_ms": 0.12491689994931221,
+        "pass1_total_ms": 0.5977083928883076,
+        "pass2_total_ms": 4.131124820560217,
+        "total_ms": 4.7288332134485245
+      }
+    },
+    {
+      "query_id": "q059",
+      "query_text": "document database tools",
+      "category": "semantic",
+      "retrieved": [
+        437,
+        430,
+        626,
+        633,
+        619
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5347121972590685,
+        "pass1_blind_check_ms": 0.05941246636211872,
+        "pass2_decrypt_ms": 0.39399974048137665,
+        "pass2_bm25_ms": 2.9345410875976086,
+        "pass2_rrf_ms": 0.12283306568861008,
+        "pass1_total_ms": 0.5941246636211872,
+        "pass2_total_ms": 3.4513738937675953,
+        "total_ms": 4.0454985573887825
+      }
+    },
+    {
+      "query_id": "q060",
+      "query_text": "Show me the S3 bucket connection string",
+      "category": "configuration",
+      "retrieved": [
+        1388,
+        1428,
+        1404,
+        1364,
+        1412
+      ],
+      "relevant": [
+        1356,
+        1364,
+        1372,
+        1380,
+        1388,
+        1396,
+        1404,
+        1412,
+        1420,
+        1428
+      ],
+      "metrics": {
+        "precision@5": 1.0,
+        "recall@5": 0.5,
+        "f1@5": 0.6666666666666666,
+        "ap": 0.5,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5754004698246717,
+        "pass1_blind_check_ms": 0.06393338553607464,
+        "pass2_decrypt_ms": 0.42683398351073265,
+        "pass2_bm25_ms": 6.012375000864267,
+        "pass2_rrf_ms": 0.1150001771748066,
+        "pass1_total_ms": 0.6393338553607464,
+        "pass2_total_ms": 6.554209161549807,
+        "total_ms": 7.193543016910553
+      }
+    },
+    {
+      "query_id": "q061",
+      "query_text": "What did Mike say in the last discussion?",
+      "category": "temporal",
+      "retrieved": [
+        923,
+        955,
+        987,
+        827,
+        795
+      ],
+      "relevant": [
+        427,
+        539,
+        651,
+        763
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5784749519079924,
+        "pass1_blind_check_ms": 0.0642749946564436,
+        "pass2_decrypt_ms": 0.42112497612833977,
+        "pass2_bm25_ms": 0.8601662702858448,
+        "pass2_rrf_ms": 0.10833330452442169,
+        "pass1_total_ms": 0.642749946564436,
+        "pass2_total_ms": 1.3896245509386063,
+        "total_ms": 2.032374497503042
+      }
+    },
+    {
+      "query_id": "q062",
+      "query_text": "Lisa's opinion on the API rate limit",
+      "category": "contextual_fact",
+      "retrieved": [
+        954,
+        986,
+        922,
+        858,
+        890
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6211870349943638,
+        "pass1_blind_check_ms": 0.06902078166604042,
+        "pass2_decrypt_ms": 0.4314170219004154,
+        "pass2_bm25_ms": 7.047291845083237,
+        "pass2_rrf_ms": 0.1632911153137684,
+        "pass1_total_ms": 0.6902078166604042,
+        "pass2_total_ms": 7.6419999822974205,
+        "total_ms": 8.332207798957825
+      }
+    },
+    {
+      "query_id": "q063",
+      "query_text": "What was the solution for deadlock?",
+      "category": "error_solution",
+      "retrieved": [
+        986,
+        954,
+        794,
+        826,
+        922
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.56651271879673,
+        "pass1_blind_check_ms": 0.06294585764408112,
+        "pass2_decrypt_ms": 0.4048747941851616,
+        "pass2_bm25_ms": 2.927292138338089,
+        "pass2_rrf_ms": 0.12308312579989433,
+        "pass1_total_ms": 0.6294585764408112,
+        "pass2_total_ms": 3.455250058323145,
+        "total_ms": 4.084708634763956
+      }
+    },
+    {
+      "query_id": "q064",
+      "query_text": "What's the API endpoint?",
+      "category": "configuration",
+      "retrieved": [
+        672,
+        504,
+        532,
+        644,
+        588
+      ],
+      "relevant": [
+        0,
+        28,
+        56,
+        84,
+        112,
+        140,
+        168,
+        196,
+        224,
+        252,
+        280,
+        301,
+        308,
+        329,
+        336,
+        364,
+        385,
+        392,
+        771,
+        779,
+        787,
+        803,
+        811,
+        835,
+        843,
+        851,
+        867,
+        875,
+        883,
+        899,
+        907,
+        915,
+        931,
+        939,
+        947,
+        963,
+        971,
+        979,
+        1430,
+        1450
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.557737285271287,
+        "pass1_blind_check_ms": 0.06197080947458744,
+        "pass2_decrypt_ms": 0.4426669329404831,
+        "pass2_bm25_ms": 10.637249797582626,
+        "pass2_rrf_ms": 0.15191687270998955,
+        "pass1_total_ms": 0.6197080947458744,
+        "pass2_total_ms": 11.231833603233099,
+        "total_ms": 11.851541697978973
+      }
+    },
+    {
+      "query_id": "q065",
+      "query_text": "What was decided in the last standup?",
+      "category": "temporal",
+      "retrieved": [
+        769,
+        699,
+        524,
+        580,
+        573
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5702623631805182,
+        "pass1_blind_check_ms": 0.06336248479783535,
+        "pass2_decrypt_ms": 0.39191683754324913,
+        "pass2_bm25_ms": 1.003167126327753,
+        "pass2_rrf_ms": 0.09954208508133888,
+        "pass1_total_ms": 0.6336248479783535,
+        "pass2_total_ms": 1.494626048952341,
+        "total_ms": 2.1282508969306946
+      }
+    },
+    {
+      "query_id": "q066",
+      "query_text": "What's the timeout setting for Redis cache?",
+      "category": "configuration",
+      "retrieved": [
+        231,
+        259,
+        35,
+        1457,
+        1437
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5601374432444572,
+        "pass1_blind_check_ms": 0.06223749369382858,
+        "pass2_decrypt_ms": 0.43674977496266365,
+        "pass2_bm25_ms": 11.423333082348108,
+        "pass2_rrf_ms": 0.1433752477169037,
+        "pass1_total_ms": 0.6223749369382858,
+        "pass2_total_ms": 12.003458105027676,
+        "total_ms": 12.625833041965961
+      }
+    },
+    {
+      "query_id": "q067",
+      "query_text": "What did we work on yesterday?",
+      "category": "temporal",
+      "retrieved": [
+        1058,
+        1100,
+        1093,
+        1086,
+        1079
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5543623119592667,
+        "pass1_blind_check_ms": 0.06159581243991852,
+        "pass2_decrypt_ms": 0.4243752919137478,
+        "pass2_bm25_ms": 4.296749830245972,
+        "pass2_rrf_ms": 0.12904219329357147,
+        "pass1_total_ms": 0.6159581243991852,
+        "pass2_total_ms": 4.850167315453291,
+        "total_ms": 5.466125439852476
+      }
+    },
+    {
+      "query_id": "q068",
+      "query_text": "ya29.a0AfH6SMBx...",
+      "category": "exact_keyword",
+      "retrieved": [
+        985,
+        969,
+        977,
+        937,
+        889
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5452117882668972,
+        "pass1_blind_check_ms": 0.0605790875852108,
+        "pass2_decrypt_ms": 0.388583168387413,
+        "pass2_bm25_ms": 0.45995786786079407,
+        "pass2_rrf_ms": 0.1110411249101162,
+        "pass1_total_ms": 0.605790875852108,
+        "pass2_total_ms": 0.9595821611583233,
+        "total_ms": 1.5653730370104313
+      }
+    },
+    {
+      "query_id": "q069",
+      "query_text": "ghp_xxxxxxxxxxxxxxxxxxxx",
+      "category": "exact_keyword",
+      "retrieved": [
+        1419,
+        1371,
+        1387,
+        1427,
+        1411
+      ],
+      "relevant": [
+        1258,
+        1355,
+        1361,
+        1363,
+        1369,
+        1371,
+        1377,
+        1379,
+        1385,
+        1387,
+        1393,
+        1395,
+        1401,
+        1409,
+        1417,
+        1425,
+        1427
+      ],
+      "metrics": {
+        "precision@5": 0.6,
+        "recall@5": 0.17647058823529413,
+        "f1@5": 0.2727272727272727,
+        "ap": 0.11274509803921567,
+        "rr": 0.5,
+        "ndcg@5": 0.8099531166420328
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5977881141006947,
+        "pass1_blind_check_ms": 0.06642090156674385,
+        "pass2_decrypt_ms": 0.42675016447901726,
+        "pass2_bm25_ms": 2.1160412579774857,
+        "pass2_rrf_ms": 0.10370882228016853,
+        "pass1_total_ms": 0.6642090156674385,
+        "pass2_total_ms": 2.6465002447366714,
+        "total_ms": 3.31070926040411
+      }
+    },
+    {
+      "query_id": "q070",
+      "query_text": "What's the latest update on database migration?",
+      "category": "temporal",
+      "retrieved": [
+        563,
+        633,
+        766,
+        619,
+        430
+      ],
+      "relevant": [
+        420,
+        437,
+        441,
+        444,
+        448,
+        451,
+        458,
+        469,
+        476,
+        479,
+        493,
+        500,
+        504,
+        507,
+        532,
+        535,
+        553,
+        556,
+        560,
+        563,
+        612,
+        619,
+        647,
+        682,
+        693,
+        696,
+        700,
+        717,
+        728,
+        745,
+        752,
+        756,
+        759,
+        1460
+      ],
+      "metrics": {
+        "precision@5": 0.4,
+        "recall@5": 0.058823529411764705,
+        "f1@5": 0.10256410256410256,
+        "ap": 0.04411764705882353,
+        "rr": 1.0,
+        "ndcg@5": 0.75
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5380498711019754,
+        "pass1_blind_check_ms": 0.059783319011330605,
+        "pass2_decrypt_ms": 0.40354207158088684,
+        "pass2_bm25_ms": 3.59633332118392,
+        "pass2_rrf_ms": 0.140415970236063,
+        "pass1_total_ms": 0.597833190113306,
+        "pass2_total_ms": 4.14029136300087,
+        "total_ms": 4.738124553114176
+      }
+    },
+    {
+      "query_id": "q071",
+      "query_text": "Alternatives to GitHub Actions for CI/CD pipeline",
+      "category": "semantic",
+      "retrieved": [
+        1253,
+        1228,
+        1297,
+        1289,
+        1262
+      ],
+      "relevant": [
+        1207,
+        1210,
+        1216,
+        1217,
+        1219,
+        1225,
+        1228,
+        1234,
+        1235,
+        1237,
+        1282,
+        1291,
+        1298,
+        1300
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.07142857142857142,
+        "f1@5": 0.10526315789473682,
+        "ap": 0.03571428571428571,
+        "rr": 0.5,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5751754157245159,
+        "pass1_blind_check_ms": 0.06390837952494621,
+        "pass2_decrypt_ms": 0.4125419072806835,
+        "pass2_bm25_ms": 5.86141599342227,
+        "pass2_rrf_ms": 0.14375010505318642,
+        "pass1_total_ms": 0.6390837952494621,
+        "pass2_total_ms": 6.41770800575614,
+        "total_ms": 7.056791801005602
+      }
+    },
+    {
+      "query_id": "q072",
+      "query_text": "Documentation for memory leak",
+      "category": "error_solution",
+      "retrieved": [
+        875,
+        979,
+        947,
+        939,
+        931
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5636997520923615,
+        "pass1_blind_check_ms": 0.06263330578804016,
+        "pass2_decrypt_ms": 0.42062485590577126,
+        "pass2_bm25_ms": 8.053500205278397,
+        "pass2_rrf_ms": 0.13020914047956467,
+        "pass1_total_ms": 0.6263330578804016,
+        "pass2_total_ms": 8.604334201663733,
+        "total_ms": 9.230667259544134
+      }
+    },
+    {
+      "query_id": "q073",
+      "query_text": "What bugs did we fix recently?",
+      "category": "temporal",
+      "retrieved": [
+        954,
+        986,
+        922,
+        858,
+        890
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.556950643658638,
+        "pass1_blind_check_ms": 0.06188340485095978,
+        "pass2_decrypt_ms": 0.42679207399487495,
+        "pass2_bm25_ms": 6.690917070955038,
+        "pass2_rrf_ms": 0.12254109606146812,
+        "pass1_total_ms": 0.6188340485095978,
+        "pass2_total_ms": 7.240250241011381,
+        "total_ms": 7.859084289520979
+      }
+    },
+    {
+      "query_id": "q074",
+      "query_text": "What was the conclusion about the API rate limit that Sarah mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        295,
+        372,
+        169,
+        64,
+        148
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6117749959230423,
+        "pass1_blind_check_ms": 0.0679749995470047,
+        "pass2_decrypt_ms": 0.4408750683069229,
+        "pass2_bm25_ms": 6.4923749305307865,
+        "pass2_rrf_ms": 0.15075039118528366,
+        "pass1_total_ms": 0.679749995470047,
+        "pass2_total_ms": 7.084000390022993,
+        "total_ms": 7.76375038549304
+      }
+    },
+    {
+      "query_id": "q075",
+      "query_text": "What's the latest update on security fix?",
+      "category": "temporal",
+      "retrieved": [
+        672,
+        644,
+        616,
+        560,
+        588
+      ],
+      "relevant": [
+        420,
+        448,
+        476,
+        504,
+        532,
+        551,
+        558,
+        560,
+        565,
+        572,
+        588,
+        616,
+        644,
+        672,
+        700,
+        728,
+        756,
+        768,
+        1031,
+        1038,
+        1045,
+        1087,
+        1101,
+        1157,
+        1460
+      ],
+      "metrics": {
+        "precision@5": 1.0,
+        "recall@5": 0.2,
+        "f1@5": 0.33333333333333337,
+        "ap": 0.2,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5612245760858059,
+        "pass1_blind_check_ms": 0.06235828623175621,
+        "pass2_decrypt_ms": 0.41962508112192154,
+        "pass2_bm25_ms": 5.570000037550926,
+        "pass2_rrf_ms": 0.12245820835232735,
+        "pass1_total_ms": 0.6235828623175621,
+        "pass2_total_ms": 6.112083327025175,
+        "total_ms": 6.735666189342737
+      }
+    },
+    {
+      "query_id": "q076",
+      "query_text": "According to Jen, what's the best approach for testing methodology?",
+      "category": "contextual_fact",
+      "retrieved": [
+        602,
+        574,
+        490,
+        462,
+        518
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5460751242935658,
+        "pass1_blind_check_ms": 0.060675013810396194,
+        "pass2_decrypt_ms": 0.41395798325538635,
+        "pass2_bm25_ms": 6.093250121921301,
+        "pass2_rrf_ms": 0.140415970236063,
+        "pass1_total_ms": 0.606750138103962,
+        "pass2_total_ms": 6.64762407541275,
+        "total_ms": 7.254374213516712
+      }
+    },
+    {
+      "query_id": "q077",
+      "query_text": "How did we fix the memory leak?",
+      "category": "error_solution",
+      "retrieved": [
+        198,
+        380,
+        58,
+        212,
+        252
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5511373747140169,
+        "pass1_blind_check_ms": 0.06123748607933521,
+        "pass2_decrypt_ms": 0.4421249032020569,
+        "pass2_bm25_ms": 8.321917150169611,
+        "pass2_rrf_ms": 0.14454126358032227,
+        "pass1_total_ms": 0.6123748607933521,
+        "pass2_total_ms": 8.90858331695199,
+        "total_ms": 9.520958177745342
+      }
+    },
+    {
+      "query_id": "q078",
+      "query_text": "According to Lisa, what's the best approach for security concerns?",
+      "category": "contextual_fact",
+      "retrieved": [
+        560,
+        672,
+        504,
+        616,
+        420
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5344871431589127,
+        "pass1_blind_check_ms": 0.059387460350990295,
+        "pass2_decrypt_ms": 0.4353341646492481,
+        "pass2_bm25_ms": 8.876125328242779,
+        "pass2_rrf_ms": 0.15233317390084267,
+        "pass1_total_ms": 0.593874603509903,
+        "pass2_total_ms": 9.46379266679287,
+        "total_ms": 10.057667270302773
+      }
+    },
+    {
+      "query_id": "q079",
+      "query_text": "Documentation for deadlock",
+      "category": "error_solution",
+      "retrieved": [
+        779,
+        899,
+        811,
+        947,
+        819
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6412499584257603,
+        "pass1_blind_check_ms": 0.07124999538064003,
+        "pass2_decrypt_ms": 0.460249837487936,
+        "pass2_bm25_ms": 44.59641641005874,
+        "pass2_rrf_ms": 0.31283311545848846,
+        "pass1_total_ms": 0.7124999538064003,
+        "pass2_total_ms": 45.36949936300516,
+        "total_ms": 46.08199931681156
+      }
+    },
+    {
+      "query_id": "q080",
+      "query_text": "Compare message queue implementations",
+      "category": "semantic",
+      "retrieved": [
+        137,
+        39,
+        193,
+        32,
+        95
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6506628356873989,
+        "pass1_blind_check_ms": 0.07229587063193321,
+        "pass2_decrypt_ms": 0.4914160817861557,
+        "pass2_bm25_ms": 6.7947497591376305,
+        "pass2_rrf_ms": 0.16424991190433502,
+        "pass1_total_ms": 0.7229587063193321,
+        "pass2_total_ms": 7.450415752828121,
+        "total_ms": 8.173374459147453
+      }
+    },
+    {
+      "query_id": "q081",
+      "query_text": "deadlock - what's the fix?",
+      "category": "error_solution",
+      "retrieved": [
+        786,
+        818,
+        946,
+        978,
+        914
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5852621980011463,
+        "pass1_blind_check_ms": 0.06502913311123848,
+        "pass2_decrypt_ms": 0.41120825335383415,
+        "pass2_bm25_ms": 3.4282919950783253,
+        "pass2_rrf_ms": 0.12087495997548103,
+        "pass1_total_ms": 0.6502913311123848,
+        "pass2_total_ms": 3.9603752084076405,
+        "total_ms": 4.610666539520025
+      }
+    },
+    {
+      "query_id": "q082",
+      "query_text": "What bugs did we fix recently?",
+      "category": "temporal",
+      "retrieved": [
+        954,
+        986,
+        922,
+        858,
+        890
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5667369347065687,
+        "pass1_blind_check_ms": 0.06297077052295208,
+        "pass2_decrypt_ms": 0.41562505066394806,
+        "pass2_bm25_ms": 6.7590828984975815,
+        "pass2_rrf_ms": 0.1433752477169037,
+        "pass1_total_ms": 0.6297077052295208,
+        "pass2_total_ms": 7.318083196878433,
+        "total_ms": 7.947790902107954
+      }
+    },
+    {
+      "query_id": "q083",
+      "query_text": "What was the conclusion about refactoring the codebase that Mike mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        658,
+        686,
+        630,
+        714,
+        742
+      ],
+      "relevant": [
+        595,
+        609,
+        623,
+        651,
+        679,
+        707,
+        714,
+        735,
+        763,
+        795
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.1,
+        "f1@5": 0.13333333333333333,
+        "ap": 0.025,
+        "rr": 0.25,
+        "ndcg@5": 0.5
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6301493849605322,
+        "pass1_blind_check_ms": 0.07001659832894802,
+        "pass2_decrypt_ms": 0.4463749937713146,
+        "pass2_bm25_ms": 6.034207995980978,
+        "pass2_rrf_ms": 0.1416248269379139,
+        "pass1_total_ms": 0.7001659832894802,
+        "pass2_total_ms": 6.6222078166902065,
+        "total_ms": 7.322373799979687
+      }
+    },
+    {
+      "query_id": "q084",
+      "query_text": "What was the conclusion about the new feature timeline that Alex mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        1164,
+        1199,
+        1136,
+        1143,
+        1185
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5611122585833073,
+        "pass1_blind_check_ms": 0.06234580650925636,
+        "pass2_decrypt_ms": 0.39404118433594704,
+        "pass2_bm25_ms": 2.3562079295516014,
+        "pass2_rrf_ms": 0.1344168558716774,
+        "pass1_total_ms": 0.6234580650925636,
+        "pass2_total_ms": 2.884665969759226,
+        "total_ms": 3.5081240348517895
+      }
+    },
+    {
+      "query_id": "q085",
+      "query_text": "502 Bad Gateway",
+      "category": "exact_keyword",
+      "retrieved": [
+        794,
+        826,
+        922,
+        890,
+        858
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5466006696224213,
+        "pass1_blind_check_ms": 0.060733407735824585,
+        "pass2_decrypt_ms": 0.4397500306367874,
+        "pass2_bm25_ms": 8.871749974787235,
+        "pass2_rrf_ms": 0.1344592310488224,
+        "pass1_total_ms": 0.6073340773582458,
+        "pass2_total_ms": 9.445959236472845,
+        "total_ms": 10.053293313831091
+      }
+    },
+    {
+      "query_id": "q086",
+      "query_text": "What's my API configuration?",
+      "category": "configuration",
+      "retrieved": [
+        672,
+        588,
+        532,
+        616,
+        1403
+      ],
+      "relevant": [
+        700,
+        728,
+        756,
+        1355,
+        1356,
+        1363,
+        1364,
+        1371,
+        1372,
+        1379,
+        1380,
+        1387,
+        1388,
+        1395,
+        1396,
+        1403,
+        1404,
+        1411,
+        1412,
+        1419,
+        1420,
+        1427,
+        1428,
+        1460
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.041666666666666664,
+        "f1@5": 0.06896551724137931,
+        "ap": 0.008333333333333333,
+        "rr": 0.2,
+        "ndcg@5": 0.43067655807339306
+      },
+      "timing": {
+        "pass1_knn_ms": 0.546449376270175,
+        "pass1_blind_check_ms": 0.060716597363352776,
+        "pass2_decrypt_ms": 0.4508751444518566,
+        "pass2_bm25_ms": 10.847334284335375,
+        "pass2_rrf_ms": 0.15904195606708527,
+        "pass1_total_ms": 0.6071659736335278,
+        "pass2_total_ms": 11.457251384854317,
+        "total_ms": 12.064417358487844
+      }
+    },
+    {
+      "query_id": "q087",
+      "query_text": "What's the latest update on API changes?",
+      "category": "temporal",
+      "retrieved": [
+        644,
+        672,
+        588,
+        616,
+        560
+      ],
+      "relevant": [
+        420,
+        448,
+        469,
+        476,
+        504,
+        518,
+        525,
+        532,
+        546,
+        560,
+        588,
+        616,
+        644,
+        672,
+        700,
+        728,
+        742,
+        749,
+        756,
+        795,
+        827,
+        859,
+        923,
+        955,
+        987,
+        1460
+      ],
+      "metrics": {
+        "precision@5": 1.0,
+        "recall@5": 0.19230769230769232,
+        "f1@5": 0.32258064516129037,
+        "ap": 0.19230769230769232,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5537248682230711,
+        "pass1_blind_check_ms": 0.06152498535811901,
+        "pass2_decrypt_ms": 0.41745835915207863,
+        "pass2_bm25_ms": 7.64408428221941,
+        "pass2_rrf_ms": 0.1277499832212925,
+        "pass1_total_ms": 0.6152498535811901,
+        "pass2_total_ms": 8.189292624592781,
+        "total_ms": 8.804542478173971
+      }
+    },
+    {
+      "query_id": "q088",
+      "query_text": "What's the timeout setting for S3 bucket?",
+      "category": "configuration",
+      "retrieved": [
+        1250,
+        1205,
+        1349,
+        1214,
+        1295
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5882625002413988,
+        "pass1_blind_check_ms": 0.06536250002682209,
+        "pass2_decrypt_ms": 0.4514995962381363,
+        "pass2_bm25_ms": 10.857125278562307,
+        "pass2_rrf_ms": 0.1550000160932541,
+        "pass1_total_ms": 0.6536250002682209,
+        "pass2_total_ms": 11.463624890893698,
+        "total_ms": 12.117249891161919
+      }
+    },
+    {
+      "query_id": "q089",
+      "query_text": "Alternatives to RabbitMQ for message queue",
+      "category": "semantic",
+      "retrieved": [
+        217,
+        245,
+        273,
+        385,
+        357
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5603624973446131,
+        "pass1_blind_check_ms": 0.06226249970495701,
+        "pass2_decrypt_ms": 0.43495791032910347,
+        "pass2_bm25_ms": 6.0266670770943165,
+        "pass2_rrf_ms": 0.12445775792002678,
+        "pass1_total_ms": 0.6226249970495701,
+        "pass2_total_ms": 6.586082745343447,
+        "total_ms": 7.208707742393017
+      }
+    },
+    {
+      "query_id": "q090",
+      "query_text": "API gateway setup guide",
+      "category": "semantic",
+      "retrieved": [
+        532,
+        588,
+        616,
+        504,
+        560
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5468244664371014,
+        "pass1_blind_check_ms": 0.06075827404856682,
+        "pass2_decrypt_ms": 0.44899992644786835,
+        "pass2_bm25_ms": 11.513165663927794,
+        "pass2_rrf_ms": 0.15412503853440285,
+        "pass1_total_ms": 0.6075827404856682,
+        "pass2_total_ms": 12.116290628910065,
+        "total_ms": 12.723873369395733
+      }
+    },
+    {
+      "query_id": "q091",
+      "query_text": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "category": "exact_keyword",
+      "retrieved": [
+        682,
+        626,
+        514,
+        689,
+        528
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6451127585023642,
+        "pass1_blind_check_ms": 0.07167919538915157,
+        "pass2_decrypt_ms": 0.4116250202059746,
+        "pass2_bm25_ms": 3.7663327530026436,
+        "pass2_rrf_ms": 0.10004127398133278,
+        "pass1_total_ms": 0.7167919538915157,
+        "pass2_total_ms": 4.277999047189951,
+        "total_ms": 4.994791001081467
+      }
+    },
+    {
+      "query_id": "q092",
+      "query_text": "What are the Redis cache credentials?",
+      "category": "configuration",
+      "retrieved": [
+        217,
+        273,
+        245,
+        49,
+        21
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5583751481026411,
+        "pass1_blind_check_ms": 0.06204168312251568,
+        "pass2_decrypt_ms": 0.4386249929666519,
+        "pass2_bm25_ms": 9.537375066429377,
+        "pass2_rrf_ms": 0.11562509462237358,
+        "pass1_total_ms": 0.6204168312251568,
+        "pass2_total_ms": 10.091625154018402,
+        "total_ms": 10.712041985243559
+      }
+    },
+    {
+      "query_id": "q093",
+      "query_text": "What was the conclusion about testing methodology that Lisa mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        658,
+        686,
+        630,
+        490,
+        546
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5569875240325928,
+        "pass1_blind_check_ms": 0.061887502670288086,
+        "pass2_decrypt_ms": 0.4135831259191036,
+        "pass2_bm25_ms": 3.2627498731017113,
+        "pass2_rrf_ms": 0.1287497580051422,
+        "pass1_total_ms": 0.6188750267028809,
+        "pass2_total_ms": 3.805082757025957,
+        "total_ms": 4.423957783728838
+      }
+    },
+    {
+      "query_id": "q094",
+      "query_text": "Documentation for 429 rate limit",
+      "category": "error_solution",
+      "retrieved": [
+        376,
+        89,
+        47,
+        152,
+        397
+      ],
+      "relevant": [
+        0,
+        28,
+        56,
+        84,
+        112,
+        140,
+        166,
+        168,
+        173,
+        180,
+        187,
+        194,
+        196,
+        201,
+        208,
+        224,
+        252,
+        280,
+        285,
+        292,
+        299,
+        306,
+        308,
+        313,
+        320,
+        336,
+        364,
+        392,
+        1430,
+        1450
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5510246381163597,
+        "pass1_blind_check_ms": 0.061224959790706635,
+        "pass2_decrypt_ms": 0.3847922198474407,
+        "pass2_bm25_ms": 1.4959583058953285,
+        "pass2_rrf_ms": 0.11675013229250908,
+        "pass1_total_ms": 0.6122495979070663,
+        "pass2_total_ms": 1.9975006580352783,
+        "total_ms": 2.6097502559423447
+      }
+    },
+    {
+      "query_id": "q095",
+      "query_text": "What's the S3 bucket endpoint?",
+      "category": "configuration",
+      "retrieved": [
+        1364,
+        1420,
+        1356,
+        1428,
+        1412
+      ],
+      "relevant": [
+        1356,
+        1364,
+        1372,
+        1380,
+        1388,
+        1396,
+        1404,
+        1412,
+        1420,
+        1428
+      ],
+      "metrics": {
+        "precision@5": 1.0,
+        "recall@5": 0.5,
+        "f1@5": 0.6666666666666666,
+        "ap": 0.5,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5374870263040066,
+        "pass1_blind_check_ms": 0.059720780700445175,
+        "pass2_decrypt_ms": 0.41850004345178604,
+        "pass2_bm25_ms": 6.424167193472385,
+        "pass2_rrf_ms": 0.13141660019755363,
+        "pass1_total_ms": 0.5972078070044518,
+        "pass2_total_ms": 6.974083837121725,
+        "total_ms": 7.571291644126177
+      }
+    },
+    {
+      "query_id": "q096",
+      "query_text": "What's my API configuration?",
+      "category": "configuration",
+      "retrieved": [
+        672,
+        588,
+        532,
+        616,
+        1403
+      ],
+      "relevant": [
+        700,
+        728,
+        756,
+        1355,
+        1356,
+        1363,
+        1364,
+        1371,
+        1379,
+        1380,
+        1387,
+        1388,
+        1395,
+        1396,
+        1403,
+        1404,
+        1411,
+        1412,
+        1419,
+        1420,
+        1427,
+        1428,
+        1460
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.043478260869565216,
+        "f1@5": 0.07142857142857142,
+        "ap": 0.008695652173913044,
+        "rr": 0.2,
+        "ndcg@5": 0.43067655807339306
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5377129185944796,
+        "pass1_blind_check_ms": 0.05974587984383106,
+        "pass2_decrypt_ms": 0.498166773468256,
+        "pass2_bm25_ms": 10.984000284224749,
+        "pass2_rrf_ms": 0.14800019562244415,
+        "pass1_total_ms": 0.5974587984383106,
+        "pass2_total_ms": 11.630167253315449,
+        "total_ms": 12.22762605175376
+      }
+    },
+    {
+      "query_id": "q097",
+      "query_text": "What did Tom say about error handling?",
+      "category": "contextual_fact",
+      "retrieved": [
+        413,
+        986,
+        357,
+        954,
+        385
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5567624699324369,
+        "pass1_blind_check_ms": 0.06186249665915966,
+        "pass2_decrypt_ms": 0.4327083006501198,
+        "pass2_bm25_ms": 8.17358260974288,
+        "pass2_rrf_ms": 0.1272079534828663,
+        "pass1_total_ms": 0.6186249665915966,
+        "pass2_total_ms": 8.733498863875866,
+        "total_ms": 9.352123830467463
+      }
+    },
+    {
+      "query_id": "q098",
+      "query_text": "document database tools",
+      "category": "semantic",
+      "retrieved": [
+        437,
+        430,
+        626,
+        633,
+        619
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5318246316164732,
+        "pass1_blind_check_ms": 0.05909162573516369,
+        "pass2_decrypt_ms": 0.40408316999673843,
+        "pass2_bm25_ms": 2.9765418730676174,
+        "pass2_rrf_ms": 0.12004189193248749,
+        "pass1_total_ms": 0.5909162573516369,
+        "pass2_total_ms": 3.5006669349968433,
+        "total_ms": 4.09158319234848
+      }
+    },
+    {
+      "query_id": "q099",
+      "query_text": "Jen's opinion on the new feature timeline",
+      "category": "contextual_fact",
+      "retrieved": [
+        954,
+        986,
+        922,
+        890,
+        858
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5494496785104275,
+        "pass1_blind_check_ms": 0.061049964278936386,
+        "pass2_decrypt_ms": 0.41075004264712334,
+        "pass2_bm25_ms": 5.044541321694851,
+        "pass2_rrf_ms": 0.12754183262586594,
+        "pass1_total_ms": 0.6104996427893639,
+        "pass2_total_ms": 5.58283319696784,
+        "total_ms": 6.193332839757204
+      }
+    },
+    {
+      "query_id": "q100",
+      "query_text": "What did Jen say in the last discussion?",
+      "category": "temporal",
+      "retrieved": [
+        986,
+        954,
+        922,
+        858,
+        890
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5943754222244024,
+        "pass1_blind_check_ms": 0.06604171358048916,
+        "pass2_decrypt_ms": 0.4460001364350319,
+        "pass2_bm25_ms": 6.710208021104336,
+        "pass2_rrf_ms": 0.16616703942418098,
+        "pass1_total_ms": 0.6604171358048916,
+        "pass2_total_ms": 7.322375196963549,
+        "total_ms": 7.98279233276844
+      }
+    },
+    {
+      "query_id": "q101",
+      "query_text": "Jen's opinion on error handling",
+      "category": "contextual_fact",
+      "retrieved": [
+        385,
+        357,
+        413,
+        301,
+        378
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5478370003402233,
+        "pass1_blind_check_ms": 0.06087077781558037,
+        "pass2_decrypt_ms": 0.472750049084425,
+        "pass2_bm25_ms": 12.98416592180729,
+        "pass2_rrf_ms": 0.13795914128422737,
+        "pass1_total_ms": 0.6087077781558037,
+        "pass2_total_ms": 13.594875112175941,
+        "total_ms": 14.203582890331745
+      }
+    },
+    {
+      "query_id": "q102",
+      "query_text": "What did Lisa say about security concerns?",
+      "category": "contextual_fact",
+      "retrieved": [
+        644,
+        672,
+        504,
+        616,
+        560
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5434121936559677,
+        "pass1_blind_check_ms": 0.06037913262844086,
+        "pass2_decrypt_ms": 0.4264172166585922,
+        "pass2_bm25_ms": 6.3055409118533134,
+        "pass2_rrf_ms": 0.12233294546604156,
+        "pass1_total_ms": 0.6037913262844086,
+        "pass2_total_ms": 6.854291073977947,
+        "total_ms": 7.458082400262356
+      }
+    },
+    {
+      "query_id": "q103",
+      "query_text": "According to Tom, what's the best approach for the deployment strategy?",
+      "category": "contextual_fact",
+      "retrieved": [
+        1110,
+        1082,
+        1166,
+        1075,
+        1173
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5556007381528616,
+        "pass1_blind_check_ms": 0.061733415350317955,
+        "pass2_decrypt_ms": 0.39175013080239296,
+        "pass2_bm25_ms": 3.1973328441381454,
+        "pass2_rrf_ms": 0.15058321878314018,
+        "pass1_total_ms": 0.6173341535031796,
+        "pass2_total_ms": 3.7396661937236786,
+        "total_ms": 4.357000347226858
+      }
+    },
+    {
+      "query_id": "q104",
+      "query_text": "What's the database endpoint?",
+      "category": "configuration",
+      "retrieved": [
+        563,
+        626,
+        528,
+        535,
+        675
+      ],
+      "relevant": [
+        7,
+        35,
+        63,
+        91,
+        119,
+        147,
+        175,
+        203,
+        231,
+        259,
+        721,
+        749,
+        1437,
+        1457
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5636997520923615,
+        "pass1_blind_check_ms": 0.06263330578804016,
+        "pass2_decrypt_ms": 0.43120793998241425,
+        "pass2_bm25_ms": 2.8130407445132732,
+        "pass2_rrf_ms": 0.11570798233151436,
+        "pass1_total_ms": 0.6263330578804016,
+        "pass2_total_ms": 3.359956666827202,
+        "total_ms": 3.9862897247076035
+      }
+    },
+    {
+      "query_id": "q105",
+      "query_text": "Compare document database implementations",
+      "category": "semantic",
+      "retrieved": [
+        430,
+        717,
+        444,
+        640,
+        626
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.63884980045259,
+        "pass1_blind_check_ms": 0.07098331116139889,
+        "pass2_decrypt_ms": 0.46783406287431717,
+        "pass2_bm25_ms": 3.361374605447054,
+        "pass2_rrf_ms": 0.13975007459521294,
+        "pass1_total_ms": 0.7098331116139889,
+        "pass2_total_ms": 3.968958742916584,
+        "total_ms": 4.678791854530573
+      }
+    },
+    {
+      "query_id": "q106",
+      "query_text": "What features were added this month?",
+      "category": "temporal",
+      "retrieved": [
+        679,
+        651,
+        955,
+        923,
+        859
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6561378948390484,
+        "pass1_blind_check_ms": 0.07290421053767204,
+        "pass2_decrypt_ms": 0.4298752173781395,
+        "pass2_bm25_ms": 1.9009578973054886,
+        "pass2_rrf_ms": 0.11416571214795113,
+        "pass1_total_ms": 0.7290421053767204,
+        "pass2_total_ms": 2.444998826831579,
+        "total_ms": 3.1740409322082996
+      }
+    },
+    {
+      "query_id": "q107",
+      "query_text": "What's the base URL for the Redis cache?",
+      "category": "configuration",
+      "retrieved": [
+        217,
+        259,
+        245,
+        231,
+        273
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5768249742686749,
+        "pass1_blind_check_ms": 0.06409166380763054,
+        "pass2_decrypt_ms": 0.4436252638697624,
+        "pass2_bm25_ms": 8.616707753390074,
+        "pass2_rrf_ms": 0.1459578052163124,
+        "pass1_total_ms": 0.6409166380763054,
+        "pass2_total_ms": 9.206290822476149,
+        "total_ms": 9.847207460552454
+      }
+    },
+    {
+      "query_id": "q108",
+      "query_text": "How do I configure database in production?",
+      "category": "configuration",
+      "retrieved": [
+        525,
+        693,
+        553,
+        497,
+        1278
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5338505376130342,
+        "pass1_blind_check_ms": 0.05931672640144825,
+        "pass2_decrypt_ms": 0.4116673953831196,
+        "pass2_bm25_ms": 6.662500090897083,
+        "pass2_rrf_ms": 0.13866601511836052,
+        "pass1_total_ms": 0.5931672640144825,
+        "pass2_total_ms": 7.212833501398563,
+        "total_ms": 7.806000765413046
+      }
+    },
+    {
+      "query_id": "q109",
+      "query_text": "api-techcorp@example.com",
+      "category": "exact_keyword",
+      "retrieved": [
+        616,
+        588,
+        476,
+        532,
+        1460
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6336002144962549,
+        "pass1_blind_check_ms": 0.07040002383291721,
+        "pass2_decrypt_ms": 0.4305420443415642,
+        "pass2_bm25_ms": 9.903999976813793,
+        "pass2_rrf_ms": 0.13879220932722092,
+        "pass1_total_ms": 0.7040002383291721,
+        "pass2_total_ms": 10.473334230482578,
+        "total_ms": 11.17733446881175
+      }
+    },
+    {
+      "query_id": "q110",
+      "query_text": "Tom's opinion on authentication flow",
+      "category": "contextual_fact",
+      "retrieved": [
+        742,
+        686,
+        574,
+        602,
+        658
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6069755181670189,
+        "pass1_blind_check_ms": 0.06744172424077988,
+        "pass2_decrypt_ms": 0.44508324936032295,
+        "pass2_bm25_ms": 8.147249929606915,
+        "pass2_rrf_ms": 0.13299984857439995,
+        "pass1_total_ms": 0.6744172424077988,
+        "pass2_total_ms": 8.725333027541637,
+        "total_ms": 9.399750269949436
+      }
+    },
+    {
+      "query_id": "q111",
+      "query_text": "What was the conclusion about the API rate limit that Mike mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        243,
+        890,
+        222,
+        858,
+        103
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5634378176182508,
+        "pass1_blind_check_ms": 0.06260420195758343,
+        "pass2_decrypt_ms": 0.42454199865460396,
+        "pass2_bm25_ms": 6.3317082822322845,
+        "pass2_rrf_ms": 0.131125096231699,
+        "pass1_total_ms": 0.6260420195758343,
+        "pass2_total_ms": 6.8873753771185875,
+        "total_ms": 7.513417396694422
+      }
+    },
+    {
+      "query_id": "q112",
+      "query_text": "CI/CD pipeline setup guide",
+      "category": "semantic",
+      "retrieved": [
+        1288,
+        1039,
+        1342,
+        1193,
+        1234
+      ],
+      "relevant": [
+        1095,
+        1109,
+        1137,
+        1151,
+        1158,
+        1165,
+        1186,
+        1193,
+        1200,
+        1207,
+        1216,
+        1217,
+        1225,
+        1234,
+        1243,
+        1252,
+        1261,
+        1262,
+        1270,
+        1279,
+        1288,
+        1297,
+        1306,
+        1315,
+        1324,
+        1333,
+        1334,
+        1342,
+        1351,
+        1476
+      ],
+      "metrics": {
+        "precision@5": 0.8,
+        "recall@5": 0.13333333333333333,
+        "f1@5": 0.2285714285714286,
+        "ap": 0.10722222222222223,
+        "rr": 1.0,
+        "ndcg@5": 0.8181615409042062
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5694371648132801,
+        "pass1_blind_check_ms": 0.06327079609036446,
+        "pass2_decrypt_ms": 0.41724974289536476,
+        "pass2_bm25_ms": 3.6622919142246246,
+        "pass2_rrf_ms": 0.12075016275048256,
+        "pass1_total_ms": 0.6327079609036446,
+        "pass2_total_ms": 4.200291819870472,
+        "total_ms": 4.8329997807741165
+      }
+    },
+    {
+      "query_id": "q113",
+      "query_text": "What did Tom say about authentication flow?",
+      "category": "contextual_fact",
+      "retrieved": [
+        658,
+        602,
+        686,
+        574,
+        546
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5691375117748976,
+        "pass1_blind_check_ms": 0.06323750130832195,
+        "pass2_decrypt_ms": 0.4380829632282257,
+        "pass2_bm25_ms": 7.785500027239323,
+        "pass2_rrf_ms": 0.12300023809075356,
+        "pass1_total_ms": 0.6323750130832195,
+        "pass2_total_ms": 8.346583228558302,
+        "total_ms": 8.978958241641521
+      }
+    },
+    {
+      "query_id": "q114",
+      "query_text": "We encountered deadlock - what resolved it?",
+      "category": "error_solution",
+      "retrieved": [
+        227,
+        115,
+        367,
+        164,
+        241
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5659129936248064,
+        "pass1_blind_check_ms": 0.06287922151386738,
+        "pass2_decrypt_ms": 0.3976249136030674,
+        "pass2_bm25_ms": 3.9375838823616505,
+        "pass2_rrf_ms": 0.1254579983651638,
+        "pass1_total_ms": 0.6287922151386738,
+        "pass2_total_ms": 4.460666794329882,
+        "total_ms": 5.0894590094685555
+      }
+    },
+    {
+      "query_id": "q115",
+      "query_text": "What did Lisa say about performance optimization?",
+      "category": "contextual_fact",
+      "retrieved": [
+        282,
+        93,
+        317,
+        380,
+        254
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5724001675844193,
+        "pass1_blind_check_ms": 0.06360001862049103,
+        "pass2_decrypt_ms": 0.4076249897480011,
+        "pass2_bm25_ms": 3.3150827512145042,
+        "pass2_rrf_ms": 0.10533304885029793,
+        "pass1_total_ms": 0.6360001862049103,
+        "pass2_total_ms": 3.8280407898128033,
+        "total_ms": 4.4640409760177135
+      }
+    },
+    {
+      "query_id": "q116",
+      "query_text": "What did Sarah say about authentication flow?",
+      "category": "contextual_fact",
+      "retrieved": [
+        602,
+        574,
+        686,
+        658,
+        546
+      ],
+      "relevant": [
+        574,
+        602,
+        621,
+        628,
+        630,
+        635,
+        642,
+        644,
+        649
+      ],
+      "metrics": {
+        "precision@5": 0.4,
+        "recall@5": 0.2222222222222222,
+        "f1@5": 0.2857142857142857,
+        "ap": 0.2222222222222222,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5488495342433453,
+        "pass1_blind_check_ms": 0.06098328158259392,
+        "pass2_decrypt_ms": 0.41070813313126564,
+        "pass2_bm25_ms": 6.0915411449968815,
+        "pass2_rrf_ms": 0.12754183262586594,
+        "pass1_total_ms": 0.6098328158259392,
+        "pass2_total_ms": 6.629791110754013,
+        "total_ms": 7.239623926579952
+      }
+    },
+    {
+      "query_id": "q117",
+      "query_text": "What did we decide regarding Sarah's suggestion about performance optimization?",
+      "category": "contextual_fact",
+      "retrieved": [
+        859,
+        923,
+        827,
+        987,
+        795
+      ],
+      "relevant": [
+        287,
+        315,
+        343,
+        371,
+        399,
+        420,
+        448,
+        504,
+        795,
+        796,
+        859,
+        891,
+        923,
+        955,
+        987
+      ],
+      "metrics": {
+        "precision@5": 0.8,
+        "recall@5": 0.26666666666666666,
+        "f1@5": 0.4,
+        "ap": 0.23666666666666666,
+        "rr": 1.0,
+        "ndcg@5": 0.9360403422435027
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5530501250177622,
+        "pass1_blind_check_ms": 0.061450013890862465,
+        "pass2_decrypt_ms": 0.38295891135931015,
+        "pass2_bm25_ms": 1.282624900341034,
+        "pass2_rrf_ms": 0.11224998161196709,
+        "pass1_total_ms": 0.6145001389086246,
+        "pass2_total_ms": 1.7778337933123112,
+        "total_ms": 2.392333932220936
+      }
+    },
+    {
+      "query_id": "q118",
+      "query_text": "What was the conclusion about refactoring the codebase that Mike mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        658,
+        686,
+        630,
+        714,
+        742
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5711625795811415,
+        "pass1_blind_check_ms": 0.06346250884234905,
+        "pass2_decrypt_ms": 0.4035406745970249,
+        "pass2_bm25_ms": 5.8704158291220665,
+        "pass2_rrf_ms": 0.14737527817487717,
+        "pass1_total_ms": 0.6346250884234905,
+        "pass2_total_ms": 6.421331781893969,
+        "total_ms": 7.055956870317459
+      }
+    },
+    {
+      "query_id": "q119",
+      "query_text": "Workaround for deadlock",
+      "category": "error_solution",
+      "retrieved": [
+        287,
+        315,
+        343,
+        7,
+        35
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5508377216756344,
+        "pass1_blind_check_ms": 0.06120419129729271,
+        "pass2_decrypt_ms": 0.41950028389692307,
+        "pass2_bm25_ms": 4.213499836623669,
+        "pass2_rrf_ms": 0.10858336463570595,
+        "pass1_total_ms": 0.6120419129729271,
+        "pass2_total_ms": 4.741583485156298,
+        "total_ms": 5.353625398129225
+      }
+    },
+    {
+      "query_id": "q120",
+      "query_text": "What's the CDN endpoint?",
+      "category": "configuration",
+      "retrieved": [
+        518,
+        658,
+        686,
+        602,
+        546
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5395498126745224,
+        "pass1_blind_check_ms": 0.059949979186058044,
+        "pass2_decrypt_ms": 0.41462481021881104,
+        "pass2_bm25_ms": 7.01375026255846,
+        "pass2_rrf_ms": 0.1316252164542675,
+        "pass1_total_ms": 0.5994997918605804,
+        "pass2_total_ms": 7.560000289231539,
+        "total_ms": 8.15950008109212
+      }
+    },
+    {
+      "query_id": "q121",
+      "query_text": "What was decided in the last standup?",
+      "category": "temporal",
+      "retrieved": [
+        769,
+        699,
+        524,
+        580,
+        573
+      ],
+      "relevant": [
+        762,
+        769,
+        770,
+        802,
+        834,
+        866,
+        898,
+        930,
+        962,
+        994
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.1,
+        "f1@5": 0.13333333333333333,
+        "ap": 0.1,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5717996042221785,
+        "pass1_blind_check_ms": 0.06353328935801983,
+        "pass2_decrypt_ms": 0.3977091982960701,
+        "pass2_bm25_ms": 0.9962092153728008,
+        "pass2_rrf_ms": 0.09787501767277718,
+        "pass1_total_ms": 0.6353328935801983,
+        "pass2_total_ms": 1.491793431341648,
+        "total_ms": 2.1271263249218464
+      }
+    },
+    {
+      "query_id": "q122",
+      "query_text": "What was the conclusion about the new feature timeline that Mike mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        1129,
+        1136,
+        1143,
+        1003,
+        1150
+      ],
+      "relevant": [
+        763,
+        769,
+        826,
+        858,
+        890,
+        922,
+        954,
+        986,
+        1467
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5745752714574337,
+        "pass1_blind_check_ms": 0.06384169682860374,
+        "pass2_decrypt_ms": 0.3958749584853649,
+        "pass2_bm25_ms": 3.3970000222325325,
+        "pass2_rrf_ms": 0.1315409317612648,
+        "pass1_total_ms": 0.6384169682860374,
+        "pass2_total_ms": 3.924415912479162,
+        "total_ms": 4.5628328807652
+      }
+    },
+    {
+      "query_id": "q123",
+      "query_text": "According to Alex, what's the best approach for error handling?",
+      "category": "contextual_fact",
+      "retrieved": [
+        315,
+        287,
+        343,
+        203,
+        175
+      ],
+      "relevant": [
+        133,
+        147,
+        161,
+        175,
+        182,
+        189,
+        203,
+        210,
+        217,
+        231
+      ],
+      "metrics": {
+        "precision@5": 0.4,
+        "recall@5": 0.2,
+        "f1@5": 0.26666666666666666,
+        "ap": 0.065,
+        "rr": 0.25,
+        "ndcg@5": 0.46533827903669656
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5396994296461344,
+        "pass1_blind_check_ms": 0.05996660329401493,
+        "pass2_decrypt_ms": 0.45783305540680885,
+        "pass2_bm25_ms": 14.030792284756899,
+        "pass2_rrf_ms": 0.1543750986456871,
+        "pass1_total_ms": 0.5996660329401493,
+        "pass2_total_ms": 14.643000438809395,
+        "total_ms": 15.242666471749544
+      }
+    },
+    {
+      "query_id": "q124",
+      "query_text": "timeout error - what's the fix?",
+      "category": "error_solution",
+      "retrieved": [
+        91,
+        119,
+        231,
+        259,
+        175
+      ],
+      "relevant": [
+        7,
+        35,
+        63,
+        84,
+        91,
+        112,
+        119,
+        147,
+        175,
+        203,
+        224,
+        231,
+        259,
+        287,
+        315,
+        343,
+        371,
+        399,
+        770,
+        778,
+        898,
+        906,
+        914,
+        930,
+        946,
+        962,
+        978,
+        994,
+        1437,
+        1457
+      ],
+      "metrics": {
+        "precision@5": 1.0,
+        "recall@5": 0.16666666666666666,
+        "f1@5": 0.2857142857142857,
+        "ap": 0.16666666666666666,
+        "rr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5349745508283377,
+        "pass1_blind_check_ms": 0.059441616758704185,
+        "pass2_decrypt_ms": 0.4607075825333595,
+        "pass2_bm25_ms": 11.004749685525894,
+        "pass2_rrf_ms": 0.16558310016989708,
+        "pass1_total_ms": 0.5944161675870419,
+        "pass2_total_ms": 11.63104036822915,
+        "total_ms": 12.225456535816193
+      }
+    },
+    {
+      "query_id": "q125",
+      "query_text": "Documentation for 429 rate limit",
+      "category": "error_solution",
+      "retrieved": [
+        376,
+        89,
+        47,
+        152,
+        397
+      ],
+      "relevant": [
+        0,
+        28,
+        56,
+        84,
+        89,
+        96,
+        112,
+        140,
+        152,
+        159,
+        168,
+        196,
+        224,
+        252,
+        280,
+        285,
+        292,
+        299,
+        306,
+        308,
+        313,
+        320,
+        336,
+        364,
+        392,
+        1430,
+        1450
+      ],
+      "metrics": {
+        "precision@5": 0.4,
+        "recall@5": 0.07407407407407407,
+        "f1@5": 0.125,
+        "ap": 0.037037037037037035,
+        "rr": 0.5,
+        "ndcg@5": 0.75
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5461874417960644,
+        "pass1_blind_check_ms": 0.06068749353289604,
+        "pass2_decrypt_ms": 0.38795918226242065,
+        "pass2_bm25_ms": 1.5270421281456947,
+        "pass2_rrf_ms": 0.12187520042061806,
+        "pass1_total_ms": 0.6068749353289604,
+        "pass2_total_ms": 2.0368765108287334,
+        "total_ms": 2.643751446157694
+      }
+    },
+    {
+      "query_id": "q126",
+      "query_text": "What was the solution for 429 rate limit?",
+      "category": "error_solution",
+      "retrieved": [
+        334,
+        19,
+        159,
+        376,
+        152
+      ],
+      "relevant": [
+        0,
+        28,
+        56,
+        77,
+        84,
+        89,
+        96,
+        110,
+        112,
+        140,
+        168,
+        196,
+        208,
+        215,
+        222,
+        224,
+        229,
+        252,
+        280,
+        308,
+        313,
+        320,
+        336,
+        364,
+        392,
+        1430,
+        1450
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5590121727436781,
+        "pass1_blind_check_ms": 0.062112463638186455,
+        "pass2_decrypt_ms": 0.383750069886446,
+        "pass2_bm25_ms": 1.5821661800146103,
+        "pass2_rrf_ms": 0.13137469068169594,
+        "pass1_total_ms": 0.6211246363818645,
+        "pass2_total_ms": 2.0972909405827522,
+        "total_ms": 2.7184155769646168
+      }
+    },
+    {
+      "query_id": "q127",
+      "query_text": "According to Jen, what's the best approach for performance optimization?",
+      "category": "contextual_fact",
+      "retrieved": [
+        315,
+        287,
+        343,
+        371,
+        399
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5404496099799871,
+        "pass1_blind_check_ms": 0.060049956664443016,
+        "pass2_decrypt_ms": 0.41591702029109,
+        "pass2_bm25_ms": 6.767792161554098,
+        "pass2_rrf_ms": 0.14287512749433517,
+        "pass1_total_ms": 0.6004995666444302,
+        "pass2_total_ms": 7.326584309339523,
+        "total_ms": 7.9270838759839535
+      }
+    },
+    {
+      "query_id": "q128",
+      "query_text": "Best practices for document database",
+      "category": "semantic",
+      "retrieved": [
+        637,
+        665,
+        693,
+        581,
+        749
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5579619202762842,
+        "pass1_blind_check_ms": 0.061995768919587135,
+        "pass2_decrypt_ms": 0.44458406046032906,
+        "pass2_bm25_ms": 4.4624581933021545,
+        "pass2_rrf_ms": 0.13541709631681442,
+        "pass1_total_ms": 0.6199576891958714,
+        "pass2_total_ms": 5.042459350079298,
+        "total_ms": 5.662417039275169
+      }
+    },
+    {
+      "query_id": "q129",
+      "query_text": "sk-proj-abc123xyz789",
+      "category": "exact_keyword",
+      "retrieved": [
+        1387,
+        1411,
+        1355,
+        1395,
+        1363
+      ],
+      "relevant": [
+        1355,
+        1363,
+        1371,
+        1379,
+        1387
+      ],
+      "metrics": {
+        "precision@5": 0.6,
+        "recall@5": 0.6,
+        "f1@5": 0.6,
+        "ap": 0.4533333333333333,
+        "rr": 1.0,
+        "ndcg@5": 0.7836037084784354
+      },
+      "timing": {
+        "pass1_knn_ms": 0.596475088968873,
+        "pass1_blind_check_ms": 0.06627500988543034,
+        "pass2_decrypt_ms": 0.40399981662631035,
+        "pass2_bm25_ms": 2.1149576641619205,
+        "pass2_rrf_ms": 0.10658381506800652,
+        "pass1_total_ms": 0.6627500988543034,
+        "pass2_total_ms": 2.6255412958562374,
+        "total_ms": 3.2882913947105408
+      }
+    },
+    {
+      "query_id": "q130",
+      "query_text": "What's the API endpoint?",
+      "category": "configuration",
+      "retrieved": [
+        672,
+        504,
+        532,
+        644,
+        588
+      ],
+      "relevant": [
+        0,
+        28,
+        56,
+        84,
+        112,
+        140,
+        168,
+        196,
+        224,
+        252,
+        280,
+        301,
+        308,
+        329,
+        336,
+        364,
+        385,
+        392,
+        771,
+        779,
+        787,
+        803,
+        811,
+        835,
+        843,
+        851,
+        867,
+        875,
+        883,
+        899,
+        907,
+        915,
+        931,
+        939,
+        947,
+        963,
+        971,
+        979,
+        1430,
+        1450
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5592003464698792,
+        "pass1_blind_check_ms": 0.06213337182998657,
+        "pass2_decrypt_ms": 0.4393327981233597,
+        "pass2_bm25_ms": 10.560832917690277,
+        "pass2_rrf_ms": 0.14187535271048546,
+        "pass1_total_ms": 0.6213337182998657,
+        "pass2_total_ms": 11.142041068524122,
+        "total_ms": 11.763374786823988
+      }
+    },
+    {
+      "query_id": "q131",
+      "query_text": "What bugs did we fix recently?",
+      "category": "temporal",
+      "retrieved": [
+        954,
+        986,
+        922,
+        858,
+        890
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5616378039121628,
+        "pass1_blind_check_ms": 0.06240420043468475,
+        "pass2_decrypt_ms": 0.42287493124604225,
+        "pass2_bm25_ms": 6.7680831998586655,
+        "pass2_rrf_ms": 0.15770923346281052,
+        "pass1_total_ms": 0.6240420043468475,
+        "pass2_total_ms": 7.348667364567518,
+        "total_ms": 7.972709368914366
+      }
+    },
+    {
+      "query_id": "q132",
+      "query_text": "What are the database credentials?",
+      "category": "configuration",
+      "retrieved": [
+        458,
+        640,
+        696,
+        752,
+        682
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6125255953520536,
+        "pass1_blind_check_ms": 0.06805839948356152,
+        "pass2_decrypt_ms": 0.41295774281024933,
+        "pass2_bm25_ms": 3.417584113776684,
+        "pass2_rrf_ms": 0.11129118502140045,
+        "pass1_total_ms": 0.6805839948356152,
+        "pass2_total_ms": 3.9418330416083336,
+        "total_ms": 4.622417036443949
+      }
+    },
+    {
+      "query_id": "q133",
+      "query_text": "sarahr@example.com",
+      "category": "exact_keyword",
+      "retrieved": [
+        1384,
+        1368,
+        1360,
+        1400,
+        1376
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5927623249590397,
+        "pass1_blind_check_ms": 0.06586248055100441,
+        "pass2_decrypt_ms": 0.4043332301080227,
+        "pass2_bm25_ms": 2.7112923562526703,
+        "pass2_rrf_ms": 0.10729208588600159,
+        "pass1_total_ms": 0.6586248055100441,
+        "pass2_total_ms": 3.2229176722466946,
+        "total_ms": 3.8815424777567387
+      }
+    },
+    {
+      "query_id": "q134",
+      "query_text": "What's the timeout setting for API?",
+      "category": "configuration",
+      "retrieved": [
+        231,
+        259,
+        315,
+        287,
+        343
+      ],
+      "relevant": [
+        898,
+        914,
+        922,
+        930,
+        954,
+        962,
+        986,
+        994,
+        1437,
+        1457
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5391370039433241,
+        "pass1_blind_check_ms": 0.05990411154925823,
+        "pass2_decrypt_ms": 0.45800022780895233,
+        "pass2_bm25_ms": 13.82837537676096,
+        "pass2_rrf_ms": 0.14691613614559174,
+        "pass1_total_ms": 0.5990411154925823,
+        "pass2_total_ms": 14.433291740715504,
+        "total_ms": 15.032332856208086
+      }
+    },
+    {
+      "query_id": "q135",
+      "query_text": "What did Lisa say about refactoring the codebase?",
+      "category": "contextual_fact",
+      "retrieved": [
+        658,
+        630,
+        686,
+        742,
+        714
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5453253630548716,
+        "pass1_blind_check_ms": 0.06059170700609684,
+        "pass2_decrypt_ms": 0.4148338921368122,
+        "pass2_bm25_ms": 5.086999852210283,
+        "pass2_rrf_ms": 0.11499971151351929,
+        "pass1_total_ms": 0.6059170700609684,
+        "pass2_total_ms": 5.616833455860615,
+        "total_ms": 6.222750525921583
+      }
+    },
+    {
+      "query_id": "q136",
+      "query_text": "According to John, what's the best approach for error handling?",
+      "category": "contextual_fact",
+      "retrieved": [
+        406,
+        378,
+        350,
+        182,
+        154
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5205752793699503,
+        "pass1_blind_check_ms": 0.057841697707772255,
+        "pass2_decrypt_ms": 0.4736250266432762,
+        "pass2_bm25_ms": 15.965834259986877,
+        "pass2_rrf_ms": 0.14808401465415955,
+        "pass1_total_ms": 0.5784169770777225,
+        "pass2_total_ms": 16.587543301284313,
+        "total_ms": 17.165960278362036
+      }
+    },
+    {
+      "query_id": "q137",
+      "query_text": "According to Lisa, what's the best approach for the deployment strategy?",
+      "category": "contextual_fact",
+      "retrieved": [
+        1033,
+        1068,
+        1054,
+        1061,
+        1005
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.552300363779068,
+        "pass1_blind_check_ms": 0.06136670708656311,
+        "pass2_decrypt_ms": 0.3942921757698059,
+        "pass2_bm25_ms": 2.876957878470421,
+        "pass2_rrf_ms": 0.118291936814785,
+        "pass1_total_ms": 0.6136670708656311,
+        "pass2_total_ms": 3.3895419910550117,
+        "total_ms": 4.003209061920643
+      }
+    },
+    {
+      "query_id": "q138",
+      "query_text": "What's my API configuration?",
+      "category": "configuration",
+      "retrieved": [
+        672,
+        588,
+        532,
+        616,
+        1403
+      ],
+      "relevant": [
+        700,
+        728,
+        756,
+        1355,
+        1356,
+        1363,
+        1364,
+        1371,
+        1379,
+        1380,
+        1387,
+        1388,
+        1395,
+        1396,
+        1403,
+        1404,
+        1411,
+        1412,
+        1419,
+        1420,
+        1427,
+        1428,
+        1460
+      ],
+      "metrics": {
+        "precision@5": 0.2,
+        "recall@5": 0.043478260869565216,
+        "f1@5": 0.07142857142857142,
+        "ap": 0.008695652173913044,
+        "rr": 0.2,
+        "ndcg@5": 0.43067655807339306
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5529742687940598,
+        "pass1_blind_check_ms": 0.061441585421562195,
+        "pass2_decrypt_ms": 0.4558330401778221,
+        "pass2_bm25_ms": 11.228417046368122,
+        "pass2_rrf_ms": 0.16691675409674644,
+        "pass1_total_ms": 0.614415854215622,
+        "pass2_total_ms": 11.85116684064269,
+        "total_ms": 12.465582694858313
+      }
+    },
+    {
+      "query_id": "q139",
+      "query_text": "What did Jen say about the deployment strategy?",
+      "category": "contextual_fact",
+      "retrieved": [
+        511,
+        539,
+        595,
+        567,
+        735
+      ],
+      "relevant": [
+        567,
+        595,
+        623,
+        651,
+        679,
+        707,
+        735,
+        749,
+        763,
+        795
+      ],
+      "metrics": {
+        "precision@5": 0.6,
+        "recall@5": 0.3,
+        "f1@5": 0.4,
+        "ap": 0.14333333333333334,
+        "rr": 0.3333333333333333,
+        "ndcg@5": 0.5935568251204684
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5564250983297825,
+        "pass1_blind_check_ms": 0.06182501092553139,
+        "pass2_decrypt_ms": 0.411416869610548,
+        "pass2_bm25_ms": 5.271582864224911,
+        "pass2_rrf_ms": 0.12504169717431068,
+        "pass1_total_ms": 0.6182501092553139,
+        "pass2_total_ms": 5.808041431009769,
+        "total_ms": 6.426291540265083
+      }
+    },
+    {
+      "query_id": "q140",
+      "query_text": "What was the conclusion about database schema changes that Lisa mentioned?",
+      "category": "contextual_fact",
+      "retrieved": [
+        665,
+        637,
+        693,
+        553,
+        721
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5471999756991863,
+        "pass1_blind_check_ms": 0.06079999729990959,
+        "pass2_decrypt_ms": 0.4124999977648258,
+        "pass2_bm25_ms": 5.22337481379509,
+        "pass2_rrf_ms": 0.12237485498189926,
+        "pass1_total_ms": 0.6079999729990959,
+        "pass2_total_ms": 5.758249666541815,
+        "total_ms": 6.366249639540911
+      }
+    },
+    {
+      "query_id": "q141",
+      "query_text": "What was decided in the last standup?",
+      "category": "temporal",
+      "retrieved": [
+        769,
+        699,
+        524,
+        580,
+        573
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5555617623031139,
+        "pass1_blind_check_ms": 0.06172908470034599,
+        "pass2_decrypt_ms": 0.41066715493798256,
+        "pass2_bm25_ms": 1.0040411725640297,
+        "pass2_rrf_ms": 0.09695859625935555,
+        "pass1_total_ms": 0.6172908470034599,
+        "pass2_total_ms": 1.5116669237613678,
+        "total_ms": 2.1289577707648277
+      }
+    },
+    {
+      "query_id": "q142",
+      "query_text": "ERR_CONNECTION_REFUSED",
+      "category": "exact_keyword",
+      "retrieved": [
+        1365,
+        1405,
+        1389,
+        1413,
+        1373
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5802380852401257,
+        "pass1_blind_check_ms": 0.06447089836001396,
+        "pass2_decrypt_ms": 0.4085409455001354,
+        "pass2_bm25_ms": 3.85012524202466,
+        "pass2_rrf_ms": 0.10616704821586609,
+        "pass1_total_ms": 0.6447089836001396,
+        "pass2_total_ms": 4.364833235740662,
+        "total_ms": 5.009542219340801
+      }
+    },
+    {
+      "query_id": "q143",
+      "query_text": "What did Mike say about security concerns?",
+      "category": "contextual_fact",
+      "retrieved": [
+        644,
+        672,
+        616,
+        560,
+        588
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5818499252200127,
+        "pass1_blind_check_ms": 0.06464999169111252,
+        "pass2_decrypt_ms": 0.41404087096452713,
+        "pass2_bm25_ms": 7.481333799660206,
+        "pass2_rrf_ms": 0.13454211875796318,
+        "pass1_total_ms": 0.6464999169111252,
+        "pass2_total_ms": 8.029916789382696,
+        "total_ms": 8.676416706293821
+      }
+    },
+    {
+      "query_id": "q144",
+      "query_text": "How to implement API gateway?",
+      "category": "semantic",
+      "retrieved": [
+        532,
+        420,
+        1460,
+        504,
+        588
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5371119361370802,
+        "pass1_blind_check_ms": 0.05967910401523113,
+        "pass2_decrypt_ms": 0.4320000298321247,
+        "pass2_bm25_ms": 9.389749728143215,
+        "pass2_rrf_ms": 0.1416252925992012,
+        "pass1_total_ms": 0.5967910401523113,
+        "pass2_total_ms": 9.963375050574541,
+        "total_ms": 10.560166090726852
+      }
+    },
+    {
+      "query_id": "q145",
+      "query_text": "What was decided in the last standup?",
+      "category": "temporal",
+      "retrieved": [
+        769,
+        699,
+        524,
+        580,
+        573
+      ],
+      "relevant": [
+        770,
+        802,
+        834,
+        866,
+        898,
+        930,
+        962,
+        994
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5315995775163174,
+        "pass1_blind_check_ms": 0.05906661972403526,
+        "pass2_decrypt_ms": 0.3797500394284725,
+        "pass2_bm25_ms": 1.0136659257113934,
+        "pass2_rrf_ms": 0.1044170930981636,
+        "pass1_total_ms": 0.5906661972403526,
+        "pass2_total_ms": 1.4978330582380295,
+        "total_ms": 2.088499255478382
+      }
+    },
+    {
+      "query_id": "q146",
+      "query_text": "AKIAIOSFODNN7EXAMPLE",
+      "category": "exact_keyword",
+      "retrieved": [
+        1419,
+        1355,
+        1379,
+        1395,
+        1363
+      ],
+      "relevant": [
+        1207,
+        1216,
+        1225,
+        1233,
+        1234,
+        1242,
+        1243,
+        1251,
+        1252,
+        1261,
+        1270,
+        1279,
+        1288,
+        1297,
+        1306,
+        1315,
+        1324,
+        1333,
+        1342,
+        1351
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5586002022027969,
+        "pass1_blind_check_ms": 0.062066689133644104,
+        "pass2_decrypt_ms": 0.4054582677781582,
+        "pass2_bm25_ms": 2.23633274435997,
+        "pass2_rrf_ms": 0.10958407074213028,
+        "pass1_total_ms": 0.620666891336441,
+        "pass2_total_ms": 2.7513750828802586,
+        "total_ms": 3.3720419742166996
+      }
+    },
+    {
+      "query_id": "q147",
+      "query_text": "How did we fix the 429 rate limit?",
+      "category": "error_solution",
+      "retrieved": [
+        103,
+        306,
+        61,
+        236,
+        334
+      ],
+      "relevant": [
+        0,
+        21,
+        28,
+        56,
+        84,
+        89,
+        112,
+        140,
+        152,
+        159,
+        168,
+        196,
+        224,
+        252,
+        280,
+        308,
+        336,
+        364,
+        376,
+        383,
+        385,
+        390,
+        392,
+        397,
+        1430,
+        1450
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5793751683086157,
+        "pass1_blind_check_ms": 0.0643750187009573,
+        "pass2_decrypt_ms": 0.3980412147939205,
+        "pass2_bm25_ms": 3.8313749246299267,
+        "pass2_rrf_ms": 0.16591697931289673,
+        "pass1_total_ms": 0.643750187009573,
+        "pass2_total_ms": 4.395333118736744,
+        "total_ms": 5.039083305746317
+      }
+    },
+    {
+      "query_id": "q148",
+      "query_text": "According to Emma, what's the best approach for the API rate limit?",
+      "category": "contextual_fact",
+      "retrieved": [
+        143,
+        392,
+        17,
+        364,
+        108
+      ],
+      "relevant": [
+        161,
+        168,
+        185,
+        192,
+        196,
+        199,
+        206,
+        213,
+        220,
+        224
+      ],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5894254893064499,
+        "pass1_blind_check_ms": 0.06549172103404999,
+        "pass2_decrypt_ms": 0.41520874947309494,
+        "pass2_bm25_ms": 7.548625115305185,
+        "pass2_rrf_ms": 0.13679126277565956,
+        "pass1_total_ms": 0.6549172103404999,
+        "pass2_total_ms": 8.10062512755394,
+        "total_ms": 8.75554233789444
+      }
+    },
+    {
+      "query_id": "q149",
+      "query_text": "What are the load balancer credentials?",
+      "category": "configuration",
+      "retrieved": [
+        986,
+        954,
+        890,
+        858,
+        930
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.6798377260565758,
+        "pass1_blind_check_ms": 0.07553752511739731,
+        "pass2_decrypt_ms": 0.5010827444493771,
+        "pass2_bm25_ms": 5.773416254669428,
+        "pass2_rrf_ms": 0.12579234316945076,
+        "pass1_total_ms": 0.7553752511739731,
+        "pass2_total_ms": 6.400291342288256,
+        "total_ms": 7.155666593462229
+      }
+    },
+    {
+      "query_id": "q150",
+      "query_text": "What did we work on yesterday?",
+      "category": "temporal",
+      "retrieved": [
+        1058,
+        1100,
+        1093,
+        1086,
+        1079
+      ],
+      "relevant": [],
+      "metrics": {
+        "precision@5": 0.0,
+        "recall@5": 0.0,
+        "f1@5": 0.0,
+        "ap": 0.0,
+        "rr": 0.0,
+        "ndcg@5": 0.0
+      },
+      "timing": {
+        "pass1_knn_ms": 0.5581882316619158,
+        "pass1_blind_check_ms": 0.06202091462910175,
+        "pass2_decrypt_ms": 0.42570801451802254,
+        "pass2_bm25_ms": 4.661832936108112,
+        "pass2_rrf_ms": 0.14962488785386086,
+        "pass1_total_ms": 0.6202091462910175,
+        "pass2_total_ms": 5.237165838479996,
+        "total_ms": 5.857374984771013
+      }
+    }
+  ],
+  "aggregate_metrics": {
+    "precision@5": 0.112,
+    "recall@5": 0.03717306351199462,
+    "f1@5": 0.05187184369819186,
+    "map": 0.028642087791633162,
+    "mrr": 0.15755555555555556,
+    "ndcg@5": 0.18376981796495415
+  },
+  "timing_breakdown": {
+    "pass1_knn_ms": null,
+    "pass1_blind_check_ms": null,
+    "pass2_decrypt_ms": null,
+    "pass2_bm25_ms": null,
+    "pass2_rrf_ms": null,
+    "total_ms": null,
+    "pass1_knn_ms_mean": 0.5743987485766411,
+    "pass1_knn_ms_std": 0.09034505638395267,
+    "pass1_knn_ms_min": 0.5205752793699503,
+    "pass1_knn_ms_max": 1.6005742829293013,
+    "pass1_blind_check_ms_mean": 0.06382208317518234,
+    "pass1_blind_check_ms_std": 0.010038339598216962,
+    "pass1_blind_check_ms_min": 0.057841697707772255,
+    "pass1_blind_check_ms_max": 0.17784158699214458,
+    "pass2_decrypt_ms_mean": 0.42464276154836017,
+    "pass2_decrypt_ms_std": 0.029533404345194473,
+    "pass2_decrypt_ms_min": 0.3797500394284725,
+    "pass2_decrypt_ms_max": 0.5628331564366817,
+    "pass2_bm25_ms_mean": 5.859551063428323,
+    "pass2_bm25_ms_std": 4.580258890459312,
+    "pass2_bm25_ms_min": 0.2782498486340046,
+    "pass2_bm25_ms_max": 44.59641641005874,
+    "pass2_rrf_ms_mean": 0.13054391369223595,
+    "pass2_rrf_ms_std": 0.023237525549130087,
+    "pass2_rrf_ms_min": 0.09454181417822838,
+    "pass2_rrf_ms_max": 0.31283311545848846,
+    "total_ms_mean": 7.052958570420742,
+    "total_ms_std": 4.616546047560497,
+    "total_ms_min": 1.336501445621252,
+    "total_ms_max": 46.08199931681156
+  },
+  "metadata": {
+    "scenario": "S5",
+    "algorithm": "TotalReclaw v0.2 E2EE",
+    "description": "Two-pass search with real AES-GCM encryption: Remote KNN -> Decrypt -> BM25 -> RRF",
+    "evaluation_time_seconds": 18.487447023391724,
+    "total_queries": 150,
+    "total_documents": 1480,
+    "top_k": 5,
+    "timestamp": "2026-02-19 20:52:19"
+  }
+}

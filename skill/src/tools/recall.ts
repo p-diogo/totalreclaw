@@ -1,8 +1,8 @@
 /**
- * OpenMemory Skill - Recall Tool
+ * TotalReclaw Skill - Recall Tool
  *
- * Tool for searching and retrieving memories from OpenMemory.
- * This is the openmemory_recall tool implementation.
+ * Tool for searching and retrieving memories from TotalReclaw.
+ * This is the totalreclaw_recall tool implementation.
  *
  * @example
  * ```typescript
@@ -14,9 +14,9 @@
  * ```
  */
 
-import type { OpenMemory, RerankedResult, Fact } from '@openmemory/client';
+import type { TotalReclaw, RerankedResult, Fact } from '@totalreclaw/client';
 import type { RecallToolParams } from '../types';
-import { OpenMemoryError, OpenMemoryErrorCode } from '@openmemory/client';
+import { TotalReclawError, TotalReclawErrorCode } from '@totalreclaw/client';
 import type { CrossEncoderReranker } from '../reranker/cross-encoder';
 
 /**
@@ -52,14 +52,14 @@ const DEFAULT_K = 8;
 const MAX_K = 50;
 
 /**
- * Search for memories in OpenMemory
+ * Search for memories in TotalReclaw
  *
- * @param client - The OpenMemory client instance
+ * @param client - The TotalReclaw client instance
  * @param reranker - Optional cross-encoder reranker for improved ranking
  * @param params - Tool parameters (query, k?)
  * @returns Result containing success status and search results
  *
- * @throws {OpenMemoryError} If the client is not initialized or operation fails
+ * @throws {TotalReclawError} If the client is not initialized or operation fails
  *
  * @example
  * ```typescript
@@ -81,7 +81,7 @@ const MAX_K = 50;
  * ```
  */
 export async function recallTool(
-  client: OpenMemory,
+  client: TotalReclaw,
   reranker: CrossEncoderReranker | null,
   params: RecallToolParams
 ): Promise<RecallToolResult> {
@@ -145,10 +145,10 @@ export async function recallTool(
     };
   } catch (error) {
     // Handle known error types
-    if (error instanceof OpenMemoryError) {
+    if (error instanceof TotalReclawError) {
       return {
         success: false,
-        error: `OpenMemory error (${error.code}): ${error.message}`,
+        error: `TotalReclaw error (${error.code}): ${error.message}`,
       };
     }
 
@@ -199,12 +199,12 @@ export function formatRecallResults(result: RecallToolResult): string {
  *
  * Useful for creating a tool that's pre-bound to client and reranker instances.
  *
- * @param client - The OpenMemory client instance
+ * @param client - The TotalReclaw client instance
  * @param reranker - Optional cross-encoder reranker
  * @returns A function that accepts RecallToolParams and returns RecallToolResult
  */
 export function createRecallTool(
-  client: OpenMemory,
+  client: TotalReclaw,
   reranker: CrossEncoderReranker | null = null
 ): (params: RecallToolParams) => Promise<RecallToolResult> {
   return (params: RecallToolParams) => recallTool(client, reranker, params);

@@ -1,5 +1,5 @@
 /**
- * OpenMemory Skill - Extraction Module Tests
+ * TotalReclaw Skill - Extraction Module Tests
  *
  * Tests for fact extraction, deduplication, and entity/relation extraction.
  */
