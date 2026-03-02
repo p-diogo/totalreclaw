@@ -28,7 +28,9 @@
 
 **Build verified:** `graph codegen` + `graph build` both succeed on the new schema + mapping.
 **Tests:** 209/209 client tests pass (29 new), 272/272 server tests pass. No regressions.
-**Commits:** 6 commits on `feature/subgraph` branch.
+**Commits:** 7 commits on `feature/subgraph` branch.
+**Status:** All 12 tasks complete. Branch ready for merge/PR (user decision pending).
+**Next steps:** Run `dev.sh` then `run-e2e-validation.sh` to validate recall@8 >= 90%. Run `gas-measurement.ts` for cost report.
 
 ---
 

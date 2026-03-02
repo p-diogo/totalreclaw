@@ -455,49 +455,60 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 - **Specs are in `docs/specs/`** -- Organized by product: `totalreclaw/`, `subgraph/`, `tee/`.
 - **Plans are in the `totalreclaw-internal` repo** -- `plans/` directory.
 
-### Current State (after Session 15 -- Repo Restructure)
+### Current State (after Session 16 -- Subgraph v2 Implementation)
 
-- **3-Repo Structure** -- Product code in `totalreclaw`, benchmarks/testbed/archive in `totalreclaw-internal`, landing page in `totalreclaw-website`.
-- **GitHub repos:**
-  - `p-diogo/totalreclaw` (private) -- product code, 10 commits, v0.1.0 + v0.2.0 tags
-  - `p-diogo/totalreclaw-internal` (private) -- benchmarks, testbed, research, archive
-  - `p-diogo/totalreclaw-website` (private) -- landing page
-- **NanoClaw MCP promoted** -- Self-contained MCP server now at `skill-nanoclaw/mcp/totalreclaw-mcp.ts` (product code, not buried in testbed).
-- **feature/subgraph rebased** -- Now up to date with main, contracts/ and subgraph/ present.
-- **Local workspace:**
-  - `/Users/pdiogo/Documents/code/totalreclaw/` -- clone of product repo
-  - `/Users/pdiogo/Documents/code/totalreclaw-internal/` -- clone of internal repo
-  - `/Users/pdiogo/Documents/code/totalreclaw-website/` -- clone of website repo
-  - `/Users/pdiogo/Documents/code/openmemory/` -- PRESERVED original (source of truth backup)
-- **All openmemory-poc references updated** -- package.json URLs, SKILL.md homepage, skill.json, testing guides, READMEs.
+- **Branch:** `feature/subgraph` -- 7 commits ahead of `main`, all 12 plan tasks complete
+- **DECISION PENDING:** User needs to choose: merge to main, push + PR, keep as-is, or discard
+- **Tests:** 209/209 client tests pass (29 new: 10 subgraph client, 10 hot cache, 9 recovery). Subgraph builds clean. Server 272/272 (pre-existing pytest-asyncio errors excluded).
+- **E2E/Gas scripts NOT YET RUN** -- `e2e-ombh-validation.ts` and `gas-measurement.ts` require `dev.sh` running (Hardhat + Docker Graph Node stack). Scripts are written and ready.
 
-### Key Technical References
+### Key Files Created in Session 16
 
-- **OpenClaw plugin:** `skill/plugin/` -- 4 tools (remember, recall, forget, export), 3 hooks (before_agent_start, agent_end, before_compaction), auto-extraction via LLM, zero-config provider detection, bge-small-en-v1.5 local embeddings with query prefix, LSH + BM25/cosine/RRF reranking, dynamic candidate pool.
-- **NanoClaw MCP:** `skill-nanoclaw/mcp/totalreclaw-mcp.ts` -- self-contained MCP server, fully synced with plugin (all 6 improvements).
-- **Server:** `server/` -- FastAPI + PostgreSQL, HKDF auth, blind index GIN search, content fingerprint dedup, /sync, encrypted_embedding column, `/v1/metrics` observability, `total_candidates_matched` in search. 221 tests.
-- **Generic MCP:** `mcp/src/` -- MCP server for Claude Desktop and generic hosts.
-- **Crypto:** BIP-39 mnemonic auto-detection in plugin + NanoClaw. Same mnemonic derives encryption keys AND future Ethereum wallet.
-- **Hook status:** before_agent_start (works), agent_end (works), before_compaction (works via WebSocket RPC), before_reset (NOT supported in OpenClaw v2026.2.22).
-- **Zero-config LLM:** `skill/plugin/llm-client.ts` reads OpenClaw's api.config to auto-detect provider + model + API key. 12 providers supported.
-- **Docker test setups** (in totalreclaw-internal repo):
-  - OpenClaw single-instance: `testbed/functional-test/`
-  - NanoClaw: `testbed/functional-test-nanoclaw/`
-  - 5-way benchmark: `ombh/docker-compose.benchmark.yml`
+**Subgraph infrastructure:**
+- `subgraph/docker-compose.yml` -- Docker Compose (PostgreSQL 16 + IPFS + Graph Node)
+- `subgraph/scripts/dev.sh` -- One-command local dev environment
+- `subgraph/scripts/deploy-contracts.sh` -- Standalone contract deployment
+- `subgraph/scripts/verify-indexing.sh` -- Graph Node health check
+- `subgraph/scripts/run-e2e-validation.sh` -- E2E validation wrapper
+- `subgraph/schema.graphql` -- v2: Fact + BlindIndex (inverted) + GlobalState
+- `subgraph/src/mapping.ts` -- Rewritten for BlindIndex entity creation
+- `subgraph/src/protobuf.ts` -- Fields 10-13 decoded (content_fp, agent_id, sequence_id, encrypted_embedding)
+- `subgraph/tests/e2e-ombh-validation.ts` -- 853-line E2E benchmark
+- `subgraph/tests/gas-measurement.ts` -- Gas cost measurement
+
+**Client library:**
+- `client/src/subgraph/client.ts` -- SubgraphClient (hash_in search, bulk, delta sync)
+- `client/src/subgraph/queries.ts` -- GraphQL query strings
+- `client/src/cache/hot-cache.ts` -- AES-256-GCM encrypted persistent cache
+- `client/src/recovery/restore.ts` -- Full recovery flow (mnemonic → subgraph → decrypt)
+
+**Plugin integration:**
+- `skill/plugin/subgraph-store.ts` -- Protobuf encoder + relay submission
+- `skill/plugin/subgraph-search.ts` -- GraphQL hash_in search for plugin
+- `skill/plugin/hot-cache-wrapper.ts` -- Plugin-local AES-256-GCM cache
+- `skill/plugin/index.ts` -- Modified: isSubgraphMode() branching in remember, recall, auto-recall
+
+### Key Technical References (unchanged from Session 15)
+
+- **OpenClaw plugin:** `skill/plugin/` -- 4 tools + 3 hooks + subgraph mode (opt-in via `TOTALRECLAW_SUBGRAPH_MODE=true`)
+- **Subgraph mode env vars:** `TOTALRECLAW_SUBGRAPH_MODE`, `TOTALRECLAW_RELAY_URL`, `TOTALRECLAW_SUBGRAPH_ENDPOINT`, `TOTALRECLAW_CACHE_PATH`
+- **Graph CLI v0.98.1** requires `@entity(immutable: true/false)` -- bare `@entity` fails
+- **Deploy script** outputs `eventfulDataEdge` (not `dataEdge`)
 
 ### Pending Work
 
 | Priority | Task | Notes |
 |----------|------|-------|
-| **Next** | Implement MCP auto-memory | Spec ready at `docs/specs/totalreclaw/mcp-auto-memory.md`. Modify `mcp/src/` -- add server instructions, enhanced tool descriptions, batch remember, memory context resource, prompt fallbacks. |
-| **Pending** | Re-run 5-way benchmark with bge-small-en-v1.5 | Validate if embedding upgrade improves recall further. Need to re-ingest + re-query all 5 systems. |
-| **Pending** | v2 benchmark improvements | Multi-session replay, LLM judge, etc. See spec. |
+| **Next** | Run E2E validation + gas measurement | Start `dev.sh`, then `run-e2e-validation.sh` and `gas-measurement.ts`. Verify recall@8 >= 90%. |
+| **Next** | Merge/PR decision for feature/subgraph | User was presented options before compaction |
+| **Pending** | Implement MCP auto-memory | Spec at `docs/specs/totalreclaw/mcp-auto-memory.md` |
+| **Pending** | Re-run 5-way benchmark with bge-small-en-v1.5 | Validate embedding upgrade |
 | **Pending** | T138: GitHub Actions CI workflow | Basic pytest + npm test |
 | **Pending** | T086: Make totalreclaw repo public | Needs @pdiogo action |
-| **Pending** | Load testing at 1M memories | Validate <140ms p95 target |
 
 ### Session History
 
+- **Session 16:** T300-T311 (subgraph v2: Docker dev env, inverted BlindIndex schema, protobuf v2 decoder, subgraph client, hot cache, plugin store/search paths, E2E validation script, gas measurement script, recovery flow). 12 tasks completed. Branch: `feature/subgraph`, 7 commits ahead of main. 209/209 client tests.
 - **Session 15:** T280-T290 (3-repo restructure: sync, rename, cleanup, NanoClaw MCP promotion, internal/website repos, tagging, CLAUDE.md rewrite). 11 tasks completed.
 - **Session 14:** T270-T275 + T227-T228 (embedding upgrade bge-small-en-v1.5, dynamic pool sizing, server metrics, NanoClaw sync, MCP auto-memory spec, codebase rebrand, build artifact cleanup). 8 tasks completed.
 - **Session 13:** T260-T269 (5-way benchmark complete, retrieval gap diagnosis, LSH tuning 32-bit x 20, stemmed indices, candidate pool 1200). 10 tasks completed.
