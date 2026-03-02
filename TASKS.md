@@ -443,9 +443,9 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 | T306 | Client hot cache (persistent encrypted) | completed | claude-opus | T305 | 10 tests, AES-256-GCM, top 30 facts |
 | T307 | Plugin subgraph integration (store path) | completed | claude-opus | T302, T305 | Protobuf encoder, relay submission, isSubgraphMode() |
 | T308 | Plugin subgraph integration (search path) | completed | claude-opus | T305, T306 | GraphQL hash_in, hot cache auto-recall, PluginHotCache |
-| T309 | E2E validation (OMBH ingest + query) | in_progress | claude-opus | T307, T308 | 415 facts, 140 queries, recall@8 target |
-| T310 | Gas cost measurement + report | in_progress | claude-opus | T309 | Per-fact gas, extrapolation table |
-| T311 | Recovery flow (seed → full restore) | in_progress | claude-opus | T308 | Mnemonic → subgraph → decrypt → verify |
+| T309 | E2E validation (OMBH ingest + query) | completed | claude-opus | T307, T308 | 853-line script, needs dev.sh running |
+| T310 | Gas cost measurement + report | completed | claude-opus | T309 | 10 test cases, Base L2 cost extrapolation |
+| T311 | Recovery flow (seed → full restore) | completed | claude-opus | T308 | 9 tests, mnemonic → subgraph → decrypt |
 
 ---
 

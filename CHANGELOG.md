@@ -18,10 +18,17 @@
 2. **T301: Inverted BlindIndex schema** — Replaced `blindIndices: [String!]!` array with separate `BlindIndex` entities for `hash_in` GraphQL queries. Entity renamed FactEntity→Fact. Added `@entity(immutable: true/false)` for Graph CLI v0.98.1 compat.
 3. **T302: Protobuf v2 decoder** — Added field decoders for content_fp(10), agent_id(11), sequence_id(12), encrypted_embedding(13). All existing fields preserved.
 4. **T303: Deploy contracts script** — Standalone `deploy-contracts.sh` for CI/manual use. Hardhat compile verified (3 Solidity contracts).
-5. **T305: Subgraph client library** — IN PROGRESS (subagent)
-6. **T306: Client hot cache** — IN PROGRESS (subagent)
+5. **T305: Subgraph client library** — SubgraphClient with hash_in search, bulk download, delta sync. 10 tests.
+6. **T306: Client hot cache** — AES-256-GCM encrypted persistent cache, top 30 facts, graceful degradation. 10 tests.
+7. **T307: Plugin subgraph store path** — Protobuf encoder (fields 1-13), relay submission, isSubgraphMode() branching in remember + auto-extract.
+8. **T308: Plugin subgraph search path** — GraphQL hash_in search, PluginHotCache for instant auto-recall, background refresh.
+9. **T309: E2E validation** — 853-line OMBH validation script (415 facts ingest + 140 queries). Requires dev.sh running.
+10. **T310: Gas measurement** — 10 test payloads (small/medium/large/XL), Base L2 cost extrapolation. Requires Hardhat node.
+11. **T311: Recovery flow** — mnemonic → derive address → subgraph fetchAll → decrypt → hot cache populate. 9 tests.
 
 **Build verified:** `graph codegen` + `graph build` both succeed on the new schema + mapping.
+**Tests:** 209/209 client tests pass (29 new), 272/272 server tests pass. No regressions.
+**Commits:** 6 commits on `feature/subgraph` branch.
 
 ---
 
