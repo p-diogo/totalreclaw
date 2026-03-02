@@ -28,6 +28,7 @@ import { extractFacts, type ExtractedFact } from './extractor.js';
 import { initLLMClient, generateEmbedding, getEmbeddingDims } from './llm-client.js';
 import { LSHHasher } from './lsh.js';
 import { rerank, type RerankerCandidate } from './reranker.js';
+import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitToRelay } from './subgraph-store.js';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -394,7 +395,24 @@ async function storeExtractedFacts(
         encrypted_embedding: embeddingResult?.encryptedEmbedding,
       };
 
-      await apiClient.store(userId, [payload], authKeyHex);
+      if (isSubgraphMode()) {
+        const config = getSubgraphConfig();
+        const protobuf = encodeFactProtobuf({
+          id: factId,
+          timestamp: new Date().toISOString(),
+          owner: userId!,
+          encryptedBlob: encryptedBlob,
+          blindIndices: allIndices,
+          decayScore: fact.importance,
+          source: 'auto-extraction',
+          contentFp: contentFp,
+          agentId: 'openclaw-plugin-auto',
+          encryptedEmbedding: embeddingResult?.encryptedEmbedding,
+        });
+        await submitToRelay(protobuf, config);
+      } else {
+        await apiClient.store(userId, [payload], authKeyHex);
+      }
       stored++;
     } catch {
       // Skip failed facts (e.g., duplicates return success with duplicate_ids)
@@ -541,7 +559,25 @@ const plugin = {
               encrypted_embedding: embeddingResult?.encryptedEmbedding,
             };
 
-            await apiClient!.store(userId!, [factPayload], authKeyHex!);
+            if (isSubgraphMode()) {
+              // Subgraph mode: encode as Protobuf and submit via relay
+              const config = getSubgraphConfig();
+              const protobuf = encodeFactProtobuf({
+                id: factId,
+                timestamp: new Date().toISOString(),
+                owner: userId!,
+                encryptedBlob: encryptedBlob,
+                blindIndices: allIndices,
+                decayScore: importance,
+                source: 'explicit',
+                contentFp: contentFp,
+                agentId: 'openclaw-plugin',
+                encryptedEmbedding: embeddingResult?.encryptedEmbedding,
+              });
+              await submitToRelay(protobuf, config);
+            } else {
+              await apiClient!.store(userId!, [factPayload], authKeyHex!);
+            }
 
             return {
               content: [{ type: 'text', text: `Memory stored (ID: ${factId})` }],
