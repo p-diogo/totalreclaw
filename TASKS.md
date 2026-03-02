@@ -437,15 +437,15 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 | T300 | Local dev environment (Docker + Hardhat) | completed | claude-opus | — | Docker Compose (PG + IPFS + Graph Node), dev.sh, subgraph.yaml network=hardhat |
 | T301 | Inverted BlindIndex schema + mapping rewrite | completed | claude-opus | — | Fact + BlindIndex entities, hash_in queries, @entity(immutable) |
 | T302 | Protobuf v2 decoder (fields 10-13) | completed | claude-opus | — | content_fp, agent_id, sequence_id, encrypted_embedding |
-| T303 | Verify contract deployment via dev.sh | in_progress | claude-opus | T300 | deploy-contracts.sh, Hardhat compile |
-| T304 | Verify subgraph indexing via GND | pending | — | T300, T301, T303 | verify-indexing.sh |
-| T305 | Subgraph client library (GraphQL queries) | in_progress | claude-opus | T304 | hash_in search, bulk download, delta sync |
-| T306 | Client hot cache (persistent encrypted) | in_progress | claude-opus | T305 | AES-256-GCM, top 30 facts, ~/.totalreclaw/cache.enc |
-| T307 | Plugin subgraph integration (store path) | pending | — | T302, T305 | UserOp + relay, opt-in via env var |
-| T308 | Plugin subgraph integration (search path) | pending | — | T305, T306 | GraphQL hash_in, hot cache auto-recall |
-| T309 | E2E validation (OMBH ingest + query) | pending | — | T307, T308 | 415 facts, 140 queries, recall@8 target |
-| T310 | Gas cost measurement + report | pending | — | T309 | Per-fact gas, extrapolation table |
-| T311 | Recovery flow (seed → full restore) | pending | — | T308 | Mnemonic → subgraph → decrypt → verify |
+| T303 | Verify contract deployment via dev.sh | completed | claude-opus | T300 | deploy-contracts.sh, Hardhat compile verified |
+| T304 | Verify subgraph indexing via GND | completed | claude-opus | T300, T301, T303 | verify-indexing.sh created |
+| T305 | Subgraph client library (GraphQL queries) | completed | claude-opus | T304 | 10 tests, hash_in search, bulk, delta sync |
+| T306 | Client hot cache (persistent encrypted) | completed | claude-opus | T305 | 10 tests, AES-256-GCM, top 30 facts |
+| T307 | Plugin subgraph integration (store path) | completed | claude-opus | T302, T305 | Protobuf encoder, relay submission, isSubgraphMode() |
+| T308 | Plugin subgraph integration (search path) | completed | claude-opus | T305, T306 | GraphQL hash_in, hot cache auto-recall, PluginHotCache |
+| T309 | E2E validation (OMBH ingest + query) | in_progress | claude-opus | T307, T308 | 415 facts, 140 queries, recall@8 target |
+| T310 | Gas cost measurement + report | in_progress | claude-opus | T309 | Per-fact gas, extrapolation table |
+| T311 | Recovery flow (seed → full restore) | in_progress | claude-opus | T308 | Mnemonic → subgraph → decrypt → verify |
 
 ---
 
