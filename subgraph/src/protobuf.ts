@@ -11,15 +11,19 @@
  *   - Wire type 2 = length-delimited (string, bytes, embedded messages, repeated)
  *
  * TotalReclawFact fields (from totalreclaw.proto):
- *   1: string id                    (wire type 2)
- *   2: string timestamp             (wire type 2)
- *   3: string owner                 (wire type 2)
- *   4: bytes encrypted_blob         (wire type 2)
- *   5: repeated string blind_indices (wire type 2)
- *   6: double decay_score           (wire type 1)
- *   7: bool is_active               (wire type 0)
- *   8: int32 version                (wire type 0)
- *   9: string source                (wire type 2)
+ *   1:  string id                    (wire type 2)
+ *   2:  string timestamp             (wire type 2)
+ *   3:  string owner                 (wire type 2)
+ *   4:  bytes encrypted_blob         (wire type 2)
+ *   5:  repeated string blind_indices (wire type 2)
+ *   6:  double decay_score           (wire type 1)
+ *   7:  bool is_active               (wire type 0)
+ *   8:  int32 version                (wire type 0)
+ *   9:  string source                (wire type 2)
+ *  10:  string content_fp            (wire type 2) — HMAC-SHA256 content fingerprint
+ *  11:  string agent_id              (wire type 2) — agent identifier
+ *  12:  int64 sequence_id            (wire type 0) — monotonic per-user (varint)
+ *  13:  string encrypted_embedding   (wire type 2) — AES-256-GCM encrypted embedding (hex)
  */
 
 import { Bytes, BigDecimal, BigInt } from "@graphprotocol/graph-ts";
@@ -35,6 +39,8 @@ export class DecodedFact {
   source: string;
   contentFp: string;
   agentId: string;
+  sequenceId: i64;
+  encryptedEmbedding: string;
 
   constructor() {
     this.id = "";
@@ -47,6 +53,8 @@ export class DecodedFact {
     this.source = "";
     this.contentFp = "";
     this.agentId = "";
+    this.sequenceId = 0;
+    this.encryptedEmbedding = "";
   }
 }
 
@@ -100,6 +108,10 @@ export function decodeFact(data: Bytes): DecodedFact {
         fact.isActive = value != 0;
       } else if (fieldNumber == 8) {
         fact.version = value as i32;
+      } else if (fieldNumber == 12) {
+        // sequence_id: decoded for completeness, but the mapping assigns
+        // its own monotonic sequence IDs from GlobalState
+        fact.sequenceId = value;
       }
     } else if (wireType == 1) {
       // 64-bit (double)
@@ -134,8 +146,13 @@ export function decodeFact(data: Bytes): DecodedFact {
         fact.blindIndices = indices;
       } else if (fieldNumber == 9) {
         fact.source = slice.toString();
+      } else if (fieldNumber == 10) {
+        fact.contentFp = slice.toString();
+      } else if (fieldNumber == 11) {
+        fact.agentId = slice.toString();
+      } else if (fieldNumber == 13) {
+        fact.encryptedEmbedding = slice.toString();
       }
-      // Future fields (content_fp, agent_id) go here
 
       offset += len;
     } else if (wireType == 5) {

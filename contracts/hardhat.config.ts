@@ -19,6 +19,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {},
+    localhost: {
+      url: "http://127.0.0.1:8545",
+    },
     baseSepolia: {
       url: BASE_SEPOLIA_RPC_URL,
       accounts: [DEPLOYER_PRIVATE_KEY],

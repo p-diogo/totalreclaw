@@ -1,61 +1,56 @@
 """
-TotalReclaw Fact Entity — indexed from EventfulDataEdge Log events.
-
-All text fields are encrypted (the subgraph stores ciphertext, not plaintext).
-The `owner` field is the Smart Account address derived from the user's BIP-39 seed.
-Clients query by owner address, download encrypted blobs, and decrypt locally.
+TotalReclaw Subgraph Schema v2
+Key change: BlindIndex entities for efficient hash_in queries.
 """
-type FactEntity @entity {
-  "Fact ID extracted from the Protobuf payload (UUIDv7 as hex string)"
+
+type Fact @entity(immutable: false) {
   id: ID!
-
-  "Smart Account address of the fact owner (from tx.from)"
+  "Smart Account address (owner of this fact)"
   owner: Bytes!
-
-  "Full encrypted Protobuf blob (the raw Log event data)"
+  "AES-256-GCM encrypted Protobuf blob"
   encryptedBlob: Bytes!
-
-  "Blind indices for searchable encryption (SHA-256 hashes)"
-  blindIndices: [String!]!
-
-  "Decay score (0.0 to 1.0) — facts below 0.3 are considered inactive"
+  "AES-256-GCM encrypted embedding vector (384-dim bge-small-en-v1.5). Nullable for v1 facts."
+  encryptedEmbedding: String
+  "Decay score (0.0-1.0). Facts below 0.3 are considered inactive."
   decayScore: BigDecimal!
-
   "Whether this fact is active (decayScore >= 0.3)"
   isActive: Boolean!
-
-  "Block timestamp when this fact was written"
-  timestamp: BigInt!
-
-  "Block number for ordering"
-  blockNumber: BigInt!
-
-  "Transaction hash for traceability"
-  txHash: Bytes!
-
-  "Content fingerprint for dedup (HMAC-SHA256, hex string). Empty if not provided."
+  "HMAC-SHA256 content fingerprint for dedup (hex)"
   contentFp: String!
-
-  "Monotonic sequence ID for sync protocol"
+  "Monotonic sequence ID for delta sync"
   sequenceId: BigInt!
-
-  "Agent ID that wrote this fact (for multi-agent scenarios)"
+  "Agent identifier for multi-agent scenarios"
   agentId: String!
-
-  "Protobuf version field for forward compatibility"
+  "Protobuf schema version"
   version: Int!
-
-  "Source of the fact (conversation, pre_compaction, explicit, etc.)"
+  "Source: conversation, pre_compaction, explicit, recovery"
   source: String!
+  "Block number when this fact was written"
+  blockNumber: BigInt!
+  "Block timestamp"
+  timestamp: BigInt!
+  "Transaction hash"
+  txHash: Bytes!
+  "Derived: all blind index entries for this fact"
+  blindIndexEntries: [BlindIndex!]! @derivedFrom(field: "fact")
 }
 
-"""
-Global counter for generating monotonic sequence IDs.
-Single instance with id = 'global'.
-"""
-type GlobalState @entity {
+type BlindIndex @entity(immutable: true) {
   id: ID!
+  "The SHA-256 blind hash value"
+  hash: String!
+  "The fact this index belongs to"
+  fact: Fact!
+  "Owner address (denormalized for efficient filtering)"
+  owner: Bytes!
+}
+
+type GlobalState @entity(immutable: false) {
+  id: ID!
+  "Next monotonic sequence ID"
   nextSequenceId: BigInt!
+  "Total facts indexed"
   totalFacts: BigInt!
+  "Last updated block timestamp"
   lastUpdated: BigInt!
 }

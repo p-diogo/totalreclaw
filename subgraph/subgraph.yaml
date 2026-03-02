@@ -6,7 +6,7 @@ schema:
 dataSources:
   - kind: ethereum
     name: EventfulDataEdge
-    network: base-sepolia
+    network: hardhat
     source:
       # IMPORTANT: Replace with actual deployed address from contracts/deployed-addresses.json
       address: "0x0000000000000000000000000000000000000000"
@@ -18,7 +18,8 @@ dataSources:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - FactEntity
+        - Fact
+        - BlindIndex
         - GlobalState
       abis:
         - name: EventfulDataEdge
