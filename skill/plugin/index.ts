@@ -27,7 +27,7 @@ import { createApiClient, type StoreFactPayload } from './api-client.js';
 import { extractFacts, type ExtractedFact } from './extractor.js';
 import { initLLMClient, generateEmbedding, getEmbeddingDims } from './llm-client.js';
 import { LSHHasher } from './lsh.js';
-import { rerank, type RerankerCandidate } from './reranker.js';
+import { rerank, cosineSimilarity, type RerankerCandidate } from './reranker.js';
 import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitToRelay } from './subgraph-store.js';
 import { searchSubgraph, getSubgraphFactCount } from './subgraph-search.js';
 import { PluginHotCache, type HotFact } from './hot-cache-wrapper.js';
@@ -85,6 +85,19 @@ let lshInitFailed = false; // If true, skip LSH on future calls (provider doesn'
 
 // Hot cache for subgraph mode — lazily initialized
 let pluginHotCache: PluginHotCache | null = null;
+
+// Two-tier search state (C1): skip redundant searches when query is semantically similar
+let lastSearchTimestamp = 0;
+let lastQueryEmbedding: number[] | null = null;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const SEMANTIC_SKIP_THRESHOLD = 0.85;
+
+// Auto-extract throttle (C3): only extract every N turns in agent_end hook
+let turnsSinceLastExtraction = 0;
+const AUTO_EXTRACT_EVERY_TURNS = parseInt(process.env.TOTALRECLAW_EXTRACT_EVERY_TURNS ?? '5', 10);
+
+// B2: Minimum relevance threshold — cosine below this means no memory injection
+const RELEVANCE_THRESHOLD = parseFloat(process.env.TOTALRECLAW_RELEVANCE_THRESHOLD ?? '0.3');
 
 // ---------------------------------------------------------------------------
 // Dynamic candidate pool sizing
@@ -691,6 +704,8 @@ const plugin = {
                     id: result.id,
                     text: doc.text,
                     embedding: decryptedEmbedding,
+                    importance: (doc.metadata?.importance as number) ?? 0.5,
+                    createdAt: result.timestamp ? parseInt(result.timestamp, 10) : undefined,
                   });
 
                   metaMap.set(result.id, {
@@ -755,6 +770,10 @@ const plugin = {
                     id: candidate.fact_id,
                     text: doc.text,
                     embedding: decryptedEmbedding,
+                    importance: (doc.metadata?.importance as number) ?? 0.5,
+                    createdAt: typeof candidate.timestamp === 'number'
+                      ? candidate.timestamp / 1000
+                      : new Date(candidate.timestamp).getTime() / 1000,
                   });
 
                   metaMap.set(candidate.fact_id, {
@@ -1002,8 +1021,22 @@ const plugin = {
               // Embedding/LSH failed -- proceed with word-only trapdoors.
             }
 
-            // 3. Merge word + LSH trapdoors.
-            const allTrapdoors = [...wordTrapdoors, ...lshTrapdoors];
+            // Two-tier search (C1): if cache is fresh AND query is semantically similar, return cached
+            const now = Date.now();
+            const cacheAge = now - lastSearchTimestamp;
+            if (cacheAge < CACHE_TTL_MS && cachedFacts.length > 0 && queryEmbedding && lastQueryEmbedding) {
+              const querySimilarity = cosineSimilarity(queryEmbedding, lastQueryEmbedding);
+              if (querySimilarity > SEMANTIC_SKIP_THRESHOLD) {
+                const lines = cachedFacts.slice(0, 8).map((f, i) =>
+                  `${i + 1}. ${f.text} (importance: ${f.importance}/10, cached)`,
+                );
+                return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` };
+              }
+            }
+
+            // 3. Merge trapdoors — hook path uses LSH-only for lighter query (C1).
+            const hookTrapdoors = lshTrapdoors.length > 0 ? lshTrapdoors : wordTrapdoors;
+            const allTrapdoors = hookTrapdoors;
 
             // If we have cached facts and no trapdoors, return cached facts.
             if (allTrapdoors.length === 0 && cachedFacts.length > 0) {
@@ -1062,10 +1095,14 @@ const plugin = {
                   }
                 }
 
+                const importanceRaw = (doc.metadata?.importance as number) ?? 0.5;
+                const createdAtSec = result.timestamp ? parseInt(result.timestamp, 10) : undefined;
                 rerankerCandidates.push({
                   id: result.id,
                   text: doc.text,
                   embedding: decryptedEmbedding,
+                  importance: importanceRaw,
+                  createdAt: createdAtSec,
                 });
 
                 const importance = doc.metadata?.importance
@@ -1088,6 +1125,15 @@ const plugin = {
               8,
             );
 
+            // B2: Minimum relevance threshold — skip noise injection for irrelevant turns.
+            const candidatesWithEmb = rerankerCandidates.filter(c => c.embedding && c.embedding.length > 0);
+            if (candidatesWithEmb.length > 0 && queryEmbedding && queryEmbedding.length > 0) {
+              const topCosine = Math.max(
+                ...candidatesWithEmb.map(c => cosineSimilarity(queryEmbedding!, c.embedding!))
+              );
+              if (topCosine < RELEVANCE_THRESHOLD) return undefined;
+            }
+
             // Update hot cache with reranked results.
             try {
               if (pluginHotCache) {
@@ -1096,11 +1142,16 @@ const plugin = {
                   return { id: c.id, text: c.text, importance: meta?.importance ?? 5 };
                 });
                 pluginHotCache.setHotFacts(hotFacts);
+                pluginHotCache.setLastQueryEmbedding(queryEmbedding);
                 pluginHotCache.flush();
               }
             } catch {
               // Hot cache update is best-effort.
             }
+
+            // Record search state for two-tier cache (C1).
+            lastSearchTimestamp = Date.now();
+            lastQueryEmbedding = queryEmbedding;
 
             if (reranked.length === 0) return undefined;
 
@@ -1171,10 +1222,16 @@ const plugin = {
                 }
               }
 
+              const importanceRaw = (doc.metadata?.importance as number) ?? 0.5;
+              const createdAtSec = typeof candidate.timestamp === 'number'
+                ? candidate.timestamp / 1000
+                : new Date(candidate.timestamp).getTime() / 1000;
               rerankerCandidates.push({
                 id: candidate.fact_id,
                 text: doc.text,
                 embedding: decryptedEmbedding,
+                importance: importanceRaw,
+                createdAt: createdAtSec,
               });
 
               const importance = doc.metadata?.importance
@@ -1196,6 +1253,15 @@ const plugin = {
             rerankerCandidates,
             8,
           );
+
+          // B2: Minimum relevance threshold — skip noise injection for irrelevant turns.
+          const candidatesWithEmbSrv = rerankerCandidates.filter(c => c.embedding && c.embedding.length > 0);
+          if (candidatesWithEmbSrv.length > 0 && queryEmbedding && queryEmbedding.length > 0) {
+            const topCosine = Math.max(
+              ...candidatesWithEmbSrv.map(c => cosineSimilarity(queryEmbedding!, c.embedding!))
+            );
+            if (topCosine < RELEVANCE_THRESHOLD) return undefined;
+          }
 
           if (reranked.length === 0) return undefined;
 
@@ -1232,9 +1298,14 @@ const plugin = {
 
           await ensureInitialized(api.logger);
 
-          const facts = await extractFacts(evt.messages, 'turn');
-          if (facts.length > 0) {
-            await storeExtractedFacts(facts, api.logger);
+          // C3: Throttle auto-extraction to every N turns (configurable via env).
+          turnsSinceLastExtraction++;
+          if (turnsSinceLastExtraction >= AUTO_EXTRACT_EVERY_TURNS) {
+            const facts = await extractFacts(evt.messages, 'turn');
+            if (facts.length > 0) {
+              await storeExtractedFacts(facts, api.logger);
+            }
+            turnsSinceLastExtraction = 0;
           }
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : String(err);
@@ -1265,6 +1336,7 @@ const plugin = {
           if (facts.length > 0) {
             await storeExtractedFacts(facts, api.logger);
           }
+          turnsSinceLastExtraction = 0; // Reset C3 counter on compaction.
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : String(err);
           api.logger.warn(`before_compaction extraction failed: ${message}`);
@@ -1294,6 +1366,7 @@ const plugin = {
           if (facts.length > 0) {
             await storeExtractedFacts(facts, api.logger);
           }
+          turnsSinceLastExtraction = 0; // Reset C3 counter on reset.
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : String(err);
           api.logger.warn(`before_reset extraction failed: ${message}`);

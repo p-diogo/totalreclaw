@@ -5,7 +5,10 @@
  * pipeline:
  *   1. Okapi BM25 — term frequency / inverse document frequency
  *   2. Cosine similarity — between query and fact embeddings
- *   3. RRF (Reciprocal Rank Fusion) — combines multiple ranking lists
+ *   3. Importance — normalized importance score (0-1)
+ *   4. Recency — time-decay with 1-week half-life
+ *   5. Weighted RRF (Reciprocal Rank Fusion) — combines all ranking lists
+ *   6. MMR (Maximal Marginal Relevance) — promotes diversity in results
  *
  * All functions are pure TypeScript with zero external dependencies (except
  * porter-stemmer for morphological normalization). This module runs
@@ -199,45 +202,215 @@ export function rrfFuse(
 }
 
 // ---------------------------------------------------------------------------
-// Combined Re-Ranker
+// Weighted Reciprocal Rank Fusion
 // ---------------------------------------------------------------------------
+
+/**
+ * Fuse multiple ranking lists using Weighted Reciprocal Rank Fusion.
+ *
+ * Like standard RRF, but each ranking list's contribution is multiplied by
+ * its weight, allowing callers to emphasize or de-emphasize specific signals.
+ *
+ * @param rankings - Array of ranking lists, each sorted by score descending.
+ * @param weights  - Weight for each ranking list (same length as rankings).
+ * @param k        - RRF smoothing constant (default 60).
+ * @returns        - Fused ranking sorted by weighted RRF score descending.
+ */
+export function weightedRrfFuse(
+  rankings: RankedItem[][],
+  weights: number[],
+  k: number = 60,
+): RankedItem[] {
+  const fusedScores = new Map<string, number>();
+
+  for (let r = 0; r < rankings.length; r++) {
+    const w = weights[r] ?? 1;
+    for (let rank = 0; rank < rankings[r].length; rank++) {
+      const item = rankings[r][rank];
+      const contribution = w * (1 / (k + rank + 1));
+      fusedScores.set(item.id, (fusedScores.get(item.id) ?? 0) + contribution);
+    }
+  }
+
+  const fused: RankedItem[] = [];
+  for (const [id, score] of fusedScores) {
+    fused.push({ id, score });
+  }
+
+  fused.sort((a, b) => b.score - a.score);
+  return fused;
+}
+
+// ---------------------------------------------------------------------------
+// Ranking Weights & Interfaces
+// ---------------------------------------------------------------------------
+
+export interface RankingWeights {
+  bm25: number;
+  cosine: number;
+  importance: number;
+  recency: number;
+}
+
+const DEFAULT_WEIGHTS: RankingWeights = {
+  bm25: 0.25,
+  cosine: 0.25,
+  importance: 0.25,
+  recency: 0.25,
+};
 
 export interface RerankerCandidate {
   id: string;
   text: string;
   embedding?: number[];
+  importance?: number;   // 0-1 normalized importance score
+  createdAt?: number;    // Unix timestamp (seconds) when fact was created
 }
 
+export interface RerankerResult extends RerankerCandidate {
+  rrfScore: number;
+  cosineSimilarity?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Recency Scoring
+// ---------------------------------------------------------------------------
+
 /**
- * Re-rank decrypted candidates using BM25 + Cosine + RRF fusion.
+ * Compute a recency score with a 1-week half-life.
+ *
+ * Score = 1 / (1 + hours_since_creation / 168)
+ *
+ * A fact created just now scores ~1.0, one week ago scores 0.5,
+ * two weeks ago scores ~0.33, etc.
+ *
+ * @param createdAt - Unix timestamp in seconds
+ * @returns         - Recency score in (0, 1]
+ */
+function recencyScore(createdAt: number): number {
+  const nowSeconds = Date.now() / 1000;
+  const hoursSince = (nowSeconds - createdAt) / 3600;
+  return 1 / (1 + hoursSince / 168);
+}
+
+// ---------------------------------------------------------------------------
+// MMR (Maximal Marginal Relevance)
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply Maximal Marginal Relevance to promote diversity in results.
+ *
+ * MMR re-orders a ranked list of candidates so that highly similar candidates
+ * are spread out. The algorithm greedily selects the candidate that maximizes:
+ *
+ *   MMR(d) = lambda * relevance(d) - (1 - lambda) * max_sim(d, selected)
+ *
+ * where:
+ *   - relevance(d) = position-based score (1.0 for first, linearly decreasing)
+ *   - max_sim(d, selected) = max cosine similarity between d and any already
+ *     selected candidate (0 if no embeddings available)
+ *
+ * @param candidates - Candidates in relevance order (best first)
+ * @param lambda     - Trade-off between relevance and diversity (default 0.7)
+ * @param topK       - Number of results to return (default 8)
+ * @returns          - Re-ordered candidates with diversity
+ */
+export function applyMMR(
+  candidates: RerankerCandidate[],
+  lambda: number = 0.7,
+  topK: number = 8,
+): RerankerCandidate[] {
+  if (candidates.length === 0) return [];
+  if (candidates.length <= 1) return candidates.slice(0, topK);
+
+  const remaining = candidates.map((c, i) => ({ candidate: c, index: i }));
+  const selected: RerankerCandidate[] = [];
+  const n = candidates.length;
+
+  while (selected.length < topK && remaining.length > 0) {
+    let bestIdx = -1;
+    let bestMMR = -Infinity;
+
+    for (let i = 0; i < remaining.length; i++) {
+      const { candidate, index } = remaining[i];
+
+      // Relevance: linear decay from 1.0 (first) to near 0 (last)
+      const relevance = 1.0 - index / n;
+
+      // Max similarity to any already-selected candidate
+      let maxSim = 0;
+      if (candidate.embedding && candidate.embedding.length > 0) {
+        for (const sel of selected) {
+          if (sel.embedding && sel.embedding.length > 0) {
+            const sim = cosineSimilarity(candidate.embedding, sel.embedding);
+            if (sim > maxSim) maxSim = sim;
+          }
+        }
+      }
+
+      const mmr = lambda * relevance - (1 - lambda) * maxSim;
+      if (mmr > bestMMR) {
+        bestMMR = mmr;
+        bestIdx = i;
+      }
+    }
+
+    if (bestIdx >= 0) {
+      selected.push(remaining[bestIdx].candidate);
+      remaining.splice(bestIdx, 1);
+    } else {
+      break;
+    }
+  }
+
+  return selected;
+}
+
+// ---------------------------------------------------------------------------
+// Combined Re-Ranker
+// ---------------------------------------------------------------------------
+
+/**
+ * Re-rank decrypted candidates using BM25 + Cosine + Importance + Recency
+ * with Weighted RRF fusion and MMR diversity.
  *
  * Pipeline:
  *   1. Tokenize query and all candidate texts
  *   2. Build corpus statistics (term document frequencies, average doc length)
  *   3. Score each candidate with BM25
  *   4. Score each candidate with cosine similarity (if embedding available)
- *   5. Rank independently by BM25 and by cosine
- *   6. Fuse rankings with RRF
- *   7. Return top-k candidates sorted by fused score
+ *   5. Score each candidate by importance
+ *   6. Score each candidate by recency
+ *   7. Fuse all 4 rankings with weighted RRF
+ *   8. Apply MMR for diversity
+ *   9. Return top-k candidates sorted by fused score
  *
  * Backward compatibility:
  *   - Candidates without embeddings get cosine score = 0 and are excluded
- *     from the cosine ranking list. They can still rank well via BM25.
- *   - If NO candidates have embeddings, ranking is BM25-only (single list RRF).
+ *     from the cosine ranking list. They can still rank well via other signals.
+ *   - If NO candidates have embeddings, cosine ranking is omitted.
+ *   - Candidates without importance get neutral score (0.5).
+ *   - Candidates without createdAt get neutral recency score (0.5).
+ *   - topK defaults to 8, weights default to equal (0.25 each).
  *
  * @param query          - The user's search query (plaintext)
  * @param queryEmbedding - Embedding vector for the query
  * @param candidates     - Decrypted candidates with text and optional embeddings
  * @param topK           - Number of results to return (default 8)
- * @returns              - Top-k candidates sorted by fused score
+ * @param weights        - Optional partial ranking weights (merged with defaults)
+ * @returns              - Top-k candidates sorted by fused score, with scores attached
  */
 export function rerank(
   query: string,
   queryEmbedding: number[],
   candidates: RerankerCandidate[],
   topK: number = 8,
-): RerankerCandidate[] {
+  weights?: Partial<RankingWeights>,
+): RerankerResult[] {
   if (candidates.length === 0) return [];
+
+  // Merge caller weights with defaults
+  const w: RankingWeights = { ...DEFAULT_WEIGHTS, ...weights };
 
   // --- Step 1: Tokenize ---
   const queryTerms = tokenize(query);
@@ -268,38 +441,69 @@ export function rerank(
   bm25Ranking.sort((a, b) => b.score - a.score);
 
   // --- Step 4: Cosine similarity scores ---
+  const cosineScores = new Map<string, number>();
   const cosineRanking: RankedItem[] = [];
   for (const candidate of candidates) {
     if (candidate.embedding && candidate.embedding.length > 0) {
       const score = cosineSimilarity(queryEmbedding, candidate.embedding);
+      cosineScores.set(candidate.id, score);
       cosineRanking.push({ id: candidate.id, score });
     }
   }
   cosineRanking.sort((a, b) => b.score - a.score);
 
-  // --- Step 5+6: RRF fusion ---
+  // --- Step 5: Importance ranking ---
+  const importanceRanking: RankedItem[] = candidates.map((c) => ({
+    id: c.id,
+    score: c.importance ?? 0.5,
+  }));
+  importanceRanking.sort((a, b) => b.score - a.score);
+
+  // --- Step 6: Recency ranking ---
+  const recencyRanking: RankedItem[] = candidates.map((c) => ({
+    id: c.id,
+    score: c.createdAt != null ? recencyScore(c.createdAt) : 0.5,
+  }));
+  recencyRanking.sort((a, b) => b.score - a.score);
+
+  // --- Step 7: Weighted RRF fusion ---
   const rankings: RankedItem[][] = [bm25Ranking];
+  const rankWeights: number[] = [w.bm25];
+
   if (cosineRanking.length > 0) {
     rankings.push(cosineRanking);
+    rankWeights.push(w.cosine);
   }
 
-  const fused = rrfFuse(rankings);
+  rankings.push(importanceRanking);
+  rankWeights.push(w.importance);
 
-  // --- Step 7: Return top-k ---
-  // Build a lookup map from candidate id to candidate object.
+  rankings.push(recencyRanking);
+  rankWeights.push(w.recency);
+
+  const fused = weightedRrfFuse(rankings, rankWeights);
+
+  // --- Step 8: Build result objects with scores ---
   const candidateMap = new Map<string, RerankerCandidate>();
   for (const c of candidates) {
     candidateMap.set(c.id, c);
   }
 
-  const result: RerankerCandidate[] = [];
+  const rrfResults: RerankerResult[] = [];
   for (const item of fused) {
-    if (result.length >= topK) break;
     const candidate = candidateMap.get(item.id);
     if (candidate) {
-      result.push(candidate);
+      rrfResults.push({
+        ...candidate,
+        rrfScore: item.score,
+        cosineSimilarity: cosineScores.get(item.id),
+      });
     }
   }
 
-  return result;
+  // --- Step 9: Apply MMR for diversity, then return top-k ---
+  const mmrResults = applyMMR(rrfResults, 0.7, topK);
+
+  // Preserve rrfScore and cosineSimilarity through MMR
+  return mmrResults as RerankerResult[];
 }

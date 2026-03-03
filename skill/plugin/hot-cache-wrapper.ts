@@ -20,6 +20,8 @@ interface CachePayload {
   factCount: number;
   lastSyncedBlock: number;
   smartAccountAddress: string;
+  lastUpdatedAt?: number;        // Unix timestamp (ms) of last cache update
+  lastQueryEmbedding?: number[]; // Embedding of last search query
 }
 
 const MAX_HOT_FACTS = 30;
@@ -31,6 +33,8 @@ export class PluginHotCache {
   private factCount = 0;
   private lastSyncedBlock = 0;
   private smartAccountAddress = '';
+  private lastUpdatedAt = 0;
+  private lastQueryEmbedding: number[] | null = null;
   private key: Buffer;
 
   constructor(private cachePath: string, hexKey: string) {
@@ -41,15 +45,29 @@ export class PluginHotCache {
   getFactCount(): number { return this.factCount; }
   getLastSyncedBlock(): number { return this.lastSyncedBlock; }
   getSmartAccountAddress(): string { return this.smartAccountAddress; }
+  getLastUpdatedAt(): number { return this.lastUpdatedAt; }
+  getLastQueryEmbedding(): number[] | null { return this.lastQueryEmbedding ? [...this.lastQueryEmbedding] : null; }
 
   setHotFacts(facts: HotFact[]): void {
     const sorted = [...facts].sort((a, b) => b.importance - a.importance);
     this.hotFacts = sorted.slice(0, MAX_HOT_FACTS);
+    this.lastUpdatedAt = Date.now();
   }
 
   setFactCount(count: number): void { this.factCount = count; }
   setLastSyncedBlock(block: number): void { this.lastSyncedBlock = block; }
   setSmartAccountAddress(addr: string): void { this.smartAccountAddress = addr; }
+  setLastUpdatedAt(ts: number): void { this.lastUpdatedAt = ts; }
+  setLastQueryEmbedding(embedding: number[] | null): void { this.lastQueryEmbedding = embedding ? [...embedding] : null; }
+
+  /**
+   * Check if the cache is fresh (within TTL).
+   * @param ttlMs TTL in milliseconds (default: 5 minutes)
+   */
+  isFresh(ttlMs: number = 300_000): boolean {
+    if (this.lastUpdatedAt === 0) return false;
+    return (Date.now() - this.lastUpdatedAt) < ttlMs;
+  }
 
   flush(): void {
     const payload: CachePayload = {
@@ -57,6 +75,8 @@ export class PluginHotCache {
       factCount: this.factCount,
       lastSyncedBlock: this.lastSyncedBlock,
       smartAccountAddress: this.smartAccountAddress,
+      lastUpdatedAt: this.lastUpdatedAt,
+      lastQueryEmbedding: this.lastQueryEmbedding,
     };
 
     const plaintext = Buffer.from(JSON.stringify(payload), 'utf-8');
@@ -92,11 +112,15 @@ export class PluginHotCache {
       this.factCount = payload.factCount || 0;
       this.lastSyncedBlock = payload.lastSyncedBlock || 0;
       this.smartAccountAddress = payload.smartAccountAddress || '';
+      this.lastUpdatedAt = payload.lastUpdatedAt || 0;
+      this.lastQueryEmbedding = payload.lastQueryEmbedding || null;
     } catch {
       this.hotFacts = [];
       this.factCount = 0;
       this.lastSyncedBlock = 0;
       this.smartAccountAddress = '';
+      this.lastUpdatedAt = 0;
+      this.lastQueryEmbedding = null;
     }
   }
 }

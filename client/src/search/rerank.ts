@@ -1,8 +1,9 @@
 /**
  * Search Reranking Functions
  *
- * Implements BM25 text scoring, cosine similarity, and Reciprocal Rank Fusion (RRF)
- * for combining multiple ranking signals.
+ * Implements BM25 text scoring, cosine similarity, Reciprocal Rank Fusion (RRF),
+ * Weighted RRF, and Maximal Marginal Relevance (MMR) for combining multiple
+ * ranking signals with diversity.
  */
 
 /**
@@ -334,4 +335,112 @@ export const bm25Scorer = new BM25Scorer();
  */
 export function bm25Score(query: string, doc: string): number {
   return bm25Scorer.quickScore(query, doc);
+}
+
+// ---------------------------------------------------------------------------
+// Weighted Reciprocal Rank Fusion
+// ---------------------------------------------------------------------------
+
+/**
+ * Weighted Reciprocal Rank Fusion for combining rankings with per-signal weights.
+ *
+ * Like standard RRF, but each ranking list's contribution is multiplied by
+ * its weight, allowing callers to emphasize or de-emphasize specific signals.
+ *
+ * @param rankings - Array of ranked item arrays (each array is a ranking, sorted by score desc)
+ * @param weights  - Weight for each ranking list (same length as rankings)
+ * @param k        - RRF smoothing constant (default 60)
+ * @returns Map of item id -> weighted RRF score
+ */
+export function weightedRrfFusion(
+  rankings: Array<Array<{ id: string; score?: number }>>,
+  weights: number[],
+  k: number = 60
+): Map<string, number> {
+  const scores = new Map<string, number>();
+
+  for (let r = 0; r < rankings.length; r++) {
+    const w = weights[r] ?? 1;
+    const ranking = rankings[r];
+    for (let rank = 0; rank < ranking.length; rank++) {
+      const item = ranking[rank];
+      const currentScore = scores.get(item.id) || 0;
+      scores.set(item.id, currentScore + w * (1 / (k + rank + 1)));
+    }
+  }
+
+  return scores;
+}
+
+// ---------------------------------------------------------------------------
+// MMR (Maximal Marginal Relevance)
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply Maximal Marginal Relevance to promote diversity in results.
+ *
+ * MMR re-orders a ranked list of candidates so that highly similar candidates
+ * are spread out. The algorithm greedily selects the candidate that maximizes:
+ *
+ *   MMR(d) = lambda * relevance(d) - (1 - lambda) * max_sim(d, selected)
+ *
+ * where:
+ *   - relevance(d) = position-based score (1.0 for first, linearly decreasing)
+ *   - max_sim(d, selected) = max cosine similarity between d and any already
+ *     selected candidate (0 if no embeddings available)
+ *
+ * @param candidates - Candidates in relevance order (best first), with optional embeddings
+ * @param lambda     - Trade-off between relevance and diversity (default 0.7)
+ * @param topK       - Number of results to return (default 8)
+ * @returns          - Re-ordered candidates with diversity
+ */
+export function applyMMR<T extends { id: string; embedding?: number[] }>(
+  candidates: T[],
+  lambda: number = 0.7,
+  topK: number = 8,
+): T[] {
+  if (candidates.length === 0) return [];
+  if (candidates.length <= 1) return candidates.slice(0, topK);
+
+  const remaining = candidates.map((c, i) => ({ candidate: c, index: i }));
+  const selected: T[] = [];
+  const n = candidates.length;
+
+  while (selected.length < topK && remaining.length > 0) {
+    let bestIdx = -1;
+    let bestMMR = -Infinity;
+
+    for (let i = 0; i < remaining.length; i++) {
+      const { candidate, index } = remaining[i];
+
+      // Relevance: linear decay from 1.0 (first) to near 0 (last)
+      const relevance = 1.0 - index / n;
+
+      // Max similarity to any already-selected candidate
+      let maxSim = 0;
+      if (candidate.embedding && candidate.embedding.length > 0) {
+        for (const sel of selected) {
+          if (sel.embedding && sel.embedding.length > 0) {
+            const sim = cosineSimilarity(candidate.embedding, sel.embedding);
+            if (sim > maxSim) maxSim = sim;
+          }
+        }
+      }
+
+      const mmr = lambda * relevance - (1 - lambda) * maxSim;
+      if (mmr > bestMMR) {
+        bestMMR = mmr;
+        bestIdx = i;
+      }
+    }
+
+    if (bestIdx >= 0) {
+      selected.push(remaining[bestIdx].candidate);
+      remaining.splice(bestIdx, 1);
+    } else {
+      break;
+    }
+  }
+
+  return selected;
 }

@@ -3,6 +3,13 @@
  *
  * Used when TOTALRECLAW_SUBGRAPH_MODE=true. Replaces the HTTP POST
  * to /v1/search with a GraphQL query to the subgraph.
+ *
+ * Improvements (v3):
+ *   A1: blindIndices → blindIndexes (Graph Node pluralization)
+ *   A2: Small parallel batches (5 trapdoors each) for recall
+ *   A3: orderBy: id, orderDirection: desc (recency proxy)
+ *   A4: Cursor-based pagination for saturated batches
+ *   C4: globalStates for lightweight fact count
  */
 
 import { getSubgraphConfig } from './subgraph-store.js';
@@ -12,15 +19,106 @@ export interface SubgraphSearchFact {
   encryptedBlob: string;
   encryptedEmbedding: string | null;
   decayScore: string;
+  timestamp: string;
   isActive: boolean;
 }
 
-const TRAPDOOR_BATCH_SIZE = 500;
+/** Small batches so rare trapdoor matches aren't drowned by common ones. */
+const TRAPDOOR_BATCH_SIZE = 5;
 const PAGE_SIZE = 1000;
 
 /**
+ * Execute a single GraphQL query against the subgraph endpoint.
+ * Returns null on any network or HTTP error (never throws).
+ */
+async function gqlQuery<T>(
+  endpoint: string,
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<T | null> {
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables }),
+    });
+    if (!response.ok) return null;
+    const json = await response.json() as { data?: T };
+    return json.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** GraphQL query for blind index lookup — uses Graph Node's `blindIndexes` pluralization. */
+const SEARCH_QUERY = `
+  query SearchByBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!) {
+    blindIndexes(
+      where: { hash_in: $trapdoors, owner: $owner }
+      first: $first
+      orderBy: id
+      orderDirection: desc
+    ) {
+      id
+      fact {
+        id
+        encryptedBlob
+        encryptedEmbedding
+        decayScore
+        timestamp
+        isActive
+        contentFp
+        sequenceId
+        version
+      }
+    }
+  }
+`;
+
+/** Pagination query — cursor-based using id_gt, ascending for deterministic walk. */
+const PAGINATE_QUERY = `
+  query PaginateBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!, $lastId: String!) {
+    blindIndexes(
+      where: { hash_in: $trapdoors, owner: $owner, id_gt: $lastId }
+      first: $first
+      orderBy: id
+      orderDirection: asc
+    ) {
+      id
+      fact {
+        id
+        encryptedBlob
+        encryptedEmbedding
+        timestamp
+        decayScore
+        isActive
+        contentFp
+        sequenceId
+        version
+      }
+    }
+  }
+`;
+
+interface BlindIndexEntry {
+  id: string;
+  fact: SubgraphSearchFact;
+}
+
+interface SearchResponse {
+  blindIndexes?: BlindIndexEntry[];
+}
+
+/**
  * Search the subgraph for facts matching the given trapdoors.
- * Uses GraphQL hash_in query on BlindIndex entities.
+ *
+ * Strategy:
+ *   1. Split trapdoors into small chunks (TRAPDOOR_BATCH_SIZE=5).
+ *   2. Fire all chunks in parallel via Promise.all.
+ *   3. If any chunk returns exactly PAGE_SIZE results (saturated),
+ *      paginate that chunk using id_gt cursor until exhausted or
+ *      maxCandidates reached.
+ *   4. Dedup across all chunks by fact id.
  */
 export async function searchSubgraph(
   owner: string,
@@ -30,62 +128,67 @@ export async function searchSubgraph(
   const config = getSubgraphConfig();
   const allResults = new Map<string, SubgraphSearchFact>();
 
+  // Split trapdoors into small chunks for parallel dispatch.
+  const chunks: string[][] = [];
   for (let i = 0; i < trapdoors.length; i += TRAPDOOR_BATCH_SIZE) {
-    const batch = trapdoors.slice(i, i + TRAPDOOR_BATCH_SIZE);
+    chunks.push(trapdoors.slice(i, i + TRAPDOOR_BATCH_SIZE));
+  }
 
-    const query = `
-      query SearchByBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!) {
-        blindIndices(
-          where: { hash_in: $trapdoors, owner: $owner }
-          first: $first
-        ) {
-          fact {
-            id
-            encryptedBlob
-            encryptedEmbedding
-            decayScore
-            isActive
-            contentFp
-            sequenceId
-            version
-          }
-        }
+  // Phase 1: Parallel initial queries (one per chunk).
+  const initialResults = await Promise.all(
+    chunks.map(async (chunk) => {
+      const data = await gqlQuery<SearchResponse>(
+        config.subgraphEndpoint,
+        SEARCH_QUERY,
+        { trapdoors: chunk, owner, first: PAGE_SIZE },
+      );
+      return { chunk, entries: data?.blindIndexes ?? [] };
+    }),
+  );
+
+  // Collect initial results and identify saturated batches.
+  const saturatedChunks: string[][] = [];
+  for (const { chunk, entries } of initialResults) {
+    for (const entry of entries) {
+      if (entry.fact && !allResults.has(entry.fact.id)) {
+        allResults.set(entry.fact.id, entry.fact);
       }
-    `;
-
-    try {
-      const response = await fetch(config.subgraphEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query,
-          variables: {
-            trapdoors: batch,
-            owner,
-            first: Math.min(maxCandidates, PAGE_SIZE),
-          },
-        }),
-      });
-
-      if (!response.ok) continue;
-
-      const json = await response.json() as {
-        data?: { blindIndices?: Array<{ fact: SubgraphSearchFact }> };
-      };
-
-      if (json.data?.blindIndices) {
-        for (const entry of json.data.blindIndices) {
-          if (entry.fact && !allResults.has(entry.fact.id)) {
-            allResults.set(entry.fact.id, entry.fact);
-          }
-        }
-      }
-    } catch {
-      // Network error on this batch — continue with remaining batches.
-      continue;
     }
+    if (entries.length >= PAGE_SIZE) {
+      saturatedChunks.push(chunk);
+    }
+  }
 
+  // Phase 2: Cursor-based pagination for saturated batches.
+  // Only paginate if we haven't yet reached maxCandidates.
+  for (const chunk of saturatedChunks) {
     if (allResults.size >= maxCandidates) break;
+
+    // Find the last blind-index id from the initial results for this chunk.
+    // We need to re-query with ascending order for deterministic cursor walk.
+    let lastId = '';
+
+    while (allResults.size < maxCandidates) {
+      const data = await gqlQuery<SearchResponse>(
+        config.subgraphEndpoint,
+        PAGINATE_QUERY,
+        { trapdoors: chunk, owner, first: PAGE_SIZE, lastId },
+      );
+
+      const entries = data?.blindIndexes ?? [];
+      if (entries.length === 0) break;
+
+      for (const entry of entries) {
+        if (entry.fact && !allResults.has(entry.fact.id)) {
+          allResults.set(entry.fact.id, entry.fact);
+        }
+      }
+
+      // If we got fewer than PAGE_SIZE, this chunk is exhausted.
+      if (entries.length < PAGE_SIZE) break;
+
+      lastId = entries[entries.length - 1].id;
+    }
   }
 
   return Array.from(allResults.values());
@@ -93,30 +196,32 @@ export async function searchSubgraph(
 
 /**
  * Get fact count from the subgraph for dynamic pool sizing.
+ * Uses the globalStates entity for a lightweight single-row lookup
+ * instead of fetching and counting individual fact IDs.
  */
 export async function getSubgraphFactCount(owner: string): Promise<number> {
   const config = getSubgraphConfig();
 
+  // globalStates is a singleton entity (id: "global") with aggregate counters.
+  // It is NOT per-owner — it tracks totals across the entire subgraph.
   const query = `
-    query CountFacts($owner: Bytes!) {
-      facts(where: { owner: $owner, isActive: true }, first: 1000) {
-        id
+    query FactCount {
+      globalStates(first: 1) {
+        totalFacts
       }
     }
   `;
 
-  try {
-    const response = await fetch(config.subgraphEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { owner } }),
-    });
+  const data = await gqlQuery<{ globalStates?: Array<{ totalFacts: string }> }>(
+    config.subgraphEndpoint,
+    query,
+    {},
+  );
 
-    if (!response.ok) return 0;
-
-    const json = await response.json() as { data?: { facts?: Array<{ id: string }> } };
-    return json.data?.facts?.length || 0;
-  } catch {
-    return 0;
+  if (data?.globalStates && data.globalStates.length > 0) {
+    const count = parseInt(data.globalStates[0].totalFacts, 10);
+    return isNaN(count) ? 0 : count;
   }
+
+  return 0;
 }
