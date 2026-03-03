@@ -7,6 +7,90 @@
 
 ## 2026-03-02
 
+### Session 18 | Claude (opus) | Scaling Analysis, Competitive Research & Retrieval Improvements Spec
+
+**Branch:** `feature/subgraph`
+**Goal:** Complete remaining E2E plan tasks (PG metrics, scaling analysis, report), deep research into Graph Node limits and competitive landscape, create retrieval improvements spec.
+
+**Tasks completed:**
+- **Task 5 (PG metrics):** Captured PostgreSQL infrastructure metrics from running Graph Node stack.
+- **Task 7 (scaling analysis):** Fixed `scaling-analysis.ts` — PG table parser corrected for actual psql output format, indices/fact derived from PG row counts (not capped GraphQL sample), Base L2 gas price corrected from 0.05 gwei to 0.001 gwei. Ran full scaling analysis.
+- **Task 8 (comprehensive report):** Generated `subgraph/tests/comprehensive-report.md` with full E2E + scaling analysis results.
+
+**Research completed:**
+- **Graph Node limits:** `GRAPH_GRAPHQL_MAX_FIRST` defaults to 1000 but is fully configurable (no hard cap). Set via env var on Graph Node container.
+- **Arbitrum Nova support:** Confirmed — Graph Node supports Arbitrum Nova as a deployment target.
+- **graph-client auto-pagination:** Does NOT work for `hash_in` filtered queries. Cursor-based pagination is only effective on unfiltered entity queries.
+- **Competitive analysis:** Researched Mem0, QMD, LanceDB, LangMem, Supermemory, MemOS, Zep, memU, GAM, Mneme. Key findings: Mem0 uses 0.3 cosine similarity threshold before storing; Supermemory injects profile context every 50 turns.
+
+**Skill hook analysis:**
+- `before_agent_start` — fires search every message >= 5 chars (industry standard behavior)
+- `agent_end` — fires store every turn (no importance/recency filter)
+- `before_compaction` — fires store
+- `before_reset` — fires store
+- Also 4 explicit tools (remember, recall, forget, export)
+- `autoExtractEveryTurns` config exists in code but is NOT implemented — dead config key
+
+**Key findings (retrieval quality gaps):**
+- No relevance threshold on search — all queries fire regardless of likely memory utility
+- No importance or recency weighting in ranking — pure BM25/cosine/RRF
+- `autoExtractEveryTurns` config unused
+- `first: 1000` blind index query limit is the primary cause of 40.2% vs 98.1% recall gap
+
+**Spec created:**
+- `docs/specs/totalreclaw/retrieval-improvements-v3.md` — 20 improvements across 5 categories:
+  - A: Subgraph recall improvements (configuring GRAPH_GRAPHQL_MAX_FIRST, pagination, index compaction)
+  - B: Ranking quality (importance/recency signals, cosine threshold, query intent detection)
+  - C: Search efficiency (relevance gating, adaptive firing threshold)
+  - D: Write optimization (importance filtering before store, dedup improvements)
+  - E: Architecture differentiators (Celestia DA for 55x cheaper storage, Arbitrum Nova support)
+
+**Scaling numbers (corrected):**
+- 38.8 indices/fact (measured from PG row counts)
+- $0.010/fact on Base L2 (corrected gas price)
+- Celestia DA could reduce storage cost ~55x vs Ethereum calldata
+
+---
+
+### Session 17 | Claude (opus) | Subgraph E2E Validation & Scaling Analysis
+
+**Branch:** `feature/subgraph`
+**Goal:** Run E2E tests with OMBH benchmark data, measure gas costs, create scaling analysis.
+
+**Bug fixes (critical, in Session 16 code):**
+1. **Docker Compose C locale** — PostgreSQL must use `--lc-collate=C` for Graph Node. Added `POSTGRES_INITDB_ARGS`.
+2. **Protobuf decoder UTF-8** — `data.subarray()` returns `Uint8Array`, not `Bytes`. `Uint8Array.toString()` in AssemblyScript returns comma-separated numbers. Fixed: `Bytes.fromUint8Array(slice).toString()` for proper UTF-8 decoding.
+3. **GraphQL entity pluralization** — Graph Node pluralizes `BlindIndex` as `blindIndexes` (not `blindIndices`). Fixed in all GraphQL queries AND result access.
+4. **EntryPoint auth for local testing** — `deploy.ts --network localhost` uses canonical ERC-4337 address. Fixed: call `setEntryPoint(deployer.address)` via contract owner.
+5. **Hardhat account key** — Original hardcoded key was wrong. Fixed: use `provider.getSigner(0)` instead.
+6. **tsx/AssemblyScript conflict** — tsx picks up `.ts` files from `@graphprotocol/graph-ts/node_modules/assemblyscript`. Fixed: separate `tsconfig.node.json` with `--tsconfig` flag.
+
+**Results achieved:**
+- **Gas measurement:** 10/10 test cases. Medium fact with embedding: 379,650 gas, 8,967 bytes. Report: `subgraph/tests/gas-report.md`
+- **E2E validation:** 415 facts ingested (21 facts/s, 0 errors), 140 queries run.
+  - Overall Recall@8: 40.2% (vs 98.1% PostgreSQL baseline — gap due to `first: 1000` limit on blind index queries)
+  - Factual: 62.3%, Semantic: 44.3%, Cross-conversation: 27.5%
+  - Query latency: Client prep 9ms, GraphQL 71ms, Reranking 14ms (total ~94ms avg)
+- **Latency breakdown instrumentation** added to e2e-ombh-validation.ts
+- **Scaling analysis script** created at `subgraph/tests/scaling-analysis.ts`
+
+**Files modified:**
+- `subgraph/docker-compose.yml` — POSTGRES_INITDB_ARGS for C locale
+- `subgraph/src/protobuf.ts` — Bytes.fromUint8Array for UTF-8 decoding
+- `subgraph/tests/e2e-ombh-validation.ts` — blindIndexes fix, setEntryPoint, getSigner(0), latency breakdown
+- `subgraph/tests/gas-measurement.ts` — setEntryPoint fix
+- `subgraph/package.json` — tsx dev dep, test:gas/test:e2e/test:scaling scripts
+- `subgraph/tsconfig.node.json` — NEW: Node.js tsconfig for test scripts (avoids AssemblyScript)
+
+**Files created:**
+- `subgraph/tests/scaling-analysis.ts` — Scaling analysis for 1K/10K user scenarios
+- `subgraph/tests/gas-report.md` — Gas cost measurement report
+- `subgraph/tests/e2e-results/` — E2E results directory with JSON reports
+
+**Status:** Tasks 5 (PG metrics), 7 (run scaling analysis), 8 (comprehensive report) still pending. Dev stack running.
+
+---
+
 ### Session 16 | Claude (opus) | Subgraph v2 Implementation
 
 **Branch:** `feature/subgraph`

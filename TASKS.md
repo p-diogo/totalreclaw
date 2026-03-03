@@ -2,7 +2,7 @@
 
 > **Source of truth for all agents.** Read this file first. Claim tasks before starting work. Update status as you go.
 
-**Last updated:** 2026-02-28 (session 13)
+**Last updated:** 2026-03-02 (session 18)
 **Roadmap:** See `docs/ROADMAP.md` for the full product roadmap.
 
 ---
@@ -449,18 +449,81 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ---
 
+---
+
+## Phase 14: Retrieval Improvements v3 — PENDING
+
+**Spec:** `docs/specs/totalreclaw/retrieval-improvements-v3.md`
+**Branch:** `feature/subgraph` (or new branch off main)
+**Goal:** Implement 20 retrieval and architecture improvements across 5 categories, informed by competitive analysis and E2E gap diagnosis.
+
+**Background:** E2E recall@8 is 40.2% vs 98.1% PostgreSQL baseline. Primary cause: `first: 1000` blind index query limit in GraphQL. Secondary causes: no relevance threshold, no importance/recency weighting, `autoExtractEveryTurns` config unused.
+
+| ID | Category | Task | Status | Notes |
+|----|----------|------|--------|-------|
+| T320 | A — Subgraph recall | Configure GRAPH_GRAPHQL_MAX_FIRST (raise limit beyond 1000) | pending | Env var on Graph Node container. Expected to close most of the 40.2% → 98.1% gap. |
+| T321 | A — Subgraph recall | Implement paginated blind index queries (cursor-based fallback) | pending | For datasets where even high MAX_FIRST is insufficient |
+| T322 | A — Subgraph recall | Index compaction / blind index deduplication | pending | Reduce redundant index entries over time |
+| T323 | B — Ranking quality | Add importance score to ranking (weighted RRF) | pending | Extract importance at store time, use as ranking signal |
+| T324 | B — Ranking quality | Add recency decay to ranking | pending | Time-weighted score — recent facts rank higher for temporal queries |
+| T325 | B — Ranking quality | Cosine similarity threshold (0.3 min, à la Mem0) | pending | Filter candidates below threshold before reranking |
+| T326 | B — Ranking quality | Query intent detection (factual vs semantic vs temporal) | pending | Route queries to appropriate ranking strategy |
+| T327 | C — Search efficiency | Relevance gating — skip search for low-utility queries | pending | `autoExtractEveryTurns` config is dead — implement real adaptive firing |
+| T328 | C — Search efficiency | Implement autoExtractEveryTurns (currently unused config) | pending | Fire extract every N turns instead of every turn |
+| T329 | D — Write optimization | Importance filter before store (skip low-importance facts) | pending | Use importance score from extraction — don't store score < 3 |
+| T330 | D — Write optimization | Improved dedup (semantic similarity check, not just content_fp) | pending | Catch near-duplicates that have different wording |
+| T331 | E — Architecture | Celestia DA integration (55x cheaper storage vs Ethereum calldata) | pending | DA layer swap — store blob on Celestia, post commitment on-chain |
+| T332 | E — Architecture | Arbitrum Nova deployment support | pending | Graph Node confirmed compatible; lower gas than Base for high-frequency writes |
+
+**Priority order:** T320 (highest impact, fix the recall gap) → T323/T324/T325 (ranking quality) → T327/T328 (efficiency) → T329/T330 (write opt) → T331/T332 (architecture, deferred).
+
+---
+
 ## Notes for Next Agent
 
 - **ROADMAP is in `docs/ROADMAP.md`** -- For the big picture (PoC -> MVP -> Subgraph -> TEE).
 - **Specs are in `docs/specs/`** -- Organized by product: `totalreclaw/`, `subgraph/`, `tee/`.
 - **Plans are in the `totalreclaw-internal` repo** -- `plans/` directory.
 
-### Current State (after Session 16 -- Subgraph v2 Implementation)
+### Current State (after Session 18 -- Scaling Analysis, Competitive Research & Retrieval Spec)
 
-- **Branch:** `feature/subgraph` -- 7 commits ahead of `main`, all 12 plan tasks complete
+- **Branch:** `feature/subgraph` -- subgraph v2 complete + E2E analysis done + retrieval spec created
 - **DECISION PENDING:** User needs to choose: merge to main, push + PR, keep as-is, or discard
-- **Tests:** 209/209 client tests pass (29 new: 10 subgraph client, 10 hot cache, 9 recovery). Subgraph builds clean. Server 272/272 (pre-existing pytest-asyncio errors excluded).
-- **E2E/Gas scripts NOT YET RUN** -- `e2e-ombh-validation.ts` and `gas-measurement.ts` require `dev.sh` running (Hardhat + Docker Graph Node stack). Scripts are written and ready.
+- **Tests:** 209/209 client tests pass. Subgraph builds clean. Server 272/272 (pre-existing pytest-asyncio errors excluded).
+- **E2E recall@8:** 40.2% (vs 98.1% PG baseline). Fix: raise GRAPH_GRAPHQL_MAX_FIRST on Graph Node (T320).
+- **Next spec:** `docs/specs/totalreclaw/retrieval-improvements-v3.md` — 20 improvements, T320-T332 in TASKS.md.
+
+### Session 17 Progress (IN PROGRESS)
+
+**Goal:** Run E2E tests, measure gas costs, capture infrastructure metrics, create scaling analysis.
+
+**Completed:**
+1. **Dependencies installed** -- ethers, @scure/bip39, porter-stemmer, @huggingface/transformers, tsx
+2. **Docker Compose fixed** -- PostgreSQL C locale (`POSTGRES_INITDB_ARGS: "--lc-collate=C --lc-ctype=C"`)
+3. **Protobuf decoder bug fixed** -- `Bytes.fromUint8Array(slice)` for UTF-8 decoding (was using raw `Uint8Array.toString()` which returns comma-separated numbers in AssemblyScript)
+4. **GraphQL entity name fixed** -- `blindIndices` → `blindIndexes` (Graph Node pluralization)
+5. **EntryPoint auth fixed** -- `setEntryPoint(deployer.address)` instead of impersonation (deploy.ts uses canonical ERC-4337 address on localhost)
+6. **Gas measurement COMPLETE** -- 10/10 test cases passed. Results in `subgraph/tests/gas-report.md`:
+   - Medium fact with embedding: 379,650 gas, 8,967 bytes calldata
+   - Base L2 cost per fact: ~$0.009 (L1 data + L2 execution)
+   - tsx + tsconfig.node.json setup for running tests (avoids AssemblyScript conflicts)
+7. **E2E ingest works** -- 415 facts ingested in ~20s (21 facts/s), 0 tx errors
+8. **Latency breakdown code added** -- prepTimeMs, graphqlTimeMs, rerankTimeMs per query
+9. **Scaling analysis script created** -- `subgraph/tests/scaling-analysis.ts`
+
+**In Progress:**
+- E2E query validation (0% recall bug just fixed -- `result.data.blindIndices` → `result.data.blindIndexes` iteration)
+- Re-running E2E test with the final fix
+
+**Completed (Session 18):**
+- Task 5: Capture Graph Node infrastructure metrics — DONE (38.8 indices/fact from PG row counts)
+- Task 7: Run scaling analysis — DONE (scaling-analysis.ts fixed + run; $0.010/fact corrected)
+- Task 8: Generate comprehensive report — DONE (`subgraph/tests/comprehensive-report.md`)
+
+**Dev Stack State:**
+- Hardhat node + Docker (PostgreSQL + IPFS + Graph Node) running in background
+- 415 facts indexed, subgraph operational
+- `npm run test:e2e` / `npm run test:gas` / `npm run test:scaling` scripts available
 
 ### Key Files Created in Session 16
 
@@ -499,8 +562,10 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 | Priority | Task | Notes |
 |----------|------|-------|
-| **Next** | Run E2E validation + gas measurement | Start `dev.sh`, then `run-e2e-validation.sh` and `gas-measurement.ts`. Verify recall@8 >= 90%. |
-| **Next** | Merge/PR decision for feature/subgraph | User was presented options before compaction |
+| **Next** | T320: Raise GRAPH_GRAPHQL_MAX_FIRST on Graph Node | Single env var change — expected to close the 40.2%→~98% recall gap |
+| **Next** | Merge/PR decision for feature/subgraph | User decision pending |
+| **High** | T323-T326: Ranking quality improvements | importance/recency signals, cosine threshold, query intent |
+| **Pending** | T327-T328: Search efficiency (relevance gating, autoExtractEveryTurns) | Implement unused config |
 | **Pending** | Implement MCP auto-memory | Spec at `docs/specs/totalreclaw/mcp-auto-memory.md` |
 | **Pending** | Re-run 5-way benchmark with bge-small-en-v1.5 | Validate embedding upgrade |
 | **Pending** | T138: GitHub Actions CI workflow | Basic pytest + npm test |
@@ -508,6 +573,8 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ### Session History
 
+- **Session 18:** Completed E2E plan Tasks 5/7/8 (PG metrics, scaling analysis, comprehensive report). Fixed scaling-analysis.ts (PG parser, gas price 0.05→0.001 gwei). Deep research: Graph Node limits (GRAPH_GRAPHQL_MAX_FIRST configurable), Arbitrum Nova confirmed, graph-client pagination limitation. Competitive analysis (Mem0, Supermemory, etc.). Skill hook audit. Created retrieval-improvements-v3.md (20 improvements, 5 categories). Scaling: 38.8 indices/fact, $0.010/fact Base L2.
+- **Session 17:** Subgraph E2E validation & scaling analysis. Fixed 6 bugs in Session 16 code (C locale, protobuf UTF-8, GraphQL entity name, EntryPoint auth, Hardhat key, tsx/AssemblyScript). Gas measurement: 10/10 (379K gas medium fact). E2E: 40.2% recall@8 (vs 98.1% PG baseline). Latency: 9ms prep + 71ms GraphQL + 14ms rerank. Scaling script created. Tasks 5/7/8 pending.
 - **Session 16:** T300-T311 (subgraph v2: Docker dev env, inverted BlindIndex schema, protobuf v2 decoder, subgraph client, hot cache, plugin store/search paths, E2E validation script, gas measurement script, recovery flow). 12 tasks completed. Branch: `feature/subgraph`, 7 commits ahead of main. 209/209 client tests.
 - **Session 15:** T280-T290 (3-repo restructure: sync, rename, cleanup, NanoClaw MCP promotion, internal/website repos, tagging, CLAUDE.md rewrite). 11 tasks completed.
 - **Session 14:** T270-T275 + T227-T228 (embedding upgrade bge-small-en-v1.5, dynamic pool sizing, server metrics, NanoClaw sync, MCP auto-memory spec, codebase rebrand, build artifact cleanup). 8 tasks completed.
