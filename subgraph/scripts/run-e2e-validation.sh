@@ -18,7 +18,7 @@ echo "This will ingest 415 facts and run 140 queries."
 echo "Expected runtime: 10-30 minutes (depending on embedding model speed)."
 echo ""
 
-npx tsx tests/e2e-ombh-validation.ts
+npx tsx --tsconfig tsconfig.node.json tests/e2e-ombh-validation.ts
 
 echo ""
 echo "=== Done. Results in subgraph/tests/e2e-results/ ==="

@@ -9,8 +9,8 @@
  *   1. Hardhat node running: cd contracts && npx hardhat node
  *   2. Contracts deployed: cd contracts && npx hardhat run scripts/deploy.ts --network localhost
  *
- * Usage:
- *   npx tsx subgraph/tests/gas-measurement.ts
+ * Usage (from subgraph/):
+ *   npx tsx --tsconfig tsconfig.node.json tests/gas-measurement.ts
  */
 
 import { ethers } from "ethers";
@@ -490,7 +490,7 @@ async function main() {
     process.exit(1);
   }
 
-  // Use Hardhat account #0 (the deployer, which is also the EntryPoint on local)
+  // Use Hardhat account #0 as the deployer (has ETH by default)
   const signer = await provider.getSigner(0);
   const signerAddress = await signer.getAddress();
   console.log(`Signer (deployer/entryPoint): ${signerAddress}`);
@@ -507,6 +507,19 @@ async function main() {
   const dataEdgeAddress: string = addresses.eventfulDataEdge;
 
   console.log(`DataEdge contract: ${dataEdgeAddress}`);
+
+  // The EventfulDataEdge fallback checks `require(msg.sender == entryPoint)`.
+  // On localhost, deploy.ts sets entryPoint to the canonical ERC-4337 address.
+  // Use setEntryPoint() to update it to the deployer for local testing.
+  if (signerAddress.toLowerCase() !== addresses.entryPoint.toLowerCase()) {
+    console.log("EntryPoint != deployer — calling setEntryPoint() to update...");
+    const abi = ["function setEntryPoint(address _newEntryPoint) external"];
+    const dataEdge = new ethers.Contract(dataEdgeAddress, abi, signer);
+    const tx = await dataEdge.setEntryPoint(signerAddress);
+    await tx.wait();
+    console.log(`EntryPoint updated to deployer: ${signerAddress}`);
+  }
+
   console.log("");
 
   // Verify the contract exists and we can call it

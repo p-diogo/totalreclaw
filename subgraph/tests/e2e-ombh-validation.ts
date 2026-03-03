@@ -9,7 +9,7 @@
  *   - dev.sh running in another terminal (Hardhat + Graph Node)
  *   - ONNX model will auto-download on first run (~33.8MB)
  *
- * Run with: npx tsx tests/e2e-ombh-validation.ts
+ * Run with (from subgraph/): npx tsx --tsconfig tsconfig.node.json tests/e2e-ombh-validation.ts
  *
  * Note: Like pocv2-e2e-test.ts, this script inlines crypto functions with
  * .js import paths that work under npx tsx (OpenClaw's bundler uses bare paths).
@@ -43,8 +43,9 @@ import { pipeline, type FeatureExtractionPipeline } from '@huggingface/transform
 const HARDHAT_RPC = 'http://127.0.0.1:8545';
 const SUBGRAPH_ENDPOINT = 'http://localhost:8000/subgraphs/name/totalreclaw';
 
-/** Hardhat default account #0 — used as deployer AND entryPoint in local dev. */
-const HARDHAT_ACCOUNT_0_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcda11801a8c31c2bc';
+/** Hardhat default account #0 — used as deployer AND contract owner in local dev. */
+// Note: We use provider.getSigner(0) instead of a hardcoded key to ensure we get
+// the actual Hardhat account that deployed (and owns) the contracts.
 
 /** Path to OMBH ground truth data (in totalreclaw-internal repo). */
 const OMBH_FACTS_PATH = path.resolve(
@@ -281,7 +282,7 @@ async function searchByBlindIndices(
 
     const result = await querySubgraph(`
       query SearchByBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!) {
-        blindIndices(
+        blindIndexes(
           where: { hash_in: $trapdoors, owner: $owner }
           first: $first
         ) {
@@ -300,8 +301,8 @@ async function searchByBlindIndices(
       first: Math.min(maxCandidates, 1000),
     });
 
-    if (result?.data?.blindIndices) {
-      for (const entry of result.data.blindIndices) {
+    if (result?.data?.blindIndexes) {
+      for (const entry of result.data.blindIndexes) {
         if (entry.fact && !allResults.has(entry.fact.id)) {
           allResults.set(entry.fact.id, entry.fact);
         }
@@ -403,7 +404,7 @@ async function main() {
   console.log('[3/6] Connecting to Hardhat node...');
 
   const provider = new ethers.JsonRpcProvider(HARDHAT_RPC);
-  const deployer = new ethers.Wallet(HARDHAT_ACCOUNT_0_KEY, provider);
+  const deployer = await provider.getSigner(0);
 
   // Read deployed contract address
   const addressesPath = path.resolve(__dirname, '..', '..', 'contracts', 'deployed-addresses.json');
@@ -417,13 +418,20 @@ async function main() {
 
   console.log(`  Deployer: ${deployer.address}`);
   console.log(`  DataEdge: ${dataEdgeAddress}`);
-  console.log(`  EntryPoint (local): ${addresses.entryPoint} (= deployer for Hardhat)`);
+  console.log(`  EntryPoint: ${addresses.entryPoint}`);
 
-  // Verify deployer is the entryPoint (required for fallback to accept tx)
+  // The EventfulDataEdge fallback checks `require(msg.sender == entryPoint)`.
+  // On localhost, deploy.ts sets entryPoint to the canonical ERC-4337 address.
+  // Use setEntryPoint() to update it to the deployer address for local testing.
   if (deployer.address.toLowerCase() !== addresses.entryPoint.toLowerCase()) {
-    console.error('ERROR: Deployer address does not match entryPoint. Cannot send direct txs.');
-    process.exit(1);
+    console.log('  EntryPoint != deployer — calling setEntryPoint() to update...');
+    const abi = ['function setEntryPoint(address _newEntryPoint) external'];
+    const dataEdge = new ethers.Contract(dataEdgeAddress, abi, deployer);
+    const tx = await dataEdge.setEntryPoint(deployer.address);
+    await tx.wait();
+    console.log(`  EntryPoint updated to deployer: ${deployer.address}`);
   }
+  const txSigner = deployer;
 
   // ---- Step 4: Ingest 415 facts ----
   console.log('[4/6] Ingesting facts on-chain...');
@@ -491,8 +499,8 @@ async function main() {
 
       const protobuf = encodeFactProtobuf(factPayload);
 
-      // 10. Send as direct transaction to Hardhat node
-      const tx = await deployer.sendTransaction({
+      // 10. Send as transaction from the EntryPoint signer (or deployer if they're the same)
+      const tx = await txSigner.sendTransaction({
         to: dataEdgeAddress,
         data: '0x' + protobuf.toString('hex'),
         gasLimit: 3_000_000,
@@ -569,9 +577,9 @@ async function main() {
 
   // Count total blind index entities (sample first 1000)
   const blindIndexCountResult = await querySubgraph(`{
-    blindIndices(first: 1000) { id }
+    blindIndexes(first: 1000) { id }
   }`);
-  const blindIndexSample = blindIndexCountResult?.data?.blindIndices?.length ?? 0;
+  const blindIndexSample = blindIndexCountResult?.data?.blindIndexes?.length ?? 0;
   console.log(`  BlindIndex entities (sampled): >= ${blindIndexSample}`);
 
   // ---- Step 6: Run 140 queries ----
@@ -586,6 +594,9 @@ async function main() {
     mrr: number;
     candidateCount: number;
     timeMs: number;
+    prepTimeMs: number;
+    graphqlTimeMs: number;
+    rerankTimeMs: number;
     topKIds: string[];
     expectedIds: string[];
   }
@@ -601,6 +612,8 @@ async function main() {
     const queryStart = process.hrtime();
 
     try {
+      const prepStart = process.hrtime();
+
       // 1. Generate word trapdoors
       const wordTrapdoors = generateBlindIndices(query.text);
 
@@ -611,8 +624,14 @@ async function main() {
       // 3. Merge all trapdoors
       const allTrapdoors = [...wordTrapdoors, ...lshTrapdoors];
 
+      const prepTimeMs = hrMs(prepStart);
+      const graphqlStart = process.hrtime();
+
       // 4. Query subgraph via GraphQL hash_in
       const candidates = await searchByBlindIndices(ownerHex, allTrapdoors);
+
+      const graphqlTimeMs = hrMs(graphqlStart);
+      const rerankStart = process.hrtime();
 
       // 5. Decrypt returned facts and build reranker input
       const rerankerCandidates: RerankerCandidate[] = [];
@@ -651,6 +670,8 @@ async function main() {
       // 6. Rerank with BM25 + cosine + RRF
       const reranked = rerank(query.text, queryEmbedding, rerankerCandidates, 8);
 
+      const rerankTimeMs = hrMs(rerankStart);
+
       const elapsed = hrMs(queryStart);
       queryTimings.push(elapsed);
 
@@ -688,6 +709,9 @@ async function main() {
         mrr,
         candidateCount: candidates.length,
         timeMs: elapsed,
+        prepTimeMs,
+        graphqlTimeMs,
+        rerankTimeMs,
         topKIds,
         expectedIds,
       });
@@ -707,6 +731,9 @@ async function main() {
         mrr: 0,
         candidateCount: 0,
         timeMs: hrMs(queryStart),
+        prepTimeMs: 0,
+        graphqlTimeMs: 0,
+        rerankTimeMs: 0,
         topKIds: [],
         expectedIds: query.relevant_facts.map((rf) => rf.fact_id),
       });
@@ -767,6 +794,26 @@ async function main() {
   console.log(`    p95:    ${percentile(queryTimings, 95).toFixed(0)}ms`);
   console.log(`    p99:    ${percentile(queryTimings, 99).toFixed(0)}ms`);
 
+  // Latency breakdown
+  const prepTimes = queryResults.filter(r => r.prepTimeMs > 0).map(r => r.prepTimeMs).sort((a, b) => a - b);
+  const gqlTimes = queryResults.filter(r => r.graphqlTimeMs > 0).map(r => r.graphqlTimeMs).sort((a, b) => a - b);
+  const rerankTimes = queryResults.filter(r => r.rerankTimeMs > 0).map(r => r.rerankTimeMs).sort((a, b) => a - b);
+
+  console.log('');
+  console.log('  Query Latency Breakdown:');
+  if (prepTimes.length > 0) {
+    const avgPrep = prepTimes.reduce((a, b) => a + b, 0) / prepTimes.length;
+    console.log(`    Client prep (avg/p95):   ${avgPrep.toFixed(0)}ms / ${percentile(prepTimes, 95).toFixed(0)}ms  (embed + blind indices + LSH)`);
+  }
+  if (gqlTimes.length > 0) {
+    const avgGql = gqlTimes.reduce((a, b) => a + b, 0) / gqlTimes.length;
+    console.log(`    GraphQL (avg/p95):       ${avgGql.toFixed(0)}ms / ${percentile(gqlTimes, 95).toFixed(0)}ms  (network + Graph Node)`);
+  }
+  if (rerankTimes.length > 0) {
+    const avgRerank = rerankTimes.reduce((a, b) => a + b, 0) / rerankTimes.length;
+    console.log(`    Reranking (avg/p95):     ${avgRerank.toFixed(0)}ms / ${percentile(rerankTimes, 95).toFixed(0)}ms  (decrypt + BM25 + cosine + RRF)`);
+  }
+
   // Subgraph entity counts
   console.log('');
   console.log('  Subgraph State:');
@@ -803,6 +850,12 @@ async function main() {
       medianMs: median(queryTimings),
       p95Ms: percentile(queryTimings, 95),
       p99Ms: percentile(queryTimings, 99),
+      prepAvgMs: prepTimes.length > 0 ? prepTimes.reduce((a, b) => a + b, 0) / prepTimes.length : 0,
+      prepP95Ms: prepTimes.length > 0 ? percentile(prepTimes, 95) : 0,
+      graphqlAvgMs: gqlTimes.length > 0 ? gqlTimes.reduce((a, b) => a + b, 0) / gqlTimes.length : 0,
+      graphqlP95Ms: gqlTimes.length > 0 ? percentile(gqlTimes, 95) : 0,
+      rerankAvgMs: rerankTimes.length > 0 ? rerankTimes.reduce((a, b) => a + b, 0) / rerankTimes.length : 0,
+      rerankP95Ms: rerankTimes.length > 0 ? percentile(rerankTimes, 95) : 0,
     },
     overall: {
       recall8: overallRecall,
@@ -818,6 +871,9 @@ async function main() {
       mrr: r.mrr,
       candidateCount: r.candidateCount,
       timeMs: r.timeMs,
+      prepTimeMs: r.prepTimeMs,
+      graphqlTimeMs: r.graphqlTimeMs,
+      rerankTimeMs: r.rerankTimeMs,
     })),
   };
 

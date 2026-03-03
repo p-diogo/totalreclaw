@@ -133,25 +133,28 @@ export function decodeFact(data: Bytes): DecodedFact {
       if (offset + len > data.length) break;
 
       let slice = data.subarray(offset, offset + len);
+      // Convert Uint8Array to Bytes so toString() does UTF-8 decoding
+      // (Uint8Array.toString() returns comma-separated numbers in AssemblyScript)
+      let sliceBytes = Bytes.fromUint8Array(slice);
 
       if (fieldNumber == 1) {
-        fact.id = slice.toString();
+        fact.id = sliceBytes.toString();
       } else if (fieldNumber == 3) {
-        fact.owner = slice.toString();
+        fact.owner = sliceBytes.toString();
       } else if (fieldNumber == 4) {
-        fact.encryptedBlob = Bytes.fromUint8Array(slice);
+        fact.encryptedBlob = sliceBytes;
       } else if (fieldNumber == 5) {
         let indices = fact.blindIndices;
-        indices.push(slice.toString());
+        indices.push(sliceBytes.toString());
         fact.blindIndices = indices;
       } else if (fieldNumber == 9) {
-        fact.source = slice.toString();
+        fact.source = sliceBytes.toString();
       } else if (fieldNumber == 10) {
-        fact.contentFp = slice.toString();
+        fact.contentFp = sliceBytes.toString();
       } else if (fieldNumber == 11) {
-        fact.agentId = slice.toString();
+        fact.agentId = sliceBytes.toString();
       } else if (fieldNumber == 13) {
-        fact.encryptedEmbedding = slice.toString();
+        fact.encryptedEmbedding = sliceBytes.toString();
       }
 
       offset += len;
