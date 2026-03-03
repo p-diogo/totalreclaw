@@ -66,7 +66,7 @@ interface OpenClawPluginApi {
 // ---------------------------------------------------------------------------
 
 /** Path where we persist userId + salt across restarts. */
-const CREDENTIALS_PATH = '/home/node/.totalreclaw/credentials.json';
+const CREDENTIALS_PATH = process.env.TOTALRECLAW_CREDENTIALS_PATH || '/home/node/.totalreclaw/credentials.json';
 
 // ---------------------------------------------------------------------------
 // Module-level state (persists across tool calls within a session)
@@ -1388,6 +1388,18 @@ export default plugin;
  * ONLY call this from test code — never in production.
  */
 export function __resetForTesting(): void {
+  authKeyHex = null;
+  encryptionKey = null;
+  dedupKey = null;
+  userId = null;
+  apiClient = null;
+  initPromise = null;
+  lshHasher = null;
+  lshInitFailed = false;
+  masterPasswordCache = null;
+  saltCache = null;
+  cachedFactCount = null;
+  lastFactCountFetch = 0;
   pluginHotCache = null;
   lastSearchTimestamp = 0;
   lastQueryEmbedding = null;
