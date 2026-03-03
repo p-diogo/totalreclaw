@@ -7,6 +7,38 @@
 
 ## 2026-03-03
 
+### Session 20 | Claude (opus) | Billing & Go-Live Architecture — Gnosis Chain Decision
+
+**Branch:** `feature/subgraph`
+**Result:** Complete billing and onboarding architecture spec for subgraph go-live.
+
+**Key decisions:**
+
+| Decision | Choice |
+|----------|--------|
+| Chain | **Gnosis Chain** — $0.00076/fact (8-13x cheaper than Base), xDAI stablecoin gas, Graph indexing rewards |
+| Paymaster | Pimlico or ZeroDev (not Coinbase — Base-only) with custom webhook for subscription gating |
+| Fiat payments | Stripe Checkout (agent-generated URL) |
+| Crypto payments | Coinbase Commerce (USDC/USDT on Solana, Base, Ethereum, Polygon, Arbitrum) |
+| Auth | Wallet signature per request (no API keys) |
+| Identity | Wallet address = billing + auth + on-chain identity |
+| Free tier | Yes (threshold TBD), subscription $2-5/mo |
+| Indexing | Subgraph on The Graph Network (existing code, zero changes) |
+
+**Research conducted:**
+- Paymaster SaaS comparison: Pimlico, ZeroDev, Coinbase, Alchemy, Biconomy, Gelato
+- Chain cost analysis: 15+ Graph-supported chains compared (Gnosis, Base, Arbitrum, Optimism, Celo, Scroll, Linea, Manta, Mantle, etc.)
+- Alt-DA chains disqualified: Celestia/EigenDA prune data after ~30 days (dealbreaker for memory vault)
+- Custom data service evaluation: Graph Horizon not ready (Q4 2026), Substreams overkill, Ponder/Envio don't improve economics
+- AI agent payment landscape: x402, Coinbase Agentic Wallets, PayPal MCP, Privacy.com
+- Fiat on-ramp comparison: Stripe, MoonPay, Transak, Ramp Network
+
+**Files created/updated:**
+- `docs/specs/subgraph/billing-and-onboarding.md` (v1.0) — full go-live architecture
+- `docs/ROADMAP.md` — Phase 3 updated with Gnosis decision and economics
+
+---
+
 ### Session 19 | Claude (haiku + opus) | E2E Functional Test Suite — 66/66 PASS (COMPLETE)
 
 **Branch:** `feature/subgraph`

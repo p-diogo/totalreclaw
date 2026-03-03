@@ -2,7 +2,7 @@
 
 > **Source of truth for all agents.** Read this file first. Claim tasks before starting work. Update status as you go.
 
-**Last updated:** 2026-03-03 (session 19 — COMPLETED)
+**Last updated:** 2026-03-03 (session 20 — billing & go-live architecture)
 **Roadmap:** See `docs/ROADMAP.md` for the full product roadmap.
 
 ---
@@ -32,6 +32,7 @@
 | Phase 11 | Subgraph (Decentralized) | COMPLETED — 92 tests, code done, deployment blocked on credentials |
 | Phase 12 | MVP Polish & Ship | IN PROGRESS — /v1/ prefix, /export pagination, DB backup, OpenAPI, rate limit observability |
 | Phase 15 | E2E Functional Test Suite | COMPLETED — 66/66 assertions, 5 instances, 8 scenarios (A-H) |
+| Phase 16 | Gnosis Go-Live (Billing + Deploy) | PLANNED — retarget to Gnosis, fix recall, paymaster eval, Stripe/Commerce integration |
 | PoC v2 | LSH + Semantic Search | COMPLETED — 122 tests, local embeddings, BM25/cosine/RRF reranking |
 | Benchmark | 5-Way Memory Comparison | COMPLETED — 5-way benchmark done, retrieval improvements validated (+48% semantic recall) |
 | LSH Tuning Spec | Multi-Tenant SaaS LSH Guidance | COMPLETED — `docs/specs/totalreclaw/lsh-tuning.md` |
@@ -517,20 +518,53 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ---
 
+## Phase 16: Gnosis Go-Live (Billing + Deploy) — PLANNED
+
+**Spec:** `docs/specs/subgraph/billing-and-onboarding.md` (v1.0)
+**Branch:** `feature/subgraph`
+**Goal:** Retarget from Base to Gnosis Chain, fix subgraph recall, evaluate paymaster, integrate payments. Make the subgraph product shippable.
+
+**Decisions made (Session 20):**
+- **Chain:** Gnosis Chain ($0.00076/fact, xDAI stablecoin gas, Graph indexing rewards)
+- **Paymaster:** Pimlico or ZeroDev (webhook-based subscription gating)
+- **Fiat:** Stripe Checkout (agent-generated URL)
+- **Crypto:** Coinbase Commerce (USDC/USDT on Solana, Base, Ethereum, Polygon, Arbitrum)
+- **Auth:** Wallet signature (no API keys)
+- **Free tier:** Yes (threshold TBD), subscription $2-5/mo
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T360 | Retarget deploy scripts to Gnosis Chain | pending | — | — | Update Hardhat config, subgraph.yaml network field, deploy-contracts.sh |
+| T361 | Fix subgraph recall gap (raise GRAPH_GRAPHQL_MAX_FIRST + pagination) | pending | — | — | Supersedes T320 (Phase 14). Env var change + query pagination in subgraph-search.ts. Expected: 40.2%→~98% |
+| T362 | Evaluate Pimlico vs ZeroDev on Gnosis | pending | — | — | Test webhook policy support, developer experience, billing model |
+| T363 | Stripe Checkout integration | pending | — | — | Agent-generated checkout URL, webhook handler, subscription table |
+| T364 | Coinbase Commerce integration | pending | — | — | Crypto payment URL, webhook handler, multi-chain stablecoin support |
+| T365 | Deploy to Gnosis Chiado testnet | pending | — | T360 | E2E validation on real network |
+
+**Priority order:** T360 + T361 (parallel, no deps) → T362 → T363 + T364 (parallel) → T365
+
+---
+
 ## Notes for Next Agent
 
 - **ROADMAP is in `docs/ROADMAP.md`** -- For the big picture (PoC -> MVP -> Subgraph -> TEE).
 - **Specs are in `docs/specs/`** -- Organized by product: `totalreclaw/`, `subgraph/`, `tee/`.
+- **Billing spec:** `docs/specs/subgraph/billing-and-onboarding.md` (v1.0) — full go-live architecture.
 - **Plans are in the `totalreclaw-internal` repo** -- `plans/` directory.
 
-### Current State (after Session 19 -- E2E Functional Test Suite COMPLETE)
+### Current State (after Session 20 -- Billing & Go-Live Architecture)
 
-- **Branch:** `feature/subgraph` -- subgraph v2 complete + E2E functional test suite 66/66 PASS (all modes)
-- **E2E functional tests:** 66/66 assertions PASS across 5 instances (server-improved, server-baseline, subgraph-improved, subgraph-baseline, server-recency), 8 scenarios (A-H)
+- **Branch:** `feature/subgraph` -- subgraph v2 + E2E tests 66/66 PASS + billing spec v1.0
+- **Key decision:** Gnosis Chain for deployment ($0.00076/fact, profitable at $2/mo subscription)
+- **E2E functional tests:** 66/66 assertions PASS across 5 instances, 8 scenarios (A-H)
 - **Tests:** 209/209 client tests pass. Server 272/272 (pre-existing pytest-asyncio errors excluded).
-- **E2E recall@8:** 40.2% (vs 98.1% PG baseline). Fix: raise GRAPH_GRAPHQL_MAX_FIRST on Graph Node (T320).
-- **ONNX mutex error at shutdown** (exit code 134) is cosmetic — does not affect test results.
-- **Graph Node infra** running (Docker Compose: PostgreSQL 15432, IPFS 15001, Graph Node 8000/8020, Hardhat 8545).
+- **E2E recall@8:** 40.2% (vs 98.1% PG baseline). Fix: T361 (raise GRAPH_GRAPHQL_MAX_FIRST + pagination).
+- **Next phase:** Phase 16 (Gnosis Go-Live) — 6 tasks, ~2 weeks estimated.
+- **Graph Node Docker stack** from Session 17 may still be running (ports 8545/8000/8020/15432/15001). Safe to stop — Phase 16 will use Gnosis testnet, not local Hardhat.
+- **Uncommitted files from prior sessions** (not Phase 16 work — do NOT stage these):
+  - `mcp/tests/*.test.js` (5 files), `server/pyproject.toml`, `server/tests/test_integration.py`, `tests/parity/`
+  - Modified: `contracts/package-lock.json`, `server/requirements.txt`, `subgraph/package-lock.json`
+- **Merge decision pending:** `feature/subgraph` → `main` should happen before or after Phase 16, not during. Phase 16 agents should work on `feature/subgraph`.
 
 ### Key Files Created in Session 16
 
@@ -569,21 +603,21 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 | Priority | Task | Notes |
 |----------|------|-------|
-| **High** | Merge/PR decision for feature/subgraph | User decision pending — branch includes subgraph v2 + E2E test suite |
-| **High** | T320: Raise GRAPH_GRAPHQL_MAX_FIRST on Graph Node | Single env var change — expected to close the 40.2%→~98% recall gap |
-| **High** | T323-T326: Ranking quality improvements | importance/recency signals, cosine threshold, query intent |
-| **Medium** | Run E2E tests against real subgraph (not just mock) | Integration validation with live Graph Node |
-| **Medium** | Fix TWO_TIER_SEARCH fallback to word trapdoors when LSH returns 0 hits | Plugin improvement for small datasets |
-| **Medium** | ONNX mutex cleanup at shutdown | Cosmetic — exit code 134, does not affect results |
-| **Pending** | T327-T328: Search efficiency (relevance gating, autoExtractEveryTurns) | Implement unused config |
-| **Pending** | Implement MCP auto-memory | Spec at `docs/specs/totalreclaw/mcp-auto-memory.md` |
-| **Pending** | Re-run 5-way benchmark with bge-small-en-v1.5 | Validate embedding upgrade |
+| **HIGH** | Phase 16: Gnosis Go-Live (T360-T365) | Retarget to Gnosis, fix recall, paymaster eval, Stripe/Commerce |
+| **HIGH** | T361: Fix subgraph recall gap | Raise GRAPH_GRAPHQL_MAX_FIRST + pagination. Expected: 40.2%→~98% |
+| **HIGH** | T360: Retarget deploy scripts to Gnosis | Hardhat config, subgraph.yaml, deploy-contracts.sh |
+| **Medium** | T362: Evaluate Pimlico vs ZeroDev on Gnosis | Webhook policy support, billing, developer experience |
+| **Medium** | T363-T364: Stripe + Coinbase Commerce integration | Payment webhooks, subscription table |
+| **Medium** | Phase 14 T323-T326: Ranking quality improvements | importance/recency signals, cosine threshold, query intent |
+| **Medium** | Merge/PR decision for feature/subgraph | Branch includes subgraph v2 + E2E tests + billing spec |
+| **Pending** | T327-T328: Search efficiency (relevance gating) | Implement unused autoExtractEveryTurns config |
+| **Pending** | MCP auto-memory | Spec at `docs/specs/totalreclaw/mcp-auto-memory.md` |
 | **Pending** | T138: GitHub Actions CI workflow | Basic pytest + npm test |
 | **Pending** | T086: Make totalreclaw repo public | Needs @pdiogo action |
-| **Pending** | Consider adding Scenario H to server-baseline applicability | Currently only in server-improved and subgraph-improved |
 
 ### Session History
 
+- **Session 20:** Billing & go-live architecture brainstorm. Decided: Gnosis Chain ($0.00076/fact, xDAI stablecoin, Graph indexing rewards), Pimlico/ZeroDev paymaster (webhook gating), Stripe + Coinbase Commerce payments, wallet-signature auth. Created `docs/specs/subgraph/billing-and-onboarding.md` (v1.0). Updated ROADMAP Phase 3. Research: 15+ chains compared, alt-DA disqualified (data pruning), custom data services rejected (Horizon not ready). Phase 16 tasks T360-T365 defined.
 - **Session 19:** E2E functional test suite — **66/66 assertions PASS** across 5 instances, 8 scenarios (A-H). Part 1 (haiku): Fixed @noble/hashes import paths, CREDENTIALS_PATH configurable, __resetForTesting() enhanced, mock-server.ts created, run-all.ts integrated. Part 2 (opus): Fixed baseline assertion failures, Scenario H (30 Alex Chen messages, Anthropic SDK mock), mock-subgraph.ts (relay + GraphQL), cache assertions mode-agnostic, TWO_TIER_SEARCH=false for subgraph, pagination assertion conditional, relaxed greeting for small datasets. All instances pass: server-improved 19/19, server-baseline 16/16, subgraph-improved 18/18, subgraph-baseline 9/9, server-recency 4/4.
 - **Session 18:** Completed E2E plan Tasks 5/7/8 (PG metrics, scaling analysis, comprehensive report). Fixed scaling-analysis.ts (PG parser, gas price 0.05→0.001 gwei). Deep research: Graph Node limits (GRAPH_GRAPHQL_MAX_FIRST configurable), Arbitrum Nova confirmed, graph-client pagination limitation. Competitive analysis (Mem0, Supermemory, etc.). Skill hook audit. Created retrieval-improvements-v3.md (20 improvements, 5 categories). Scaling: 38.8 indices/fact, $0.010/fact Base L2.
 - **Session 17:** Subgraph E2E validation & scaling analysis. Fixed 6 bugs in Session 16 code (C locale, protobuf UTF-8, GraphQL entity name, EntryPoint auth, Hardhat key, tsx/AssemblyScript). Gas measurement: 10/10 (379K gas medium fact). E2E: 40.2% recall@8 (vs 98.1% PG baseline). Latency: 9ms prep + 71ms GraphQL + 14ms rerank. Scaling script created. Tasks 5/7/8 pending.
