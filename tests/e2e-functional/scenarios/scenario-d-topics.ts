@@ -38,6 +38,12 @@ const scenarioD: ConversationScenario = {
         "I've been getting really into Italian cooking lately. Made fresh pasta from scratch for the first time last weekend -- just flour and eggs, no machine.",
       assistantResponse:
         'Fresh pasta is so rewarding to make by hand. What kind of pasta did you make?',
+      toolCalls: [
+        {
+          name: 'totalreclaw_remember',
+          params: { text: "I've been getting into Italian cooking, made fresh pasta from scratch and served it with cacio e pepe" },
+        },
+      ],
     },
     {
       index: 1,
@@ -100,6 +106,12 @@ const scenarioD: ConversationScenario = {
         "Switching gears completely -- I'm planning a trip to Japan in November. Two weeks, flying into Tokyo and making my way down to Kyoto and Osaka.",
       assistantResponse:
         'November is a beautiful time for Japan. The autumn foliage in Kyoto is spectacular. Two weeks gives you a great pace.',
+      toolCalls: [
+        {
+          name: 'totalreclaw_remember',
+          params: { text: 'Planning a two-week trip to Japan in November, flying into Tokyo and visiting Kyoto and Osaka' },
+        },
+      ],
     },
     {
       index: 9,
@@ -161,6 +173,12 @@ const scenarioD: ConversationScenario = {
         "Oh, totally different topic -- I signed up for the Portland Marathon in October! It's my first full marathon. I've done a few halfs before.",
       assistantResponse:
         'Congratulations on signing up! Going from half to full marathon is a big step. When did you start training?',
+      toolCalls: [
+        {
+          name: 'totalreclaw_remember',
+          params: { text: 'Signed up for the Portland Marathon in October, first full marathon, have done half marathons before' },
+        },
+      ],
     },
     {
       index: 17,

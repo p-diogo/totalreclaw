@@ -29,6 +29,12 @@ const scenarioB: ConversationScenario = {
         "I've been diving into Rust this week. The ownership system is fascinating -- every value has exactly one owner, and when the owner goes out of scope, the value is dropped.",
       assistantResponse:
         'Ownership is the core concept that makes Rust unique. It eliminates the need for a garbage collector.',
+      toolCalls: [
+        {
+          name: 'totalreclaw_remember',
+          params: { text: 'Rust ownership system: every value has exactly one owner, when owner goes out of scope the value is dropped' },
+        },
+      ],
     },
     {
       index: 1,
@@ -36,6 +42,12 @@ const scenarioB: ConversationScenario = {
         "The borrow checker is tricky though. I keep running into issues where I have a mutable reference and then try to use an immutable one. The compiler yells at me every time.",
       assistantResponse:
         'That is one of the most common stumbling blocks. You can have either one mutable reference or any number of immutable references, but not both at the same time.',
+      toolCalls: [
+        {
+          name: 'totalreclaw_remember',
+          params: { text: 'Rust borrow checker: can have either one mutable reference or any number of immutable references, but not both' },
+        },
+      ],
     },
     {
       index: 2,
@@ -43,6 +55,12 @@ const scenarioB: ConversationScenario = {
         "Lifetimes are the part that really messes with my head. The 'a syntax for annotating how long references live -- it feels so foreign compared to Go.",
       assistantResponse:
         'Lifetimes are definitely the steepest part of the learning curve. They let the compiler verify that references are always valid.',
+      toolCalls: [
+        {
+          name: 'totalreclaw_remember',
+          params: { text: "Rust lifetimes: the 'a syntax for annotating how long references live, compiler verifies references are always valid" },
+        },
+      ],
     },
     {
       index: 3,
@@ -50,6 +68,12 @@ const scenarioB: ConversationScenario = {
         "Traits are interesting though -- they're like interfaces but more powerful. I like how you can implement a trait for any type, even ones from other crates.",
       assistantResponse:
         'Traits are one of the best parts of Rust. They enable polymorphism without inheritance and work really well with generics.',
+      toolCalls: [
+        {
+          name: 'totalreclaw_remember',
+          params: { text: 'Rust traits: like interfaces but more powerful, can implement a trait for any type including ones from other crates' },
+        },
+      ],
     },
     {
       index: 4,

@@ -229,7 +229,7 @@ export class ConversationDriver {
     this.metrics.injectionEvents.push({
       turnIndex: turn.index,
       injected: !!injectedContext?.prependContext,
-      contextSnippet: injectedContext?.prependContext?.slice(0, 200) ?? null,
+      contextSnippet: injectedContext?.prependContext?.slice(0, 2000) ?? null,
       timestamp: Date.now(),
     });
 
@@ -264,6 +264,13 @@ export class ConversationDriver {
     await this.fireHook('agent_end', {
       messages: updatedHistory,
       success: true,
+    });
+    // Inject turn boundary marker AFTER agent_end for the extraction tracker.
+    // This ensures extraction logs from the hook are assigned to the correct turn.
+    this.logCapture.push({
+      level: 'info',
+      timestamp: Date.now(),
+      args: [`agent_end: turn ${turn.index} complete`],
     });
 
     const turnDurationMs = performance.now() - turnStart;

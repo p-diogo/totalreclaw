@@ -3,17 +3,19 @@
  * run-all.ts -- Main orchestrator for the E2E functional test suite.
  *
  * Execution flow (section 7.3):
- *   1. Parse CLI arguments (--instances, --scenarios)
- *   2. For each instance:
- *      a. Set environment variables
+ *   1. Start in-memory mock TotalReclaw server
+ *   2. Parse CLI arguments (--instances, --scenarios)
+ *   3. For each instance:
+ *      a. Set environment variables (including mock server URL)
  *      b. Install GraphQL interceptor (if subgraph mode)
  *      c. For each applicable scenario:
+ *         - Reset mock server state + plugin state
  *         - Create ConversationDriver
  *         - driver.initialize() -> driver.runScenario()
  *         - Collect TestMetrics, run assertions
- *         - Reset module state for next scenario
- *   3. Run cross-instance comparison assertions
- *   4. Generate JSON report + stdout summary
+ *   4. Run cross-instance comparison assertions
+ *   5. Generate JSON report + stdout summary
+ *   6. Stop mock server
  *
  * Usage:
  *   tsx run-all.ts
@@ -22,6 +24,9 @@
  *   tsx run-all.ts --scenarios=A,B,C --instances=server-improved,server-baseline
  */
 
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { ConversationDriver } from './conversation-driver.js';
 import { generateReport, printSummary, writeReportToFile } from './report.js';
 import {
@@ -32,12 +37,21 @@ import {
 import { analyzeCacheEvents } from './interceptors/cache-monitor.js';
 import { analyzeExtractionEvents } from './interceptors/extraction-tracker.js';
 import * as scenarioAssertions from './assertions/scenario-assertions.js';
+import { startMockServer, type MockServer } from './mock-server.js';
+import { startMockSubgraph, type MockSubgraph } from './mock-subgraph.js';
+import {
+  installLLMInterceptor,
+  resetExtractionCallCount,
+  resetAnthropicTurnCounter,
+} from './interceptors/llm-interceptor.js';
 import type {
   InstanceConfig,
   ConversationScenario,
   TestMetrics,
   AssertionResult,
   InstanceReport,
+  Turn,
+  TurnResult,
 } from './types.js';
 import { SCENARIO_APPLICABILITY } from './types.js';
 
@@ -46,6 +60,24 @@ import { SCENARIO_APPLICABILITY } from './types.js';
 // ---------------------------------------------------------------------------
 
 const PLUGIN_PATH = '../../skill/plugin/index.ts';
+
+/** These env vars are injected into ALL server-mode instances at runtime. */
+function serverBaseEnv(mockServerUrl: string, credentialsDir: string): Record<string, string> {
+  return {
+    TOTALRECLAW_MASTER_PASSWORD: 'e2e-test-master-password-2026',
+    TOTALRECLAW_SERVER_URL: mockServerUrl,
+    TOTALRECLAW_CREDENTIALS_PATH: path.join(credentialsDir, 'credentials.json'),
+    // Mock LLM: set a fake OpenAI key so the plugin's LLM client detects a provider.
+    // The actual API calls are intercepted by llm-interceptor.ts.
+    OPENAI_API_KEY: 'mock-openai-key-for-e2e-testing',
+    // Mock Anthropic key for Scenario H (LLM-driven freeform).
+    // The orchestrator checks isApiKeyAvailable() which reads this env var.
+    ANTHROPIC_API_KEY: 'mock-anthropic-key-for-e2e',
+    // Redirect Anthropic SDK to the mock server (SDK bypasses globalThis.fetch).
+    // The mock server serves /v1/messages with pre-scripted Alex Chen responses.
+    ANTHROPIC_BASE_URL: mockServerUrl,
+  };
+}
 
 const ALL_INSTANCES: InstanceConfig[] = [
   {
@@ -82,7 +114,9 @@ const ALL_INSTANCES: InstanceConfig[] = [
       TOTALRECLAW_RELEVANCE_THRESHOLD: '0.3',
       TOTALRECLAW_EXTRACT_EVERY_TURNS: '5',
       TOTALRECLAW_RANKING_WEIGHTS: '0.25,0.25,0.25,0.25',
-      TOTALRECLAW_TWO_TIER_SEARCH: 'true',
+      // TWO_TIER_SEARCH disabled for mock: LSH-only hook search needs ~100+ facts
+      // to reliably match. With <20 mock facts, word trapdoors are needed.
+      TOTALRECLAW_TWO_TIER_SEARCH: 'false',
       TOTALRECLAW_CACHE_TTL_MS: '300000',
       TOTALRECLAW_SUBGRAPH_MODE: 'true',
       TOTALRECLAW_SUBGRAPH_ENDPOINT: 'http://localhost:28000/subgraphs/name/totalreclaw',
@@ -122,7 +156,6 @@ const ALL_INSTANCES: InstanceConfig[] = [
 // Scenario loading
 // ---------------------------------------------------------------------------
 
-/** Maps scenario letter IDs to their module paths. */
 const SCENARIO_MODULES: Record<string, string> = {
   A: './scenarios/scenario-a-preferences.js',
   B: './scenarios/scenario-b-technical.js',
@@ -134,13 +167,6 @@ const SCENARIO_MODULES: Record<string, string> = {
   H: './scenarios/scenario-h-freeform.js',
 };
 
-/**
- * Load a scenario definition from the scenarios/ directory.
- *
- * Scenario files export a ConversationScenario either as `default` or as a
- * named export (`scenarioA`, `scenarioE`, etc.). This function normalizes
- * access and overrides the pluginPath to match the instance config.
- */
 async function loadScenario(
   scenarioId: string,
   pluginPath: string,
@@ -153,8 +179,6 @@ async function loadScenario(
   }
 
   const mod = await import(modulePath);
-
-  // Scenario files use either `export default` or `export const scenarioX`
   const scenario: ConversationScenario =
     mod.default ??
     mod[`scenario${scenarioId}`] ??
@@ -168,7 +192,6 @@ async function loadScenario(
     );
   }
 
-  // Override pluginPath to match the instance being tested
   return { ...scenario, pluginPath };
 }
 
@@ -176,13 +199,6 @@ async function loadScenario(
 // Assertion loading
 // ---------------------------------------------------------------------------
 
-/**
- * Collect all assertion functions for a given scenario letter.
- *
- * Assertions are exported from `assertions/scenario-assertions.ts` with naming
- * convention `scenarioX_assertion_name`. This function filters to those matching
- * the requested scenario and returns them as a name -> function map.
- */
 function getAssertionsForScenario(
   scenarioId: string,
 ): Record<string, (metrics: TestMetrics) => void> {
@@ -273,6 +289,25 @@ function restoreEnv(previous: Record<string, string | undefined>): void {
 }
 
 // ---------------------------------------------------------------------------
+// Plugin state reset
+// ---------------------------------------------------------------------------
+
+/**
+ * Reset the plugin's module-level state between scenarios.
+ * Dynamically imports the plugin to call __resetForTesting().
+ */
+async function resetPluginState(pluginPath: string): Promise<void> {
+  try {
+    const mod = await import(pluginPath);
+    if (typeof mod.__resetForTesting === 'function') {
+      mod.__resetForTesting();
+    }
+  } catch {
+    // Plugin not loaded yet — nothing to reset
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main execution
 // ---------------------------------------------------------------------------
 
@@ -280,11 +315,42 @@ async function main(): Promise<void> {
   const startTime = performance.now();
   const cliArgs = parseArgs();
 
+  // Create temp directory for credentials
+  const credentialsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'totalreclaw-e2e-'));
+
+  // Install LLM mock interceptor BEFORE any plugin loading.
+  // This intercepts fetch calls to LLM APIs and returns mock extraction results.
+  installLLMInterceptor();
+
+  // Start mock server (needed for all instances: server-mode uses it for API,
+  // subgraph-mode uses it for user registration + Anthropic mock)
+  const mockServer = await startMockServer();
+  console.log(`Mock server started at ${mockServer.url}`);
+
+  // Start mock subgraph (for subgraph-mode instances)
+  let mockSubgraph: MockSubgraph | null = null;
+  const hasSubgraphInstances = cliArgs.instances.some((id) => {
+    const inst = ALL_INSTANCES.find((i) => i.id === id);
+    return inst && inst.mode === 'subgraph';
+  });
+
+  if (hasSubgraphInstances) {
+    mockSubgraph = await startMockSubgraph();
+    console.log(`Mock subgraph started: relay=${mockSubgraph.relayUrl}, graphql=${mockSubgraph.graphqlUrl}`);
+  }
+
   console.log('='.repeat(70));
   console.log('  TotalReclaw E2E Functional Test Suite');
   console.log('='.repeat(70));
   console.log(`  Instances: ${cliArgs.instances.join(', ')}`);
   console.log(`  Scenarios: ${cliArgs.scenarios.join(', ')}`);
+  if (mockServer) {
+    console.log(`  Mock Server: ${mockServer.url}`);
+  }
+  if (mockSubgraph) {
+    console.log(`  Mock Relay:    ${mockSubgraph.relayUrl}`);
+    console.log(`  Mock GraphQL:  ${mockSubgraph.graphqlUrl}`);
+  }
   console.log('='.repeat(70));
   console.log();
 
@@ -298,6 +364,34 @@ async function main(): Promise<void> {
       `Available: ${ALL_INSTANCES.map((i) => i.id).join(', ')}`,
     );
     process.exit(1);
+  }
+
+  // Inject server base env vars into server-mode instances
+  const baseEnv = serverBaseEnv(mockServer.url, credentialsDir);
+  for (const inst of instances) {
+    if (inst.mode === 'server') {
+      Object.assign(inst.env, baseEnv);
+    }
+  }
+
+  // Inject mock subgraph URLs into subgraph-mode instances
+  if (mockSubgraph) {
+    for (const inst of instances) {
+      if (inst.mode === 'subgraph') {
+        inst.env.TOTALRECLAW_RELAY_URL = mockSubgraph.relayUrl;
+        // The GraphQL endpoint path must match what the plugin constructs:
+        // it uses the full env var value as-is, so include the subgraph path.
+        inst.env.TOTALRECLAW_SUBGRAPH_ENDPOINT = `${mockSubgraph.graphqlUrl}/subgraphs/name/totalreclaw`;
+        // Subgraph instances also need the mock server for user registration,
+        // plus master password, credentials, and mock LLM keys.
+        inst.env.TOTALRECLAW_SERVER_URL = mockServer.url;
+        inst.env.TOTALRECLAW_MASTER_PASSWORD = 'e2e-test-master-password-2026';
+        inst.env.TOTALRECLAW_CREDENTIALS_PATH = path.join(credentialsDir, 'credentials.json');
+        inst.env.OPENAI_API_KEY = 'mock-openai-key-for-e2e-testing';
+        inst.env.ANTHROPIC_API_KEY = 'mock-anthropic-key-for-e2e';
+        inst.env.ANTHROPIC_BASE_URL = mockServer.url;
+      }
+    }
   }
 
   // Collect all results keyed by instanceId -> scenarioId
@@ -330,6 +424,18 @@ async function main(): Promise<void> {
       const scenarioStart = performance.now();
 
       try {
+        // Reset state for isolation
+        if (mockServer) mockServer.reset();
+        if (mockSubgraph) mockSubgraph.reset();
+        resetCaptures();
+        resetExtractionCallCount();
+        resetAnthropicTurnCounter();
+        await resetPluginState(instance.pluginPath);
+
+        // Delete credentials file so plugin re-registers
+        const credFile = path.join(credentialsDir, 'credentials.json');
+        if (fs.existsSync(credFile)) fs.unlinkSync(credFile);
+
         // Load scenario definition with instance-specific pluginPath
         const scenario = await loadScenario(scenarioId, instance.pluginPath);
 
@@ -339,12 +445,55 @@ async function main(): Promise<void> {
         // Save and set environment
         const previousEnv = setInstanceEnv(instance);
 
-        // Reset GraphQL captures for this scenario
-        resetCaptures();
-
         // Create driver and run scenario
         const driver = new ConversationDriver(instance, scenario);
-        const metrics = await driver.runScenario();
+        let metrics: TestMetrics;
+        let turnsExecuted: number;
+
+        // Scenario H (LLM-driven freeform): delegate to the orchestrator
+        if ((scenario as ConversationScenario & { useLlmOrchestrator?: boolean }).useLlmOrchestrator) {
+          // Ensure mock Anthropic key is set (serverBaseEnv sets it for server
+          // instances, but subgraph instances may not have it)
+          if (!process.env.ANTHROPIC_API_KEY) {
+            process.env.ANTHROPIC_API_KEY = 'mock-anthropic-key-for-e2e';
+          }
+
+          const { runLlmDrivenScenario } = await import('./llm-orchestrator.js');
+
+          // Initialize the plugin (register hooks + tools)
+          await driver.initialize();
+
+          // Build conversation history tracker and adapter for the orchestrator.
+          // The orchestrator expects a `processTurn(turn)` interface while our
+          // ConversationDriver has `runTurn(turn, messageHistory)`.
+          let messageHistory: unknown[] = [];
+          const adapter = {
+            async processTurn(turn: Turn): Promise<TurnResult> {
+              const result = await driver.runTurn(turn, messageHistory);
+              messageHistory = result.messageHistory;
+              return result;
+            },
+          };
+
+          // Run the orchestrator-driven scenario
+          const generatedTurns = await runLlmDrivenScenario(adapter);
+          turnsExecuted = generatedTurns.length;
+
+          // Trigger compaction if the scenario requests it
+          if (scenario.triggerCompaction) {
+            // Access private fireHook via cast -- acceptable in test infrastructure
+            await (driver as any).fireHook('before_compaction', {
+              messages: messageHistory,
+              messageCount: messageHistory.length,
+            });
+          }
+
+          metrics = driver.getMetrics();
+        } else {
+          // Standard scenario: driver iterates the static turns array
+          metrics = await driver.runScenario();
+          turnsExecuted = scenario.turns.length;
+        }
 
         // Enrich metrics with interceptor data
         if (instance.mode === 'subgraph') {
@@ -353,7 +502,7 @@ async function main(): Promise<void> {
         metrics.cacheEvents = analyzeCacheEvents(driver.getLogs(), metrics.injectionEvents);
         metrics.extractionEvents = analyzeExtractionEvents(
           driver.getLogs(),
-          scenario.turns.length,
+          turnsExecuted,
         );
 
         // Run assertions
@@ -414,6 +563,25 @@ async function main(): Promise<void> {
       }
     }
   }
+
+  // -------------------------------------------------------------------------
+  // Cleanup
+  // -------------------------------------------------------------------------
+
+  if (mockServer) {
+    await mockServer.stop();
+    console.log('\nMock server stopped.');
+  }
+
+  if (mockSubgraph) {
+    await mockSubgraph.stop();
+    console.log('Mock subgraph stopped.');
+  }
+
+  // Clean up temp credentials dir
+  try {
+    fs.rmSync(credentialsDir, { recursive: true, force: true });
+  } catch { /* ignore */ }
 
   // -------------------------------------------------------------------------
   // Generate report

@@ -28,6 +28,12 @@ const scenarioA: ConversationScenario = {
         'Hi there! I just moved to Portland, Oregon last month. Still getting settled in but really loving the vibe so far.',
       assistantResponse:
         'Welcome to Portland! It is a great city. How are you finding the adjustment so far?',
+      toolCalls: [
+        {
+          name: 'totalreclaw_remember',
+          params: { text: 'I just moved to Portland, Oregon' },
+        },
+      ],
     },
     {
       index: 1,
@@ -42,6 +48,12 @@ const scenarioA: ConversationScenario = {
         "For work, I'm a senior backend engineer at Stripe. I mainly work with Go and PostgreSQL -- we run a pretty standard microservices stack.",
       assistantResponse:
         'Nice, Stripe is a great company. Go and PostgreSQL are a solid combination for backend work.',
+      toolCalls: [
+        {
+          name: 'totalreclaw_remember',
+          params: { text: 'I\'m a senior backend engineer at Stripe, working with Go and PostgreSQL' },
+        },
+      ],
     },
     {
       index: 3,
@@ -56,6 +68,12 @@ const scenarioA: ConversationScenario = {
         "On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall.",
       assistantResponse:
         'Eagle Creek Trail is stunning. The Columbia River Gorge is one of the best parts of living in the Pacific Northwest.',
+      toolCalls: [
+        {
+          name: 'totalreclaw_remember',
+          params: { text: 'I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite' },
+        },
+      ],
     },
 
     // --- Turn 6: Additional fact (guitar), post first extraction ---

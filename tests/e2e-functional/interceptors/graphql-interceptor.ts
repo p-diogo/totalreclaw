@@ -81,7 +81,7 @@ export function installGraphQLInterceptor(): void {
     captured.push({
       timestamp: Date.now(),
       endpoint: url,
-      query: (body.query as string)?.trim().slice(0, 200) ?? '',
+      query: (body.query as string)?.trim().slice(0, 500) ?? '',
       variables: (body.variables as Record<string, unknown>) ?? {},
       durationMs,
       resultCount,
