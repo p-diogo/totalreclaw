@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-03-03T08:08:18.776Z",
+  "duration_seconds": 0.01,
+  "instances": {
+    "server-improved": {
+      "scenarios": {
+        "C": {
+          "metrics": {
+            "instanceId": "server-improved",
+            "scenarioId": "C",
+            "hookInvocations": [],
+            "cacheEvents": [],
+            "extractionEvents": [],
+            "injectionEvents": [],
+            "graphqlQueries": [],
+            "turnMetrics": []
+          },
+          "assertions": {
+            "_scenario_error": {
+              "passed": false,
+              "message": "Package subpath './argon2' is not defined by \"exports\" in /Users/pdiogo/Documents/code/totalreclaw/skill/plugin/node_modules/@noble/hashes/package.json imported from /Users/pdiogo/Documents/code/totalreclaw/skill/plugin/crypto.ts"
+            }
+          }
+        }
+      }
+    }
+  },
+  "comparison": {
+    "serverImprovedVsBaseline": [],
+    "subgraphImprovedVsBaseline": [],
+    "subgraphVsServer": []
+  },
+  "summary": {
+    "total_assertions": 1,
+    "passed": 0,
+    "failed": 1,
+    "scenarios_run": 1,
+    "instances_used": 1
+  }
+}
