@@ -89,8 +89,11 @@ let pluginHotCache: PluginHotCache | null = null;
 // Two-tier search state (C1): skip redundant searches when query is semantically similar
 let lastSearchTimestamp = 0;
 let lastQueryEmbedding: number[] | null = null;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const SEMANTIC_SKIP_THRESHOLD = 0.85;
+
+// Feature flags — configurable for A/B testing
+const CACHE_TTL_MS = parseInt(process.env.TOTALRECLAW_CACHE_TTL_MS ?? String(5 * 60 * 1000), 10);
+const SEMANTIC_SKIP_THRESHOLD = parseFloat(process.env.TOTALRECLAW_SEMANTIC_SKIP_THRESHOLD ?? '0.85');
+const TWO_TIER_SEARCH = process.env.TOTALRECLAW_TWO_TIER_SEARCH !== 'false'; // default: true
 
 // Auto-extract throttle (C3): only extract every N turns in agent_end hook
 let turnsSinceLastExtraction = 0;
@@ -1035,7 +1038,8 @@ const plugin = {
             }
 
             // 3. Merge trapdoors — hook path uses LSH-only for lighter query (C1).
-            const hookTrapdoors = lshTrapdoors.length > 0 ? lshTrapdoors : wordTrapdoors;
+            // Only use lightweight LSH-only trapdoors if two-tier search is enabled
+            const hookTrapdoors = TWO_TIER_SEARCH && lshTrapdoors.length > 0 ? lshTrapdoors : [...wordTrapdoors, ...lshTrapdoors];
             const allTrapdoors = hookTrapdoors;
 
             // If we have cached facts and no trapdoors, return cached facts.
@@ -1378,3 +1382,14 @@ const plugin = {
 };
 
 export default plugin;
+
+/**
+ * Reset all module-level state for test isolation.
+ * ONLY call this from test code — never in production.
+ */
+export function __resetForTesting(): void {
+  pluginHotCache = null;
+  lastSearchTimestamp = 0;
+  lastQueryEmbedding = null;
+  turnsSinceLastExtraction = 0;
+}

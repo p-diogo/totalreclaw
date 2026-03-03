@@ -1,0 +1,18 @@
+{
+  "name": "totalreclaw-e2e-functional",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "tsx run-all.ts",
+    "test:scenario": "tsx run-scenario.ts",
+    "test:server": "tsx run-all.ts --instances=server-improved,server-baseline",
+    "test:subgraph": "tsx run-all.ts --instances=subgraph-improved,subgraph-baseline",
+    "test:quick": "tsx run-all.ts --scenarios=C --instances=server-improved",
+    "report": "tsx report.ts"
+  },
+  "dependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "@anthropic-ai/sdk": "^0.25.0"
+  }
+}

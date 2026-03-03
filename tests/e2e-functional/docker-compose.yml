@@ -1,0 +1,56 @@
+services:
+  # --- Server mode infrastructure ---
+  postgres-totalreclaw:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: totalreclaw
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: totalreclaw
+    ports:
+      - "25432:5432"
+
+  totalreclaw-server:
+    build: ../../server
+    environment:
+      DATABASE_URL: postgresql://totalreclaw:testpass@postgres-totalreclaw:5432/totalreclaw
+    ports:
+      - "28080:8080"
+    depends_on:
+      - postgres-totalreclaw
+
+  # --- Subgraph mode infrastructure ---
+  postgres-graphnode:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: graph-node
+      POSTGRES_PASSWORD: let-me-in
+      POSTGRES_DB: graph-node
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "25433:5432"
+
+  ipfs:
+    image: ipfs/kubo:latest
+    ports:
+      - "25001:5001"
+
+  graph-node:
+    image: graphprotocol/graph-node:latest
+    ports:
+      - "28000:8000"
+      - "28020:8020"
+    depends_on:
+      - postgres-graphnode
+      - ipfs
+    environment:
+      postgres_host: postgres-graphnode
+      postgres_port: 5432
+      postgres_user: graph-node
+      postgres_pass: let-me-in
+      postgres_db: graph-node
+      ipfs: "ipfs:5001"
+      ethereum: "hardhat:http://host.docker.internal:8545"
+      GRAPH_LOG: info
+      GRAPH_GRAPHQL_MAX_FIRST: "5000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
