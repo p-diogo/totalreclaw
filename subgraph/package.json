@@ -7,12 +7,20 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy:local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 totalreclaw/subgraph",
-    "create:local": "graph create --node http://localhost:8020/ totalreclaw/subgraph"
+    "create:local": "graph create --node http://localhost:8020/ totalreclaw/subgraph",
+    "test:gas": "tsx --tsconfig tsconfig.node.json tests/gas-measurement.ts",
+    "test:e2e": "tsx --tsconfig tsconfig.node.json tests/e2e-ombh-validation.ts",
+    "test:scaling": "tsx --tsconfig tsconfig.node.json tests/scaling-analysis.ts"
   },
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.80.0",
     "@graphprotocol/graph-ts": "^0.35.0",
-    "assemblyscript": "^0.27.0"
+    "@huggingface/transformers": "^3.8.1",
+    "@scure/bip39": "^2.0.1",
+    "assemblyscript": "^0.27.0",
+    "ethers": "^6.16.0",
+    "porter-stemmer": "^0.9.1",
+    "tsx": "^4.21.0"
   },
   "engines": {
     "node": ">=18.0.0"

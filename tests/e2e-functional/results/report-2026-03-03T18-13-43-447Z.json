@@ -1,0 +1,983 @@
+{
+  "timestamp": "2026-03-03T18:13:43.447Z",
+  "duration_seconds": 3.12,
+  "instances": {
+    "server-recency": {
+      "scenarios": {
+        "A": {
+          "metrics": {
+            "instanceId": "server-recency",
+            "scenarioId": "scenario-a-preferences",
+            "hookInvocations": [
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623093,
+                "durationMs": 2660.7827079999997,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623100,
+                "durationMs": 0.027458000000024185,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623119,
+                "durationMs": 18.69433300000037,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623119,
+                "durationMs": 0.002124999999978172,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623132,
+                "durationMs": 13.548667000000023,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623139,
+                "durationMs": 0.0025000000000545697,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623154,
+                "durationMs": 14.701499999999669,
+                "returnedContext": true,
+                "contextLength": 148
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623154,
+                "durationMs": 0.003250000000207365,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623166,
+                "durationMs": 11.855916999999863,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623205,
+                "durationMs": 31.85270900000023,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623215,
+                "durationMs": 9.26379199999974,
+                "returnedContext": true,
+                "contextLength": 318
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623215,
+                "durationMs": 0.0016669999999976426,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623226,
+                "durationMs": 11.444166999999652,
+                "returnedContext": true,
+                "contextLength": 384
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623226,
+                "durationMs": 0.0014160000000629225,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623232,
+                "durationMs": 5.717416999999841,
+                "returnedContext": true,
+                "contextLength": 493
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623232,
+                "durationMs": 0.0014590000000680448,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623236,
+                "durationMs": 3.8623749999997017,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623236,
+                "durationMs": 0.004292000000077678,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623240,
+                "durationMs": 4.1312089999996715,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623244,
+                "durationMs": 4.073457999999846,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623253,
+                "durationMs": 9.36587499999996,
+                "returnedContext": true,
+                "contextLength": 450
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623253,
+                "durationMs": 0.0017090000001189765,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623261,
+                "durationMs": 7.969666999999845,
+                "returnedContext": true,
+                "contextLength": 388
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623261,
+                "durationMs": 0.0011250000002291927,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623269,
+                "durationMs": 7.503541000000041,
+                "returnedContext": true,
+                "contextLength": 450
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623269,
+                "durationMs": 0.0010000000002037268,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623279,
+                "durationMs": 10.60437499999989,
+                "returnedContext": true,
+                "contextLength": 896
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623279,
+                "durationMs": 0.0018329999998059066,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623287,
+                "durationMs": 7.723667000000205,
+                "returnedContext": true,
+                "contextLength": 559
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623308,
+                "durationMs": 20.675249999999778,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623318,
+                "durationMs": 10.518584000000374,
+                "returnedContext": true,
+                "contextLength": 388
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623318,
+                "durationMs": 0.0013330000001587905,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623327,
+                "durationMs": 8.97670799999969,
+                "returnedContext": true,
+                "contextLength": 945
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623333,
+                "durationMs": 0.0016249999998763087,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623339,
+                "durationMs": 5.690500000000156,
+                "returnedContext": true,
+                "contextLength": 665
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623339,
+                "durationMs": 0.0009159999999610591,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623351,
+                "durationMs": 11.997292000000016,
+                "returnedContext": true,
+                "contextLength": 572
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623351,
+                "durationMs": 0.0011249999997744453,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623363,
+                "durationMs": 11.891916000000037,
+                "returnedContext": true,
+                "contextLength": 1023
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623384,
+                "durationMs": 21.370499999999993,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623396,
+                "durationMs": 11.947791999999936,
+                "returnedContext": true,
+                "contextLength": 713
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623396,
+                "durationMs": 0.0014169999999467109,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623407,
+                "durationMs": 10.755165999999917,
+                "returnedContext": true,
+                "contextLength": 995
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623407,
+                "durationMs": 0.0011660000000119908,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623417,
+                "durationMs": 10.532124999999724,
+                "returnedContext": true,
+                "contextLength": 992
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623417,
+                "durationMs": 0.0011250000002291927,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623425,
+                "durationMs": 8.067833000000064,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623426,
+                "durationMs": 0.0009580000000823929,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772561623432,
+                "durationMs": 6.870958999999857,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772561623446,
+                "durationMs": 13.80791599999975,
+                "returnedContext": false,
+                "contextLength": 0
+              }
+            ],
+            "cacheEvents": [
+              {
+                "timestamp": 1772561623154,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623215,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623226,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623232,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623253,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623261,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623269,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623279,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623287,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623318,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623327,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623339,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623351,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623363,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623396,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623407,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772561623417,
+                "type": "miss"
+              }
+            ],
+            "extractionEvents": [
+              {
+                "turnIndex": 0,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 1,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 2,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 3,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 4,
+                "timestamp": 1772561623205,
+                "extracted": true,
+                "factCount": 3
+              },
+              {
+                "turnIndex": 5,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 6,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 7,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 8,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 9,
+                "timestamp": 1772561623244,
+                "extracted": true,
+                "factCount": 1
+              },
+              {
+                "turnIndex": 10,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 11,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 12,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 13,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 14,
+                "timestamp": 1772561623308,
+                "extracted": true,
+                "factCount": 3
+              },
+              {
+                "turnIndex": 15,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 16,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 17,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 18,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 19,
+                "timestamp": 1772561623384,
+                "extracted": true,
+                "factCount": 3
+              },
+              {
+                "turnIndex": 20,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 21,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 22,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 23,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 24,
+                "timestamp": 1772561623446,
+                "extracted": true,
+                "factCount": 2
+              }
+            ],
+            "injectionEvents": [
+              {
+                "turnIndex": 0,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772561623093
+              },
+              {
+                "turnIndex": 1,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772561623119
+              },
+              {
+                "turnIndex": 2,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772561623132
+              },
+              {
+                "turnIndex": 3,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. I'm a senior backend engineer at Stripe, working with Go and PostgreSQL (importance: 5/10, just now)",
+                "timestamp": 1772561623154
+              },
+              {
+                "turnIndex": 4,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772561623166
+              },
+              {
+                "turnIndex": 5,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n2. I'm a senior backend engineer at Stripe, working with Go and PostgreSQL (importance: 5/10, just now)",
+                "timestamp": 1772561623215
+              },
+              {
+                "turnIndex": 6,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. My work schedule is pretty flexible -- I usually start at 10am and wrap up around 6pm Pacific. One of the perks of remote work, honestly. (importance: 7/10, just now)\n2. For work, I'm a senior backend engineer at Stripe. I mainly work with Go and PostgreSQL -- we run a pretty standard microservices stack. (importance: 7/10, just now)",
+                "timestamp": 1772561623226
+              },
+              {
+                "turnIndex": 7,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n2. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)\n3. My work schedule is pretty flexible -- I usually start at 10am and wrap up around 6pm Pacific. One of the perks of remote work, honestly. (importance: 7/10, just now)",
+                "timestamp": 1772561623232
+              },
+              {
+                "turnIndex": 8,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772561623236
+              },
+              {
+                "turnIndex": 9,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772561623240
+              },
+              {
+                "turnIndex": 10,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n2. I just moved to Portland, Oregon (importance: 5/10, just now)\n3. What kind of food do I like? (importance: 7/10, just now)\n4. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)",
+                "timestamp": 1772561623253
+              },
+              {
+                "turnIndex": 11,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n2. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)\n3. I just moved to Portland, Oregon (importance: 5/10, just now)",
+                "timestamp": 1772561623261
+              },
+              {
+                "turnIndex": 12,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. My work schedule is pretty flexible -- I usually start at 10am and wrap up around 6pm Pacific. One of the perks of remote work, honestly. (importance: 7/10, just now)\n2. I just moved to Portland, Oregon (importance: 5/10, just now)\n3. For work, I'm a senior backend engineer at Stripe. I mainly work with Go and PostgreSQL -- we run a pretty standard microservices stack. (importance: 7/10, just now)",
+                "timestamp": 1772561623269
+              },
+              {
+                "turnIndex": 13,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. What kind of food do I like? (importance: 7/10, just now)\n2. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n3. My work schedule is pretty flexible -- I usually start at 10am and wrap up around 6pm Pacific. One of the perks of remote work, honestly. (importance: 7/10, just now)\n4. I just moved to Portland, Oregon (importance: 5/10, just now)\n5. For work, I'm a senior backend engineer at Stripe. I mainly work with Go and PostgreSQL -- we run a pretty standard microservices stack. (importance: 7/10, just now)\n6. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)\n7. I'm a senior backend engineer at Stripe, working with Go and PostgreSQL (importance: 5/10, just now)",
+                "timestamp": 1772561623279
+              },
+              {
+                "turnIndex": 14,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n2. I just moved to Portland, Oregon (importance: 5/10, just now)\n3. My work schedule is pretty flexible -- I usually start at 10am and wrap up around 6pm Pacific. One of the perks of remote work, honestly. (importance: 7/10, just now)\n4. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)",
+                "timestamp": 1772561623287
+              },
+              {
+                "turnIndex": 15,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. I keep hearing about Portland's food cart scene. What's the deal with those? (importance: 7/10, just now)\n2. How about Portland coffee shops? I need a good workspace for remote days. (importance: 7/10, just now)\n3. What kind of food do I like? (importance: 7/10, just now)\n4. I just moved to Portland, Oregon (importance: 5/10, just now)",
+                "timestamp": 1772561623318
+              },
+              {
+                "turnIndex": 16,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. Is the Portland weather really as rainy as people say? I'm still adjusting. (importance: 7/10, just now)\n2. How about Portland coffee shops? I need a good workspace for remote days. (importance: 7/10, just now)\n3. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n4. My work schedule is pretty flexible -- I usually start at 10am and wrap up around 6pm Pacific. One of the perks of remote work, honestly. (importance: 7/10, just now)\n5. I just moved to Portland, Oregon (importance: 5/10, just now)\n6. For work, I'm a senior backend engineer at Stripe. I mainly work with Go and PostgreSQL -- we run a pretty standard microservices stack. (importance: 7/10, just now)\n7. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)",
+                "timestamp": 1772561623327
+              },
+              {
+                "turnIndex": 17,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n2. I keep hearing about Portland's food cart scene. What's the deal with those? (importance: 7/10, just now)\n3. What kind of food do I like? (importance: 7/10, just now)\n4. My work schedule is pretty flexible -- I usually start at 10am and wrap up around 6pm Pacific. One of the perks of remote work, honestly. (importance: 7/10, just now)\n5. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)",
+                "timestamp": 1772561623339
+              },
+              {
+                "turnIndex": 18,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. What kind of food do I like? (importance: 7/10, just now)\n2. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n3. User is allergic to shellfish. This is critical for restaurant and food recommendations. (importance: 9/10, just now)\n4. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)\n5. I just moved to Portland, Oregon (importance: 5/10, just now)",
+                "timestamp": 1772561623351
+              },
+              {
+                "turnIndex": 19,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. My work schedule is pretty flexible -- I usually start at 10am and wrap up around 6pm Pacific. One of the perks of remote work, honestly. (importance: 7/10, just now)\n2. User is allergic to shellfish. This is critical for restaurant and food recommendations. (importance: 9/10, just now)\n3. For work, I'm a senior backend engineer at Stripe. I mainly work with Go and PostgreSQL -- we run a pretty standard microservices stack. (importance: 7/10, just now)\n4. I keep hearing about Portland's food cart scene. What's the deal with those? (importance: 7/10, just now)\n5. What kind of food do I like? (importance: 7/10, just now)\n6. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n7. I just moved to Portland, Oregon (importance: 5/10, just now)\n8. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)",
+                "timestamp": 1772561623363
+              },
+              {
+                "turnIndex": 20,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. Where do I like to eat? I want to try somewhere new this weekend. (importance: 7/10, just now)\n2. User is allergic to shellfish. This is critical for restaurant and food recommendations. (importance: 9/10, just now)\n3. What's my work schedule again? I'm trying to plan a dentist appointment. (importance: 7/10, just now)\n4. For work, I'm a senior backend engineer at Stripe. I mainly work with Go and PostgreSQL -- we run a pretty standard microservices stack. (importance: 7/10, just now)\n5. How about Portland coffee shops? I need a good workspace for remote days. (importance: 7/10, just now)\n6. I just moved to Portland, Oregon (importance: 5/10, just now)",
+                "timestamp": 1772561623396
+              },
+              {
+                "turnIndex": 21,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. Where do I like to eat? I want to try somewhere new this weekend. (importance: 7/10, just now)\n2. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n3. User is allergic to shellfish. This is critical for restaurant and food recommendations. (importance: 9/10, just now)\n4. Is the Portland weather really as rainy as people say? I'm still adjusting. (importance: 7/10, just now)\n5. I keep hearing about Portland's food cart scene. What's the deal with those? (importance: 7/10, just now)\n6. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)\n7. My work schedule is pretty flexible -- I usually start at 10am and wrap up around 6pm Pacific. One of the perks of remote work, honestly. (importance: 7/10, just now)\n8. What kind of food do I like? (importance: 7/10, just now)",
+                "timestamp": 1772561623407
+              },
+              {
+                "turnIndex": 22,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. On weekends I like hiking in the Columbia River Gorge. Eagle Creek Trail is my favorite -- the views are unreal, especially in the fall. (importance: 7/10, just now)\n2. What's my work schedule again? I'm trying to plan a dentist appointment. (importance: 7/10, just now)\n3. How about Portland coffee shops? I need a good workspace for remote days. (importance: 7/10, just now)\n4. My work schedule is pretty flexible -- I usually start at 10am and wrap up around 6pm Pacific. One of the perks of remote work, honestly. (importance: 7/10, just now)\n5. What are my dietary restrictions? (importance: 7/10, just now)\n6. I keep hearing about Portland's food cart scene. What's the deal with those? (importance: 7/10, just now)\n7. I like hiking in the Columbia River Gorge, Eagle Creek Trail is my favorite (importance: 5/10, just now)\n8. Is the Portland weather really as rainy as people say? I'm still adjusting. (importance: 7/10, just now)",
+                "timestamp": 1772561623417
+              },
+              {
+                "turnIndex": 23,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772561623425
+              },
+              {
+                "turnIndex": 24,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772561623432
+              }
+            ],
+            "graphqlQueries": [],
+            "turnMetrics": [
+              {
+                "turnIndex": 0,
+                "durationMs": 2667.994083,
+                "hookLatencyMs": 2660.8101659999998,
+                "memoryInjected": false,
+                "toolsUsed": [
+                  "totalreclaw_remember"
+                ],
+                "timestamp": 1772561620432
+              },
+              {
+                "turnIndex": 1,
+                "durationMs": 18.709499999999935,
+                "hookLatencyMs": 18.723916000000372,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772561623100
+              },
+              {
+                "turnIndex": 2,
+                "durationMs": 20.426250000000437,
+                "hookLatencyMs": 32.247625000000426,
+                "memoryInjected": false,
+                "toolsUsed": [
+                  "totalreclaw_remember"
+                ],
+                "timestamp": 1772561623119
+              },
+              {
+                "turnIndex": 3,
+                "durationMs": 14.725500000000011,
+                "hookLatencyMs": 14.70724999999993,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623139
+              },
+              {
+                "turnIndex": 4,
+                "durationMs": 51.531124999999975,
+                "hookLatencyMs": 58.41337599999997,
+                "memoryInjected": false,
+                "toolsUsed": [
+                  "totalreclaw_remember"
+                ],
+                "timestamp": 1772561623154
+              },
+              {
+                "turnIndex": 5,
+                "durationMs": 9.280167000000347,
+                "hookLatencyMs": 41.11816799999997,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623205
+              },
+              {
+                "turnIndex": 6,
+                "durationMs": 11.45679199999995,
+                "hookLatencyMs": 20.711041999999452,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623215
+              },
+              {
+                "turnIndex": 7,
+                "durationMs": 5.730791999999838,
+                "hookLatencyMs": 17.164458999999624,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623226
+              },
+              {
+                "turnIndex": 8,
+                "durationMs": 3.880583999999999,
+                "hookLatencyMs": 9.585542999999689,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772561623232
+              },
+              {
+                "turnIndex": 9,
+                "durationMs": 8.210916999999881,
+                "hookLatencyMs": 12.071333999999297,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772561623236
+              },
+              {
+                "turnIndex": 10,
+                "durationMs": 9.378917000000001,
+                "hookLatencyMs": 13.441041999999925,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623244
+              },
+              {
+                "turnIndex": 11,
+                "durationMs": 7.977624999999989,
+                "hookLatencyMs": 17.338376000000153,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623253
+              },
+              {
+                "turnIndex": 12,
+                "durationMs": 7.510458999999628,
+                "hookLatencyMs": 15.475333000000319,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623261
+              },
+              {
+                "turnIndex": 13,
+                "durationMs": 10.614332999999988,
+                "hookLatencyMs": 18.11074899999994,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623269
+              },
+              {
+                "turnIndex": 14,
+                "durationMs": 28.40737500000023,
+                "hookLatencyMs": 39.00512499999968,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623279
+              },
+              {
+                "turnIndex": 15,
+                "durationMs": 10.527625000000171,
+                "hookLatencyMs": 31.19516700000031,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623308
+              },
+              {
+                "turnIndex": 16,
+                "durationMs": 14.813000000000102,
+                "hookLatencyMs": 19.4982500000001,
+                "memoryInjected": true,
+                "toolsUsed": [
+                  "totalreclaw_remember"
+                ],
+                "timestamp": 1772561623318
+              },
+              {
+                "turnIndex": 17,
+                "durationMs": 5.697375000000193,
+                "hookLatencyMs": 5.693040999999994,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623333
+              },
+              {
+                "turnIndex": 18,
+                "durationMs": 12.005958000000192,
+                "hookLatencyMs": 17.689832999999908,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623339
+              },
+              {
+                "turnIndex": 19,
+                "durationMs": 33.27058399999987,
+                "hookLatencyMs": 45.26083299999982,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623351
+              },
+              {
+                "turnIndex": 20,
+                "durationMs": 11.956708000000162,
+                "hookLatencyMs": 33.319708999999875,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623384
+              },
+              {
+                "turnIndex": 21,
+                "durationMs": 10.762916000000132,
+                "hookLatencyMs": 22.705540999999812,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623396
+              },
+              {
+                "turnIndex": 22,
+                "durationMs": 10.540082999999868,
+                "hookLatencyMs": 21.289581999999882,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772561623407
+              },
+              {
+                "turnIndex": 23,
+                "durationMs": 8.072375000000193,
+                "hookLatencyMs": 18.6020410000001,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772561623417
+              },
+              {
+                "turnIndex": 24,
+                "durationMs": 20.68679199999997,
+                "hookLatencyMs": 20.67983299999969,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772561623426
+              }
+            ]
+          },
+          "assertions": {
+            "scenarioA_cache_hit_rate_on_same_topic": {
+              "passed": true,
+              "message": "PASS"
+            },
+            "scenarioA_extraction_fires_at_correct_intervals": {
+              "passed": true,
+              "message": "PASS"
+            },
+            "scenarioA_job_facts_rank_high_on_work_query": {
+              "passed": true,
+              "message": "PASS"
+            },
+            "scenarioA_no_injection_on_greeting_turns": {
+              "passed": true,
+              "message": "PASS"
+            }
+          }
+        }
+      }
+    }
+  },
+  "comparison": {
+    "serverImprovedVsBaseline": [],
+    "subgraphImprovedVsBaseline": [],
+    "subgraphVsServer": []
+  },
+  "summary": {
+    "total_assertions": 4,
+    "passed": 4,
+    "failed": 0,
+    "scenarios_run": 1,
+    "instances_used": 1
+  }
+}

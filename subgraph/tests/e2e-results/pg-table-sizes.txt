@@ -1,0 +1,9 @@
+ schemaname |    relname    | total_bytes | data_bytes | index_bytes | rows  
+------------+---------------+-------------+------------+-------------+-------
+ sgd1       | fact          |     8192000 |     212992 |      778240 |   422
+ sgd1       | blind_index   |     7831552 |    3538944 |     4251648 | 16375
+ sgd1       | poi2$         |      581632 |     163840 |      376832 |   422
+ sgd1       | global_state  |      376832 |      49152 |      286720 |   422
+ sgd1       | data_sources$ |       32768 |          0 |       24576 |     0
+(5 rows)
+

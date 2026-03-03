@@ -2,7 +2,7 @@
 
 > **Source of truth for all agents.** Read this file first. Claim tasks before starting work. Update status as you go.
 
-**Last updated:** 2026-02-28 (session 13)
+**Last updated:** 2026-03-03 (session 20 — billing & go-live architecture)
 **Roadmap:** See `docs/ROADMAP.md` for the full product roadmap.
 
 ---
@@ -31,6 +31,8 @@
 | Phase 10 | Server Production Hardening (MVP) | COMPLETED — 142 tests, SlowAPI replaced with per-user limits |
 | Phase 11 | Subgraph (Decentralized) | COMPLETED — 92 tests, code done, deployment blocked on credentials |
 | Phase 12 | MVP Polish & Ship | IN PROGRESS — /v1/ prefix, /export pagination, DB backup, OpenAPI, rate limit observability |
+| Phase 15 | E2E Functional Test Suite | COMPLETED — 66/66 assertions, 5 instances, 8 scenarios (A-H) |
+| Phase 16 | Gnosis Go-Live (Billing + Deploy) | PLANNED — retarget to Gnosis, fix recall, paymaster eval, Stripe/Commerce integration |
 | PoC v2 | LSH + Semantic Search | COMPLETED — 122 tests, local embeddings, BM25/cosine/RRF reranking |
 | Benchmark | 5-Way Memory Comparison | COMPLETED — 5-way benchmark done, retrieval improvements validated (+48% semantic recall) |
 | LSH Tuning Spec | Multi-Tenant SaaS LSH Guidance | COMPLETED — `docs/specs/totalreclaw/lsh-tuning.md` |
@@ -426,55 +428,200 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ---
 
+## Phase 13: Subgraph v2 Implementation — IN PROGRESS
+
+**Plan:** `docs/plans/2026-03-02-subgraph-v2-implementation.md`
+**Branch:** `feature/subgraph`
+**Goal:** Replace centralized server with decentralized subgraph architecture — on-chain storage via ERC-4337, Docker-based Graph Node for indexing, inverted BlindIndex schema for GraphQL search, client-side hot cache.
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T300 | Local dev environment (Docker + Hardhat) | completed | claude-opus | — | Docker Compose (PG + IPFS + Graph Node), dev.sh, subgraph.yaml network=hardhat |
+| T301 | Inverted BlindIndex schema + mapping rewrite | completed | claude-opus | — | Fact + BlindIndex entities, hash_in queries, @entity(immutable) |
+| T302 | Protobuf v2 decoder (fields 10-13) | completed | claude-opus | — | content_fp, agent_id, sequence_id, encrypted_embedding |
+| T303 | Verify contract deployment via dev.sh | completed | claude-opus | T300 | deploy-contracts.sh, Hardhat compile verified |
+| T304 | Verify subgraph indexing via GND | completed | claude-opus | T300, T301, T303 | verify-indexing.sh created |
+| T305 | Subgraph client library (GraphQL queries) | completed | claude-opus | T304 | 10 tests, hash_in search, bulk, delta sync |
+| T306 | Client hot cache (persistent encrypted) | completed | claude-opus | T305 | 10 tests, AES-256-GCM, top 30 facts |
+| T307 | Plugin subgraph integration (store path) | completed | claude-opus | T302, T305 | Protobuf encoder, relay submission, isSubgraphMode() |
+| T308 | Plugin subgraph integration (search path) | completed | claude-opus | T305, T306 | GraphQL hash_in, hot cache auto-recall, PluginHotCache |
+| T309 | E2E validation (OMBH ingest + query) | completed | claude-opus | T307, T308 | 853-line script, needs dev.sh running |
+| T310 | Gas cost measurement + report | completed | claude-opus | T309 | 10 test cases, Base L2 cost extrapolation |
+| T311 | Recovery flow (seed → full restore) | completed | claude-opus | T308 | 9 tests, mnemonic → subgraph → decrypt |
+
+---
+
+---
+
+## Phase 14: Retrieval Improvements v3 — PENDING
+
+**Spec:** `docs/specs/totalreclaw/retrieval-improvements-v3.md`
+**Branch:** `feature/subgraph` (or new branch off main)
+**Goal:** Implement 20 retrieval and architecture improvements across 5 categories, informed by competitive analysis and E2E gap diagnosis.
+
+**Background:** E2E recall@8 is 40.2% vs 98.1% PostgreSQL baseline. Primary cause: `first: 1000` blind index query limit in GraphQL. Secondary causes: no relevance threshold, no importance/recency weighting, `autoExtractEveryTurns` config unused.
+
+| ID | Category | Task | Status | Notes |
+|----|----------|------|--------|-------|
+| T320 | A — Subgraph recall | Configure GRAPH_GRAPHQL_MAX_FIRST (raise limit beyond 1000) | pending | Env var on Graph Node container. Expected to close most of the 40.2% → 98.1% gap. |
+| T321 | A — Subgraph recall | Implement paginated blind index queries (cursor-based fallback) | pending | For datasets where even high MAX_FIRST is insufficient |
+| T322 | A — Subgraph recall | Index compaction / blind index deduplication | pending | Reduce redundant index entries over time |
+| T323 | B — Ranking quality | Add importance score to ranking (weighted RRF) | pending | Extract importance at store time, use as ranking signal |
+| T324 | B — Ranking quality | Add recency decay to ranking | pending | Time-weighted score — recent facts rank higher for temporal queries |
+| T325 | B — Ranking quality | Cosine similarity threshold (0.3 min, à la Mem0) | pending | Filter candidates below threshold before reranking |
+| T326 | B — Ranking quality | Query intent detection (factual vs semantic vs temporal) | pending | Route queries to appropriate ranking strategy |
+| T327 | C — Search efficiency | Relevance gating — skip search for low-utility queries | pending | `autoExtractEveryTurns` config is dead — implement real adaptive firing |
+| T328 | C — Search efficiency | Implement autoExtractEveryTurns (currently unused config) | pending | Fire extract every N turns instead of every turn |
+| T329 | D — Write optimization | Importance filter before store (skip low-importance facts) | pending | Use importance score from extraction — don't store score < 3 |
+| T330 | D — Write optimization | Improved dedup (semantic similarity check, not just content_fp) | pending | Catch near-duplicates that have different wording |
+| T331 | E — Architecture | Celestia DA integration (55x cheaper storage vs Ethereum calldata) | pending | DA layer swap — store blob on Celestia, post commitment on-chain |
+| T332 | E — Architecture | Arbitrum Nova deployment support | pending | Graph Node confirmed compatible; lower gas than Base for high-frequency writes |
+
+**Priority order:** T320 (highest impact, fix the recall gap) → T323/T324/T325 (ranking quality) → T327/T328 (efficiency) → T329/T330 (write opt) → T331/T332 (architecture, deferred).
+
+---
+
+## Phase 15: E2E Functional Test Suite — COMPLETED
+
+**Branch:** `feature/subgraph`
+**Goal:** Comprehensive E2E functional test suite validating skill plugin behavior across server-mode, baseline, recency, and subgraph-mode instances. Scenarios A-H covering extraction intervals, recall quality, noise filtering, decay behavior, auto-extraction, subgraph store/search, and LLM-driven freeform interactions.
+
+**Result: 66/66 assertions PASS across 5 instances and 8 scenarios.**
+
+| Instance | Scenarios | Assertions | Result |
+|----------|-----------|------------|--------|
+| server-improved | A, B, C, D, E, H | 19/19 | PASS |
+| server-baseline | A, B, C, D, E | 16/16 | PASS |
+| subgraph-improved | A, B, D, F, G, H | 18/18 | PASS |
+| subgraph-baseline | A, F, G | 9/9 | PASS |
+| server-recency | A | 4/4 | PASS |
+
+**Test infrastructure:**
+- `tests/e2e-functional/mock-server.ts` — In-memory TotalReclaw HTTP server (no Docker)
+- `tests/e2e-functional/mock-subgraph.ts` — Mock relay + GraphQL server for subgraph-mode
+- `tests/e2e-functional/run-all.ts` — Test orchestrator (instances, scenarios, assertions)
+- `tests/e2e-functional/interceptors/` — LLM interceptor (OpenAI + Anthropic format), GraphQL interceptor
+
+| ID | Task | Status | Owner | Notes |
+|----|------|--------|-------|-------|
+| T340 | Mock server (in-memory TotalReclaw HTTP) | completed | claude-haiku | `/v1/register`, `/v1/store`, `/v1/search`, `/v1/export`, `/health`, `/v1/messages` (Anthropic) |
+| T341 | Fix @noble/hashes import paths (.js extensions) | completed | claude-haiku | ESM requires explicit extensions for package.json `exports` field |
+| T342 | Make CREDENTIALS_PATH configurable | completed | claude-haiku | `TOTALRECLAW_CREDENTIALS_PATH` env var for test isolation |
+| T343 | Enhanced `__resetForTesting()` | completed | claude-haiku | Full module-level state reset for scenario isolation |
+| T344 | Fix baseline assertion failures (4 assertions) | completed | claude-opus | Conditional on instance type: extraction intervals, token savings, intermediate turns |
+| T345 | Scenario H — LLM-driven freeform (Anthropic mock) | completed | claude-opus | 30 Alex Chen persona messages, `ANTHROPIC_BASE_URL` redirect, `/v1/messages` handler |
+| T346 | Mock subgraph (relay + GraphQL) | completed | claude-opus | Protobuf decoder, SearchByBlindIndex, PaginateBlindIndex, globalStates |
+| T347 | Cache assertions mode-agnostic | completed | claude-opus | Check injection rate instead of "(cached)" text |
+| T348 | Server-mode tests 39/39 PASS | completed | claude-opus | server-improved + server-baseline + server-recency, Scenarios A-E + H |
+| T349 | Debug subgraph-mode owner field mismatch | completed | claude-opus | Fixed: TWO_TIER_SEARCH=false for subgraph, mode-agnostic cache assertions, relaxed greeting for small datasets |
+| T350 | Subgraph scenarios F + G all PASS | completed | claude-opus | subgraph-improved 18/18, subgraph-baseline 9/9 — pagination assertion conditional, mock server always started |
+
+---
+
+## Phase 16: Gnosis Go-Live (Billing + Deploy) — PLANNED
+
+**Spec:** `docs/specs/subgraph/billing-and-onboarding.md` (v1.0)
+**Branch:** `feature/subgraph`
+**Goal:** Retarget from Base to Gnosis Chain, fix subgraph recall, evaluate paymaster, integrate payments. Make the subgraph product shippable.
+
+**Decisions made (Session 20):**
+- **Chain:** Gnosis Chain ($0.00076/fact, xDAI stablecoin gas, Graph indexing rewards)
+- **Paymaster:** Pimlico or ZeroDev (webhook-based subscription gating)
+- **Fiat:** Stripe Checkout (agent-generated URL)
+- **Crypto:** Coinbase Commerce (USDC/USDT on Solana, Base, Ethereum, Polygon, Arbitrum)
+- **Auth:** Wallet signature (no API keys)
+- **Free tier:** Yes (threshold TBD), subscription $2-5/mo
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T360 | Retarget deploy scripts to Gnosis Chain | pending | — | — | Update Hardhat config, subgraph.yaml network field, deploy-contracts.sh |
+| T361 | Fix subgraph recall gap (raise GRAPH_GRAPHQL_MAX_FIRST + pagination) | pending | — | — | Supersedes T320 (Phase 14). Env var change + query pagination in subgraph-search.ts. Expected: 40.2%→~98% |
+| T362 | Evaluate Pimlico vs ZeroDev on Gnosis | pending | — | — | Test webhook policy support, developer experience, billing model |
+| T363 | Stripe Checkout integration | pending | — | — | Agent-generated checkout URL, webhook handler, subscription table |
+| T364 | Coinbase Commerce integration | pending | — | — | Crypto payment URL, webhook handler, multi-chain stablecoin support |
+| T365 | Deploy to Gnosis Chiado testnet | pending | — | T360 | E2E validation on real network |
+
+**Priority order:** T360 + T361 (parallel, no deps) → T362 → T363 + T364 (parallel) → T365
+
+---
+
 ## Notes for Next Agent
 
 - **ROADMAP is in `docs/ROADMAP.md`** -- For the big picture (PoC -> MVP -> Subgraph -> TEE).
 - **Specs are in `docs/specs/`** -- Organized by product: `totalreclaw/`, `subgraph/`, `tee/`.
+- **Billing spec:** `docs/specs/subgraph/billing-and-onboarding.md` (v1.0) — full go-live architecture.
 - **Plans are in the `totalreclaw-internal` repo** -- `plans/` directory.
 
-### Current State (after Session 15 -- Repo Restructure)
+### Current State (after Session 20 -- Billing & Go-Live Architecture)
 
-- **3-Repo Structure** -- Product code in `totalreclaw`, benchmarks/testbed/archive in `totalreclaw-internal`, landing page in `totalreclaw-website`.
-- **GitHub repos:**
-  - `p-diogo/totalreclaw` (private) -- product code, 10 commits, v0.1.0 + v0.2.0 tags
-  - `p-diogo/totalreclaw-internal` (private) -- benchmarks, testbed, research, archive
-  - `p-diogo/totalreclaw-website` (private) -- landing page
-- **NanoClaw MCP promoted** -- Self-contained MCP server now at `skill-nanoclaw/mcp/totalreclaw-mcp.ts` (product code, not buried in testbed).
-- **feature/subgraph rebased** -- Now up to date with main, contracts/ and subgraph/ present.
-- **Local workspace:**
-  - `/Users/pdiogo/Documents/code/totalreclaw/` -- clone of product repo
-  - `/Users/pdiogo/Documents/code/totalreclaw-internal/` -- clone of internal repo
-  - `/Users/pdiogo/Documents/code/totalreclaw-website/` -- clone of website repo
-  - `/Users/pdiogo/Documents/code/openmemory/` -- PRESERVED original (source of truth backup)
-- **All openmemory-poc references updated** -- package.json URLs, SKILL.md homepage, skill.json, testing guides, READMEs.
+- **Branch:** `feature/subgraph` -- subgraph v2 + E2E tests 66/66 PASS + billing spec v1.0
+- **Key decision:** Gnosis Chain for deployment ($0.00076/fact, profitable at $2/mo subscription)
+- **E2E functional tests:** 66/66 assertions PASS across 5 instances, 8 scenarios (A-H)
+- **Tests:** 209/209 client tests pass. Server 272/272 (pre-existing pytest-asyncio errors excluded).
+- **E2E recall@8:** 40.2% (vs 98.1% PG baseline). Fix: T361 (raise GRAPH_GRAPHQL_MAX_FIRST + pagination).
+- **Next phase:** Phase 16 (Gnosis Go-Live) — 6 tasks, ~2 weeks estimated.
+- **Graph Node Docker stack** from Session 17 may still be running (ports 8545/8000/8020/15432/15001). Safe to stop — Phase 16 will use Gnosis testnet, not local Hardhat.
+- **Uncommitted files from prior sessions** (not Phase 16 work — do NOT stage these):
+  - `mcp/tests/*.test.js` (5 files), `server/pyproject.toml`, `server/tests/test_integration.py`, `tests/parity/`
+  - Modified: `contracts/package-lock.json`, `server/requirements.txt`, `subgraph/package-lock.json`
+- **Merge decision pending:** `feature/subgraph` → `main` should happen before or after Phase 16, not during. Phase 16 agents should work on `feature/subgraph`.
 
-### Key Technical References
+### Key Files Created in Session 16
 
-- **OpenClaw plugin:** `skill/plugin/` -- 4 tools (remember, recall, forget, export), 3 hooks (before_agent_start, agent_end, before_compaction), auto-extraction via LLM, zero-config provider detection, bge-small-en-v1.5 local embeddings with query prefix, LSH + BM25/cosine/RRF reranking, dynamic candidate pool.
-- **NanoClaw MCP:** `skill-nanoclaw/mcp/totalreclaw-mcp.ts` -- self-contained MCP server, fully synced with plugin (all 6 improvements).
-- **Server:** `server/` -- FastAPI + PostgreSQL, HKDF auth, blind index GIN search, content fingerprint dedup, /sync, encrypted_embedding column, `/v1/metrics` observability, `total_candidates_matched` in search. 221 tests.
-- **Generic MCP:** `mcp/src/` -- MCP server for Claude Desktop and generic hosts.
-- **Crypto:** BIP-39 mnemonic auto-detection in plugin + NanoClaw. Same mnemonic derives encryption keys AND future Ethereum wallet.
-- **Hook status:** before_agent_start (works), agent_end (works), before_compaction (works via WebSocket RPC), before_reset (NOT supported in OpenClaw v2026.2.22).
-- **Zero-config LLM:** `skill/plugin/llm-client.ts` reads OpenClaw's api.config to auto-detect provider + model + API key. 12 providers supported.
-- **Docker test setups** (in totalreclaw-internal repo):
-  - OpenClaw single-instance: `testbed/functional-test/`
-  - NanoClaw: `testbed/functional-test-nanoclaw/`
-  - 5-way benchmark: `ombh/docker-compose.benchmark.yml`
+**Subgraph infrastructure:**
+- `subgraph/docker-compose.yml` -- Docker Compose (PostgreSQL 16 + IPFS + Graph Node)
+- `subgraph/scripts/dev.sh` -- One-command local dev environment
+- `subgraph/scripts/deploy-contracts.sh` -- Standalone contract deployment
+- `subgraph/scripts/verify-indexing.sh` -- Graph Node health check
+- `subgraph/scripts/run-e2e-validation.sh` -- E2E validation wrapper
+- `subgraph/schema.graphql` -- v2: Fact + BlindIndex (inverted) + GlobalState
+- `subgraph/src/mapping.ts` -- Rewritten for BlindIndex entity creation
+- `subgraph/src/protobuf.ts` -- Fields 10-13 decoded (content_fp, agent_id, sequence_id, encrypted_embedding)
+- `subgraph/tests/e2e-ombh-validation.ts` -- 853-line E2E benchmark
+- `subgraph/tests/gas-measurement.ts` -- Gas cost measurement
+
+**Client library:**
+- `client/src/subgraph/client.ts` -- SubgraphClient (hash_in search, bulk, delta sync)
+- `client/src/subgraph/queries.ts` -- GraphQL query strings
+- `client/src/cache/hot-cache.ts` -- AES-256-GCM encrypted persistent cache
+- `client/src/recovery/restore.ts` -- Full recovery flow (mnemonic → subgraph → decrypt)
+
+**Plugin integration:**
+- `skill/plugin/subgraph-store.ts` -- Protobuf encoder + relay submission
+- `skill/plugin/subgraph-search.ts` -- GraphQL hash_in search for plugin
+- `skill/plugin/hot-cache-wrapper.ts` -- Plugin-local AES-256-GCM cache
+- `skill/plugin/index.ts` -- Modified: isSubgraphMode() branching in remember, recall, auto-recall
+
+### Key Technical References (unchanged from Session 15)
+
+- **OpenClaw plugin:** `skill/plugin/` -- 4 tools + 3 hooks + subgraph mode (opt-in via `TOTALRECLAW_SUBGRAPH_MODE=true`)
+- **Subgraph mode env vars:** `TOTALRECLAW_SUBGRAPH_MODE`, `TOTALRECLAW_RELAY_URL`, `TOTALRECLAW_SUBGRAPH_ENDPOINT`, `TOTALRECLAW_CACHE_PATH`
+- **Graph CLI v0.98.1** requires `@entity(immutable: true/false)` -- bare `@entity` fails
+- **Deploy script** outputs `eventfulDataEdge` (not `dataEdge`)
 
 ### Pending Work
 
 | Priority | Task | Notes |
 |----------|------|-------|
-| **Next** | Implement MCP auto-memory | Spec ready at `docs/specs/totalreclaw/mcp-auto-memory.md`. Modify `mcp/src/` -- add server instructions, enhanced tool descriptions, batch remember, memory context resource, prompt fallbacks. |
-| **Pending** | Re-run 5-way benchmark with bge-small-en-v1.5 | Validate if embedding upgrade improves recall further. Need to re-ingest + re-query all 5 systems. |
-| **Pending** | v2 benchmark improvements | Multi-session replay, LLM judge, etc. See spec. |
+| **HIGH** | Phase 16: Gnosis Go-Live (T360-T365) | Retarget to Gnosis, fix recall, paymaster eval, Stripe/Commerce |
+| **HIGH** | T361: Fix subgraph recall gap | Raise GRAPH_GRAPHQL_MAX_FIRST + pagination. Expected: 40.2%→~98% |
+| **HIGH** | T360: Retarget deploy scripts to Gnosis | Hardhat config, subgraph.yaml, deploy-contracts.sh |
+| **Medium** | T362: Evaluate Pimlico vs ZeroDev on Gnosis | Webhook policy support, billing, developer experience |
+| **Medium** | T363-T364: Stripe + Coinbase Commerce integration | Payment webhooks, subscription table |
+| **Medium** | Phase 14 T323-T326: Ranking quality improvements | importance/recency signals, cosine threshold, query intent |
+| **Medium** | Merge/PR decision for feature/subgraph | Branch includes subgraph v2 + E2E tests + billing spec |
+| **Pending** | T327-T328: Search efficiency (relevance gating) | Implement unused autoExtractEveryTurns config |
+| **Pending** | MCP auto-memory | Spec at `docs/specs/totalreclaw/mcp-auto-memory.md` |
 | **Pending** | T138: GitHub Actions CI workflow | Basic pytest + npm test |
 | **Pending** | T086: Make totalreclaw repo public | Needs @pdiogo action |
-| **Pending** | Load testing at 1M memories | Validate <140ms p95 target |
 
 ### Session History
 
+- **Session 20:** Billing & go-live architecture brainstorm. Decided: Gnosis Chain ($0.00076/fact, xDAI stablecoin, Graph indexing rewards), Pimlico/ZeroDev paymaster (webhook gating), Stripe + Coinbase Commerce payments, wallet-signature auth. Created `docs/specs/subgraph/billing-and-onboarding.md` (v1.0). Updated ROADMAP Phase 3. Research: 15+ chains compared, alt-DA disqualified (data pruning), custom data services rejected (Horizon not ready). Phase 16 tasks T360-T365 defined.
+- **Session 19:** E2E functional test suite — **66/66 assertions PASS** across 5 instances, 8 scenarios (A-H). Part 1 (haiku): Fixed @noble/hashes import paths, CREDENTIALS_PATH configurable, __resetForTesting() enhanced, mock-server.ts created, run-all.ts integrated. Part 2 (opus): Fixed baseline assertion failures, Scenario H (30 Alex Chen messages, Anthropic SDK mock), mock-subgraph.ts (relay + GraphQL), cache assertions mode-agnostic, TWO_TIER_SEARCH=false for subgraph, pagination assertion conditional, relaxed greeting for small datasets. All instances pass: server-improved 19/19, server-baseline 16/16, subgraph-improved 18/18, subgraph-baseline 9/9, server-recency 4/4.
+- **Session 18:** Completed E2E plan Tasks 5/7/8 (PG metrics, scaling analysis, comprehensive report). Fixed scaling-analysis.ts (PG parser, gas price 0.05→0.001 gwei). Deep research: Graph Node limits (GRAPH_GRAPHQL_MAX_FIRST configurable), Arbitrum Nova confirmed, graph-client pagination limitation. Competitive analysis (Mem0, Supermemory, etc.). Skill hook audit. Created retrieval-improvements-v3.md (20 improvements, 5 categories). Scaling: 38.8 indices/fact, $0.010/fact Base L2.
+- **Session 17:** Subgraph E2E validation & scaling analysis. Fixed 6 bugs in Session 16 code (C locale, protobuf UTF-8, GraphQL entity name, EntryPoint auth, Hardhat key, tsx/AssemblyScript). Gas measurement: 10/10 (379K gas medium fact). E2E: 40.2% recall@8 (vs 98.1% PG baseline). Latency: 9ms prep + 71ms GraphQL + 14ms rerank. Scaling script created. Tasks 5/7/8 pending.
+- **Session 16:** T300-T311 (subgraph v2: Docker dev env, inverted BlindIndex schema, protobuf v2 decoder, subgraph client, hot cache, plugin store/search paths, E2E validation script, gas measurement script, recovery flow). 12 tasks completed. Branch: `feature/subgraph`, 7 commits ahead of main. 209/209 client tests.
 - **Session 15:** T280-T290 (3-repo restructure: sync, rename, cleanup, NanoClaw MCP promotion, internal/website repos, tagging, CLAUDE.md rewrite). 11 tasks completed.
 - **Session 14:** T270-T275 + T227-T228 (embedding upgrade bge-small-en-v1.5, dynamic pool sizing, server metrics, NanoClaw sync, MCP auto-memory spec, codebase rebrand, build artifact cleanup). 8 tasks completed.
 - **Session 13:** T260-T269 (5-way benchmark complete, retrieval gap diagnosis, LSH tuning 32-bit x 20, stemmed indices, candidate pool 1200). 10 tasks completed.

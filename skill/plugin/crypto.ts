@@ -18,10 +18,10 @@
  * Content fingerprint: HMAC-SHA256(dedupKey, normalizeText(plaintext))
  */
 
-import { argon2id } from '@noble/hashes/argon2';
-import { hkdf } from '@noble/hashes/hkdf';
-import { sha256 } from '@noble/hashes/sha2';
-import { hmac } from '@noble/hashes/hmac';
+import { argon2id } from '@noble/hashes/argon2.js';
+import { hkdf } from '@noble/hashes/hkdf.js';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { hmac } from '@noble/hashes/hmac.js';
 import { mnemonicToSeedSync, validateMnemonic } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english.js';
 import { stemmer } from 'porter-stemmer';

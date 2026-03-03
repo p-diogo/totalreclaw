@@ -167,42 +167,55 @@ Layers 1-2 are part of PoC (v0.3.1b). Layers 3-4 are MVP enhancements (v0.3.2).
 ## Phase 3: Subgraph (Decentralized)
 
 **Goal:** Censorship-resistant, self-sovereign memory. User's 12-word seed is the only secret.
-**Spec:** `docs/specs/subgraph/seed-to-subgraph.md`
+**Specs:** `docs/specs/subgraph/seed-to-subgraph.md`, `docs/specs/subgraph/billing-and-onboarding.md`
 
-Architecture: User's BIP-39 seed derives both encryption key AND on-chain identity (ERC-4337 Smart Account). Writes go through a paymaster-sponsored UserOperation on Base L2, emitted as events by an EventfulDataEdge contract, indexed by a self-hosted subgraph.
+Architecture: User's BIP-39 seed derives both encryption key AND on-chain identity (ERC-4337 Smart Account). Writes go through a paymaster-sponsored UserOperation on **Gnosis Chain**, emitted as events by an EventfulDataEdge contract, indexed by The Graph Network.
 
-| Component | Description |
-|-----------|-------------|
-| EventfulDataEdge.sol | Simple fallback contract that emits Log(bytes) on Base L2 |
-| ERC-4337 Smart Account | Counterfactual deployment via Pimlico/ZeroDev |
-| Paymaster | Server sponsors gas (~$0.0002-0.0005 per write) |
-| Subgraph indexer | Indexes events, serves GraphQL queries |
-| Recovery flow | Paste seed on new device, regenerate address, query subgraph, decrypt |
+### Go-Live Architecture (Decided 2026-03-03)
 
-The Protobuf schema is already forward-compatible. Client code stays the same -- only the transport layer changes (HTTP POST to UserOperation relay). The v0.3.2 conflict resolution protocol applies here too.
+| Component | Decision | Rationale |
+|-----------|----------|-----------|
+| **Chain** | Gnosis Chain | $0.00076/fact, xDAI stablecoin gas, Graph indexing rewards, 640GB archive, permanent L1 storage |
+| **Paymaster** | Pimlico or ZeroDev | Custom webhook for subscription gating, multi-chain support |
+| **Fiat payments** | Stripe Checkout | Agent-generated URL, card/Apple Pay/Google Pay |
+| **Crypto payments** | Coinbase Commerce | USDC/USDT on Solana, Base, Ethereum, Polygon, Arbitrum (no bridging) |
+| **Auth** | Wallet signature | No API keys — seed-derived key signs every request |
+| **Free tier** | Yes (threshold TBD) | Users experience value before paying |
+| **Subscription** | $2-5/month (TBD) | Profitable on Gnosis at all scales (100-10K users) |
+| **Indexing** | Subgraph on The Graph Network | Existing code, zero changes. GRT indexing rewards incentivize indexers |
+
+### Economics (Power Users: 50 facts/day)
+
+| Scale | Gas cost/mo | Query fees/mo | Revenue @ $2/mo | Net |
+|-------|:---:|:---:|:---:|:---:|
+| 100 users | $114 | $1 | $200 | +$85 |
+| 1K users | $1,140 | $28 | $2,000 | +$832 |
+| 10K users | $11,400 | $298 | $20,000 | +$8,302 |
 
 ### What's Built (Code Complete, Not Deployed)
 
-All scaffolding and smart contracts are built and locally tested. Testnet deployment awaits credentials.
+All scaffolding and smart contracts are built and locally tested. Need to redeploy to Gnosis (was originally targeting Base).
 
 | Component | Description | Tests | Status |
 |-----------|-------------|-------|--------|
 | EventfulDataEdge.sol | Minimal DA contract, fallback() emits Log(bytes), EntryPoint access control | 14 | DONE |
 | TotalReclawPaymaster.sol | ERC-4337 paymaster with per-sender sliding window rate limiting | 32 | DONE |
-| Deploy/verify/fund scripts | Hardhat deploy to Base Sepolia, Basescan verification, paymaster funding | — | DONE (tested locally) |
+| Deploy/verify/fund scripts | Hardhat deploy (need to retarget Gnosis) | — | NEEDS UPDATE |
 | Subgraph schema + mapping | 14-field FactEntity, AssemblyScript Protobuf decoder, GlobalState tracking | graph build OK | DONE |
 | Client BIP-39 seed management | 12-word mnemonic, BIP-32/44 derivation, HKDF key compatibility with kdf.ts | 19 | DONE |
 | Client UserOperation builder | Encode facts as calldata, sign with seed-derived key, submit to relay | 11 | DONE |
 | Server /relay endpoint | Target/calldata validation, per-address rate limiting, Pimlico bundler submission | 16 | DONE |
+| Billing & onboarding spec | Full go-live architecture: payments, auth, tiers, onboarding flows | — | DONE (v1.0) |
 
-### Blocked On (User Action)
+### Next Steps
 
-| Item | How to Get |
-|------|-----------|
-| Pimlico API key | Sign up at https://dashboard.pimlico.io (free tier) |
-| Base Sepolia ETH | Coinbase faucet or Base bridge |
-| Basescan API key | https://basescan.org/myapikey (optional, for contract verification) |
-| Graph Node (local) | `graph install gnd` — see `docs/notes/graph-node-dev-mode.md` |
+| Step | Effort | Description |
+|------|--------|-------------|
+| Retarget deploy scripts to Gnosis | 1 day | Update Hardhat config, subgraph.yaml network field |
+| Fix subgraph recall gap | 1-2 days | Raise `GRAPH_GRAPHQL_MAX_FIRST` to 5,000, add pagination |
+| Pimlico/ZeroDev evaluation | 1 day | Test webhook policy support on Gnosis |
+| Stripe + Coinbase Commerce integration | 1 week | Checkout flow, webhooks, subscription table |
+| Deploy to Gnosis testnet (Chiado) | 1 day | E2E validation on real network |
 
 **Deployment deferred until MVP validates demand.**
 

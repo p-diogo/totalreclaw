@@ -27,7 +27,10 @@ import { createApiClient, type StoreFactPayload } from './api-client.js';
 import { extractFacts, type ExtractedFact } from './extractor.js';
 import { initLLMClient, generateEmbedding, getEmbeddingDims } from './llm-client.js';
 import { LSHHasher } from './lsh.js';
-import { rerank, type RerankerCandidate } from './reranker.js';
+import { rerank, cosineSimilarity, type RerankerCandidate } from './reranker.js';
+import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitToRelay } from './subgraph-store.js';
+import { searchSubgraph, getSubgraphFactCount } from './subgraph-search.js';
+import { PluginHotCache, type HotFact } from './hot-cache-wrapper.js';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -63,7 +66,7 @@ interface OpenClawPluginApi {
 // ---------------------------------------------------------------------------
 
 /** Path where we persist userId + salt across restarts. */
-const CREDENTIALS_PATH = '/home/node/.totalreclaw/credentials.json';
+const CREDENTIALS_PATH = process.env.TOTALRECLAW_CREDENTIALS_PATH || '/home/node/.totalreclaw/credentials.json';
 
 // ---------------------------------------------------------------------------
 // Module-level state (persists across tool calls within a session)
@@ -79,6 +82,25 @@ let initPromise: Promise<void> | null = null;
 // LSH hasher — lazily initialized on first use (needs credentials + embedding dims)
 let lshHasher: LSHHasher | null = null;
 let lshInitFailed = false; // If true, skip LSH on future calls (provider doesn't support embeddings)
+
+// Hot cache for subgraph mode — lazily initialized
+let pluginHotCache: PluginHotCache | null = null;
+
+// Two-tier search state (C1): skip redundant searches when query is semantically similar
+let lastSearchTimestamp = 0;
+let lastQueryEmbedding: number[] | null = null;
+
+// Feature flags — configurable for A/B testing
+const CACHE_TTL_MS = parseInt(process.env.TOTALRECLAW_CACHE_TTL_MS ?? String(5 * 60 * 1000), 10);
+const SEMANTIC_SKIP_THRESHOLD = parseFloat(process.env.TOTALRECLAW_SEMANTIC_SKIP_THRESHOLD ?? '0.85');
+const TWO_TIER_SEARCH = process.env.TOTALRECLAW_TWO_TIER_SEARCH !== 'false'; // default: true
+
+// Auto-extract throttle (C3): only extract every N turns in agent_end hook
+let turnsSinceLastExtraction = 0;
+const AUTO_EXTRACT_EVERY_TURNS = parseInt(process.env.TOTALRECLAW_EXTRACT_EVERY_TURNS ?? '5', 10);
+
+// B2: Minimum relevance threshold — cosine below this means no memory injection
+const RELEVANCE_THRESHOLD = parseFloat(process.env.TOTALRECLAW_RELEVANCE_THRESHOLD ?? '0.3');
 
 // ---------------------------------------------------------------------------
 // Dynamic candidate pool sizing
@@ -394,7 +416,24 @@ async function storeExtractedFacts(
         encrypted_embedding: embeddingResult?.encryptedEmbedding,
       };
 
-      await apiClient.store(userId, [payload], authKeyHex);
+      if (isSubgraphMode()) {
+        const config = getSubgraphConfig();
+        const protobuf = encodeFactProtobuf({
+          id: factId,
+          timestamp: new Date().toISOString(),
+          owner: userId!,
+          encryptedBlob: encryptedBlob,
+          blindIndices: allIndices,
+          decayScore: fact.importance,
+          source: 'auto-extraction',
+          contentFp: contentFp,
+          agentId: 'openclaw-plugin-auto',
+          encryptedEmbedding: embeddingResult?.encryptedEmbedding,
+        });
+        await submitToRelay(protobuf, config);
+      } else {
+        await apiClient.store(userId, [payload], authKeyHex);
+      }
       stored++;
     } catch {
       // Skip failed facts (e.g., duplicates return success with duplicate_ids)
@@ -541,7 +580,25 @@ const plugin = {
               encrypted_embedding: embeddingResult?.encryptedEmbedding,
             };
 
-            await apiClient!.store(userId!, [factPayload], authKeyHex!);
+            if (isSubgraphMode()) {
+              // Subgraph mode: encode as Protobuf and submit via relay
+              const config = getSubgraphConfig();
+              const protobuf = encodeFactProtobuf({
+                id: factId,
+                timestamp: new Date().toISOString(),
+                owner: userId!,
+                encryptedBlob: encryptedBlob,
+                blindIndices: allIndices,
+                decayScore: importance,
+                source: 'explicit',
+                contentFp: contentFp,
+                agentId: 'openclaw-plugin',
+                encryptedEmbedding: embeddingResult?.encryptedEmbedding,
+              });
+              await submitToRelay(protobuf, config);
+            } else {
+              await apiClient!.store(userId!, [factPayload], authKeyHex!);
+            }
 
             return {
               content: [{ type: 'text', text: `Memory stored (ID: ${factId})` }],
@@ -620,49 +677,115 @@ const plugin = {
             }
 
             // 4. Request more candidates than needed so we can re-rank client-side.
-            const factCount = await getFactCount(api.logger);
-            const pool = computeCandidatePool(factCount);
-            const candidates = await apiClient!.search(
-              userId!,
-              allTrapdoors,
-              pool,
-              authKeyHex!,
-            );
-
             // 5. Decrypt candidates (text + embeddings) and build reranker input.
             const rerankerCandidates: RerankerCandidate[] = [];
-            // Keep metadata + timestamp for formatting after reranking.
             const metaMap = new Map<string, { metadata: Record<string, unknown>; timestamp: number }>();
 
-            for (const candidate of candidates) {
-              try {
-                const docJson = decryptFromHex(candidate.encrypted_blob, encryptionKey!);
-                const doc = JSON.parse(docJson) as { text: string; metadata?: Record<string, unknown> };
+            if (isSubgraphMode()) {
+              // --- Subgraph search path ---
+              const factCount = await getSubgraphFactCount(userId!);
+              const pool = computeCandidatePool(factCount);
+              const subgraphResults = await searchSubgraph(userId!, allTrapdoors, pool);
 
-                // Decrypt embedding if present (PoC v2 facts).
-                let decryptedEmbedding: number[] | undefined;
-                if (candidate.encrypted_embedding) {
-                  try {
-                    decryptedEmbedding = JSON.parse(
-                      decryptFromHex(candidate.encrypted_embedding, encryptionKey!),
-                    );
-                  } catch {
-                    // Embedding decryption failed -- proceed without it.
+              for (const result of subgraphResults) {
+                try {
+                  const docJson = decryptFromHex(result.encryptedBlob, encryptionKey!);
+                  const doc = JSON.parse(docJson) as { text: string; metadata?: Record<string, unknown> };
+
+                  let decryptedEmbedding: number[] | undefined;
+                  if (result.encryptedEmbedding) {
+                    try {
+                      decryptedEmbedding = JSON.parse(
+                        decryptFromHex(result.encryptedEmbedding, encryptionKey!),
+                      );
+                    } catch {
+                      // Embedding decryption failed -- proceed without it.
+                    }
                   }
+
+                  rerankerCandidates.push({
+                    id: result.id,
+                    text: doc.text,
+                    embedding: decryptedEmbedding,
+                    importance: (doc.metadata?.importance as number) ?? 0.5,
+                    createdAt: result.timestamp ? parseInt(result.timestamp, 10) : undefined,
+                  });
+
+                  metaMap.set(result.id, {
+                    metadata: doc.metadata ?? {},
+                    timestamp: Date.now(), // Subgraph doesn't return ms timestamp; use current
+                  });
+                } catch {
+                  // Skip candidates we cannot decrypt.
                 }
+              }
 
-                rerankerCandidates.push({
-                  id: candidate.fact_id,
-                  text: doc.text,
-                  embedding: decryptedEmbedding,
-                });
-
-                metaMap.set(candidate.fact_id, {
-                  metadata: doc.metadata ?? {},
-                  timestamp: candidate.timestamp,
-                });
+              // Update hot cache with top results for instant auto-recall.
+              try {
+                if (!pluginHotCache && encryptionKey) {
+                  const config = getSubgraphConfig();
+                  pluginHotCache = new PluginHotCache(config.cachePath, encryptionKey.toString('hex'));
+                  pluginHotCache.load();
+                }
+                if (pluginHotCache) {
+                  const hotFacts: HotFact[] = rerankerCandidates.map((c) => {
+                    const meta = metaMap.get(c.id);
+                    const importance = meta?.metadata.importance
+                      ? Math.round((meta.metadata.importance as number) * 10)
+                      : 5;
+                    return { id: c.id, text: c.text, importance };
+                  });
+                  pluginHotCache.setHotFacts(hotFacts);
+                  pluginHotCache.setFactCount(rerankerCandidates.length);
+                  pluginHotCache.flush();
+                }
               } catch {
-                // Skip candidates we cannot decrypt (e.g. corrupted data).
+                // Hot cache update is best-effort -- don't fail the recall.
+              }
+            } else {
+              // --- Server search path (existing behavior) ---
+              const factCount = await getFactCount(api.logger);
+              const pool = computeCandidatePool(factCount);
+              const candidates = await apiClient!.search(
+                userId!,
+                allTrapdoors,
+                pool,
+                authKeyHex!,
+              );
+
+              for (const candidate of candidates) {
+                try {
+                  const docJson = decryptFromHex(candidate.encrypted_blob, encryptionKey!);
+                  const doc = JSON.parse(docJson) as { text: string; metadata?: Record<string, unknown> };
+
+                  let decryptedEmbedding: number[] | undefined;
+                  if (candidate.encrypted_embedding) {
+                    try {
+                      decryptedEmbedding = JSON.parse(
+                        decryptFromHex(candidate.encrypted_embedding, encryptionKey!),
+                      );
+                    } catch {
+                      // Embedding decryption failed -- proceed without it.
+                    }
+                  }
+
+                  rerankerCandidates.push({
+                    id: candidate.fact_id,
+                    text: doc.text,
+                    embedding: decryptedEmbedding,
+                    importance: (doc.metadata?.importance as number) ?? 0.5,
+                    createdAt: typeof candidate.timestamp === 'number'
+                      ? candidate.timestamp / 1000
+                      : new Date(candidate.timestamp).getTime() / 1000,
+                  });
+
+                  metaMap.set(candidate.fact_id, {
+                    metadata: doc.metadata ?? {},
+                    timestamp: candidate.timestamp,
+                  });
+                } catch {
+                  // Skip candidates we cannot decrypt (e.g. corrupted data).
+                }
               }
             }
 
@@ -871,6 +994,185 @@ const plugin = {
 
           await ensureInitialized(api.logger);
 
+          if (isSubgraphMode()) {
+            // --- Subgraph mode: hot cache first, then background refresh ---
+
+            // Initialize hot cache if needed.
+            if (!pluginHotCache && encryptionKey) {
+              const config = getSubgraphConfig();
+              pluginHotCache = new PluginHotCache(config.cachePath, encryptionKey.toString('hex'));
+              pluginHotCache.load();
+            }
+
+            // Try to return cached facts instantly.
+            const cachedFacts = pluginHotCache?.getHotFacts() ?? [];
+
+            // Query subgraph in parallel for fresh results.
+            // 1. Generate word trapdoors from the user prompt.
+            const wordTrapdoors = generateBlindIndices(evt.prompt);
+
+            // 2. Generate query embedding + LSH trapdoors (may fail gracefully).
+            let queryEmbedding: number[] | null = null;
+            let lshTrapdoors: string[] = [];
+            try {
+              queryEmbedding = await generateEmbedding(evt.prompt, { isQuery: true });
+              const hasher = getLSHHasher(api.logger);
+              if (hasher && queryEmbedding) {
+                lshTrapdoors = hasher.hash(queryEmbedding);
+              }
+            } catch {
+              // Embedding/LSH failed -- proceed with word-only trapdoors.
+            }
+
+            // Two-tier search (C1): if cache is fresh AND query is semantically similar, return cached
+            const now = Date.now();
+            const cacheAge = now - lastSearchTimestamp;
+            if (cacheAge < CACHE_TTL_MS && cachedFacts.length > 0 && queryEmbedding && lastQueryEmbedding) {
+              const querySimilarity = cosineSimilarity(queryEmbedding, lastQueryEmbedding);
+              if (querySimilarity > SEMANTIC_SKIP_THRESHOLD) {
+                const lines = cachedFacts.slice(0, 8).map((f, i) =>
+                  `${i + 1}. ${f.text} (importance: ${f.importance}/10, cached)`,
+                );
+                return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` };
+              }
+            }
+
+            // 3. Merge trapdoors — hook path uses LSH-only for lighter query (C1).
+            // Only use lightweight LSH-only trapdoors if two-tier search is enabled
+            const hookTrapdoors = TWO_TIER_SEARCH && lshTrapdoors.length > 0 ? lshTrapdoors : [...wordTrapdoors, ...lshTrapdoors];
+            const allTrapdoors = hookTrapdoors;
+
+            // If we have cached facts and no trapdoors, return cached facts.
+            if (allTrapdoors.length === 0 && cachedFacts.length > 0) {
+              const lines = cachedFacts.slice(0, 8).map((f, i) =>
+                `${i + 1}. ${f.text} (importance: ${f.importance}/10, cached)`,
+              );
+              return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` };
+            }
+
+            if (allTrapdoors.length === 0) return undefined;
+
+            // 4. Query subgraph for fresh results.
+            let subgraphResults: Awaited<ReturnType<typeof searchSubgraph>> = [];
+            try {
+              const factCount = await getSubgraphFactCount(userId!);
+              const pool = computeCandidatePool(factCount);
+              subgraphResults = await searchSubgraph(userId!, allTrapdoors, pool);
+            } catch {
+              // Subgraph query failed -- fall back to cached facts if available.
+              if (cachedFacts.length > 0) {
+                const lines = cachedFacts.slice(0, 8).map((f, i) =>
+                  `${i + 1}. ${f.text} (importance: ${f.importance}/10, cached)`,
+                );
+                return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` };
+              }
+              return undefined;
+            }
+
+            if (subgraphResults.length === 0 && cachedFacts.length === 0) return undefined;
+
+            // If subgraph returned no results but we have cache, use cache.
+            if (subgraphResults.length === 0) {
+              const lines = cachedFacts.slice(0, 8).map((f, i) =>
+                `${i + 1}. ${f.text} (importance: ${f.importance}/10, cached)`,
+              );
+              return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` };
+            }
+
+            // 5. Decrypt subgraph results and build reranker input.
+            const rerankerCandidates: RerankerCandidate[] = [];
+            const hookMetaMap = new Map<string, { importance: number; age: string }>();
+
+            for (const result of subgraphResults) {
+              try {
+                const docJson = decryptFromHex(result.encryptedBlob, encryptionKey!);
+                const doc = JSON.parse(docJson) as { text: string; metadata?: Record<string, unknown> };
+
+                let decryptedEmbedding: number[] | undefined;
+                if (result.encryptedEmbedding) {
+                  try {
+                    decryptedEmbedding = JSON.parse(
+                      decryptFromHex(result.encryptedEmbedding, encryptionKey!),
+                    );
+                  } catch {
+                    // Embedding decryption failed -- proceed without it.
+                  }
+                }
+
+                const importanceRaw = (doc.metadata?.importance as number) ?? 0.5;
+                const createdAtSec = result.timestamp ? parseInt(result.timestamp, 10) : undefined;
+                rerankerCandidates.push({
+                  id: result.id,
+                  text: doc.text,
+                  embedding: decryptedEmbedding,
+                  importance: importanceRaw,
+                  createdAt: createdAtSec,
+                });
+
+                const importance = doc.metadata?.importance
+                  ? Math.round((doc.metadata.importance as number) * 10)
+                  : 5;
+                hookMetaMap.set(result.id, {
+                  importance,
+                  age: 'subgraph',
+                });
+              } catch {
+                // Skip un-decryptable candidates.
+              }
+            }
+
+            // 6. Re-rank with BM25 + cosine + RRF fusion.
+            const reranked = rerank(
+              evt.prompt,
+              queryEmbedding ?? [],
+              rerankerCandidates,
+              8,
+            );
+
+            // B2: Minimum relevance threshold — skip noise injection for irrelevant turns.
+            const candidatesWithEmb = rerankerCandidates.filter(c => c.embedding && c.embedding.length > 0);
+            if (candidatesWithEmb.length > 0 && queryEmbedding && queryEmbedding.length > 0) {
+              const topCosine = Math.max(
+                ...candidatesWithEmb.map(c => cosineSimilarity(queryEmbedding!, c.embedding!))
+              );
+              if (topCosine < RELEVANCE_THRESHOLD) return undefined;
+            }
+
+            // Update hot cache with reranked results.
+            try {
+              if (pluginHotCache) {
+                const hotFacts: HotFact[] = rerankerCandidates.map((c) => {
+                  const meta = hookMetaMap.get(c.id);
+                  return { id: c.id, text: c.text, importance: meta?.importance ?? 5 };
+                });
+                pluginHotCache.setHotFacts(hotFacts);
+                pluginHotCache.setLastQueryEmbedding(queryEmbedding);
+                pluginHotCache.flush();
+              }
+            } catch {
+              // Hot cache update is best-effort.
+            }
+
+            // Record search state for two-tier cache (C1).
+            lastSearchTimestamp = Date.now();
+            lastQueryEmbedding = queryEmbedding;
+
+            if (reranked.length === 0) return undefined;
+
+            // 7. Build context string.
+            const lines = reranked.map((m, i) => {
+              const meta = hookMetaMap.get(m.id);
+              const importance = meta?.importance ?? 5;
+              const age = meta?.age ?? '';
+              return `${i + 1}. ${m.text} (importance: ${importance}/10, ${age})`;
+            });
+            const contextString = `## Relevant Memories\n\n${lines.join('\n')}`;
+
+            return { prependContext: contextString };
+          }
+
+          // --- Server mode (existing behavior) ---
+
           // 1. Generate word trapdoors from the user prompt.
           const wordTrapdoors = generateBlindIndices(evt.prompt);
 
@@ -924,10 +1226,16 @@ const plugin = {
                 }
               }
 
+              const importanceRaw = (doc.metadata?.importance as number) ?? 0.5;
+              const createdAtSec = typeof candidate.timestamp === 'number'
+                ? candidate.timestamp / 1000
+                : new Date(candidate.timestamp).getTime() / 1000;
               rerankerCandidates.push({
                 id: candidate.fact_id,
                 text: doc.text,
                 embedding: decryptedEmbedding,
+                importance: importanceRaw,
+                createdAt: createdAtSec,
               });
 
               const importance = doc.metadata?.importance
@@ -949,6 +1257,15 @@ const plugin = {
             rerankerCandidates,
             8,
           );
+
+          // B2: Minimum relevance threshold — skip noise injection for irrelevant turns.
+          const candidatesWithEmbSrv = rerankerCandidates.filter(c => c.embedding && c.embedding.length > 0);
+          if (candidatesWithEmbSrv.length > 0 && queryEmbedding && queryEmbedding.length > 0) {
+            const topCosine = Math.max(
+              ...candidatesWithEmbSrv.map(c => cosineSimilarity(queryEmbedding!, c.embedding!))
+            );
+            if (topCosine < RELEVANCE_THRESHOLD) return undefined;
+          }
 
           if (reranked.length === 0) return undefined;
 
@@ -985,9 +1302,14 @@ const plugin = {
 
           await ensureInitialized(api.logger);
 
-          const facts = await extractFacts(evt.messages, 'turn');
-          if (facts.length > 0) {
-            await storeExtractedFacts(facts, api.logger);
+          // C3: Throttle auto-extraction to every N turns (configurable via env).
+          turnsSinceLastExtraction++;
+          if (turnsSinceLastExtraction >= AUTO_EXTRACT_EVERY_TURNS) {
+            const facts = await extractFacts(evt.messages, 'turn');
+            if (facts.length > 0) {
+              await storeExtractedFacts(facts, api.logger);
+            }
+            turnsSinceLastExtraction = 0;
           }
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : String(err);
@@ -1018,6 +1340,7 @@ const plugin = {
           if (facts.length > 0) {
             await storeExtractedFacts(facts, api.logger);
           }
+          turnsSinceLastExtraction = 0; // Reset C3 counter on compaction.
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : String(err);
           api.logger.warn(`before_compaction extraction failed: ${message}`);
@@ -1047,6 +1370,7 @@ const plugin = {
           if (facts.length > 0) {
             await storeExtractedFacts(facts, api.logger);
           }
+          turnsSinceLastExtraction = 0; // Reset C3 counter on reset.
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : String(err);
           api.logger.warn(`before_reset extraction failed: ${message}`);
@@ -1058,3 +1382,26 @@ const plugin = {
 };
 
 export default plugin;
+
+/**
+ * Reset all module-level state for test isolation.
+ * ONLY call this from test code — never in production.
+ */
+export function __resetForTesting(): void {
+  authKeyHex = null;
+  encryptionKey = null;
+  dedupKey = null;
+  userId = null;
+  apiClient = null;
+  initPromise = null;
+  lshHasher = null;
+  lshInitFailed = false;
+  masterPasswordCache = null;
+  saltCache = null;
+  cachedFactCount = null;
+  lastFactCountFetch = 0;
+  pluginHotCache = null;
+  lastSearchTimestamp = 0;
+  lastQueryEmbedding = null;
+  turnsSinceLastExtraction = 0;
+}

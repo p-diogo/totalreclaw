@@ -1,0 +1,5157 @@
+{
+  "timestamp": "2026-03-03T08:14:51.085Z",
+  "duration_seconds": 14.18,
+  "instances": {
+    "server-improved": {
+      "scenarios": {
+        "A": {
+          "metrics": {
+            "instanceId": "server-improved",
+            "scenarioId": "scenario-a-preferences",
+            "hookInvocations": [
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679545,
+                "durationMs": 2548.6855,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679545,
+                "durationMs": 0.03195899999991525,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679565,
+                "durationMs": 19.607416999999714,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679565,
+                "durationMs": 0.0019160000001647859,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679579,
+                "durationMs": 14.335500000000138,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679579,
+                "durationMs": 0.0032919999998739513,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679595,
+                "durationMs": 15.570209000000432,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679595,
+                "durationMs": 0.00454200000012861,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679607,
+                "durationMs": 12.102542000000085,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679607,
+                "durationMs": 0.16462499999988722,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679617,
+                "durationMs": 9.749957999999879,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679617,
+                "durationMs": 0.0017090000001189765,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679623,
+                "durationMs": 5.8572079999999005,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679623,
+                "durationMs": 0.001374999999825377,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679629,
+                "durationMs": 6.218667000000096,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679629,
+                "durationMs": 0.001291999999921245,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679634,
+                "durationMs": 4.589375000000018,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679634,
+                "durationMs": 0.00258399999984249,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679638,
+                "durationMs": 4.299540999999863,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679638,
+                "durationMs": 0.0032919999998739513,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679644,
+                "durationMs": 6.52770799999962,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679644,
+                "durationMs": 0.0011249999997744453,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679652,
+                "durationMs": 7.091665999999805,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679652,
+                "durationMs": 0.0009999999997489795,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679659,
+                "durationMs": 7.434791000000132,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679659,
+                "durationMs": 0.0009580000000823929,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679668,
+                "durationMs": 8.572791000000052,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679668,
+                "durationMs": 0.0014580000001842564,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679675,
+                "durationMs": 7.816291000000092,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679675,
+                "durationMs": 0.0025420000001759036,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679685,
+                "durationMs": 9.703624999999647,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679685,
+                "durationMs": 0.0011669999998957792,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679695,
+                "durationMs": 10.292249999999967,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679703,
+                "durationMs": 0.003416999999899417,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679710,
+                "durationMs": 7.223917000000256,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679710,
+                "durationMs": 0.002375000000029104,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679719,
+                "durationMs": 8.997875000000022,
+                "returnedContext": true,
+                "contextLength": 165
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679719,
+                "durationMs": 0.001708000000235188,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679727,
+                "durationMs": 8.18337500000007,
+                "returnedContext": true,
+                "contextLength": 165
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679727,
+                "durationMs": 0.00258399999984249,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679736,
+                "durationMs": 9.210708999999952,
+                "returnedContext": true,
+                "contextLength": 165
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679736,
+                "durationMs": 0.0010000000002037268,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679747,
+                "durationMs": 11.086041999999907,
+                "returnedContext": true,
+                "contextLength": 165
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679747,
+                "durationMs": 0.0010000000002037268,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679756,
+                "durationMs": 8.794415999999728,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679756,
+                "durationMs": 0.0009159999999610591,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679765,
+                "durationMs": 8.841999999999643,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679765,
+                "durationMs": 0.0028339999998934218,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525679771,
+                "durationMs": 5.5847499999999854,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525679771,
+                "durationMs": 0.003083000000060565,
+                "returnedContext": false,
+                "contextLength": 0
+              }
+            ],
+            "cacheEvents": [
+              {
+                "timestamp": 1772525679719,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772525679727,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772525679736,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772525679747,
+                "type": "miss"
+              }
+            ],
+            "extractionEvents": [
+              {
+                "turnIndex": 0,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 1,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 2,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 3,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 4,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 5,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 6,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 7,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 8,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 9,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 10,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 11,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 12,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 13,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 14,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 15,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 16,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 17,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 18,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 19,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 20,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 21,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 22,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 23,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 24,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              }
+            ],
+            "injectionEvents": [
+              {
+                "turnIndex": 0,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679545
+              },
+              {
+                "turnIndex": 1,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679565
+              },
+              {
+                "turnIndex": 2,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679579
+              },
+              {
+                "turnIndex": 3,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679595
+              },
+              {
+                "turnIndex": 4,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679607
+              },
+              {
+                "turnIndex": 5,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679617
+              },
+              {
+                "turnIndex": 6,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679623
+              },
+              {
+                "turnIndex": 7,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679629
+              },
+              {
+                "turnIndex": 8,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679634
+              },
+              {
+                "turnIndex": 9,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679638
+              },
+              {
+                "turnIndex": 10,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679644
+              },
+              {
+                "turnIndex": 11,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679652
+              },
+              {
+                "turnIndex": 12,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679659
+              },
+              {
+                "turnIndex": 13,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679668
+              },
+              {
+                "turnIndex": 14,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679675
+              },
+              {
+                "turnIndex": 15,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679685
+              },
+              {
+                "turnIndex": 16,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679695
+              },
+              {
+                "turnIndex": 17,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679710
+              },
+              {
+                "turnIndex": 18,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. User is allergic to shellfish. This is critical for restaurant and food recommendations. (importance: 9/10, just now)",
+                "timestamp": 1772525679719
+              },
+              {
+                "turnIndex": 19,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. User is allergic to shellfish. This is critical for restaurant and food recommendations. (importance: 9/10, just now)",
+                "timestamp": 1772525679727
+              },
+              {
+                "turnIndex": 20,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. User is allergic to shellfish. This is critical for restaurant and food recommendations. (importance: 9/10, just now)",
+                "timestamp": 1772525679736
+              },
+              {
+                "turnIndex": 21,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. User is allergic to shellfish. This is critical for restaurant and food recommendations. (importance: 9/10, just now)",
+                "timestamp": 1772525679747
+              },
+              {
+                "turnIndex": 22,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679756
+              },
+              {
+                "turnIndex": 23,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679765
+              },
+              {
+                "turnIndex": 24,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525679771
+              }
+            ],
+            "graphqlQueries": [],
+            "turnMetrics": [
+              {
+                "turnIndex": 0,
+                "durationMs": 2548.761667,
+                "hookLatencyMs": 2548.717459,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525676996
+              },
+              {
+                "turnIndex": 1,
+                "durationMs": 19.620249999999942,
+                "hookLatencyMs": 2568.326792,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679545
+              },
+              {
+                "turnIndex": 2,
+                "durationMs": 14.357500000000073,
+                "hookLatencyMs": 33.94812499999989,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679565
+              },
+              {
+                "turnIndex": 3,
+                "durationMs": 15.596875000000182,
+                "hookLatencyMs": 29.913543000000573,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679579
+              },
+              {
+                "turnIndex": 4,
+                "durationMs": 12.292708999999832,
+                "hookLatencyMs": 27.841918000000533,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679595
+              },
+              {
+                "turnIndex": 5,
+                "durationMs": 9.763165999999728,
+                "hookLatencyMs": 22.01883399999997,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679607
+              },
+              {
+                "turnIndex": 6,
+                "durationMs": 5.865207999999711,
+                "hookLatencyMs": 15.610249999999724,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679617
+              },
+              {
+                "turnIndex": 7,
+                "durationMs": 6.226750000000266,
+                "hookLatencyMs": 12.078541999999743,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679623
+              },
+              {
+                "turnIndex": 8,
+                "durationMs": 4.599459000000024,
+                "hookLatencyMs": 10.811917999999878,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679629
+              },
+              {
+                "turnIndex": 9,
+                "durationMs": 4.314208000000235,
+                "hookLatencyMs": 8.894791999999597,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679634
+              },
+              {
+                "turnIndex": 10,
+                "durationMs": 6.533374999999978,
+                "hookLatencyMs": 10.831665999999132,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679638
+              },
+              {
+                "turnIndex": 11,
+                "durationMs": 7.094916999999896,
+                "hookLatencyMs": 13.621498999998948,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679644
+              },
+              {
+                "turnIndex": 12,
+                "durationMs": 7.437832999999955,
+                "hookLatencyMs": 14.528414999999768,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679652
+              },
+              {
+                "turnIndex": 13,
+                "durationMs": 8.577541999999994,
+                "hookLatencyMs": 16.00999800000045,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679659
+              },
+              {
+                "turnIndex": 14,
+                "durationMs": 7.820834000000104,
+                "hookLatencyMs": 16.393082000000504,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679668
+              },
+              {
+                "turnIndex": 15,
+                "durationMs": 9.707499999999982,
+                "hookLatencyMs": 17.52362499999981,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679675
+              },
+              {
+                "turnIndex": 16,
+                "durationMs": 17.53141599999981,
+                "hookLatencyMs": 20.00045899999941,
+                "memoryInjected": false,
+                "toolsUsed": [
+                  "totalreclaw_remember"
+                ],
+                "timestamp": 1772525679685
+              },
+              {
+                "turnIndex": 17,
+                "durationMs": 7.233583000000181,
+                "hookLatencyMs": 7.2297090000001845,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679703
+              },
+              {
+                "turnIndex": 18,
+                "durationMs": 9.00799999999981,
+                "hookLatencyMs": 16.225875000000542,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772525679710
+              },
+              {
+                "turnIndex": 19,
+                "durationMs": 8.191041999999925,
+                "hookLatencyMs": 17.18554200000017,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772525679719
+              },
+              {
+                "turnIndex": 20,
+                "durationMs": 9.217583000000104,
+                "hookLatencyMs": 17.397668000000067,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772525679727
+              },
+              {
+                "turnIndex": 21,
+                "durationMs": 11.091625000000022,
+                "hookLatencyMs": 20.298751000000266,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772525679736
+              },
+              {
+                "turnIndex": 22,
+                "durationMs": 8.797583999999915,
+                "hookLatencyMs": 19.8823739999998,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679747
+              },
+              {
+                "turnIndex": 23,
+                "durationMs": 8.85137500000019,
+                "hookLatencyMs": 17.640165999999226,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679756
+              },
+              {
+                "turnIndex": 24,
+                "durationMs": 5.591374999999971,
+                "hookLatencyMs": 14.432666999999583,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679765
+              }
+            ]
+          },
+          "assertions": {
+            "scenarioA_cache_hit_rate_on_same_topic": {
+              "passed": false,
+              "message": "Assertion failed: Expected >=2 cache hits on same-topic turns 11-15, got 0"
+            },
+            "scenarioA_extraction_fires_at_correct_intervals": {
+              "passed": false,
+              "message": "Assertion failed: Expected 4-6 extractions for 25 turns, got 0"
+            },
+            "scenarioA_job_facts_rank_high_on_work_query": {
+              "passed": false,
+              "message": "Assertion failed: Turn 7 should have memory injection"
+            },
+            "scenarioA_no_injection_on_greeting_turns": {
+              "passed": true,
+              "message": "PASS"
+            }
+          }
+        },
+        "B": {
+          "metrics": {
+            "instanceId": "server-improved",
+            "scenarioId": "scenario-b-technical",
+            "hookInvocations": [
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682182,
+                "durationMs": 2405.252458,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682182,
+                "durationMs": 0.035041000000092026,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682196,
+                "durationMs": 13.736457999999402,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682196,
+                "durationMs": 0.00220900000022084,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682209,
+                "durationMs": 12.659749999999804,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682209,
+                "durationMs": 0.0024160000002666493,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682220,
+                "durationMs": 11.82641700000022,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682220,
+                "durationMs": 0.0020830000003115856,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682235,
+                "durationMs": 14.794750000000022,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682235,
+                "durationMs": 0.004334000000199012,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682248,
+                "durationMs": 13.163375000000087,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682248,
+                "durationMs": 0.001833999999689695,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682261,
+                "durationMs": 12.305500000000393,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682261,
+                "durationMs": 0.0016660000001138542,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682274,
+                "durationMs": 13.047875000000204,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682274,
+                "durationMs": 0.00166700000045239,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682287,
+                "durationMs": 12.813959000000068,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682287,
+                "durationMs": 0.0026250000000800355,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682300,
+                "durationMs": 13.109583000000384,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682300,
+                "durationMs": 0.0052080000004934845,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682306,
+                "durationMs": 6.265958000000865,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682306,
+                "durationMs": 0.0016669999995428952,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682312,
+                "durationMs": 6.014833000000181,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682312,
+                "durationMs": 0.0015419999999721767,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682319,
+                "durationMs": 7.093667000000096,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682319,
+                "durationMs": 0.0014590000000680448,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682326,
+                "durationMs": 6.989917000000787,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682326,
+                "durationMs": 0.001833999999689695,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682334,
+                "durationMs": 8.27679099999932,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682334,
+                "durationMs": 0.0037089999996169354,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682341,
+                "durationMs": 7.055166000000099,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682347,
+                "durationMs": 0.0017909999996845727,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682358,
+                "durationMs": 11.493250000000444,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682358,
+                "durationMs": 0.003666999999950349,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682367,
+                "durationMs": 8.963832999999795,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682367,
+                "durationMs": 0.002125000000887667,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682378,
+                "durationMs": 10.368290999999772,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682378,
+                "durationMs": 0.0018340000005991897,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525682388,
+                "durationMs": 10.790874999999687,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525682388,
+                "durationMs": 0.0039999999999054126,
+                "returnedContext": false,
+                "contextLength": 0
+              }
+            ],
+            "cacheEvents": [],
+            "extractionEvents": [
+              {
+                "turnIndex": 0,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 1,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 2,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 3,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 4,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 5,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 6,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 7,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 8,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 9,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 10,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 11,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 12,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 13,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 14,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 15,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 16,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 17,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 18,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 19,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              }
+            ],
+            "injectionEvents": [
+              {
+                "turnIndex": 0,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682182
+              },
+              {
+                "turnIndex": 1,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682196
+              },
+              {
+                "turnIndex": 2,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682209
+              },
+              {
+                "turnIndex": 3,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682220
+              },
+              {
+                "turnIndex": 4,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682235
+              },
+              {
+                "turnIndex": 5,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682248
+              },
+              {
+                "turnIndex": 6,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682261
+              },
+              {
+                "turnIndex": 7,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682274
+              },
+              {
+                "turnIndex": 8,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682287
+              },
+              {
+                "turnIndex": 9,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682300
+              },
+              {
+                "turnIndex": 10,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682306
+              },
+              {
+                "turnIndex": 11,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682312
+              },
+              {
+                "turnIndex": 12,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682319
+              },
+              {
+                "turnIndex": 13,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682326
+              },
+              {
+                "turnIndex": 14,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682334
+              },
+              {
+                "turnIndex": 15,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682341
+              },
+              {
+                "turnIndex": 16,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682358
+              },
+              {
+                "turnIndex": 17,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682367
+              },
+              {
+                "turnIndex": 18,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682378
+              },
+              {
+                "turnIndex": 19,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525682388
+              }
+            ],
+            "graphqlQueries": [],
+            "turnMetrics": [
+              {
+                "turnIndex": 0,
+                "durationMs": 2405.295667,
+                "hookLatencyMs": 2405.287499,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525679777
+              },
+              {
+                "turnIndex": 1,
+                "durationMs": 13.742500000000291,
+                "hookLatencyMs": 2419.0261659999996,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682182
+              },
+              {
+                "turnIndex": 2,
+                "durationMs": 12.666374999999789,
+                "hookLatencyMs": 26.400832999999693,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682196
+              },
+              {
+                "turnIndex": 3,
+                "durationMs": 11.832292000000052,
+                "hookLatencyMs": 24.4906660000006,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682209
+              },
+              {
+                "turnIndex": 4,
+                "durationMs": 14.802083999999923,
+                "hookLatencyMs": 26.627584000000752,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682220
+              },
+              {
+                "turnIndex": 5,
+                "durationMs": 13.168124999999236,
+                "hookLatencyMs": 27.964292999999998,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682235
+              },
+              {
+                "turnIndex": 6,
+                "durationMs": 12.309624999999869,
+                "hookLatencyMs": 25.472375000000284,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682248
+              },
+              {
+                "turnIndex": 7,
+                "durationMs": 13.052083999999923,
+                "hookLatencyMs": 25.356708000001163,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682261
+              },
+              {
+                "turnIndex": 8,
+                "durationMs": 12.819292000000132,
+                "hookLatencyMs": 25.866126000000804,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682274
+              },
+              {
+                "turnIndex": 9,
+                "durationMs": 13.11737499999981,
+                "hookLatencyMs": 25.931375000001026,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682287
+              },
+              {
+                "turnIndex": 10,
+                "durationMs": 6.270040999999765,
+                "hookLatencyMs": 19.382416000001285,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682300
+              },
+              {
+                "turnIndex": 11,
+                "durationMs": 6.0185410000003685,
+                "hookLatencyMs": 12.28400000000056,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682306
+              },
+              {
+                "turnIndex": 12,
+                "durationMs": 7.097458000000188,
+                "hookLatencyMs": 13.111501000000317,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682312
+              },
+              {
+                "turnIndex": 13,
+                "durationMs": 7.005750000000262,
+                "hookLatencyMs": 14.08687700000064,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682319
+              },
+              {
+                "turnIndex": 14,
+                "durationMs": 8.283042000000023,
+                "hookLatencyMs": 15.272250999999414,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682326
+              },
+              {
+                "turnIndex": 15,
+                "durationMs": 12.293084000000817,
+                "hookLatencyMs": 15.337456999998722,
+                "memoryInjected": false,
+                "toolsUsed": [
+                  "totalreclaw_recall"
+                ],
+                "timestamp": 1772525682334
+              },
+              {
+                "turnIndex": 16,
+                "durationMs": 11.50274999999965,
+                "hookLatencyMs": 11.498708000000079,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682347
+              },
+              {
+                "turnIndex": 17,
+                "durationMs": 8.969457999999577,
+                "hookLatencyMs": 20.462875000001077,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682358
+              },
+              {
+                "turnIndex": 18,
+                "durationMs": 10.37304099999983,
+                "hookLatencyMs": 19.336083000001054,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682367
+              },
+              {
+                "turnIndex": 19,
+                "durationMs": 10.797416999999768,
+                "hookLatencyMs": 21.164999999999964,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525682378
+              }
+            ]
+          },
+          "assertions": {
+            "scenarioB_diverse_results_on_memory_safety_query": {
+              "passed": false,
+              "message": "Assertion failed: Turn 11 should have injection for memory safety query"
+            },
+            "scenarioB_paraphrased_query_finds_facts": {
+              "passed": false,
+              "message": "Assertion failed: Paraphrased query (turn 13) should still find relevant memories via semantic search"
+            },
+            "scenarioB_tool_call_uses_full_search": {
+              "passed": false,
+              "message": "Assertion failed: Tool call should generate more queries than average hook call. Tool: 0, avg hook: 0.0"
+            }
+          }
+        },
+        "C": {
+          "metrics": {
+            "instanceId": "server-improved",
+            "scenarioId": "scenario-c-noise",
+            "hookInvocations": [
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684802,
+                "durationMs": 2408.9602920000007,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684806,
+                "durationMs": 0.04845800000020972,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684817,
+                "durationMs": 10.292833999999857,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684821,
+                "durationMs": 0.002124999999978172,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684832,
+                "durationMs": 10.83587499999976,
+                "returnedContext": true,
+                "contextLength": 119
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684836,
+                "durationMs": 0.002666000000317581,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684840,
+                "durationMs": 4.463874999999462,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684840,
+                "durationMs": 0.002082999999402091,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684840,
+                "durationMs": 0.0010840000004463946,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684840,
+                "durationMs": 0.002417000000605185,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684844,
+                "durationMs": 4.225250000000415,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684844,
+                "durationMs": 0.0019579999998313724,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684849,
+                "durationMs": 4.225292000000081,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684849,
+                "durationMs": 0.0015000000003055902,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684849,
+                "durationMs": 0.0009589999999661813,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684849,
+                "durationMs": 0.0004580000004352769,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684854,
+                "durationMs": 4.840625000000728,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684854,
+                "durationMs": 0.0027090000003227033,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684858,
+                "durationMs": 4.566458000000239,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684858,
+                "durationMs": 0.004916999999295513,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684871,
+                "durationMs": 12.5229589999999,
+                "returnedContext": true,
+                "contextLength": 176
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684871,
+                "durationMs": 0.0015000000003055902,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684876,
+                "durationMs": 5.625208000000384,
+                "returnedContext": true,
+                "contextLength": 119
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684876,
+                "durationMs": 0.0010830000001078588,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684882,
+                "durationMs": 6.01825000000008,
+                "returnedContext": true,
+                "contextLength": 115
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684882,
+                "durationMs": 0.0014160000000629225,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684887,
+                "durationMs": 4.492583999999624,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684887,
+                "durationMs": 0.0011249999997744453,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525684887,
+                "durationMs": 0.0006659999999101274,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525684887,
+                "durationMs": 0.0025420000001759036,
+                "returnedContext": false,
+                "contextLength": 0
+              }
+            ],
+            "cacheEvents": [
+              {
+                "timestamp": 1772525684832,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772525684871,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772525684876,
+                "type": "miss"
+              },
+              {
+                "timestamp": 1772525684882,
+                "type": "miss"
+              }
+            ],
+            "extractionEvents": [
+              {
+                "turnIndex": 0,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 1,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 2,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 3,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 4,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 5,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 6,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 7,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 8,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 9,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 10,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 11,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 12,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 13,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 14,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              }
+            ],
+            "injectionEvents": [
+              {
+                "turnIndex": 0,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684802
+              },
+              {
+                "turnIndex": 1,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684817
+              },
+              {
+                "turnIndex": 2,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. My favorite programming language is Python (importance: 5/10, just now)",
+                "timestamp": 1772525684832
+              },
+              {
+                "turnIndex": 3,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684840
+              },
+              {
+                "turnIndex": 4,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684840
+              },
+              {
+                "turnIndex": 5,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684844
+              },
+              {
+                "turnIndex": 6,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684849
+              },
+              {
+                "turnIndex": 7,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684849
+              },
+              {
+                "turnIndex": 8,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684854
+              },
+              {
+                "turnIndex": 9,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684858
+              },
+              {
+                "turnIndex": 10,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. I have a cat named Luna (importance: 5/10, just now)\n2. My favorite programming language is Python (importance: 5/10, just now)",
+                "timestamp": 1772525684871
+              },
+              {
+                "turnIndex": 11,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. My favorite programming language is Python (importance: 5/10, just now)",
+                "timestamp": 1772525684876
+              },
+              {
+                "turnIndex": 12,
+                "injected": true,
+                "contextSnippet": "## Relevant Memories\n\n1. I prefer dark mode in all applications (importance: 5/10, just now)",
+                "timestamp": 1772525684882
+              },
+              {
+                "turnIndex": 13,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684887
+              },
+              {
+                "turnIndex": 14,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525684887
+              }
+            ],
+            "graphqlQueries": [],
+            "turnMetrics": [
+              {
+                "turnIndex": 0,
+                "durationMs": 2413.097167,
+                "hookLatencyMs": 2409.008750000001,
+                "memoryInjected": false,
+                "toolsUsed": [
+                  "totalreclaw_remember"
+                ],
+                "timestamp": 1772525682393
+              },
+              {
+                "turnIndex": 1,
+                "durationMs": 14.774666999999681,
+                "hookLatencyMs": 10.343417000000045,
+                "memoryInjected": false,
+                "toolsUsed": [
+                  "totalreclaw_remember"
+                ],
+                "timestamp": 1772525684806
+              },
+              {
+                "turnIndex": 2,
+                "durationMs": 14.722042000000329,
+                "hookLatencyMs": 10.840666000000056,
+                "memoryInjected": true,
+                "toolsUsed": [
+                  "totalreclaw_remember"
+                ],
+                "timestamp": 1772525684821
+              },
+              {
+                "turnIndex": 3,
+                "durationMs": 4.469375000000582,
+                "hookLatencyMs": 4.468623999999181,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525684836
+              },
+              {
+                "turnIndex": 4,
+                "durationMs": 0.004540999999335327,
+                "hookLatencyMs": 4.469458999999915,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525684840
+              },
+              {
+                "turnIndex": 5,
+                "durationMs": 4.230082999999468,
+                "hookLatencyMs": 8.696667000000161,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525684840
+              },
+              {
+                "turnIndex": 6,
+                "durationMs": 4.229374999999891,
+                "hookLatencyMs": 8.454000000000633,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525684844
+              },
+              {
+                "turnIndex": 7,
+                "durationMs": 0.002291999999215477,
+                "hookLatencyMs": 4.228209000000788,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525684849
+              },
+              {
+                "turnIndex": 8,
+                "durationMs": 4.845917000000554,
+                "hookLatencyMs": 9.071543000001839,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525684849
+              },
+              {
+                "turnIndex": 9,
+                "durationMs": 4.573666999999659,
+                "hookLatencyMs": 9.414709000000585,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525684854
+              },
+              {
+                "turnIndex": 10,
+                "durationMs": 12.53083400000014,
+                "hookLatencyMs": 17.09583399999974,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772525684858
+              },
+              {
+                "turnIndex": 11,
+                "durationMs": 5.631333000000268,
+                "hookLatencyMs": 18.1507500000007,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772525684871
+              },
+              {
+                "turnIndex": 12,
+                "durationMs": 6.0252080000000205,
+                "hookLatencyMs": 11.645957000000635,
+                "memoryInjected": true,
+                "toolsUsed": [],
+                "timestamp": 1772525684876
+              },
+              {
+                "turnIndex": 13,
+                "durationMs": 4.496082999999999,
+                "hookLatencyMs": 10.513374999999542,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525684882
+              },
+              {
+                "turnIndex": 14,
+                "durationMs": 0.00408400000014808,
+                "hookLatencyMs": 4.496916999999485,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525684887
+              }
+            ]
+          },
+          "assertions": {
+            "scenarioC_injection_on_relevant_queries": {
+              "passed": true,
+              "message": "PASS"
+            },
+            "scenarioC_no_injection_on_noise": {
+              "passed": true,
+              "message": "PASS"
+            },
+            "scenarioC_token_savings_on_noise": {
+              "passed": true,
+              "message": "PASS"
+            }
+          }
+        },
+        "D": {
+          "metrics": {
+            "instanceId": "server-improved",
+            "scenarioId": "scenario-d-topics",
+            "hookInvocations": [
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687344,
+                "durationMs": 2451.7746669999997,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687344,
+                "durationMs": 0.03191700000024866,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687360,
+                "durationMs": 16.772000000000844,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687360,
+                "durationMs": 0.0027079999999841675,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687374,
+                "durationMs": 13.587790999999925,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687374,
+                "durationMs": 0.0027919999993173406,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687387,
+                "durationMs": 13.3140829999993,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687387,
+                "durationMs": 0.002082999999402091,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687401,
+                "durationMs": 14.101249999999709,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687401,
+                "durationMs": 0.005874999998923158,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687414,
+                "durationMs": 12.764667000001282,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687414,
+                "durationMs": 0.004750000000058208,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687425,
+                "durationMs": 10.407583000000159,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687425,
+                "durationMs": 0.0021670000005542533,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687434,
+                "durationMs": 9.466500000000451,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687434,
+                "durationMs": 0.002082999999402091,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687446,
+                "durationMs": 11.83691699999872,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687446,
+                "durationMs": 0.0035420000003796304,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687457,
+                "durationMs": 11.024042000000918,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687457,
+                "durationMs": 0.006042000000888947,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687470,
+                "durationMs": 12.99616700000115,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687470,
+                "durationMs": 0.0018749999999272404,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687481,
+                "durationMs": 10.841292000000976,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687481,
+                "durationMs": 0.0018749999999272404,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687492,
+                "durationMs": 10.909416999998939,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687492,
+                "durationMs": 0.0018749999999272404,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687503,
+                "durationMs": 10.778082999999242,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687503,
+                "durationMs": 0.005417000000306871,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687512,
+                "durationMs": 9.891875000001164,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687512,
+                "durationMs": 0.0046249999995779945,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687524,
+                "durationMs": 11.593500000000859,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687524,
+                "durationMs": 0.005917000000408734,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687537,
+                "durationMs": 13.387290999999095,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687537,
+                "durationMs": 0.002375000000029104,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687551,
+                "durationMs": 13.237957999999708,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687551,
+                "durationMs": 0.004458000001250184,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687565,
+                "durationMs": 13.829208999999537,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687565,
+                "durationMs": 0.005499999999301508,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687578,
+                "durationMs": 13.906624999999622,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687578,
+                "durationMs": 0.007292000000234111,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687591,
+                "durationMs": 12.086457999999766,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687591,
+                "durationMs": 0.002458999999362277,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687603,
+                "durationMs": 12.229208000000654,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687603,
+                "durationMs": 0.0031249999992724042,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687615,
+                "durationMs": 12.425708999999188,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687615,
+                "durationMs": 0.0022499999995488906,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687626,
+                "durationMs": 10.273083999998562,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687626,
+                "durationMs": 0.006583000000318862,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687634,
+                "durationMs": 8.031166000000667,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687634,
+                "durationMs": 0.004875000000538421,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687640,
+                "durationMs": 6.46416599999975,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687640,
+                "durationMs": 0.0027090000003227033,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687650,
+                "durationMs": 9.91675000000032,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687650,
+                "durationMs": 0.002082999999402091,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687657,
+                "durationMs": 6.8024160000004485,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687657,
+                "durationMs": 0.002207999999882304,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687665,
+                "durationMs": 7.828208999999333,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687665,
+                "durationMs": 0.002375000000029104,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525687677,
+                "durationMs": 12.047082999999475,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525687677,
+                "durationMs": 0.005125000001498847,
+                "returnedContext": false,
+                "contextLength": 0
+              }
+            ],
+            "cacheEvents": [],
+            "extractionEvents": [
+              {
+                "turnIndex": 0,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 1,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 2,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 3,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 4,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 5,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 6,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 7,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 8,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 9,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 10,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 11,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 12,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 13,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 14,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 15,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 16,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 17,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 18,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 19,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 20,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 21,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 22,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 23,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 24,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 25,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 26,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 27,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 28,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 29,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              }
+            ],
+            "injectionEvents": [
+              {
+                "turnIndex": 0,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687344
+              },
+              {
+                "turnIndex": 1,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687360
+              },
+              {
+                "turnIndex": 2,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687374
+              },
+              {
+                "turnIndex": 3,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687387
+              },
+              {
+                "turnIndex": 4,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687401
+              },
+              {
+                "turnIndex": 5,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687414
+              },
+              {
+                "turnIndex": 6,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687425
+              },
+              {
+                "turnIndex": 7,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687434
+              },
+              {
+                "turnIndex": 8,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687446
+              },
+              {
+                "turnIndex": 9,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687457
+              },
+              {
+                "turnIndex": 10,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687470
+              },
+              {
+                "turnIndex": 11,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687481
+              },
+              {
+                "turnIndex": 12,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687492
+              },
+              {
+                "turnIndex": 13,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687503
+              },
+              {
+                "turnIndex": 14,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687512
+              },
+              {
+                "turnIndex": 15,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687524
+              },
+              {
+                "turnIndex": 16,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687537
+              },
+              {
+                "turnIndex": 17,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687551
+              },
+              {
+                "turnIndex": 18,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687565
+              },
+              {
+                "turnIndex": 19,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687578
+              },
+              {
+                "turnIndex": 20,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687591
+              },
+              {
+                "turnIndex": 21,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687603
+              },
+              {
+                "turnIndex": 22,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687615
+              },
+              {
+                "turnIndex": 23,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687626
+              },
+              {
+                "turnIndex": 24,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687634
+              },
+              {
+                "turnIndex": 25,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687640
+              },
+              {
+                "turnIndex": 26,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687650
+              },
+              {
+                "turnIndex": 27,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687657
+              },
+              {
+                "turnIndex": 28,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687665
+              },
+              {
+                "turnIndex": 29,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525687677
+              }
+            ],
+            "graphqlQueries": [],
+            "turnMetrics": [
+              {
+                "turnIndex": 0,
+                "durationMs": 2451.81175,
+                "hookLatencyMs": 2451.806584,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525684892
+              },
+              {
+                "turnIndex": 1,
+                "durationMs": 16.778291000000536,
+                "hookLatencyMs": 2468.5812920000008,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687344
+              },
+              {
+                "turnIndex": 2,
+                "durationMs": 13.594625000001543,
+                "hookLatencyMs": 30.36529100000007,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687360
+              },
+              {
+                "turnIndex": 3,
+                "durationMs": 13.31920799999898,
+                "hookLatencyMs": 26.906748999997944,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687374
+              },
+              {
+                "turnIndex": 4,
+                "durationMs": 14.110208000000057,
+                "hookLatencyMs": 27.423290999997334,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687387
+              },
+              {
+                "turnIndex": 5,
+                "durationMs": 12.776583000000755,
+                "hookLatencyMs": 26.876541999999972,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687401
+              },
+              {
+                "turnIndex": 6,
+                "durationMs": 10.419208000001163,
+                "hookLatencyMs": 23.179167000002053,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687414
+              },
+              {
+                "turnIndex": 7,
+                "durationMs": 9.471541000000798,
+                "hookLatencyMs": 19.878333000000566,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687425
+              },
+              {
+                "turnIndex": 8,
+                "durationMs": 11.843249999999898,
+                "hookLatencyMs": 21.309041999998954,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687434
+              },
+              {
+                "turnIndex": 9,
+                "durationMs": 11.032583000000159,
+                "hookLatencyMs": 22.870543000000907,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687446
+              },
+              {
+                "turnIndex": 10,
+                "durationMs": 13.000583000000915,
+                "hookLatencyMs": 24.028126000002885,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687457
+              },
+              {
+                "turnIndex": 11,
+                "durationMs": 10.84545799999978,
+                "hookLatencyMs": 23.84120900000198,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687470
+              },
+              {
+                "turnIndex": 12,
+                "durationMs": 10.913625000001048,
+                "hookLatencyMs": 21.75445899999977,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687481
+              },
+              {
+                "turnIndex": 13,
+                "durationMs": 10.790666999999303,
+                "hookLatencyMs": 21.694791999998415,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687492
+              },
+              {
+                "turnIndex": 14,
+                "durationMs": 9.899917000000642,
+                "hookLatencyMs": 20.68000000000029,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687503
+              },
+              {
+                "turnIndex": 15,
+                "durationMs": 11.60608400000092,
+                "hookLatencyMs": 21.49591700000201,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687512
+              },
+              {
+                "turnIndex": 16,
+                "durationMs": 13.392832999999882,
+                "hookLatencyMs": 24.98908300000039,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687524
+              },
+              {
+                "turnIndex": 17,
+                "durationMs": 13.248290999999881,
+                "hookLatencyMs": 26.632082000000082,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687537
+              },
+              {
+                "turnIndex": 18,
+                "durationMs": 13.842540999999983,
+                "hookLatencyMs": 27.077124999999796,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687551
+              },
+              {
+                "turnIndex": 19,
+                "durationMs": 13.9201669999984,
+                "hookLatencyMs": 27.748625999998694,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687565
+              },
+              {
+                "turnIndex": 20,
+                "durationMs": 12.092334000000847,
+                "hookLatencyMs": 26.002833999998984,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687578
+              },
+              {
+                "turnIndex": 21,
+                "durationMs": 12.235582999999679,
+                "hookLatencyMs": 24.321249999999054,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687591
+              },
+              {
+                "turnIndex": 22,
+                "durationMs": 12.430292000000918,
+                "hookLatencyMs": 24.660291999998663,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687603
+              },
+              {
+                "turnIndex": 23,
+                "durationMs": 10.289084000000003,
+                "hookLatencyMs": 22.707625999997617,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687615
+              },
+              {
+                "turnIndex": 24,
+                "durationMs": 8.039624999999432,
+                "hookLatencyMs": 18.315708000000086,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687626
+              },
+              {
+                "turnIndex": 25,
+                "durationMs": 6.4699169999985315,
+                "hookLatencyMs": 14.502916000001278,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687634
+              },
+              {
+                "turnIndex": 26,
+                "durationMs": 9.921249999999418,
+                "hookLatencyMs": 16.385707999999795,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687640
+              },
+              {
+                "turnIndex": 27,
+                "durationMs": 6.807749999999942,
+                "hookLatencyMs": 16.723457000000053,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687650
+              },
+              {
+                "turnIndex": 28,
+                "durationMs": 7.83337500000016,
+                "hookLatencyMs": 14.635207999999693,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687657
+              },
+              {
+                "turnIndex": 29,
+                "durationMs": 12.05933399999958,
+                "hookLatencyMs": 19.882792000000336,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687665
+              }
+            ]
+          },
+          "assertions": {
+            "scenarioD_cache_hits_within_topic": {
+              "passed": false,
+              "message": "Assertion failed: Expected >=1 cache hit in cooking phase (turns 6-8), got 0"
+            },
+            "scenarioD_cache_miss_on_topic_shift": {
+              "passed": true,
+              "message": "PASS"
+            },
+            "scenarioD_cross_topic_diversity": {
+              "passed": false,
+              "message": "Assertion failed: Expected memories from >=2 topics in cross-topic query, got 0"
+            }
+          }
+        },
+        "E": {
+          "metrics": {
+            "instanceId": "server-improved",
+            "scenarioId": "E",
+            "hookInvocations": [
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690244,
+                "durationMs": 2562.0872500000005,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690244,
+                "durationMs": 0.041291999999884865,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690258,
+                "durationMs": 13.260916999999608,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690258,
+                "durationMs": 0.0028340000008029165,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690274,
+                "durationMs": 15.863749999998618,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690274,
+                "durationMs": 0.0031250000010913936,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690291,
+                "durationMs": 17.02087500000016,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690291,
+                "durationMs": 0.004334000001108507,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690303,
+                "durationMs": 12.183000000000902,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690303,
+                "durationMs": 0.006666999999652035,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690318,
+                "durationMs": 15.409875000001193,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690318,
+                "durationMs": 0.022582999999940512,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690333,
+                "durationMs": 14.588874999999462,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690333,
+                "durationMs": 0.005041000000346685,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690349,
+                "durationMs": 16.211750000000393,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690349,
+                "durationMs": 0.0025829999995039543,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690364,
+                "durationMs": 14.699249999999665,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690364,
+                "durationMs": 0.006042000000888947,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690379,
+                "durationMs": 14.84070900000006,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690379,
+                "durationMs": 0.009374999999636202,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690395,
+                "durationMs": 16.55108299999847,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690395,
+                "durationMs": 0.0036670000008598436,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690410,
+                "durationMs": 14.374041000000943,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690410,
+                "durationMs": 0.006750000000465661,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690425,
+                "durationMs": 14.950542000000496,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690425,
+                "durationMs": 0.0031669999989389908,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690442,
+                "durationMs": 17.356125000000247,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690442,
+                "durationMs": 0.018749999999272404,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690457,
+                "durationMs": 14.662874999999985,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690457,
+                "durationMs": 0.007832999999664025,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690471,
+                "durationMs": 14.20508399999926,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690471,
+                "durationMs": 0.005667000001267297,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690485,
+                "durationMs": 14.433375000000524,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690485,
+                "durationMs": 0.0033750000002328306,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690502,
+                "durationMs": 16.565499999998792,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690502,
+                "durationMs": 0.008250000000771252,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690518,
+                "durationMs": 16.217375000000175,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690518,
+                "durationMs": 0.004166999999142718,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690533,
+                "durationMs": 15.007792000000336,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690533,
+                "durationMs": 0.004999999999199645,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690549,
+                "durationMs": 15.556833000000552,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690549,
+                "durationMs": 0.0061659999992116354,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690562,
+                "durationMs": 13.609291999999186,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690562,
+                "durationMs": 0.0028329999986453913,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690577,
+                "durationMs": 14.695083999999042,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690577,
+                "durationMs": 0.0038330000006681075,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690591,
+                "durationMs": 13.709917000000132,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690591,
+                "durationMs": 0.0059999999994033715,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690606,
+                "durationMs": 15.411167000000205,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690606,
+                "durationMs": 0.004833999999391381,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690621,
+                "durationMs": 14.658375000000888,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690621,
+                "durationMs": 0.003208000000086031,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690636,
+                "durationMs": 15.0955840000006,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690636,
+                "durationMs": 0.006083000000216998,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690653,
+                "durationMs": 16.662916999999652,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690653,
+                "durationMs": 0.003958999999667867,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690668,
+                "durationMs": 15.165000000000873,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690668,
+                "durationMs": 0.006250000000363798,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690686,
+                "durationMs": 17.645790999999008,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690686,
+                "durationMs": 0.010209000000031665,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690702,
+                "durationMs": 16.240624999998545,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690702,
+                "durationMs": 0.006542000000990811,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690719,
+                "durationMs": 16.8382500000007,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690719,
+                "durationMs": 0.004790999999386258,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690733,
+                "durationMs": 14.381457999999839,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690733,
+                "durationMs": 0.006292000000030384,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690751,
+                "durationMs": 17.509916999999405,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690751,
+                "durationMs": 0.005667000001267297,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690767,
+                "durationMs": 16.356916000000638,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690767,
+                "durationMs": 0.009790999998585903,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690783,
+                "durationMs": 16.383249999998952,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690783,
+                "durationMs": 0.004042000000481494,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690800,
+                "durationMs": 16.950165999998717,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690800,
+                "durationMs": 0.003957999999329331,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690822,
+                "durationMs": 21.95854099999997,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690822,
+                "durationMs": 0.004542000000583357,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690843,
+                "durationMs": 20.77562500000022,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690843,
+                "durationMs": 0.0035420000003796304,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690860,
+                "durationMs": 16.659708000001046,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690860,
+                "durationMs": 0.009167000000161352,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690878,
+                "durationMs": 18.158290999999736,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690878,
+                "durationMs": 0.006333999999696971,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690897,
+                "durationMs": 19.200832999998966,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690897,
+                "durationMs": 0.002500000000509317,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690916,
+                "durationMs": 19.11595800000032,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690917,
+                "durationMs": 0.0037919999995210674,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690934,
+                "durationMs": 17.1924999999992,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690934,
+                "durationMs": 0.0035420000003796304,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690951,
+                "durationMs": 17.13470799999959,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690951,
+                "durationMs": 0.007375000001047738,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690967,
+                "durationMs": 16.560084000000643,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690967,
+                "durationMs": 0.0024580000008427305,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690983,
+                "durationMs": 15.819999999999709,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690983,
+                "durationMs": 0.0030000000006111804,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525690999,
+                "durationMs": 15.433874999998807,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525690999,
+                "durationMs": 0.0017090000001189765,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525691015,
+                "durationMs": 16.43158299999959,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525691015,
+                "durationMs": 0.00316700000075798,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525691030,
+                "durationMs": 15.106999999999971,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525691030,
+                "durationMs": 0.004917000000205007,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525691045,
+                "durationMs": 14.230374999999185,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525691045,
+                "durationMs": 0.0014159999991534278,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525691055,
+                "durationMs": 10.450790999999299,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525691055,
+                "durationMs": 0.003208000000086031,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525691065,
+                "durationMs": 9.677582999998776,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525691065,
+                "durationMs": 0.0014169999994919635,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525691074,
+                "durationMs": 8.784374999999272,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525691074,
+                "durationMs": 0.003416999999899417,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_agent_start",
+                "timestamp": 1772525691083,
+                "durationMs": 9.789291000000958,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "agent_end",
+                "timestamp": 1772525691083,
+                "durationMs": 0.007166999999753898,
+                "returnedContext": false,
+                "contextLength": 0
+              },
+              {
+                "hookName": "before_compaction",
+                "timestamp": 1772525691084,
+                "durationMs": 0.11141700000007404,
+                "returnedContext": false,
+                "contextLength": 0
+              }
+            ],
+            "cacheEvents": [],
+            "extractionEvents": [
+              {
+                "turnIndex": 0,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 1,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 2,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 3,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 4,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 5,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 6,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 7,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 8,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 9,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 10,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 11,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 12,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 13,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 14,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 15,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 16,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 17,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 18,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 19,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 20,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 21,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 22,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 23,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 24,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 25,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 26,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 27,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 28,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 29,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 30,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 31,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 32,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 33,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 34,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 35,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 36,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 37,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 38,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 39,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 40,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 41,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 42,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 43,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 44,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 45,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 46,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 47,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 48,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 49,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 50,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 51,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 52,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 53,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              },
+              {
+                "turnIndex": 54,
+                "timestamp": 0,
+                "extracted": false,
+                "factCount": 0
+              }
+            ],
+            "injectionEvents": [
+              {
+                "turnIndex": 0,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690244
+              },
+              {
+                "turnIndex": 1,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690258
+              },
+              {
+                "turnIndex": 2,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690274
+              },
+              {
+                "turnIndex": 3,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690291
+              },
+              {
+                "turnIndex": 4,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690303
+              },
+              {
+                "turnIndex": 5,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690318
+              },
+              {
+                "turnIndex": 6,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690333
+              },
+              {
+                "turnIndex": 7,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690349
+              },
+              {
+                "turnIndex": 8,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690364
+              },
+              {
+                "turnIndex": 9,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690379
+              },
+              {
+                "turnIndex": 10,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690395
+              },
+              {
+                "turnIndex": 11,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690410
+              },
+              {
+                "turnIndex": 12,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690425
+              },
+              {
+                "turnIndex": 13,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690442
+              },
+              {
+                "turnIndex": 14,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690457
+              },
+              {
+                "turnIndex": 15,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690471
+              },
+              {
+                "turnIndex": 16,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690485
+              },
+              {
+                "turnIndex": 17,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690502
+              },
+              {
+                "turnIndex": 18,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690518
+              },
+              {
+                "turnIndex": 19,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690533
+              },
+              {
+                "turnIndex": 20,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690549
+              },
+              {
+                "turnIndex": 21,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690562
+              },
+              {
+                "turnIndex": 22,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690577
+              },
+              {
+                "turnIndex": 23,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690591
+              },
+              {
+                "turnIndex": 24,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690606
+              },
+              {
+                "turnIndex": 25,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690621
+              },
+              {
+                "turnIndex": 26,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690636
+              },
+              {
+                "turnIndex": 27,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690653
+              },
+              {
+                "turnIndex": 28,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690668
+              },
+              {
+                "turnIndex": 29,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690686
+              },
+              {
+                "turnIndex": 30,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690702
+              },
+              {
+                "turnIndex": 31,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690719
+              },
+              {
+                "turnIndex": 32,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690733
+              },
+              {
+                "turnIndex": 33,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690751
+              },
+              {
+                "turnIndex": 34,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690767
+              },
+              {
+                "turnIndex": 35,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690783
+              },
+              {
+                "turnIndex": 36,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690800
+              },
+              {
+                "turnIndex": 37,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690822
+              },
+              {
+                "turnIndex": 38,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690843
+              },
+              {
+                "turnIndex": 39,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690860
+              },
+              {
+                "turnIndex": 40,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690878
+              },
+              {
+                "turnIndex": 41,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690897
+              },
+              {
+                "turnIndex": 42,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690916
+              },
+              {
+                "turnIndex": 43,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690934
+              },
+              {
+                "turnIndex": 44,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690951
+              },
+              {
+                "turnIndex": 45,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690967
+              },
+              {
+                "turnIndex": 46,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690983
+              },
+              {
+                "turnIndex": 47,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525690999
+              },
+              {
+                "turnIndex": 48,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525691015
+              },
+              {
+                "turnIndex": 49,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525691030
+              },
+              {
+                "turnIndex": 50,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525691045
+              },
+              {
+                "turnIndex": 51,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525691055
+              },
+              {
+                "turnIndex": 52,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525691065
+              },
+              {
+                "turnIndex": 53,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525691074
+              },
+              {
+                "turnIndex": 54,
+                "injected": false,
+                "contextSnippet": null,
+                "timestamp": 1772525691083
+              }
+            ],
+            "graphqlQueries": [],
+            "turnMetrics": [
+              {
+                "turnIndex": 0,
+                "durationMs": 2562.1360409999998,
+                "hookLatencyMs": 2562.1285420000004,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525687682
+              },
+              {
+                "turnIndex": 1,
+                "durationMs": 13.267041999999492,
+                "hookLatencyMs": 2575.392293000001,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690244
+              },
+              {
+                "turnIndex": 2,
+                "durationMs": 15.871000000001004,
+                "hookLatencyMs": 29.13062600000012,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690258
+              },
+              {
+                "turnIndex": 3,
+                "durationMs": 17.031708000000435,
+                "hookLatencyMs": 32.89208400000098,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690274
+              },
+              {
+                "turnIndex": 4,
+                "durationMs": 12.19329099999959,
+                "hookLatencyMs": 29.214876000001823,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690291
+              },
+              {
+                "turnIndex": 5,
+                "durationMs": 15.444832999999562,
+                "hookLatencyMs": 27.622125000001688,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690303
+              },
+              {
+                "turnIndex": 6,
+                "durationMs": 14.602541000000201,
+                "hookLatencyMs": 30.026374000000942,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690318
+              },
+              {
+                "turnIndex": 7,
+                "durationMs": 16.21900000000096,
+                "hookLatencyMs": 30.808248999999705,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690333
+              },
+              {
+                "turnIndex": 8,
+                "durationMs": 14.709000000000742,
+                "hookLatencyMs": 30.91962500000045,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690349
+              },
+              {
+                "turnIndex": 9,
+                "durationMs": 14.854333999999653,
+                "hookLatencyMs": 29.55537600000025,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690364
+              },
+              {
+                "turnIndex": 10,
+                "durationMs": 16.55829199999971,
+                "hookLatencyMs": 31.404833999999028,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690379
+              },
+              {
+                "turnIndex": 11,
+                "durationMs": 14.389041000000361,
+                "hookLatencyMs": 30.93554100000074,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690395
+              },
+              {
+                "turnIndex": 12,
+                "durationMs": 14.957374999999956,
+                "hookLatencyMs": 29.334500000000844,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690410
+              },
+              {
+                "turnIndex": 13,
+                "durationMs": 17.392625000000407,
+                "hookLatencyMs": 32.328583999998955,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690425
+              },
+              {
+                "turnIndex": 14,
+                "durationMs": 14.67816700000003,
+                "hookLatencyMs": 32.04558299999917,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690442
+              },
+              {
+                "turnIndex": 15,
+                "durationMs": 14.21729200000118,
+                "hookLatencyMs": 28.881459000000177,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690457
+              },
+              {
+                "turnIndex": 16,
+                "durationMs": 14.440167000000656,
+                "hookLatencyMs": 28.647501000001284,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690471
+              },
+              {
+                "turnIndex": 17,
+                "durationMs": 16.58299999999872,
+                "hookLatencyMs": 31.01050000000032,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690485
+              },
+              {
+                "turnIndex": 18,
+                "durationMs": 16.225915999999415,
+                "hookLatencyMs": 32.79529199999888,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690502
+              },
+              {
+                "turnIndex": 19,
+                "durationMs": 15.016916000000492,
+                "hookLatencyMs": 31.234333999998853,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690518
+              },
+              {
+                "turnIndex": 20,
+                "durationMs": 15.570584000000963,
+                "hookLatencyMs": 30.5757909999993,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690533
+              },
+              {
+                "turnIndex": 21,
+                "durationMs": 13.615750000000844,
+                "hookLatencyMs": 29.175123999997595,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690549
+              },
+              {
+                "turnIndex": 22,
+                "durationMs": 14.702790999999706,
+                "hookLatencyMs": 28.311041999997542,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690562
+              },
+              {
+                "turnIndex": 23,
+                "durationMs": 13.723834000000352,
+                "hookLatencyMs": 28.414833999999246,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690577
+              },
+              {
+                "turnIndex": 24,
+                "durationMs": 15.419499999999971,
+                "hookLatencyMs": 29.131917999999132,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690591
+              },
+              {
+                "turnIndex": 25,
+                "durationMs": 14.664708000000246,
+                "hookLatencyMs": 30.07758400000057,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690606
+              },
+              {
+                "turnIndex": 26,
+                "durationMs": 15.109582999999475,
+                "hookLatencyMs": 29.76325000000179,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690621
+              },
+              {
+                "turnIndex": 27,
+                "durationMs": 16.67133399999875,
+                "hookLatencyMs": 31.768543000000136,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690636
+              },
+              {
+                "turnIndex": 28,
+                "durationMs": 15.180041999999958,
+                "hookLatencyMs": 31.838126000000557,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690653
+              },
+              {
+                "turnIndex": 29,
+                "durationMs": 17.670665999999983,
+                "hookLatencyMs": 32.82725000000028,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690668
+              },
+              {
+                "turnIndex": 30,
+                "durationMs": 16.256250000000364,
+                "hookLatencyMs": 33.903166999998575,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690686
+              },
+              {
+                "turnIndex": 31,
+                "durationMs": 16.848125000000437,
+                "hookLatencyMs": 33.09020799999962,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690702
+              },
+              {
+                "turnIndex": 32,
+                "durationMs": 14.397291999999652,
+                "hookLatencyMs": 31.230790999999954,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690719
+              },
+              {
+                "turnIndex": 33,
+                "durationMs": 17.523707999998805,
+                "hookLatencyMs": 31.90333400000054,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690733
+              },
+              {
+                "turnIndex": 34,
+                "durationMs": 16.376084000001356,
+                "hookLatencyMs": 33.882290999999896,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690751
+              },
+              {
+                "turnIndex": 35,
+                "durationMs": 16.39245800000026,
+                "hookLatencyMs": 32.75399899999866,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690767
+              },
+              {
+                "turnIndex": 36,
+                "durationMs": 16.958415999999488,
+                "hookLatencyMs": 33.34141599999748,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690783
+              },
+              {
+                "turnIndex": 37,
+                "durationMs": 21.967500000000655,
+                "hookLatencyMs": 38.9172069999986,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690800
+              },
+              {
+                "turnIndex": 38,
+                "durationMs": 20.783500000001368,
+                "hookLatencyMs": 42.74225000000115,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690822
+              },
+              {
+                "turnIndex": 39,
+                "durationMs": 16.677999999999884,
+                "hookLatencyMs": 37.448042000001806,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690843
+              },
+              {
+                "turnIndex": 40,
+                "durationMs": 18.18158299999959,
+                "hookLatencyMs": 34.83350000000064,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690860
+              },
+              {
+                "turnIndex": 41,
+                "durationMs": 19.209749999999985,
+                "hookLatencyMs": 37.36795799999891,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690878
+              },
+              {
+                "turnIndex": 42,
+                "durationMs": 19.127917000001617,
+                "hookLatencyMs": 38.323082999999315,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690897
+              },
+              {
+                "turnIndex": 43,
+                "durationMs": 17.204165999999532,
+                "hookLatencyMs": 17.1998339999991,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690917
+              },
+              {
+                "turnIndex": 44,
+                "durationMs": 17.14900000000125,
+                "hookLatencyMs": 34.33812500000022,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690934
+              },
+              {
+                "turnIndex": 45,
+                "durationMs": 16.5679999999993,
+                "hookLatencyMs": 33.704625000002125,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690951
+              },
+              {
+                "turnIndex": 46,
+                "durationMs": 15.831000000000131,
+                "hookLatencyMs": 32.385542000001806,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690967
+              },
+              {
+                "turnIndex": 47,
+                "durationMs": 15.439750000001368,
+                "hookLatencyMs": 31.258583999999246,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690983
+              },
+              {
+                "turnIndex": 48,
+                "durationMs": 16.441624999999476,
+                "hookLatencyMs": 31.870333999999275,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525690999
+              },
+              {
+                "turnIndex": 49,
+                "durationMs": 15.116041999999652,
+                "hookLatencyMs": 31.546667000000525,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525691015
+              },
+              {
+                "turnIndex": 50,
+                "durationMs": 14.23554200000035,
+                "hookLatencyMs": 29.343707999998514,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525691030
+              },
+              {
+                "turnIndex": 51,
+                "durationMs": 10.461291999999958,
+                "hookLatencyMs": 24.685789999997723,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525691045
+              },
+              {
+                "turnIndex": 52,
+                "durationMs": 9.682957999999417,
+                "hookLatencyMs": 20.132998999997653,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525691055
+              },
+              {
+                "turnIndex": 53,
+                "durationMs": 8.796000000000276,
+                "hookLatencyMs": 18.46679199999744,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525691065
+              },
+              {
+                "turnIndex": 54,
+                "durationMs": 9.804292000000714,
+                "hookLatencyMs": 18.584249999999884,
+                "memoryInjected": false,
+                "toolsUsed": [],
+                "timestamp": 1772525691074
+              }
+            ]
+          },
+          "assertions": {
+            "scenarioE_compaction_extracts_all": {
+              "passed": true,
+              "message": "PASS"
+            },
+            "scenarioE_extraction_every_5_turns": {
+              "passed": false,
+              "message": "Assertion failed: Expected 9-13 extractions for 55 turns, got 0"
+            },
+            "scenarioE_no_extraction_on_intermediate_turns": {
+              "passed": true,
+              "message": "PASS"
+            }
+          }
+        }
+      }
+    }
+  },
+  "comparison": {
+    "serverImprovedVsBaseline": [],
+    "subgraphImprovedVsBaseline": [],
+    "subgraphVsServer": []
+  },
+  "summary": {
+    "total_assertions": 16,
+    "passed": 7,
+    "failed": 9,
+    "scenarios_run": 5,
+    "instances_used": 1
+  }
+}
