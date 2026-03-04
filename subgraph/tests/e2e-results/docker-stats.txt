@@ -1,3 +1,0 @@
-subgraph-graph-node-1              0.27%     306.3MiB / 7.807GiB   4.69GB / 4.61GB
-subgraph-ipfs-1                    0.53%     83.26MiB / 7.807GiB   69.3MB / 71.6MB
-subgraph-postgres-1                0.05%     95.73MiB / 7.807GiB   145MB / 4.61GB

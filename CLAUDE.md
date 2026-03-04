@@ -79,16 +79,19 @@ lives in [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal)
 ├── subgraph/              # Graph Node indexer (AssemblyScript mappings)
 ├── database/              # Database schema (schema.sql)
 ├── tests/                 # Integration tests
+│   ├── e2e-functional/    # E2E functional test suite (66/66 + 130/130 assertions)
+│   └── parity/            # Parity tests (plugin vs NanoClaw)
 │
 └── docs/                  # Specs and guides
     ├── specs/
     │   ├── totalreclaw/   # Core product specs (architecture, server, skills, MCP)
-    │   ├── subgraph/      # Subgraph specs (seed-to-subgraph)
+    │   ├── subgraph/      # Subgraph specs (seed-to-subgraph, billing)
     │   └── tee/           # TEE specs (architecture, TDX SaaS)
     ├── deployment/        # Deployment guides (backup, Cloudflare)
+    ├── guides/            # User-facing guides (beta tester guide)
+    ├── analysis/          # Cost analysis and projections
     ├── prd.md             # Product Requirements Document
-    ├── ROADMAP.md         # Phased roadmap
-    └── *.md               # E2E flow, testing guides, etc.
+    └── ROADMAP.md         # Phased roadmap
 ```
 
 ## Related Repositories
@@ -144,12 +147,17 @@ Specs are organized by product area under `docs/specs/`:
 | Benchmark Harness (OMBH) | `benchmark.md` | Implemented |
 | Benchmark v2 Improvements | `benchmark-v2-improvements.md` | Spec complete |
 | LSH Tuning (Multi-Tenant SaaS) | `lsh-tuning.md` | Complete |
-| Conflict Resolution v0.3.2 | `conflict-resolution.md` | Draft spec |
+| Conflict Resolution v0.3.2 | `conflict-resolution.md` | Design complete, not implemented |
+| Retrieval Improvements v3 | `retrieval-improvements-v3.md` | Implemented (13/13 tasks) |
+| MCP Onboarding | `mcp-onboarding.md` | Spec complete, not started |
+| E2E Test Plan v2 (Billing) | `e2e-test-plan-v2.md` | Implemented (130/130 assertions) |
 
 ### Subgraph (Decentralized) -- `docs/specs/subgraph/`
 | Spec | File | Status |
 |------|------|--------|
-| Seed-to-Subgraph v1.0 | `seed-to-subgraph.md` | Spec complete, code done, deployment blocked |
+| Seed-to-Subgraph v1.0 | `seed-to-subgraph.md` | Implemented, deployed to Chiado testnet |
+| Billing & Onboarding | `billing-and-onboarding.md` | Implemented (Stripe + Coinbase) |
+| Paymaster Comparison | `paymaster-comparison.md` | Complete (Pimlico chosen) |
 
 ### TEE (Trusted Execution) -- `docs/specs/tee/`
 | Spec | File | Status |
@@ -207,7 +215,7 @@ cd skill-nanoclaw && npm install
 
 - **User**: @pdiogo
 - **Project started**: February 2026
-- **Current phase**: Post Phase 17 -- Retrieval improvements + ship prep (see TASKS.md)
+- **Current phase**: Post Session 24 -- All phases complete, ship prep + MCP onboarding next (see TASKS.md)
 - **Current version**: v0.2.0 (PoC v2)
 
 ---

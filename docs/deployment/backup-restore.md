@@ -1,6 +1,6 @@
-# OpenMemory Database Backup & Restore
+# TotalReclaw Database Backup & Restore
 
-This guide covers how to back up and restore the OpenMemory PostgreSQL database.
+This guide covers how to back up and restore the TotalReclaw PostgreSQL database.
 
 ---
 
@@ -14,10 +14,10 @@ This guide covers how to back up and restore the OpenMemory PostgreSQL database.
 ./scripts/backup.sh /path/to/backups
 
 # Restore from a backup
-./scripts/restore.sh backups/openmemory_backup_2026-02-24_030000.sql.gz
+./scripts/restore.sh backups/totalreclaw_backup_2026-02-24_030000.sql.gz
 
 # Restore without confirmation prompt
-./scripts/restore.sh backups/openmemory_backup_2026-02-24_030000.sql.gz --force
+./scripts/restore.sh backups/totalreclaw_backup_2026-02-24_030000.sql.gz --force
 ```
 
 ---
@@ -27,7 +27,7 @@ This guide covers how to back up and restore the OpenMemory PostgreSQL database.
 ### Prerequisites
 
 - Docker is installed and running
-- The `openmemory-db` container is running (`docker-compose up -d`)
+- The `totalreclaw-db` container is running (`docker-compose up -d`)
 
 ### Running a Backup
 
@@ -38,15 +38,15 @@ From the `server/` directory:
 ```
 
 This will:
-1. Run `pg_dump` inside the `openmemory-db` Docker container
+1. Run `pg_dump` inside the `totalreclaw-db` Docker container
 2. Compress the output with gzip
-3. Save it to `server/backups/openmemory_backup_YYYY-MM-DD_HHMMSS.sql.gz`
+3. Save it to `server/backups/totalreclaw_backup_YYYY-MM-DD_HHMMSS.sql.gz`
 4. Remove old backups beyond the retention limit (default: 7)
 
 ### Custom Output Directory
 
 ```bash
-./scripts/backup.sh /mnt/external/openmemory-backups
+./scripts/backup.sh /mnt/external/totalreclaw-backups
 ```
 
 ### Custom Retention
@@ -61,9 +61,9 @@ BACKUP_RETAIN=30 ./scripts/backup.sh
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CONTAINER_NAME` | `openmemory-db` | Name of the PostgreSQL Docker container |
-| `POSTGRES_USER` | `openmemory` | Database user |
-| `POSTGRES_DB` | `openmemory` | Database name |
+| `CONTAINER_NAME` | `totalreclaw-db` | Name of the PostgreSQL Docker container |
+| `POSTGRES_USER` | `totalreclaw` | Database user |
+| `POSTGRES_DB` | `totalreclaw` | Database name |
 | `BACKUP_RETAIN` | `7` | Number of backups to keep |
 
 ---
@@ -75,7 +75,7 @@ BACKUP_RETAIN=30 ./scripts/backup.sh
 ### Running a Restore
 
 ```bash
-./scripts/restore.sh backups/openmemory_backup_2026-02-24_030000.sql.gz
+./scripts/restore.sh backups/totalreclaw_backup_2026-02-24_030000.sql.gz
 ```
 
 You will be prompted to confirm before any data is deleted.
@@ -85,7 +85,7 @@ You will be prompted to confirm before any data is deleted.
 For use in scripts or automation:
 
 ```bash
-./scripts/restore.sh backups/openmemory_backup_2026-02-24_030000.sql.gz --force
+./scripts/restore.sh backups/totalreclaw_backup_2026-02-24_030000.sql.gz --force
 ```
 
 ### Supported Formats
@@ -109,17 +109,17 @@ For use in scripts or automation:
 
 1. Copy the example cron configuration:
    ```bash
-   cp scripts/backup-cron.example /tmp/openmemory-cron
+   cp scripts/backup-cron.example /tmp/totalreclaw-cron
    ```
 
 2. Edit paths to match your installation:
    ```bash
-   vim /tmp/openmemory-cron
+   vim /tmp/totalreclaw-cron
    ```
 
 3. Install the cron job:
    ```bash
-   crontab /tmp/openmemory-cron
+   crontab /tmp/totalreclaw-cron
    ```
 
 ### Example Cron Entry
@@ -127,19 +127,19 @@ For use in scripts or automation:
 Run daily at 3 AM, keep 7 backups:
 
 ```
-0 3 * * * /home/deploy/openmemory/server/scripts/backup.sh /home/deploy/backups >> /var/log/openmemory-backup.log 2>&1
+0 3 * * * /home/deploy/totalreclaw/server/scripts/backup.sh /home/deploy/backups >> /var/log/totalreclaw-backup.log 2>&1
 ```
 
 ### Monitoring Cron Backups
 
 Check the log:
 ```bash
-tail -20 /var/log/openmemory-backup.log
+tail -20 /var/log/totalreclaw-backup.log
 ```
 
 Verify the latest backup exists and has a reasonable size:
 ```bash
-ls -lh /home/deploy/backups/openmemory_backup_*.sql.gz | tail -3
+ls -lh /home/deploy/backups/totalreclaw_backup_*.sql.gz | tail -3
 ```
 
 ---
@@ -194,13 +194,13 @@ After the daily backup, sync to remote storage:
 
 ```bash
 # AWS S3
-aws s3 sync /path/to/backups s3://my-bucket/openmemory-backups/ --delete
+aws s3 sync /path/to/backups s3://my-bucket/totalreclaw-backups/ --delete
 
 # rclone (supports many providers)
-rclone sync /path/to/backups remote:openmemory-backups/
+rclone sync /path/to/backups remote:totalreclaw-backups/
 
 # rsync to another server
-rsync -avz /path/to/backups/ backup-server:/backups/openmemory/
+rsync -avz /path/to/backups/ backup-server:/backups/totalreclaw/
 ```
 
 ---
@@ -218,14 +218,14 @@ cd server && docker-compose up -d postgres
 
 Check the container logs:
 ```bash
-docker logs openmemory-db --tail 50
+docker logs totalreclaw-db --tail 50
 ```
 
 ### "Backup file is empty"
 
 This usually means the database credentials are wrong. Verify:
 ```bash
-docker exec openmemory-db psql -U openmemory -d openmemory -c "SELECT 1;"
+docker exec totalreclaw-db psql -U totalreclaw -d totalreclaw -c "SELECT 1;"
 ```
 
 ### "Restore failed -- inconsistent state"
@@ -237,5 +237,5 @@ If restore fails mid-transaction, the database may be empty. Re-run the restore:
 
 If that also fails, manually recreate the schema:
 ```bash
-docker exec -i openmemory-db psql -U openmemory -d openmemory < src/db/schema.sql
+docker exec -i totalreclaw-db psql -U totalreclaw -d totalreclaw < src/db/schema.sql
 ```

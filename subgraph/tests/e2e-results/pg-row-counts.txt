@@ -1,7 +1,0 @@
-    entity    | count 
---------------+-------
- fact         |   422
- blind_index  | 16375
- global_state |   422
-(3 rows)
-

@@ -1,6 +1,6 @@
 specVersion: 0.0.5
 description: TotalReclaw — Zero-knowledge encrypted memory vault subgraph
-repository: https://github.com/p-diogo/openmemory
+repository: https://github.com/p-diogo/totalreclaw
 schema:
   file: ./schema.graphql
 dataSources:

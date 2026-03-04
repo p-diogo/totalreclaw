@@ -106,3 +106,5 @@ docker-compose.override.yml
 *.bak
 tests/e2e-functional/results/
 tests/parity/node_modules/
+subgraph/tests/e2e-results/*.json
+subgraph/tests/e2e-results/*.txt
