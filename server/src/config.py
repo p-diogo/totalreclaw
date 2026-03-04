@@ -53,13 +53,18 @@ class Settings(BaseSettings):
 
     # ERC-4337 / Pimlico configuration (Phase 3 — Subgraph)
     pimlico_api_key: str = ""
-    pimlico_bundler_url: str = "https://api.pimlico.io/v2/84532/rpc"  # Base Sepolia
+    pimlico_webhook_secret: str = ""
+    pimlico_chain_id: int = 100  # Gnosis mainnet (100), Chiado testnet (10200)
+    pimlico_bundler_url: str = "https://api.pimlico.io/v2/100/rpc"  # Gnosis Chain
     data_edge_address: str = ""  # Set after deployment
     entry_point_address: str = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"  # ERC-4337 v0.7
 
     # Relay rate limiting (per Smart Account address)
     relay_rate_limit_ops: int = 100
     relay_rate_limit_window_seconds: int = 3600
+
+    # Stripe configuration (fiat payments)
+    stripe_price_id: str = ""
 
     # Coinbase Commerce configuration (crypto payments)
     coinbase_commerce_api_key: str = ""
@@ -88,6 +93,14 @@ class Settings(BaseSettings):
         if not self.cors_origins:
             return []
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def pimlico_rpc_url(self) -> str:
+        """Pimlico JSON-RPC URL with API key included."""
+        base = self.pimlico_bundler_url.rstrip("/")
+        if self.pimlico_api_key:
+            return f"{base}?apikey={self.pimlico_api_key}"
+        return base
 
 
 @lru_cache()

@@ -295,16 +295,23 @@ class CoinbaseService:
         new_expires = now + timedelta(days=SUBSCRIPTION_DAYS)
 
         async with self.db.session() as session:
-            # Check for existing subscription
+            # Check if this charge was already processed (idempotency)
             result = await session.execute(
                 text(
-                    "SELECT wallet_address, tier, expires_at "
+                    "SELECT coinbase_id, tier, expires_at "
                     "FROM subscriptions "
                     "WHERE wallet_address = :addr"
                 ),
                 {"addr": wallet_address},
             )
             row = result.fetchone()
+
+            if row and row.coinbase_id == charge_id:
+                logger.info(
+                    "Charge already processed (idempotent)",
+                    extra={"charge_id": charge_id},
+                )
+                return
 
             if row is None:
                 # First-time payment: insert new subscription

@@ -25,6 +25,7 @@ from .handlers import (
     observability_router,
 )
 from .billing import billing_router
+from .relay import relay_api_router
 from .metrics import record_request, get_metrics_response, update_db_pool_metrics
 from .middleware.rate_limit import RateLimitMiddleware
 
@@ -329,6 +330,7 @@ v1_router.include_router(sync_router)
 v1_router.include_router(relay_router)
 v1_router.include_router(observability_router)
 v1_router.include_router(billing_router)
+v1_router.include_router(relay_api_router)
 app.include_router(v1_router)
 
 

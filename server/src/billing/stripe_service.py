@@ -121,6 +121,8 @@ class StripeService:
             },
         )
 
+        if not session.url:
+            raise ValueError("Stripe returned no checkout URL")
         return session.url
 
     # ------------------------------------------------------------------
