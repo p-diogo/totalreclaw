@@ -32,7 +32,7 @@
 | Phase 11 | Subgraph (Decentralized) | COMPLETED — 92 tests, code done, deployment blocked on credentials |
 | Phase 12 | MVP Polish & Ship | IN PROGRESS — /v1/ prefix, /export pagination, DB backup, OpenAPI, rate limit observability |
 | Phase 15 | E2E Functional Test Suite | COMPLETED — 66/66 assertions, 5 instances, 8 scenarios (A-H) |
-| Phase 16 | Gnosis Go-Live (Billing + Deploy) | 5/6 COMPLETE — T365 blocked on faucet CAPTCHA. Billing module, deploy scripts, recall fix, paymaster eval done |
+| Phase 16 | Gnosis Go-Live (Billing + Deploy) | COMPLETED — 6/6 tasks. Billing, deploy, recall fix, paymaster, Chiado deploy + gas validation |
 | PoC v2 | LSH + Semantic Search | COMPLETED — 122 tests, local embeddings, BM25/cosine/RRF reranking |
 | Benchmark | 5-Way Memory Comparison | COMPLETED — 5-way benchmark done, retrieval improvements validated (+48% semantic recall) |
 | LSH Tuning Spec | Multi-Tenant SaaS LSH Guidance | COMPLETED — `docs/specs/totalreclaw/lsh-tuning.md` |
@@ -539,7 +539,7 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 | T362 | Evaluate Pimlico vs ZeroDev on Gnosis | completed | session-21 | — | Pimlico recommended: 60x cheaper, better Gnosis support, permissionless.js SDK. Report: docs/specs/subgraph/paymaster-comparison.md |
 | T363 | Stripe Checkout integration | completed | session-21 | — | Full integration: models, service, routes, SQL+Alembic migration. server/src/billing/ |
 | T364 | Coinbase Commerce integration | completed | session-21 | — | Full integration: service, routes, config. Integrates with T363 billing module |
-| T365 | Deploy to Gnosis Chiado testnet | blocked | session-21 | T360 | Blocked: faucet requires browser CAPTCHA. Deployment guide created: `docs/deployment/chiado-deployment.md`. All prerequisites validated (RPC, EntryPoint, Blockscout, compile, deploy script). Deployer wallet generated in .env. |
+| T365 | Deploy to Gnosis Chiado testnet | completed | session-21 | T360 | Contracts deployed + verified (Sourcify). Gas validated: $0.00049/fact (35% cheaper than est). Report: `subgraph/tests/chiado-gas-report.md` |
 
 **Priority order:** T360 + T361 (parallel, no deps) → T362 → T363 + T364 (parallel) → T365
 

@@ -7,10 +7,10 @@
 
 ## 2026-03-04
 
-### Session 21 | Claude (opus) | Phase 16 Implementation — All Tasks Complete
+### Session 21 | Claude (opus) | Phase 16 Complete + Chiado Deploy + Relay + E2E Plan
 
 **Branch:** `main`
-**Result:** Phase 16 (Gnosis Go-Live) fully implemented. 5/6 tasks completed, 1 blocked on faucet CAPTCHA.
+**Result:** Phase 16 COMPLETE (6/6). Chiado deployed, gas validated, Pimlico relay built, billing tested, E2E plan + MCP onboarding designed.
 
 **Tasks completed:**
 
@@ -34,11 +34,28 @@
 - `docs/specs/subgraph/paymaster-comparison.md` — Pimlico vs ZeroDev evaluation
 - `docs/deployment/chiado-deployment.md` — 8-step Chiado deployment guide
 - `.env` — Deployer key + config (gitignored)
+- `server/src/relay/__init__.py` — Pimlico relay module
+- `server/src/relay/paymaster_service.py` — Pimlico JSON-RPC integration
+- `server/src/relay/routes.py` — Relay API routes (sponsor, webhook, status)
+- `server/src/relay/webhook_handler.py` — Pimlico sponsorship webhook handler
+- `server/tests/test_billing.py` — 17 billing integration tests
+- `subgraph/tests/chiado-gas-validation.ts` — Chiado gas measurement script
+- `subgraph/tests/chiado-gas-report.md` — Actual gas costs (35% cheaper than est.)
+- `subgraph/tests/chiado-gas-results.json` — Raw gas measurement data
+- `docs/specs/totalreclaw/e2e-test-plan-v2.md` — 76 E2E test cases, 7 journeys
+- `docs/specs/totalreclaw/mcp-onboarding.md` — MCP user payment/auth design
+
+**Chiado deployment:**
+- EventfulDataEdge: `0x048879569E394af3fC6721d8d44DdcfcDD407543`
+- TotalReclawPaymaster: `0x1065cEE738cd826f1586ea2DeEB979B354FE9aB4`
+- Deploy cost: 0.0014 xDAI. Verified on Sourcify.
+
+**Gas validation (10 real Chiado transactions):**
+- Typical fact (50w, 60idx, emb): 327,060 gas = **$0.00049** (35% cheaper than $0.00076 estimate)
+- Stripe Product created: `prod_U5DqHncyLsd8RI`, Price: `price_1T73OtELMHZEgmm1RTSI3kGB` ($5/mo)
 
 **Files modified:**
-- `contracts/hardhat.config.ts` — Added gnosis + chiado networks, Gnosisscan verification
-- `contracts/scripts/deploy.ts` — Multi-network comments, xDAI gas token label
-- `contracts/scripts/verify.ts` — Multi-network docs
+- `contracts/hardhat.config.ts` — Added gnosis + chiado networks, Gnosisscan verification, Sourcify
 - `contracts/scripts/fund-paymaster.ts` — xDAI label for Gnosis networks
 - `subgraph/subgraph.yaml` — network: hardhat → gnosis
 - `subgraph/docker-compose.yml` — Added Gnosis/Chiado RPC comments
