@@ -1,0 +1,16 @@
+{
+  "name": "@totalreclaw/parity-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Parity tests: verify NanoClaw produces byte-identical outputs to the OpenClaw plugin",
+  "type": "module",
+  "scripts": {
+    "test": "npx tsx parity-test.ts"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.0.1",
+    "@scure/bip39": "^2.0.1",
+    "porter-stemmer": "^0.9.1",
+    "tsx": "^4.7.0"
+  }
+}

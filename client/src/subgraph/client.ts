@@ -32,7 +32,9 @@ export class SubgraphClient {
 
       if (data?.blindIndices) {
         for (const entry of data.blindIndices) {
-          if (entry.fact && !allResults.has(entry.fact.id)) {
+          // T322: Client-side safety net — skip inactive facts even if the
+          // subgraph endpoint doesn't support relation filters.
+          if (entry.fact && entry.fact.isActive !== false && !allResults.has(entry.fact.id)) {
             allResults.set(entry.fact.id, entry.fact);
           }
         }

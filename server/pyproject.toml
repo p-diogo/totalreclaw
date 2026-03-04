@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+markers = [
+    "integration: tests that require Docker and a real PostgreSQL instance (via testcontainers)",
+]

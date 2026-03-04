@@ -7,6 +7,91 @@
 
 ## 2026-03-04
 
+### Session 24 | Claude (opus) | LLM Auto-Detection Audit
+
+**Branch:** `feature/subgraph`
+**Result:** Audited `llm-client.ts`, `extractor.ts`, `embedding.ts`. **No code changes needed** — the architecture already auto-detects the user's LLM provider from OpenClaw config and reuses the agent's API key. Embeddings are fully local (ONNX).
+
+**Fixes (docs only):**
+- `docs/analysis/gas-cost-extrapolation.md` — Removed non-existent `TOTALRECLAW_LLM_PROVIDER` env var reference, clarified auto-detection
+- `docs/guides/beta-tester-guide.md` — Rewrote prerequisites to say "no extra LLM config needed", removed manual API key setup instructions, marked `TOTALRECLAW_LLM_MODEL` as advanced/optional, updated provider keys section header
+
+---
+
+### Session 23 (cont'd-2) | Claude (opus) | Beta Guide + Gas Cost Analysis
+
+**Branch:** `feature/subgraph`
+**Result:** Both handoff plans executed by parallel agents in worktrees. Gas analysis corrected re: LLM costs.
+
+**Deliverables:**
+
+| Document | Path | Summary |
+|----------|------|---------|
+| **Beta Tester Guide** | `docs/guides/beta-tester-guide.md` | 641 lines, 14 sections. Reproducible MVP setup guide: installation, BIP-39 keys, free tier, auto-memory hooks, explicit tools, manual validation checklist (7 steps), Pro upgrade (Stripe + Coinbase), recovery, E2E test suite, 16 env vars, troubleshooting (7 issues), known limitations. Server mode default. |
+| **Gas Cost Extrapolation** | `docs/analysis/gas-cost-extrapolation.md` | 591 lines. 4 user profiles (Casual→Extreme). Key findings: Casual 30 facts/mo ($0.02), Regular 234/mo ($0.18), Power 831/mo ($0.63), Extreme 1,731/mo ($1.32). Free tier 100/mo well-calibrated. Pro $3-5/mo covers all profiles with 74-96% margin. `AUTO_EXTRACT_EVERY_TURNS=5` is right. LLM extraction uses agent's own LLM (not a separate cost). |
+
+**Correction:** Updated gas analysis to clarify that LLM extraction calls use the agent's own LLM (flat-rate subscription for most OpenClaw users), not a separate provider. Gas is the primary per-user variable cost TotalReclaw bears.
+
+**NEXT SESSION:** ~~Audit `skill/plugin/llm-client.ts`~~ DONE in Session 24. No code changes needed — already works out of the box.
+
+---
+
+### Session 23 (cont'd) | Claude (opus) | Phase 14 Complete + Handoff Docs
+
+**Branch:** `feature/subgraph`
+**Result:** 3 more tasks completed (T322, T326, T330). Phase 14 now fully complete (13/13 tasks). Created 3 handoff docs for separate agents.
+
+**Tasks completed:**
+
+| Task | What was done |
+|------|--------------|
+| **T322** | Index compaction: `fact_: { isActive: true }` filter in GraphQL queries (subgraph-search.ts + client queries.ts). Client-side `isActive !== false` safety net. |
+| **T326** | Query intent detection: `detectQueryIntent()` classifies queries as factual/temporal/semantic. `INTENT_WEIGHTS` adjusts 4-signal RRF weights per intent. Wired into all 3 rerank call sites. 25 new tests (85 total). |
+| **T330** | Semantic batch dedup: new `semantic-dedup.ts` module with `deduplicateBatch()`. Threshold 0.9 (configurable via `TOTALRECLAW_SEMANTIC_DEDUP_THRESHOLD`). Integrated into `storeExtractedFacts()` — 3-phase pipeline: embed → dedup → store. 33 new tests. |
+
+**Files created:**
+- `skill/plugin/semantic-dedup.ts` — Semantic near-duplicate detection module
+- `skill/plugin/semantic-dedup.test.ts` — 33 TAP tests
+- `docs/handoff/beta-tester-guide-handoff.md` — Plan for beta tester user guide (for separate agent)
+- `docs/handoff/gas-cost-extrapolation-handoff.md` — Plan for gas cost analysis (for separate agent)
+
+**Files modified:**
+- `skill/plugin/reranker.ts` — `detectQueryIntent()`, `INTENT_WEIGHTS`, `QueryIntent` type, `DEFAULT_WEIGHTS` export
+- `skill/plugin/reranker.test.ts` — 25 new tests (weighted reranking + query intent detection)
+- `skill/plugin/index.ts` — Import `deduplicateBatch` + `detectQueryIntent`/`INTENT_WEIGHTS`, restructured `storeExtractedFacts()` into 3-phase pipeline, wired intent-weighted rerank to all 3 call sites
+- `skill/plugin/subgraph-search.ts` — `fact_: { isActive: true }` filter in GraphQL queries
+- `client/src/subgraph/queries.ts` — `fact_: { isActive: true }` filter
+- `client/src/subgraph/client.ts` — `isActive !== false` safety net
+
+**Tests:** 85/85 reranker, 33/33 semantic-dedup, 209/209 client. All pass.
+
+---
+
+### Session 23 | Claude (opus) | Retrieval Improvements + CI Pipeline
+
+**Branch:** `feature/subgraph`
+**Result:** 3 tasks completed (T325, T329, T138). Phase 14 task audit: T320/T321/T323/T324 marked completed (already done in prior sessions).
+
+**Tasks completed:**
+
+| Task | What was done |
+|------|--------------|
+| **T325** | Cosine similarity threshold gate: `TOTALRECLAW_COSINE_THRESHOLD` env var (default 0.15). Applied in both recall tool and before_agent_start hook. Filters out irrelevant results for queries like "thanks" or "ok sure". New `RerankResult` interface exposes per-candidate cosine similarity. 8 new reranker tests (60/60 total). |
+| **T329** | Importance filter before store: `TOTALRECLAW_MIN_IMPORTANCE` env var (default 3). Auto-extraction hooks (`agent_end`, `before_compaction`, `before_reset`) now filter facts with importance < threshold. Explicit `totalreclaw_remember` tool always stores regardless. |
+| **T138** | GitHub Actions CI workflow: `.github/workflows/ci.yml` — 4 parallel jobs (server pytest, client npm test, plugin build check, MCP build). Skips known-failing test files (pytest-asyncio v9 issue). |
+
+**Files created:**
+- `.github/workflows/ci.yml` — CI pipeline (4 jobs)
+- `skill/plugin/reranker.test.ts` — 8 new tests for RerankResult cosine similarity
+
+**Files modified:**
+- `skill/plugin/reranker.ts` — `RerankResult` interface, `cosineSimilarity` field on results
+- `skill/plugin/index.ts` — Cosine threshold gate (2 locations), importance filter (3 hooks), `MIN_IMPORTANCE_THRESHOLD` + `filterByImportance()`
+
+**Regression tests:** All pass — 60/60 reranker, 32/32 LSH, 10/10 E2E (server-improved A/B/C), 130/130 billing.
+
+---
+
 ### Session 22 | Claude (opus) | Phase 17 Complete — E2E Billing/Relay Tests (130/130 PASS)
 
 **Branch:** `feature/subgraph`

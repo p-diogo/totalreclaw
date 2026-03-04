@@ -12,8 +12,12 @@ import {
   cosineSimilarity,
   rrfFuse,
   rerank,
+  detectQueryIntent,
+  DEFAULT_WEIGHTS,
   type RankedItem,
   type RerankerCandidate,
+  type RankingWeights,
+  type QueryIntent,
 } from './reranker.js';
 
 let passed = 0;
@@ -398,6 +402,179 @@ console.log('# Rerank (end-to-end)');
   assert(results.length === 2, 'Rerank: backward compat - both v1 and v2 facts returned');
   // v2 should rank higher because it benefits from both BM25 and cosine
   assert(results[0].id === 'v2', 'Rerank: v2 fact with embedding ranks above v1 (benefits from cosine + BM25)');
+}
+
+// ---------------------------------------------------------------------------
+// RerankResult.cosineSimilarity tests
+// ---------------------------------------------------------------------------
+
+console.log('# RerankResult cosine similarity field');
+
+{
+  // Results with embeddings should have cosineSimilarity set
+  const queryEmb = [1, 0, 0];
+  const candidates: RerankerCandidate[] = [
+    { id: 'a', text: 'first document', embedding: [0.9, 0.1, 0] },
+    { id: 'b', text: 'second document', embedding: [0, 1, 0] },
+  ];
+
+  const results = rerank('first document', queryEmb, candidates, 2);
+  assert(results.length === 2, 'RerankResult: returns 2 results');
+  const resultA = results.find(r => r.id === 'a');
+  const resultB = results.find(r => r.id === 'b');
+  assert(resultA !== undefined, 'RerankResult: result a exists');
+  assert(resultB !== undefined, 'RerankResult: result b exists');
+  assert(resultA!.cosineSimilarity !== undefined, 'RerankResult: a has cosineSimilarity');
+  assert(resultB!.cosineSimilarity !== undefined, 'RerankResult: b has cosineSimilarity');
+  assert(resultA!.cosineSimilarity! > resultB!.cosineSimilarity!, 'RerankResult: a has higher cosine similarity than b');
+}
+
+{
+  // Results without embeddings should have cosineSimilarity undefined
+  const candidates: RerankerCandidate[] = [
+    { id: 'no-emb', text: 'a document without embedding' },
+  ];
+
+  const results = rerank('document', [], candidates, 1);
+  assert(results.length === 1, 'RerankResult: returns 1 result without embedding');
+  assert(results[0].cosineSimilarity === undefined, 'RerankResult: no embedding -> cosineSimilarity is undefined');
+}
+
+// ---------------------------------------------------------------------------
+// Weighted reranking tests
+// ---------------------------------------------------------------------------
+
+console.log('# Weighted Reranking');
+
+{
+  // Recency-heavy weights should promote newer facts
+  const now = Math.floor(Date.now() / 1000);
+  const candidates: RerankerCandidate[] = [
+    { id: 'old', text: 'meeting notes from project kickoff', createdAt: now - 30 * 24 * 60 * 60, importance: 0.5 },
+    { id: 'new', text: 'meeting notes from project update', createdAt: now - 1 * 60 * 60, importance: 0.5 },
+  ];
+
+  const temporalWeights: RankingWeights = { bm25: 0.15, cosine: 0.20, importance: 0.20, recency: 0.45 };
+  const results = rerank('meeting notes', [], candidates, 2, temporalWeights);
+
+  assert(results.length === 2, 'Weighted: returns both candidates');
+  assert(results[0].id === 'new', 'Weighted: temporal weights promote newer fact to top');
+}
+
+{
+  // Importance-heavy weights should promote high-importance facts
+  const now = Math.floor(Date.now() / 1000);
+  const candidates: RerankerCandidate[] = [
+    { id: 'low-imp', text: 'Alex mentioned liking coffee', importance: 0.2, createdAt: now - 3600 },
+    { id: 'high-imp', text: 'Alex mentioned liking tea', importance: 0.9, createdAt: now - 3600 },
+  ];
+
+  const importanceWeights: RankingWeights = { bm25: 0.10, cosine: 0.10, importance: 0.70, recency: 0.10 };
+  const results = rerank('Alex likes', [], candidates, 2, importanceWeights);
+
+  assert(results.length === 2, 'Weighted: returns both candidates with importance weights');
+  assert(results[0].id === 'high-imp', 'Weighted: importance-heavy weights promote high-importance fact');
+}
+
+{
+  // BM25-heavy weights (factual) should promote exact term matches
+  const candidates: RerankerCandidate[] = [
+    { id: 'exact', text: "Alex's email is alex@example.com" },
+    { id: 'vague', text: 'Someone once mentioned contact information for reaching out' },
+  ];
+
+  const factualWeights: RankingWeights = { bm25: 0.40, cosine: 0.20, importance: 0.25, recency: 0.15 };
+  const results = rerank("What is Alex's email?", [], candidates, 2, factualWeights);
+
+  assert(results[0].id === 'exact', 'Weighted: factual weights promote exact term match (BM25-heavy)');
+}
+
+{
+  // Default weights should work the same as no weights
+  const candidates: RerankerCandidate[] = [
+    { id: '1', text: 'Alex works Nexus Labs senior engineer' },
+    { id: '2', text: 'The weather today is sunny and warm' },
+  ];
+
+  const withDefaults = rerank('Alex Nexus Labs', [], candidates, 2, DEFAULT_WEIGHTS);
+  const withoutWeights = rerank('Alex Nexus Labs', [], candidates, 2);
+
+  assert(withDefaults[0].id === withoutWeights[0].id, 'Weighted: default weights match no-weights behavior');
+}
+
+// ---------------------------------------------------------------------------
+// Query Intent Detection tests
+// ---------------------------------------------------------------------------
+
+console.log('# Query Intent Detection');
+
+{
+  // Factual queries
+  const factualQueries = [
+    "What's Alex's email?",
+    "Who is the project lead?",
+    "Where does Sarah live?",
+    "How many people are on the team?",
+    "Is the project using TypeScript?",
+    "Does Alex work at Nexus?",
+  ];
+
+  for (const q of factualQueries) {
+    const intent = detectQueryIntent(q);
+    assert(intent === 'factual', `Intent: "${q}" => factual (got ${intent})`);
+  }
+}
+
+{
+  // Temporal queries
+  const temporalQueries = [
+    "What did we discuss yesterday?",
+    "What happened last week?",
+    "Any recent updates?",
+    "What was mentioned earlier today?",
+    "Tell me what changed since Monday",
+    "What did Alex say this morning?",
+  ];
+
+  for (const q of temporalQueries) {
+    const intent = detectQueryIntent(q);
+    assert(intent === 'temporal', `Intent: "${q}" => temporal (got ${intent})`);
+  }
+}
+
+{
+  // Semantic queries (default)
+  const semanticQueries = [
+    "Tell me about Alex's work preferences",
+    "Explain the project architecture",
+    "Summarize the project architecture and its main design decisions and tradeoffs that were discussed",
+    "Alex personality traits and communication style",
+  ];
+
+  for (const q of semanticQueries) {
+    const intent = detectQueryIntent(q);
+    assert(intent === 'semantic', `Intent: "${q}" => semantic (got ${intent})`);
+  }
+}
+
+{
+  // Temporal overrides factual: "What did we discuss yesterday?" has both
+  // factual pattern ("What") and temporal keyword ("yesterday")
+  const intent = detectQueryIntent("What did we discuss yesterday?");
+  assert(intent === 'temporal', 'Intent: temporal overrides factual when both match');
+}
+
+{
+  // Long factual-pattern queries fall through to semantic (>80 chars)
+  const longQuery = "What are all the different design patterns and architectural decisions that were discussed in the project?";
+  const intent = detectQueryIntent(longQuery);
+  assert(intent === 'semantic', `Intent: long factual-pattern query => semantic (got ${intent})`);
+}
+
+{
+  // "What do you know about X?" is factual (starts with "what", under 80 chars)
+  const intent = detectQueryIntent("What do you know about hiking?");
+  assert(intent === 'factual', `Intent: "What do you know about..." => factual (got ${intent})`);
 }
 
 // ---------------------------------------------------------------------------

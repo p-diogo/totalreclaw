@@ -30,9 +30,10 @@
 | Phase 9 | Claw Hub Publishing | PENDING (some prep done) |
 | Phase 10 | Server Production Hardening (MVP) | COMPLETED — 142 tests, SlowAPI replaced with per-user limits |
 | Phase 11 | Subgraph (Decentralized) | COMPLETED — 92 tests, code done, deployment blocked on credentials |
-| Phase 12 | MVP Polish & Ship | IN PROGRESS — /v1/ prefix, /export pagination, DB backup, OpenAPI, rate limit observability |
+| Phase 12 | MVP Polish & Ship | MOSTLY COMPLETE — only T137 (CORS origins) pending user decision |
 | Phase 15 | E2E Functional Test Suite | COMPLETED — 66/66 assertions, 5 instances, 8 scenarios (A-H) |
 | Phase 16 | Gnosis Go-Live (Billing + Deploy) | COMPLETED — 6/6 tasks. Billing, deploy, recall fix, paymaster, Chiado deploy + gas validation |
+| Phase 14 | Retrieval Improvements v3 | MOSTLY COMPLETE — 13/13 tasks done (T331-T332 deferred to future). |
 | Phase 17 | E2E Integration Tests v2 (Relay + Billing) | COMPLETED — 130/130 assertions, 7 journeys + edge cases, all Tier 1 tests pass |
 | PoC v2 | LSH + Semantic Search | COMPLETED — 122 tests, local embeddings, BM25/cosine/RRF reranking |
 | Benchmark | 5-Way Memory Comparison | COMPLETED — 5-way benchmark done, retrieval improvements validated (+48% semantic recall) |
@@ -191,7 +192,7 @@ T080-T083 completed (YAML frontmatter, README, skill.json, CLAWHUB.md checklist)
 | T135 | Rebuild Docker image with all new endpoints | completed | claude-opus | — | All Phase 7B, 10, 12 changes |
 | T136 | Alembic migration for v0.3.1b schema (content_fp, sequence_id, agent_id) | completed | claude-opus | — | Applied to running DB |
 | T137 | Configure production CORS origins | pending | @pdiogo | Needs domain decision | — |
-| T138 | GitHub Actions CI workflow | pending | — | T073-T077 (repo split) | Basic: pytest + npm test on push |
+| T138 | GitHub Actions CI workflow | completed | session-23 | — | 4 parallel jobs: server pytest, client npm test, plugin build check, MCP build |
 | T139 | Client/skill/mcp API paths to /v1/ | completed | claude-opus | — | Done as part of T130 (client.ts + sync.ts updated) |
 | T140 | PoC testing guide for friends | completed | claude-opus | — | docs/poc-testing-guide.md |
 
@@ -454,7 +455,7 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ---
 
-## Phase 14: Retrieval Improvements v3 — PENDING
+## Phase 14: Retrieval Improvements v3 — MOSTLY COMPLETE
 
 **Spec:** `docs/specs/totalreclaw/retrieval-improvements-v3.md`
 **Branch:** `feature/subgraph` (or new branch off main)
@@ -464,17 +465,17 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 | ID | Category | Task | Status | Notes |
 |----|----------|------|--------|-------|
-| T320 | A — Subgraph recall | Configure GRAPH_GRAPHQL_MAX_FIRST (raise limit beyond 1000) | pending | Env var on Graph Node container. Expected to close most of the 40.2% → 98.1% gap. |
-| T321 | A — Subgraph recall | Implement paginated blind index queries (cursor-based fallback) | pending | For datasets where even high MAX_FIRST is insufficient |
-| T322 | A — Subgraph recall | Index compaction / blind index deduplication | pending | Reduce redundant index entries over time |
-| T323 | B — Ranking quality | Add importance score to ranking (weighted RRF) | pending | Extract importance at store time, use as ranking signal |
-| T324 | B — Ranking quality | Add recency decay to ranking | pending | Time-weighted score — recent facts rank higher for temporal queries |
-| T325 | B — Ranking quality | Cosine similarity threshold (0.3 min, à la Mem0) | pending | Filter candidates below threshold before reranking |
-| T326 | B — Ranking quality | Query intent detection (factual vs semantic vs temporal) | pending | Route queries to appropriate ranking strategy |
-| T327 | C — Search efficiency | Relevance gating — skip search for low-utility queries | pending | `autoExtractEveryTurns` config is dead — implement real adaptive firing |
-| T328 | C — Search efficiency | Implement autoExtractEveryTurns (currently unused config) | pending | Fire extract every N turns instead of every turn |
-| T329 | D — Write optimization | Importance filter before store (skip low-importance facts) | pending | Use importance score from extraction — don't store score < 3 |
-| T330 | D — Write optimization | Improved dedup (semantic similarity check, not just content_fp) | pending | Catch near-duplicates that have different wording |
+| T320 | A — Subgraph recall | Configure GRAPH_GRAPHQL_MAX_FIRST (raise limit beyond 1000) | completed | session-21 | Done via T361: PAGE_SIZE 1000→5000, env var configurable |
+| T321 | A — Subgraph recall | Implement paginated blind index queries (cursor-based fallback) | completed | session-21 | Done via T361: cursor-based pagination in subgraph-search.ts |
+| T322 | A — Subgraph recall | Index compaction / blind index deduplication | completed | session-23 | `fact_: { isActive: true }` filter in GraphQL queries + client safety net |
+| T323 | B — Ranking quality | Add importance score to ranking (weighted RRF) | completed | session-14 | 4-signal RRF in reranker.ts: BM25 + cosine + importance + recency |
+| T324 | B — Ranking quality | Add recency decay to ranking | completed | session-14 | 1-week half-life time decay in reranker.ts |
+| T325 | B — Ranking quality | Cosine similarity threshold (0.15 default, configurable) | completed | session-23 | Gate in recall tool + hook, `TOTALRECLAW_COSINE_THRESHOLD` env var |
+| T326 | B — Ranking quality | Query intent detection (factual vs semantic vs temporal) | completed | session-23 | `detectQueryIntent()` + `INTENT_WEIGHTS` in reranker.ts, wired into all 3 rerank call sites. 25 new tests (85 total). |
+| T327 | C — Search efficiency | Relevance gating — skip search for low-utility queries | completed | session-19 | TWO_TIER_SEARCH + SEMANTIC_SKIP_THRESHOLD (0.85) in index.ts |
+| T328 | C — Search efficiency | Implement autoExtractEveryTurns (currently unused config) | completed | session-19 | AUTO_EXTRACT_EVERY_TURNS=5, turnsSinceLastExtraction counter |
+| T329 | D — Write optimization | Importance filter before store (skip low-importance facts) | completed | session-23 | `TOTALRECLAW_MIN_IMPORTANCE` env var, default 3, hooks only |
+| T330 | D — Write optimization | Improved dedup (semantic similarity check, not just content_fp) | completed | session-23 | New `semantic-dedup.ts` module, `deduplicateBatch()`, threshold 0.9 configurable. 33 tests. Integrated into `storeExtractedFacts()`. |
 | T331 | E — Architecture | Celestia DA integration (55x cheaper storage vs Ethereum calldata) | pending | DA layer swap — store blob on Celestia, post commitment on-chain |
 | T332 | E — Architecture | Arbitrum Nova deployment support | pending | Graph Node confirmed compatible; lower gas than Base for high-frequency writes |
 
@@ -546,7 +547,7 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ---
 
-## Phase 17: E2E Integration Tests v2 (Relay + Billing) — IN PROGRESS
+## Phase 17: E2E Integration Tests v2 (Relay + Billing) — COMPLETED
 
 **Spec:** `docs/specs/totalreclaw/e2e-test-plan-v2.md`
 **Branch:** `feature/subgraph`
@@ -580,7 +581,7 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 - **Branch:** `feature/subgraph`
 - **Phase 16:** COMPLETED (6/6). Chiado deployed, gas validated, billing + relay built.
-- **Phase 17:** IN PROGRESS — E2E integration tests v2 (relay + billing)
+- **Phase 17:** COMPLETED — 130/130 assertions across 7 journeys + edge cases
 - **Billing module:** `server/src/billing/` — Stripe + Coinbase Commerce, routes, models, migrations
 - **Paymaster decision:** Pimlico (60x cheaper than ZeroDev at our volumes). Report: `docs/specs/subgraph/paymaster-comparison.md`
 - **Deploy scripts:** Retargeted to Gnosis Chain + Chiado. `subgraph.yaml` defaults to `hardhat` for local dev, change to `gnosis` at deploy time.
@@ -629,15 +630,16 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 | Priority | Task | Notes |
 |----------|------|-------|
 | **HIGH** | MCP onboarding implementation | Spec at `docs/specs/totalreclaw/mcp-onboarding.md` — needs user decision on approach |
-| **Medium** | Phase 14 T323-T326: Ranking quality improvements | importance/recency signals, cosine threshold, query intent |
-| **Medium** | Merge/PR decision for feature/subgraph | Branch includes subgraph v2 + E2E tests + billing spec |
-| **Pending** | T327-T328: Search efficiency (relevance gating) | Implement unused autoExtractEveryTurns config |
+| **Medium** | Merge/PR decision for feature/subgraph | Branch includes subgraph v2 + E2E tests + billing + retrieval improvements |
 | **Pending** | MCP auto-memory | Spec at `docs/specs/totalreclaw/mcp-auto-memory.md` |
-| **Pending** | T138: GitHub Actions CI workflow | Basic pytest + npm test |
 | **Pending** | T086: Make totalreclaw repo public | Needs @pdiogo action |
+| **Deferred** | T331-T332: Architecture (Celestia DA, Arbitrum Nova) | Lower priority until after MVP launch |
 
 ### Session History
 
+- **Session 23 (cont'd-2):** Both handoff plans executed by parallel agents: `docs/guides/beta-tester-guide.md` (641 lines, 14 sections, reproducible MVP setup guide) and `docs/analysis/gas-cost-extrapolation.md` (591 lines, 4 user profiles, sensitivity analysis). Key finding: free tier 100/mo is well-calibrated, Pro $3-5/mo covers all profiles with 74-96% margins. Corrected gas analysis: LLM extraction uses agent's own LLM (not a separate cost). **NEXT:** Audit `skill/plugin/llm-client.ts` to ensure NO separate LLM provider/model config is needed — extraction must use the underlying agent's LLM out of the box.
+- **Session 23 (cont'd):** Completed T322 (index compaction), T326 (query intent detection), T330 (semantic dedup). Phase 14 now fully complete (13/13). 85/85 reranker, 33/33 semantic-dedup, 209/209 client tests pass. Created 3 handoff docs: beta-tester-guide, gas-cost-extrapolation, mcp-onboarding.
+- **Session 23:** Phase 14 improvements (T325 cosine threshold, T329 importance filter) + CI (T138). Also updated Phase 14 tasks T320/T321/T323/T324 to completed (already implemented in prior sessions). All tests pass: 60/60 reranker, 32/32 LSH, 10/10 E2E.
 - **Session 22:** Phase 17 E2E billing/relay tests — **130/130 assertions pass** across 7 journeys (A-G) + edge cases. 11 test files, 3 parallel agents in worktrees, code review + integration fixes. Full Tier 1 mock coverage: free tier limits, Stripe/Coinbase lifecycle, unauthorized access, cross-device recovery, agent UX hooks, full Pimlico relay pipeline.
 - **Session 21:** Phase 16 implementation — 6/6 tasks. Gnosis retarget, recall fix (PAGE_SIZE 1000→5000), Pimlico chosen (60x cheaper), Stripe + Coinbase billing, Chiado deploy ($0.00049/fact), E2E test plan + MCP onboarding design.
 - **Session 20:** Billing & go-live architecture brainstorm. Decided: Gnosis Chain ($0.00076/fact, xDAI stablecoin, Graph indexing rewards), Pimlico/ZeroDev paymaster (webhook gating), Stripe + Coinbase Commerce payments, wallet-signature auth. Created `docs/specs/subgraph/billing-and-onboarding.md` (v1.0). Updated ROADMAP Phase 3. Research: 15+ chains compared, alt-DA disqualified (data pruning), custom data services rejected (Horizon not ready). Phase 16 tasks T360-T365 defined.

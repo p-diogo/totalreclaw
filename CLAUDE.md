@@ -207,7 +207,7 @@ cd skill-nanoclaw && npm install
 
 - **User**: @pdiogo
 - **Project started**: February 2026
-- **Current phase**: Phase 12 -- MVP Polish & Ship (see TASKS.md)
+- **Current phase**: Post Phase 17 -- Retrieval improvements + ship prep (see TASKS.md)
 - **Current version**: v0.2.0 (PoC v2)
 
 ---

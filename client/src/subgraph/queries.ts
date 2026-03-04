@@ -1,8 +1,10 @@
-/** Search: find facts matching any of the given blind index trapdoors */
+/** Search: find facts matching any of the given blind index trapdoors.
+ *  T322: Added fact_: { isActive: true } relation filter to exclude
+ *  blind index entries pointing to soft-deleted (inactive) facts. */
 export const SEARCH_BY_BLIND_INDEX = `
   query SearchByBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!) {
     blindIndices(
-      where: { hash_in: $trapdoors, owner: $owner }
+      where: { hash_in: $trapdoors, owner: $owner, fact_: { isActive: true } }
       first: $first
     ) {
       fact {

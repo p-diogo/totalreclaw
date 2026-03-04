@@ -10,6 +10,8 @@
  *   A3: orderBy: id, orderDirection: desc (recency proxy)
  *   A4: Cursor-based pagination for saturated batches
  *   C4: globalStates for lightweight fact count
+ *   T322: Index compaction — filter out inactive facts at query level
+ *         (fact_: { isActive: true }) + client-side safety net
  */
 
 import { getSubgraphConfig } from './subgraph-store.js';
@@ -50,11 +52,14 @@ async function gqlQuery<T>(
   }
 }
 
-/** GraphQL query for blind index lookup — uses Graph Node's `blindIndexes` pluralization. */
+/** GraphQL query for blind index lookup — uses Graph Node's `blindIndexes` pluralization.
+ *  T322: Added `fact_: { isActive: true }` relation filter to exclude blind index
+ *  entries pointing to soft-deleted facts (decayScore < 0.3) at the query level.
+ *  Graph Node relation filters use the `field_: { subfield: value }` syntax. */
 const SEARCH_QUERY = `
   query SearchByBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!) {
     blindIndexes(
-      where: { hash_in: $trapdoors, owner: $owner }
+      where: { hash_in: $trapdoors, owner: $owner, fact_: { isActive: true } }
       first: $first
       orderBy: id
       orderDirection: desc
@@ -75,11 +80,12 @@ const SEARCH_QUERY = `
   }
 `;
 
-/** Pagination query — cursor-based using id_gt, ascending for deterministic walk. */
+/** Pagination query — cursor-based using id_gt, ascending for deterministic walk.
+ *  T322: Added `fact_: { isActive: true }` to match SEARCH_QUERY filtering. */
 const PAGINATE_QUERY = `
   query PaginateBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!, $lastId: String!) {
     blindIndexes(
-      where: { hash_in: $trapdoors, owner: $owner, id_gt: $lastId }
+      where: { hash_in: $trapdoors, owner: $owner, id_gt: $lastId, fact_: { isActive: true } }
       first: $first
       orderBy: id
       orderDirection: asc
@@ -147,10 +153,12 @@ export async function searchSubgraph(
   );
 
   // Collect initial results and identify saturated batches.
+  // T322: Client-side safety net — skip facts where isActive is false,
+  // in case the subgraph endpoint doesn't support relation filters (e.g. mock).
   const saturatedChunks: string[][] = [];
   for (const { chunk, entries } of initialResults) {
     for (const entry of entries) {
-      if (entry.fact && !allResults.has(entry.fact.id)) {
+      if (entry.fact && entry.fact.isActive !== false && !allResults.has(entry.fact.id)) {
         allResults.set(entry.fact.id, entry.fact);
       }
     }
@@ -179,7 +187,8 @@ export async function searchSubgraph(
       if (entries.length === 0) break;
 
       for (const entry of entries) {
-        if (entry.fact && !allResults.has(entry.fact.id)) {
+        // T322: Client-side safety net for pagination results too.
+        if (entry.fact && entry.fact.isActive !== false && !allResults.has(entry.fact.id)) {
           allResults.set(entry.fact.id, entry.fact);
         }
       }

@@ -96,7 +96,7 @@ Cloudflare sits in front of the reverse proxy and provides DDoS mitigation, bot 
 | Row-level security (RLS) | Multi-tenant without Postgres RLS. Defense-in-depth for data isolation | NOT DONE |
 | Distributed tracing (OpenTelemetry) | Cross-request tracing for debugging | NOT DONE |
 | Log aggregation | Central logging system (ELK, Datadog, etc.) | NOT DONE — JSON logs ready for ingestion |
-| CI/CD pipeline | Automated testing on push/PR | NOT DONE |
+| CI/CD pipeline | Automated testing on push/PR | **DONE** — GitHub Actions: 4 parallel jobs (server pytest, client Jest, plugin build, MCP build) |
 | Tombstone cleanup job | Tombstones and raw_events accumulate indefinitely | NOT DONE |
 | API documentation | Static openapi.json exported; Swagger/ReDoc in dev mode only | **PARTIAL** — needs hosting for production |
 
@@ -176,7 +176,7 @@ Architecture: User's BIP-39 seed derives both encryption key AND on-chain identi
 | Component | Decision | Rationale |
 |-----------|----------|-----------|
 | **Chain** | Gnosis Chain | $0.00076/fact, xDAI stablecoin gas, Graph indexing rewards, 640GB archive, permanent L1 storage |
-| **Paymaster** | Pimlico or ZeroDev | Custom webhook for subscription gating, multi-chain support |
+| **Paymaster** | **Pimlico** | 60x cheaper than ZeroDev ($0.11/mo vs $69/mo at 100 ops/day), permissionless.js SDK, webhook policies |
 | **Fiat payments** | Stripe Checkout | Agent-generated URL, card/Apple Pay/Google Pay |
 | **Crypto payments** | Coinbase Commerce | USDC/USDT on Solana, Base, Ethereum, Polygon, Arbitrum (no bridging) |
 | **Auth** | Wallet signature | No API keys — seed-derived key signs every request |

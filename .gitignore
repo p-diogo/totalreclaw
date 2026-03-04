@@ -104,3 +104,5 @@ docker-compose.override.yml
 *.tar.gz
 *.tmp
 *.bak
+tests/e2e-functional/results/
+tests/parity/node_modules/

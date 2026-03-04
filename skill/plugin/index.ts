@@ -27,7 +27,8 @@ import { createApiClient, type StoreFactPayload } from './api-client.js';
 import { extractFacts, type ExtractedFact } from './extractor.js';
 import { initLLMClient, generateEmbedding, getEmbeddingDims } from './llm-client.js';
 import { LSHHasher } from './lsh.js';
-import { rerank, cosineSimilarity, type RerankerCandidate } from './reranker.js';
+import { rerank, cosineSimilarity, detectQueryIntent, INTENT_WEIGHTS, type RerankerCandidate } from './reranker.js';
+import { deduplicateBatch } from './semantic-dedup.js';
 import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitToRelay } from './subgraph-store.js';
 import { searchSubgraph, getSubgraphFactCount } from './subgraph-search.js';
 import { PluginHotCache, type HotFact } from './hot-cache-wrapper.js';
@@ -67,6 +68,22 @@ interface OpenClawPluginApi {
 
 /** Path where we persist userId + salt across restarts. */
 const CREDENTIALS_PATH = process.env.TOTALRECLAW_CREDENTIALS_PATH || '/home/node/.totalreclaw/credentials.json';
+
+// ---------------------------------------------------------------------------
+// Cosine similarity threshold — skip injection when top result is below this
+// ---------------------------------------------------------------------------
+
+/**
+ * Minimum cosine similarity of the top reranked result required to inject
+ * memories into context. Below this threshold, the query is considered
+ * irrelevant to any stored memories and results are suppressed.
+ *
+ * Default 0.15 is tuned for bge-small-en-v1.5 which produces lower
+ * similarity scores than OpenAI models. Configurable via env var.
+ */
+const COSINE_THRESHOLD = parseFloat(
+  process.env.TOTALRECLAW_COSINE_THRESHOLD ?? '0.15',
+);
 
 // ---------------------------------------------------------------------------
 // Module-level state (persists across tool calls within a session)
@@ -364,6 +381,53 @@ function relativeTime(isoOrMs: string | number): string {
 }
 
 // ---------------------------------------------------------------------------
+// Importance filter for auto-extraction
+// ---------------------------------------------------------------------------
+
+/**
+ * Minimum importance score (1-10) for auto-extracted facts to be stored.
+ * Facts below this threshold are silently dropped to save storage and gas.
+ * Configurable via TOTALRECLAW_MIN_IMPORTANCE env var (default: 3).
+ *
+ * NOTE: This filter is ONLY applied to auto-extraction (hooks).
+ * The explicit `totalreclaw_remember` tool always stores regardless of importance.
+ */
+const MIN_IMPORTANCE_THRESHOLD = Math.max(
+  1,
+  Math.min(10, Number(process.env.TOTALRECLAW_MIN_IMPORTANCE) || 3),
+);
+
+/**
+ * Filter extracted facts by importance threshold.
+ * Facts with importance < MIN_IMPORTANCE_THRESHOLD are dropped.
+ * Facts with missing/undefined importance are treated as importance=5 (kept).
+ */
+function filterByImportance(
+  facts: ExtractedFact[],
+  logger: OpenClawPluginApi['logger'],
+): { kept: ExtractedFact[]; dropped: number } {
+  const kept: ExtractedFact[] = [];
+  let dropped = 0;
+
+  for (const fact of facts) {
+    const importance = fact.importance ?? 5;
+    if (importance >= MIN_IMPORTANCE_THRESHOLD) {
+      kept.push(fact);
+    } else {
+      dropped++;
+    }
+  }
+
+  if (dropped > 0) {
+    logger.info(
+      `Importance filter: dropped ${dropped}/${facts.length} facts below threshold ${MIN_IMPORTANCE_THRESHOLD}`,
+    );
+  }
+
+  return { kept, dropped };
+}
+
+// ---------------------------------------------------------------------------
 // Auto-extraction helper
 // ---------------------------------------------------------------------------
 
@@ -371,6 +435,10 @@ function relativeTime(isoOrMs: string | number): string {
  * Store extracted facts in the TotalReclaw server.
  * Encrypts each fact, generates blind indices and fingerprint, stores via API.
  * Silently skips duplicates.
+ *
+ * Before storing, performs semantic near-duplicate detection within the batch:
+ * facts whose embeddings have cosine similarity >= threshold (default 0.9)
+ * against an already-accepted fact in the same batch are skipped.
  */
 async function storeExtractedFacts(
   facts: ExtractedFact[],
@@ -378,9 +446,38 @@ async function storeExtractedFacts(
 ): Promise<number> {
   if (!encryptionKey || !dedupKey || !authKeyHex || !userId || !apiClient) return 0;
 
-  let stored = 0;
+  // Phase 1: Generate embeddings for all facts (needed for dedup + storage).
+  const embeddingMap = new Map<string, number[]>();
+  const embeddingResultMap = new Map<
+    string,
+    { embedding: number[]; lshBuckets: string[]; encryptedEmbedding: string }
+  >();
 
   for (const fact of facts) {
+    try {
+      const result = await generateEmbeddingAndLSH(fact.text, logger);
+      if (result) {
+        embeddingMap.set(fact.text, result.embedding);
+        embeddingResultMap.set(fact.text, result);
+      }
+    } catch {
+      // Embedding generation failed for this fact -- proceed without it.
+    }
+  }
+
+  // Phase 2: Semantic batch dedup.
+  const dedupedFacts = deduplicateBatch(facts, embeddingMap, logger);
+
+  if (dedupedFacts.length < facts.length) {
+    logger.info(
+      `Semantic dedup: ${facts.length - dedupedFacts.length} near-duplicate(s) removed from batch of ${facts.length}`,
+    );
+  }
+
+  // Phase 3: Store the deduplicated facts.
+  let stored = 0;
+
+  for (const fact of dedupedFacts) {
     try {
       const doc = {
         text: fact.text,
@@ -395,8 +492,8 @@ async function storeExtractedFacts(
       const encryptedBlob = encryptToHex(JSON.stringify(doc), encryptionKey);
       const blindIndices = generateBlindIndices(fact.text);
 
-      // Generate embedding + LSH bucket hashes (PoC v2).
-      const embeddingResult = await generateEmbeddingAndLSH(fact.text, logger);
+      // Use pre-computed embedding result if available.
+      const embeddingResult = embeddingResultMap.get(fact.text) ?? null;
       const allIndices = embeddingResult
         ? [...blindIndices, ...embeddingResult.lshBuckets]
         : blindIndices;
@@ -789,17 +886,34 @@ const plugin = {
               }
             }
 
-            // 6. Re-rank with BM25 + cosine + RRF fusion.
+            // 6. Re-rank with BM25 + cosine + intent-weighted RRF fusion.
+            const queryIntent = detectQueryIntent(params.query);
             const reranked = rerank(
               params.query,
               queryEmbedding ?? [],
               rerankerCandidates,
               k,
+              INTENT_WEIGHTS[queryIntent],
             );
 
             if (reranked.length === 0) {
               return {
                 content: [{ type: 'text', text: 'No memories found matching your query.' }],
+                details: { count: 0, memories: [] },
+              };
+            }
+
+            // 6b. Cosine similarity threshold gate — skip results when the
+            //     best match is below the minimum relevance threshold.
+            const maxCosine = Math.max(
+              ...reranked.map((r) => r.cosineSimilarity ?? 0),
+            );
+            if (maxCosine < COSINE_THRESHOLD) {
+              api.logger.info(
+                `Recall: cosine threshold gate filtered results (max=${maxCosine.toFixed(3)}, threshold=${COSINE_THRESHOLD})`,
+              );
+              return {
+                content: [{ type: 'text', text: 'No relevant memories found for this query.' }],
                 details: { count: 0, memories: [] },
               };
             }
@@ -1121,12 +1235,14 @@ const plugin = {
               }
             }
 
-            // 6. Re-rank with BM25 + cosine + RRF fusion.
+            // 6. Re-rank with BM25 + cosine + intent-weighted RRF fusion.
+            const hookQueryIntent = detectQueryIntent(evt.prompt);
             const reranked = rerank(
               evt.prompt,
               queryEmbedding ?? [],
               rerankerCandidates,
               8,
+              INTENT_WEIGHTS[hookQueryIntent],
             );
 
             // B2: Minimum relevance threshold — skip noise injection for irrelevant turns.
@@ -1158,6 +1274,18 @@ const plugin = {
             lastQueryEmbedding = queryEmbedding;
 
             if (reranked.length === 0) return undefined;
+
+            // 6b. Cosine similarity threshold gate — skip injection when the
+            //     best match is below the minimum relevance threshold.
+            const hookMaxCosine = Math.max(
+              ...reranked.map((r) => r.cosineSimilarity ?? 0),
+            );
+            if (hookMaxCosine < COSINE_THRESHOLD) {
+              api.logger.info(
+                `Hook: cosine threshold gate filtered results (max=${hookMaxCosine.toFixed(3)}, threshold=${COSINE_THRESHOLD})`,
+              );
+              return undefined;
+            }
 
             // 7. Build context string.
             const lines = reranked.map((m, i) => {
@@ -1250,12 +1378,14 @@ const plugin = {
             }
           }
 
-          // 6. Re-rank with BM25 + cosine + RRF fusion.
+          // 6. Re-rank with BM25 + cosine + RRF fusion (intent-weighted).
+          const srvHookIntent = detectQueryIntent(evt.prompt);
           const reranked = rerank(
             evt.prompt,
             queryEmbedding ?? [],
             rerankerCandidates,
             8,
+            INTENT_WEIGHTS[srvHookIntent],
           );
 
           // B2: Minimum relevance threshold — skip noise injection for irrelevant turns.
@@ -1305,7 +1435,8 @@ const plugin = {
           // C3: Throttle auto-extraction to every N turns (configurable via env).
           turnsSinceLastExtraction++;
           if (turnsSinceLastExtraction >= AUTO_EXTRACT_EVERY_TURNS) {
-            const facts = await extractFacts(evt.messages, 'turn');
+            const rawFacts = await extractFacts(evt.messages, 'turn');
+            const { kept: facts } = filterByImportance(rawFacts, api.logger);
             if (facts.length > 0) {
               await storeExtractedFacts(facts, api.logger);
             }
@@ -1336,7 +1467,8 @@ const plugin = {
             `Pre-compaction extraction: processing ${evt.messages.length} messages`,
           );
 
-          const facts = await extractFacts(evt.messages, 'full');
+          const rawCompactFacts = await extractFacts(evt.messages, 'full');
+          const { kept: facts } = filterByImportance(rawCompactFacts, api.logger);
           if (facts.length > 0) {
             await storeExtractedFacts(facts, api.logger);
           }
@@ -1366,7 +1498,8 @@ const plugin = {
             `Pre-reset extraction (${evt.reason ?? 'unknown'}): processing ${evt.messages.length} messages`,
           );
 
-          const facts = await extractFacts(evt.messages, 'full');
+          const rawResetFacts = await extractFacts(evt.messages, 'full');
+          const { kept: facts } = filterByImportance(rawResetFacts, api.logger);
           if (facts.length > 0) {
             await storeExtractedFacts(facts, api.logger);
           }

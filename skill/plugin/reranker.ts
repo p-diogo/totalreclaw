@@ -252,12 +252,40 @@ export interface RankingWeights {
   recency: number;
 }
 
-const DEFAULT_WEIGHTS: RankingWeights = {
+export const DEFAULT_WEIGHTS: RankingWeights = {
   bm25: 0.25,
   cosine: 0.25,
   importance: 0.25,
   recency: 0.25,
 };
+
+// ---------------------------------------------------------------------------
+// Query Intent Detection (T326)
+// ---------------------------------------------------------------------------
+
+/** The detected intent of a user query. */
+export type QueryIntent = 'factual' | 'temporal' | 'semantic';
+
+const TEMPORAL_KEYWORDS = /\b(yesterday|today|last\s+week|last\s+month|recently|recent|latest|ago|when|this\s+week|this\s+month|earlier|before|after|since|during|tonight|morning|afternoon)\b/i;
+
+const FACTUAL_PATTERNS = /^(what|who|where|which|how\s+many|how\s+much|is\s+|are\s+|does\s+|do\s+|did\s+|was\s+|were\s+)\b/i;
+
+/** Ranking weights tuned for each query intent. */
+export const INTENT_WEIGHTS: Record<QueryIntent, RankingWeights> = {
+  factual:  { bm25: 0.40, cosine: 0.20, importance: 0.25, recency: 0.15 },
+  temporal: { bm25: 0.15, cosine: 0.20, importance: 0.20, recency: 0.45 },
+  semantic: { bm25: 0.20, cosine: 0.35, importance: 0.25, recency: 0.20 },
+};
+
+/**
+ * Classify a query into one of three intent types using lightweight heuristics.
+ * Temporal is checked first so "What did we discuss yesterday?" → temporal.
+ */
+export function detectQueryIntent(query: string): QueryIntent {
+  if (TEMPORAL_KEYWORDS.test(query)) return 'temporal';
+  if (FACTUAL_PATTERNS.test(query) && query.length < 80) return 'factual';
+  return 'semantic';
+}
 
 export interface RerankerCandidate {
   id: string;
