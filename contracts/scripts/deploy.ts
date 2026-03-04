@@ -6,14 +6,18 @@ import * as path from "path";
  * Deploy EventfulDataEdge and TotalReclawPaymaster to the target network.
  *
  * Usage:
+ *   npx hardhat run scripts/deploy.ts --network gnosis     (Gnosis Chain mainnet)
+ *   npx hardhat run scripts/deploy.ts --network chiado     (Gnosis Chain testnet)
  *   npx hardhat run scripts/deploy.ts --network baseSepolia
- *   npx hardhat run scripts/deploy.ts --network hardhat  (local test)
+ *   npx hardhat run scripts/deploy.ts --network hardhat    (local test)
  *
  * Prerequisites:
  *   - DEPLOYER_PRIVATE_KEY set in ../.env
- *   - Deployer has Base Sepolia ETH (get from faucet)
+ *   - Deployer has native gas token:
+ *       Gnosis/Chiado: xDAI (faucet: https://faucet.chiadochain.net)
+ *       Base Sepolia:  ETH  (faucet: https://www.coinbase.com/faucets/base-ethereum-goerli-faucet)
  *
- * The ERC-4337 EntryPoint v0.7 address on Base Sepolia is:
+ * The ERC-4337 EntryPoint v0.7 address is:
  *   0x0000000071727De22E5E9d8BAf0edAc6f37da032
  * (same address on all EVM chains — deterministic CREATE2 deployment)
  */
@@ -43,11 +47,12 @@ async function main() {
   console.log("=== TotalReclaw Contract Deployment ===");
   console.log(`Network:  ${network.name}`);
   console.log(`Deployer: ${deployer.address}`);
-  console.log(`Balance:  ${ethers.formatEther(balance)} ETH`);
+  const gasToken = ["gnosis", "chiado"].includes(network.name) ? "xDAI" : "ETH";
+  console.log(`Balance:  ${ethers.formatEther(balance)} ${gasToken}`);
   console.log("");
 
   if (balance === 0n) {
-    throw new Error("Deployer has no ETH. Fund from faucet first.");
+    throw new Error(`Deployer has no ${gasToken}. Fund from faucet first.`);
   }
 
   // Use canonical EntryPoint for live networks, deployer for local testing

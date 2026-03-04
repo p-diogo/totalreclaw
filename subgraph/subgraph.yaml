@@ -6,6 +6,8 @@ schema:
 dataSources:
   - kind: ethereum
     name: EventfulDataEdge
+    # Local dev: hardhat | Production: gnosis | Testnet: chiado
+    # deploy-contracts.sh updates address + startBlock for localhost deploys
     network: hardhat
     source:
       # IMPORTANT: Replace with actual deployed address from contracts/deployed-addresses.json

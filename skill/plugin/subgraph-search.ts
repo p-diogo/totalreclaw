@@ -25,7 +25,7 @@ export interface SubgraphSearchFact {
 
 /** Small batches so rare trapdoor matches aren't drowned by common ones. */
 const TRAPDOOR_BATCH_SIZE = parseInt(process.env.TOTALRECLAW_TRAPDOOR_BATCH_SIZE ?? '5', 10);
-const PAGE_SIZE = 1000;
+const PAGE_SIZE = parseInt(process.env.TOTALRECLAW_SUBGRAPH_PAGE_SIZE ?? '5000', 10);
 
 /**
  * Execute a single GraphQL query against the subgraph endpoint.

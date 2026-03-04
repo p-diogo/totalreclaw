@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     relay_rate_limit_ops: int = 100
     relay_rate_limit_window_seconds: int = 3600
 
+    # Coinbase Commerce configuration (crypto payments)
+    coinbase_commerce_api_key: str = ""
+    coinbase_commerce_webhook_secret: str = ""
+
     @property
     def is_production(self) -> bool:
         """Check if running in production."""

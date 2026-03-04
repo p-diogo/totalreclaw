@@ -36,6 +36,9 @@ services:
       postgres_pass: let-me-in
       postgres_db: graph-node
       ipfs: "ipfs:5001"
+      # Local dev:     hardhat:http://host.docker.internal:8545
+      # Gnosis mainnet: gnosis:https://rpc.gnosischain.com
+      # Chiado testnet:  chiado:https://rpc.chiadochain.net
       ethereum: "hardhat:http://host.docker.internal:8545"
       GRAPH_LOG: info
       GRAPH_GRAPHQL_MAX_FIRST: "5000"

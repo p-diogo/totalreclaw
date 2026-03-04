@@ -263,6 +263,9 @@ async function getIndexedFactCount(): Promise<number> {
   return parseInt(states[0].totalFacts, 10);
 }
 
+/** Page size for GraphQL queries — must not exceed GRAPH_GRAPHQL_MAX_FIRST (default 5000). */
+const SEARCH_PAGE_SIZE = parseInt(process.env.TOTALRECLAW_SUBGRAPH_PAGE_SIZE ?? '5000', 10);
+
 async function searchByBlindIndices(
   owner: string,
   trapdoors: string[],
@@ -280,12 +283,16 @@ async function searchByBlindIndices(
   for (let i = 0; i < trapdoors.length; i += BATCH_SIZE) {
     const batch = trapdoors.slice(i, i + BATCH_SIZE);
 
+    // Initial query for this batch
     const result = await querySubgraph(`
       query SearchByBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!) {
         blindIndexes(
           where: { hash_in: $trapdoors, owner: $owner }
           first: $first
+          orderBy: id
+          orderDirection: asc
         ) {
+          id
           fact {
             id
             encryptedBlob
@@ -298,14 +305,57 @@ async function searchByBlindIndices(
     `, {
       trapdoors: batch,
       owner,
-      first: Math.min(maxCandidates, 1000),
+      first: SEARCH_PAGE_SIZE,
     });
 
-    if (result?.data?.blindIndexes) {
-      for (const entry of result.data.blindIndexes) {
-        if (entry.fact && !allResults.has(entry.fact.id)) {
-          allResults.set(entry.fact.id, entry.fact);
+    const entries = result?.data?.blindIndexes ?? [];
+    for (const entry of entries) {
+      if (entry.fact && !allResults.has(entry.fact.id)) {
+        allResults.set(entry.fact.id, entry.fact);
+      }
+    }
+
+    // Cursor-based pagination if this batch was saturated
+    if (entries.length >= SEARCH_PAGE_SIZE && allResults.size < maxCandidates) {
+      let lastId = entries[entries.length - 1].id;
+
+      while (allResults.size < maxCandidates) {
+        const pageResult = await querySubgraph(`
+          query PaginateBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!, $lastId: String!) {
+            blindIndexes(
+              where: { hash_in: $trapdoors, owner: $owner, id_gt: $lastId }
+              first: $first
+              orderBy: id
+              orderDirection: asc
+            ) {
+              id
+              fact {
+                id
+                encryptedBlob
+                encryptedEmbedding
+                decayScore
+                isActive
+              }
+            }
+          }
+        `, {
+          trapdoors: batch,
+          owner,
+          first: SEARCH_PAGE_SIZE,
+          lastId,
+        });
+
+        const pageEntries = pageResult?.data?.blindIndexes ?? [];
+        if (pageEntries.length === 0) break;
+
+        for (const entry of pageEntries) {
+          if (entry.fact && !allResults.has(entry.fact.id)) {
+            allResults.set(entry.fact.id, entry.fact);
+          }
         }
+
+        if (pageEntries.length < SEARCH_PAGE_SIZE) break;
+        lastId = pageEntries[pageEntries.length - 1].id;
       }
     }
 

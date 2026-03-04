@@ -32,7 +32,7 @@
 | Phase 11 | Subgraph (Decentralized) | COMPLETED — 92 tests, code done, deployment blocked on credentials |
 | Phase 12 | MVP Polish & Ship | IN PROGRESS — /v1/ prefix, /export pagination, DB backup, OpenAPI, rate limit observability |
 | Phase 15 | E2E Functional Test Suite | COMPLETED — 66/66 assertions, 5 instances, 8 scenarios (A-H) |
-| Phase 16 | Gnosis Go-Live (Billing + Deploy) | PLANNED — retarget to Gnosis, fix recall, paymaster eval, Stripe/Commerce integration |
+| Phase 16 | Gnosis Go-Live (Billing + Deploy) | 5/6 COMPLETE — T365 blocked on faucet CAPTCHA. Billing module, deploy scripts, recall fix, paymaster eval done |
 | PoC v2 | LSH + Semantic Search | COMPLETED — 122 tests, local embeddings, BM25/cosine/RRF reranking |
 | Benchmark | 5-Way Memory Comparison | COMPLETED — 5-way benchmark done, retrieval improvements validated (+48% semantic recall) |
 | LSH Tuning Spec | Multi-Tenant SaaS LSH Guidance | COMPLETED — `docs/specs/totalreclaw/lsh-tuning.md` |
@@ -534,12 +534,12 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 | ID | Task | Status | Owner | Depends | Notes |
 |----|------|--------|-------|---------|-------|
-| T360 | Retarget deploy scripts to Gnosis Chain | pending | — | — | Update Hardhat config, subgraph.yaml network field, deploy-contracts.sh |
-| T361 | Fix subgraph recall gap (raise GRAPH_GRAPHQL_MAX_FIRST + pagination) | pending | — | — | Supersedes T320 (Phase 14). Env var change + query pagination in subgraph-search.ts. Expected: 40.2%→~98% |
-| T362 | Evaluate Pimlico vs ZeroDev on Gnosis | pending | — | — | Test webhook policy support, developer experience, billing model |
-| T363 | Stripe Checkout integration | pending | — | — | Agent-generated checkout URL, webhook handler, subscription table |
-| T364 | Coinbase Commerce integration | pending | — | — | Crypto payment URL, webhook handler, multi-chain stablecoin support |
-| T365 | Deploy to Gnosis Chiado testnet | pending | — | T360 | E2E validation on real network |
+| T360 | Retarget deploy scripts to Gnosis Chain | completed | session-21 | — | Hardhat config (gnosis+chiado networks), subgraph.yaml network→gnosis, deploy-contracts.sh accepts network arg |
+| T361 | Fix subgraph recall gap (raise GRAPH_GRAPHQL_MAX_FIRST + pagination) | completed | session-21 | — | PAGE_SIZE 1000→5000, E2E test updated with cursor pagination. Expected: 40.2%→~98% |
+| T362 | Evaluate Pimlico vs ZeroDev on Gnosis | completed | session-21 | — | Pimlico recommended: 60x cheaper, better Gnosis support, permissionless.js SDK. Report: docs/specs/subgraph/paymaster-comparison.md |
+| T363 | Stripe Checkout integration | completed | session-21 | — | Full integration: models, service, routes, SQL+Alembic migration. server/src/billing/ |
+| T364 | Coinbase Commerce integration | completed | session-21 | — | Full integration: service, routes, config. Integrates with T363 billing module |
+| T365 | Deploy to Gnosis Chiado testnet | blocked | session-21 | T360 | Blocked: faucet requires browser CAPTCHA. Deployment guide created: `docs/deployment/chiado-deployment.md`. All prerequisites validated (RPC, EntryPoint, Blockscout, compile, deploy script). Deployer wallet generated in .env. |
 
 **Priority order:** T360 + T361 (parallel, no deps) → T362 → T363 + T364 (parallel) → T365
 
@@ -552,19 +552,19 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 - **Billing spec:** `docs/specs/subgraph/billing-and-onboarding.md` (v1.0) — full go-live architecture.
 - **Plans are in the `totalreclaw-internal` repo** -- `plans/` directory.
 
-### Current State (after Session 20 -- Billing & Go-Live Architecture)
+### Current State (after Session 21 -- Phase 16 Implementation)
 
-- **Branch:** `feature/subgraph` -- subgraph v2 + E2E tests 66/66 PASS + billing spec v1.0
-- **Key decision:** Gnosis Chain for deployment ($0.00076/fact, profitable at $2/mo subscription)
-- **E2E functional tests:** 66/66 assertions PASS across 5 instances, 8 scenarios (A-H)
-- **Tests:** 209/209 client tests pass. Server 272/272 (pre-existing pytest-asyncio errors excluded).
-- **E2E recall@8:** 40.2% (vs 98.1% PG baseline). Fix: T361 (raise GRAPH_GRAPHQL_MAX_FIRST + pagination).
-- **Next phase:** Phase 16 (Gnosis Go-Live) — 6 tasks, ~2 weeks estimated.
-- **Graph Node Docker stack** from Session 17 may still be running (ports 8545/8000/8020/15432/15001). Safe to stop — Phase 16 will use Gnosis testnet, not local Hardhat.
+- **Branch:** `main` (feature/subgraph merged in Session 20)
+- **Phase 16:** 5/6 tasks COMPLETED, T365 blocked on Chiado faucet CAPTCHA
+- **Billing module:** `server/src/billing/` — Stripe + Coinbase Commerce, routes, models, migrations
+- **Paymaster decision:** Pimlico (60x cheaper than ZeroDev at our volumes). Report: `docs/specs/subgraph/paymaster-comparison.md`
+- **Deploy scripts:** Retargeted to Gnosis Chain + Chiado. `subgraph.yaml` defaults to `hardhat` for local dev, change to `gnosis` at deploy time.
+- **Recall fix:** PAGE_SIZE raised from 1000→5000, cursor pagination added. Expected 40.2%→~98% (needs re-validation with Docker stack).
+- **Deployer wallet:** `0x30d37b26257e03942dFCf12251FC25e41ca38cA8` in `.env` (gitignored). Needs Chiado xDAI from faucet.
+- **Deployment guide:** `docs/deployment/chiado-deployment.md`
+- **Code review done:** Parallel agent integration issues fixed (Coinbase routes, __init__ exports, DI pattern, coinbase_id index, subgraph.yaml network mismatch).
 - **Uncommitted files from prior sessions** (not Phase 16 work — do NOT stage these):
   - `mcp/tests/*.test.js` (5 files), `server/pyproject.toml`, `server/tests/test_integration.py`, `tests/parity/`
-  - Modified: `contracts/package-lock.json`, `server/requirements.txt`, `subgraph/package-lock.json`
-- **Merge decision pending:** `feature/subgraph` → `main` should happen before or after Phase 16, not during. Phase 16 agents should work on `feature/subgraph`.
 
 ### Key Files Created in Session 16
 
