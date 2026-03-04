@@ -7,6 +7,44 @@
 
 ## 2026-03-04
 
+### Session 22 | Claude (opus) | Phase 17 Complete — E2E Billing/Relay Tests (130/130 PASS)
+
+**Branch:** `feature/subgraph`
+**Result:** Phase 17 COMPLETE (7/7 tasks). 130 test assertions across 7 user journeys + edge cases. Full Tier 1 mock test coverage for relay, paymaster, billing (Stripe + Coinbase), auth boundary, cross-device recovery, agent UX, and full pipeline flows.
+
+**Tasks completed:**
+
+| Task | What was done |
+|------|--------------|
+| **T370** | Mock billing + relay infrastructure: shared `mock-billing-server.ts` (billing/relay/subscription endpoints) + inline mocks per journey file |
+| **T371** | Journey A (Free Tier): 7/7 PASS — seed gen, first store, first retrieval, counter increment, limit denial, reads after limit, monthly reset |
+| **T372** | Journey B+C (Stripe + Coinbase): B 8/8, C 8/8 PASS — checkout, webhooks, paid stores, subscription lifecycle, idempotency, signature verification |
+| **T373** | Journey D (Unauthorized/Attack): 15/15 PASS — no auth, invalid sig, expired+exhausted, replay attack, wrong contract, empty calldata, Pimlico webhook attacks, Stripe webhook attacks, fail-closed DB error, hash format validation |
+| **T374** | Journey E+F+G (Recovery, Agent UX, Relay): E 23/23, F 24/24, G 11/11 PASS — cross-device recovery, hook-driven search/store, upgrade flow, Pimlico JSON-RPC pipeline, timeout/error handling |
+| **T375** | Edge cases + runner: 34/34 PASS — mixed payment sources, case sensitivity, missing fields, Pimlico failures, unified `run-all-billing.sh` |
+| **T376** | Full suite validation: **130/130 assertions pass** |
+
+**Files created:**
+- `tests/e2e-functional/billing-tests/mock-billing-server.ts` — Shared mock (25KB)
+- `tests/e2e-functional/billing-tests/run-billing-tests.ts` — Journey A/B/C orchestrator (6KB)
+- `tests/e2e-functional/billing-tests/run-all-billing.sh` — Unified runner for all journeys
+- `tests/e2e-functional/billing-tests/journey-a.test.ts` — Free tier tests (16KB)
+- `tests/e2e-functional/billing-tests/journey-b.test.ts` — Stripe tests (18KB)
+- `tests/e2e-functional/billing-tests/journey-c.test.ts` — Coinbase tests (22KB)
+- `tests/e2e-functional/billing-tests/journey-d.test.ts` — Unauthorized/attack tests (31KB)
+- `tests/e2e-functional/billing-tests/journey-e.test.ts` — Cross-device recovery tests (25KB)
+- `tests/e2e-functional/billing-tests/journey-f.test.ts` — Agent-driven UX tests (26KB)
+- `tests/e2e-functional/billing-tests/journey-g.test.ts` — Relay pipeline tests (37KB)
+- `tests/e2e-functional/billing-tests/edge-cases.test.ts` — Edge case tests (28KB)
+
+**Code review findings fixed:**
+- Fixed Journey D Stripe webhook path: `/v1/relay/webhook/stripe` → `/v1/billing/webhook/stripe`
+- Created unified `run-all-billing.sh` to run all test suites (orchestrator only covered A/B/C)
+
+**Run command:** `cd tests/e2e-functional && bash billing-tests/run-all-billing.sh`
+
+---
+
 ### Session 21 | Claude (opus) | Phase 16 Complete + Chiado Deploy + Relay + E2E Plan
 
 **Branch:** `main`

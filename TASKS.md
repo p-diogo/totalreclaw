@@ -33,6 +33,7 @@
 | Phase 12 | MVP Polish & Ship | IN PROGRESS — /v1/ prefix, /export pagination, DB backup, OpenAPI, rate limit observability |
 | Phase 15 | E2E Functional Test Suite | COMPLETED — 66/66 assertions, 5 instances, 8 scenarios (A-H) |
 | Phase 16 | Gnosis Go-Live (Billing + Deploy) | COMPLETED — 6/6 tasks. Billing, deploy, recall fix, paymaster, Chiado deploy + gas validation |
+| Phase 17 | E2E Integration Tests v2 (Relay + Billing) | COMPLETED — 130/130 assertions, 7 journeys + edge cases, all Tier 1 tests pass |
 | PoC v2 | LSH + Semantic Search | COMPLETED — 122 tests, local embeddings, BM25/cosine/RRF reranking |
 | Benchmark | 5-Way Memory Comparison | COMPLETED — 5-way benchmark done, retrieval improvements validated (+48% semantic recall) |
 | LSH Tuning Spec | Multi-Tenant SaaS LSH Guidance | COMPLETED — `docs/specs/totalreclaw/lsh-tuning.md` |
@@ -545,6 +546,29 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ---
 
+## Phase 17: E2E Integration Tests v2 (Relay + Billing) — IN PROGRESS
+
+**Spec:** `docs/specs/totalreclaw/e2e-test-plan-v2.md`
+**Branch:** `feature/subgraph`
+**Goal:** Extend E2E functional test suite with Tier 1 mock tests covering relay, paymaster, billing (Stripe + Coinbase), free tier limits, unauthorized access, cross-device recovery, and full pipeline flows.
+
+**Test infrastructure needed:**
+- Mock relay + billing endpoints (extend `tests/e2e-functional/mock-server.ts` or `mock-subgraph.ts`)
+- In-memory subscription store (free/pro tier state)
+- New instance configs: `relay-free`, `relay-paid-stripe`, `relay-paid-crypto`
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T370 | Mock billing + relay infrastructure | completed | session-22 | — | mock-billing-server.ts + inline mocks per journey |
+| T371 | Journey A tests (free tier) | completed | session-22 | T370 | 7/7 PASS: T-A01 through T-A07 |
+| T372 | Journey B + C tests (Stripe + Coinbase paid) | completed | session-22 | T370 | B: 8/8, C: 8/8 PASS |
+| T373 | Journey D tests (unauthorized / attack) | completed | session-22 | T370 | 15/15 PASS: T-D01 through T-D15 |
+| T374 | Journey E + F + G tests (recovery, agent UX, relay pipeline) | completed | session-22 | T370 | E: 23/23, F: 24/24, G: 11/11 PASS |
+| T375 | Edge case tests + unified runner | completed | session-22 | T371-T374 | 34/34 PASS + run-all-billing.sh |
+| T376 | Run full suite: all journeys pass | completed | session-22 | T375 | **130/130 assertions across 7 journeys + edge cases** |
+
+---
+
 ## Notes for Next Agent
 
 - **ROADMAP is in `docs/ROADMAP.md`** -- For the big picture (PoC -> MVP -> Subgraph -> TEE).
@@ -552,10 +576,11 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 - **Billing spec:** `docs/specs/subgraph/billing-and-onboarding.md` (v1.0) — full go-live architecture.
 - **Plans are in the `totalreclaw-internal` repo** -- `plans/` directory.
 
-### Current State (after Session 21 -- Phase 16 Implementation)
+### Current State (after Session 22 -- Phase 17 E2E Tests v2)
 
-- **Branch:** `main` (feature/subgraph merged in Session 20)
-- **Phase 16:** 5/6 tasks COMPLETED, T365 blocked on Chiado faucet CAPTCHA
+- **Branch:** `feature/subgraph`
+- **Phase 16:** COMPLETED (6/6). Chiado deployed, gas validated, billing + relay built.
+- **Phase 17:** IN PROGRESS — E2E integration tests v2 (relay + billing)
 - **Billing module:** `server/src/billing/` — Stripe + Coinbase Commerce, routes, models, migrations
 - **Paymaster decision:** Pimlico (60x cheaper than ZeroDev at our volumes). Report: `docs/specs/subgraph/paymaster-comparison.md`
 - **Deploy scripts:** Retargeted to Gnosis Chain + Chiado. `subgraph.yaml` defaults to `hardhat` for local dev, change to `gnosis` at deploy time.
@@ -603,11 +628,7 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 | Priority | Task | Notes |
 |----------|------|-------|
-| **HIGH** | Phase 16: Gnosis Go-Live (T360-T365) | Retarget to Gnosis, fix recall, paymaster eval, Stripe/Commerce |
-| **HIGH** | T361: Fix subgraph recall gap | Raise GRAPH_GRAPHQL_MAX_FIRST + pagination. Expected: 40.2%→~98% |
-| **HIGH** | T360: Retarget deploy scripts to Gnosis | Hardhat config, subgraph.yaml, deploy-contracts.sh |
-| **Medium** | T362: Evaluate Pimlico vs ZeroDev on Gnosis | Webhook policy support, billing, developer experience |
-| **Medium** | T363-T364: Stripe + Coinbase Commerce integration | Payment webhooks, subscription table |
+| **HIGH** | MCP onboarding implementation | Spec at `docs/specs/totalreclaw/mcp-onboarding.md` — needs user decision on approach |
 | **Medium** | Phase 14 T323-T326: Ranking quality improvements | importance/recency signals, cosine threshold, query intent |
 | **Medium** | Merge/PR decision for feature/subgraph | Branch includes subgraph v2 + E2E tests + billing spec |
 | **Pending** | T327-T328: Search efficiency (relevance gating) | Implement unused autoExtractEveryTurns config |
@@ -617,6 +638,8 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ### Session History
 
+- **Session 22:** Phase 17 E2E billing/relay tests — **130/130 assertions pass** across 7 journeys (A-G) + edge cases. 11 test files, 3 parallel agents in worktrees, code review + integration fixes. Full Tier 1 mock coverage: free tier limits, Stripe/Coinbase lifecycle, unauthorized access, cross-device recovery, agent UX hooks, full Pimlico relay pipeline.
+- **Session 21:** Phase 16 implementation — 6/6 tasks. Gnosis retarget, recall fix (PAGE_SIZE 1000→5000), Pimlico chosen (60x cheaper), Stripe + Coinbase billing, Chiado deploy ($0.00049/fact), E2E test plan + MCP onboarding design.
 - **Session 20:** Billing & go-live architecture brainstorm. Decided: Gnosis Chain ($0.00076/fact, xDAI stablecoin, Graph indexing rewards), Pimlico/ZeroDev paymaster (webhook gating), Stripe + Coinbase Commerce payments, wallet-signature auth. Created `docs/specs/subgraph/billing-and-onboarding.md` (v1.0). Updated ROADMAP Phase 3. Research: 15+ chains compared, alt-DA disqualified (data pruning), custom data services rejected (Horizon not ready). Phase 16 tasks T360-T365 defined.
 - **Session 19:** E2E functional test suite — **66/66 assertions PASS** across 5 instances, 8 scenarios (A-H). Part 1 (haiku): Fixed @noble/hashes import paths, CREDENTIALS_PATH configurable, __resetForTesting() enhanced, mock-server.ts created, run-all.ts integrated. Part 2 (opus): Fixed baseline assertion failures, Scenario H (30 Alex Chen messages, Anthropic SDK mock), mock-subgraph.ts (relay + GraphQL), cache assertions mode-agnostic, TWO_TIER_SEARCH=false for subgraph, pagination assertion conditional, relaxed greeting for small datasets. All instances pass: server-improved 19/19, server-baseline 16/16, subgraph-improved 18/18, subgraph-baseline 9/9, server-recency 4/4.
 - **Session 18:** Completed E2E plan Tasks 5/7/8 (PG metrics, scaling analysis, comprehensive report). Fixed scaling-analysis.ts (PG parser, gas price 0.05→0.001 gwei). Deep research: Graph Node limits (GRAPH_GRAPHQL_MAX_FIRST configurable), Arbitrum Nova confirmed, graph-client pagination limitation. Competitive analysis (Mem0, Supermemory, etc.). Skill hook audit. Created retrieval-improvements-v3.md (20 improvements, 5 categories). Scaling: 38.8 indices/fact, $0.010/fact Base L2.
