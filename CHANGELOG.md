@@ -7,14 +7,30 @@
 
 ## 2026-03-04
 
-### Session 24 | Claude (opus) | LLM Auto-Detection Audit
+### Session 24 | Claude (opus) | LLM Audit + Merge + Repo Cleanup
 
-**Branch:** `feature/subgraph`
-**Result:** Audited `llm-client.ts`, `extractor.ts`, `embedding.ts`. **No code changes needed** — the architecture already auto-detects the user's LLM provider from OpenClaw config and reuses the agent's API key. Embeddings are fully local (ONNX).
+**Branch:** `main` (merged from `feature/subgraph`)
 
-**Fixes (docs only):**
-- `docs/analysis/gas-cost-extrapolation.md` — Removed non-existent `TOTALRECLAW_LLM_PROVIDER` env var reference, clarified auto-detection
-- `docs/guides/beta-tester-guide.md` — Rewrote prerequisites to say "no extra LLM config needed", removed manual API key setup instructions, marked `TOTALRECLAW_LLM_MODEL` as advanced/optional, updated provider keys section header
+**LLM Auto-Detection Audit:**
+- Audited `llm-client.ts`, `extractor.ts`, `embedding.ts` — no code changes needed
+- Auto-detects user's LLM provider from OpenClaw config, reuses agent's API key
+- Embeddings fully local (ONNX). No separate LLM config required.
+- Fixed docs: removed phantom `TOTALRECLAW_LLM_PROVIDER` ref, updated beta guide
+
+**Merge to main:**
+- Committed all session 23-24 work (33 files, 7205 insertions) directly to `main`
+- Includes: Phase 14 completion (T322/T325/T326/T329/T330), CI workflow, semantic dedup, beta guide, gas analysis, MCP/server/parity tests
+- `feature/subgraph` branch synced to match `main`
+
+**Repo Cleanup (10,463 lines deleted):**
+- Deleted `docs/handoff/` (3 superseded files)
+- Deleted `docs/poc-testing-guide.md` and `docs/nanoclaw-poc-testing-guide.md` (superseded by E2E suite)
+- Deleted `server/docs/deployment/` (duplicate of `docs/deployment/`)
+- Deleted stale subgraph test artifacts (9 files)
+- Fixed OpenMemory → TotalReclaw in `docs/deployment/backup-restore.md` (29 refs) and `cloudflare-setup.md` (3 refs)
+- Fixed `subgraph/subgraph.yaml` repo URL
+- Updated CLAUDE.md: spec status table, repo structure, current phase
+- Added `.gitignore` entries for test result artifacts
 
 ---
 
