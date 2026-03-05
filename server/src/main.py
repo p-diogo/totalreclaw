@@ -4,6 +4,7 @@ TotalReclaw Server - Main FastAPI Application.
 Zero-knowledge encrypted memory vault server for Phase 4.
 """
 import logging
+import re
 import uuid
 import time
 from contextlib import asynccontextmanager
@@ -25,7 +26,7 @@ from .handlers import (
     observability_router,
 )
 from .billing import billing_router
-from .relay import relay_api_router
+from .relay import relay_api_router, proxy_router
 from .metrics import record_request, get_metrics_response, update_db_pool_metrics
 from .middleware.rate_limit import RateLimitMiddleware
 
@@ -120,6 +121,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     try:
         # Initialize database
         logger.info("Initializing database connection...")
+        db_url = settings.database_url
+        # Redact password but show scheme + host for debugging
+        masked_url = re.sub(r'://[^@]+@', '://***:***@', db_url)
+        logger.info(f"Database URL: {masked_url}")
+        logger.info(f"Database URL scheme: {db_url.split('://')[0]}")
         await init_db(settings.database_url)
         logger.info("Database connected successfully")
     except Exception as e:
@@ -331,6 +337,7 @@ v1_router.include_router(relay_router)
 v1_router.include_router(observability_router)
 v1_router.include_router(billing_router)
 v1_router.include_router(relay_api_router)
+v1_router.include_router(proxy_router)
 app.include_router(v1_router)
 
 
