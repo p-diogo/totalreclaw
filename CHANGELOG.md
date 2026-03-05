@@ -7,6 +7,48 @@
 
 ## 2026-03-05
 
+### Session 28 | Claude (opus) | DB Usage Tracking, E2E Billing Tests, Graph Studio Deploy
+
+**Branch:** `main`
+**Phase 20:** 10/14 tasks completed
+
+**DB-Backed Usage Tracking (T600-T602):**
+- Replaced in-memory `_MonthlyUsageTracker` with PostgreSQL queries — writes and reads now tracked in DB
+- Consolidated `FREE_TIER_LIMIT` configuration — atomic increment on write, monthly reset when period changes
+- Added read tracking: `free_reads_used` + `free_reads_reset_at` columns added to subscriptions table
+- DB migration run on Railway production instance
+
+**E2E Billing Quota Tests (T621-T624):**
+- **19/19 tests pass** across 4 test scenarios:
+  - T621: Free tier quota enforcement (store N+1, verify 403, counter persists across restarts)
+  - T622: Quota exceeded -> upgrade flow (403 includes upgrade_url, status shows usage, upgrade returns checkout_url)
+  - T623: Dynamic limit change (80/100 -> change limit to 200 -> 120 more writes succeed, counter not reset)
+  - T624: Subscription upgrade bypasses free tier (Pro tier writes beyond free cap)
+
+**Subgraph Deployment (T640):**
+- Deployed subgraph to Graph Studio (Chiado testnet)
+- Slug: `total-reclaw-chiado`
+- Endpoint: `https://api.studio.thegraph.com/query/41768/total-reclaw-chiado/version/latest`
+
+**Infrastructure & Deployment (T641-T642):**
+- Domain CNAME `api.totalreclaw.xyz` already configured in Cloudflare — verified working
+- Set `CORS_ORIGINS=https://totalreclaw.xyz` for production
+- Railway env vars configured for all services
+- Railway CLI installed and project linked
+- Created deploy skill (`.claude/skills/deploy.md`)
+
+**Bug Fixes:**
+- Fixed URL references: `totalreclaw.com` -> `totalreclaw.xyz` throughout codebase
+- API smoke test confirmed: HTTP 200, healthy, v0.3.1
+
+**Remaining Phase 20 tasks (4):**
+- T610-T614: Self-hosted Alto bundler on Chiado (5 tasks, not started)
+- T620: E2E full pipeline (store -> chain -> subgraph -> recall)
+- T630: Update aa-provider-comparison.md
+- T643: Update beta tester guide with final config
+
+---
+
 ### Session 27 | Claude (opus) | MCP Onboarding Implementation + Railway Fix
 
 **Branch:** `main`

@@ -2,7 +2,7 @@
 
 > **Source of truth for all agents.** Read this file first. Claim tasks before starting work. Update status as you go.
 
-**Last updated:** 2026-03-05 (session 27 — Phase 19 complete 10/10, Phase 20 planned)
+**Last updated:** 2026-03-05 (session 28 — Phase 20 in progress 10/14)
 **Roadmap:** See `docs/ROADMAP.md` for the full product roadmap.
 
 ---
@@ -37,6 +37,7 @@
 | Phase 17 | E2E Integration Tests v2 (Relay + Billing) | COMPLETED — 130/130 assertions, 7 journeys + edge cases, all Tier 1 tests pass |
 | Phase 18 | Chiado Beta Launch | IN PROGRESS — Production on Chiado testnet + Graph Studio |
 | Phase 19 | MCP Onboarding + Railway Fix | COMPLETED — 10/10 tasks. Setup CLI, subgraph wiring, billing tools, Railway debug, AA cost analysis |
+| Phase 20 | Chiado MVP Production Readiness | IN PROGRESS — 10/14 tasks. DB usage tracking, E2E billing tests, Graph Studio deploy, domain + CORS |
 | PoC v2 | LSH + Semantic Search | COMPLETED — 122 tests, local embeddings, BM25/cosine/RRF reranking |
 | Benchmark | 5-Way Memory Comparison | COMPLETED — 5-way benchmark done, retrieval improvements validated (+48% semantic recall) |
 | LSH Tuning Spec | Multi-Tenant SaaS LSH Guidance | COMPLETED — `docs/specs/totalreclaw/lsh-tuning.md` |
@@ -727,7 +728,7 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 ---
 
-## Phase 20: Chiado MVP Production Readiness — PLANNED
+## Phase 20: Chiado MVP Production Readiness — IN PROGRESS (10/14)
 
 **Goal:** DB-backed usage tracking, self-hosted Alto bundler, E2E testing of full pipeline, deploy to Chiado testnet for beta testers.
 **Decision:** Self-hosted Alto on Gnosis from day one (skip CDP). Cost: ~$0.00076/op + $5-30/mo infra.
@@ -737,9 +738,9 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 | ID | Task | Status | Owner | Depends | Notes |
 |----|------|--------|-------|---------|-------|
-| T600 | Replace in-memory `_MonthlyUsageTracker` with PostgreSQL queries | pending | — | — | Use `subscriptions.free_writes_used` + `free_writes_reset_at`. Atomic increment on write. Monthly reset when period changes. |
-| T601 | Wire GET /v1/billing/status to real DB counts | pending | — | T600 | Return actual `free_writes_used` from DB + current `FREE_TIER_WRITES_PER_MONTH` from env. |
-| T602 | Add `user_usage` table for read tracking | pending | — | T600 | Separate from subscriptions. Schema: `(user_id, period, read_count, write_count)`. |
+| T600 | Replace in-memory `_MonthlyUsageTracker` with PostgreSQL queries | completed | session-28 | — | Replaced in-memory tracker with PostgreSQL. Consolidated FREE_TIER_LIMIT. Atomic increment + monthly reset. |
+| T601 | Wire GET /v1/billing/status to real DB counts | completed | session-28 | T600 | Billing status now returns actual DB counts + env var limits. |
+| T602 | Add `user_usage` table for read tracking | completed | session-28 | T600 | Added `free_reads_used` + `free_reads_reset_at` columns. DB migration run on Railway. |
 
 ### Part B: Self-Hosted Bundler (Alto on Chiado)
 
@@ -756,10 +757,10 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 | ID | Task | Status | Owner | Depends | Notes |
 |----|------|--------|-------|---------|-------|
 | T620 | E2E: Store memory → on-chain → subgraph index → recall | pending | — | T600, T610 | Full pipeline with mock bundler + mock subgraph. Verify protobuf, blind indices, encryption. |
-| T621 | E2E: Free tier quota enforcement | pending | — | T600 | Store N+1 facts where N=FREE_TIER_LIMIT. Verify 403 on N+1. Verify counter persists across "restarts". |
-| T622 | E2E: Quota exceeded → upgrade flow | pending | — | T621 | Verify 403 response includes upgrade_url. Verify totalreclaw_status shows usage. Verify totalreclaw_upgrade returns checkout_url. |
-| T623 | E2E: Dynamic limit change (100→200) | pending | — | T621 | User at 80/100 → change limit to 200 → user can write 120 more. Counter not reset. |
-| T624 | E2E: Subscription upgrade bypasses free tier | pending | — | T621 | Pro tier user has higher limit. Verify writes succeed beyond free tier cap. |
+| T621 | E2E: Free tier quota enforcement | completed | session-28 | T600 | 19/19 tests pass. Verifies 403 on N+1, counter persists across restarts. |
+| T622 | E2E: Quota exceeded → upgrade flow | completed | session-28 | T621 | Verifies 403 includes upgrade_url, status shows usage, upgrade returns checkout_url. |
+| T623 | E2E: Dynamic limit change (100→200) | completed | session-28 | T621 | User at 80/100 → limit to 200 → 120 more writes succeed. Counter not reset. |
+| T624 | E2E: Subscription upgrade bypasses free tier | completed | session-28 | T621 | Pro tier user writes beyond free tier cap. |
 
 ### Part D: Cost Analysis Update
 
@@ -771,14 +772,16 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 | ID | Task | Status | Owner | Depends | Notes |
 |----|------|--------|-------|---------|-------|
-| T640 | Deploy subgraph to Graph Studio | pending | — | — | Needs GRAPH_AUTH_TOKEN from @pdiogo |
-| T641 | Configure domain CNAME (api.totalreclaw.xyz → Railway) | pending | — | — | Cloudflare DNS |
-| T642 | Set CORS_ORIGINS for production | pending | — | T641 | `https://totalreclaw.xyz` |
+| T640 | Deploy subgraph to Graph Studio | completed | session-28 | — | Deployed. Endpoint: https://api.studio.thegraph.com/query/41768/total-reclaw-chiado/version/latest |
+| T641 | Configure domain CNAME (api.totalreclaw.xyz → Railway) | completed | session-28 | — | Already configured in Cloudflare. Verified working. |
+| T642 | Set CORS_ORIGINS for production | completed | session-28 | T641 | Set to `https://totalreclaw.xyz`. |
 | T643 | Update beta tester guide with final config | pending | — | T620 | After E2E validation passes |
 
 ---
 
 ### Session History
+
+- **Session 28:** Phase 20 progress (10/14). DB-backed usage tracking (T600-T602): replaced in-memory tracker with PostgreSQL, consolidated FREE_TIER_LIMIT, added read tracking. E2E billing quota tests (T621-T624): 19/19 pass. Subgraph deployed to Graph Studio (T640, slug: total-reclaw-chiado). Domain CNAME verified (T641), CORS set for production (T642). Railway env vars configured, DB migration run. Railway CLI installed + project linked. Deploy skill created. URL fix: totalreclaw.com -> totalreclaw.xyz. API smoke test: HTTP 200, healthy, v0.3.1.
 
 - **Session 27:** Phase 19 complete (10/10). MCP onboarding (setup CLI, subgraph wiring, billing tools, 7 tools, dual-mode), Railway DB URL logging, Railway CLI guide, AA provider comparison (13 providers, 739 lines). Phase 20 planned (DB usage tracking, self-hosted Alto, E2E testing).
 
