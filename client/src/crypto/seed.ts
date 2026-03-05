@@ -3,15 +3,17 @@
  *
  * The user's 12-word mnemonic is the ONLY secret. From it we derive:
  *   1. A private key (for signing UserOperations)
- *   2. An EOA address (for computing the Smart Account counterfactual address)
+ *   2. An EOA address (the owner of the Smart Account)
  *   3. An encryption key (for AES-256-GCM, same as Phase 1-2)
  *   4. An auth key (for HMAC operations, same as Phase 1-2)
+ *   5. A Smart Account address (deterministic ERC-4337 address, computed on-chain)
  *
  * Derivation:
  *   mnemonic -> BIP-39 seed (512 bits)
  *     -> BIP-32/44 derive m/44'/60'/0'/0/0 -> private key (256 bits) + EOA address
  *     -> HKDF(private_key, "totalreclaw-encryption-key-v1") -> encryption key (256 bits)
  *     -> HKDF(private_key, "totalreclaw-auth-key-v1") -> auth key (256 bits)
+ *     -> SimpleAccountFactory.getAddress(eoaAddress, 0) -> Smart Account address
  *
  * The encryption key derivation uses the SAME HKDF info strings as
  * client/src/crypto/kdf.ts so that the AES and blind-index modules work
@@ -28,17 +30,33 @@ import * as crypto from "crypto";
 export const DERIVATION_PATH = "m/44'/60'/0'/0/0";
 
 /**
+ * Default chain ID for Smart Account address computation.
+ * Chiado testnet (10200) for development, Gnosis mainnet (100) for production.
+ */
+export const DEFAULT_CHAIN_ID = 10200;
+
+/**
  * Keys derived from a BIP-39 mnemonic.
  */
 export interface SeedDerivedKeys {
   /** 32-byte private key for signing UserOperations */
   privateKey: Buffer;
-  /** Ethereum EOA address (checksummed hex) */
+  /** Ethereum EOA address (checksummed hex) -- the Smart Account owner */
   eoaAddress: string;
   /** 32-byte encryption key for AES-256-GCM (same usage as kdf.ts) */
   encryptionKey: Buffer;
   /** 32-byte auth key for HMAC operations (same usage as kdf.ts) */
   authKey: Buffer;
+  /**
+   * ERC-4337 Smart Account address (checksummed hex).
+   * Deterministic CREATE2 address from SimpleAccountFactory v0.7.
+   * This is the on-chain identity for the user's encrypted memory vault.
+   *
+   * Computed via an RPC call to the factory's getAddress() view function.
+   * Requires network connectivity. If computed offline (no RPC), this will
+   * be undefined.
+   */
+  smartAccountAddress: string;
 }
 
 /**
@@ -70,14 +88,19 @@ export function validateMnemonic(mnemonic: string): boolean {
  * This is the primary entry point for the seed path. It produces all the
  * keys needed for TotalReclaw operations:
  *   - privateKey: for signing ERC-4337 UserOperations
- *   - eoaAddress: for computing the Smart Account counterfactual address
+ *   - eoaAddress: the EOA that owns the Smart Account
  *   - encryptionKey: for AES-256-GCM encryption (identical to kdf.ts output)
  *   - authKey: for HMAC authentication (identical to kdf.ts output)
+ *   - smartAccountAddress: deterministic ERC-4337 Smart Account address
  *
  * @param mnemonic - 12-word BIP-39 mnemonic
- * @returns All derived keys
+ * @param chainId - Chain ID for Smart Account address computation (default: 10200 Chiado)
+ * @returns All derived keys including the Smart Account address
  */
-export async function mnemonicToKeys(mnemonic: string): Promise<SeedDerivedKeys> {
+export async function mnemonicToKeys(
+  mnemonic: string,
+  chainId: number = DEFAULT_CHAIN_ID
+): Promise<SeedDerivedKeys> {
   if (!validateMnemonic(mnemonic)) {
     throw new Error("Invalid BIP-39 mnemonic");
   }
@@ -120,11 +143,20 @@ export async function mnemonicToKeys(mnemonic: string): Promise<SeedDerivedKeys>
     32
   );
 
+  // Step 5: Compute the Smart Account address via the factory's getAddress()
+  // This is a view call (no gas), but requires RPC connectivity.
+  const { getSmartAccountAddress } = await import("../userop/builder");
+  const smartAccountAddress = await getSmartAccountAddress(
+    eoaAddress as `0x${string}`,
+    chainId,
+  );
+
   return {
     privateKey,
     eoaAddress,
     encryptionKey,
     authKey,
+    smartAccountAddress,
   };
 }
 
@@ -132,23 +164,42 @@ export async function mnemonicToKeys(mnemonic: string): Promise<SeedDerivedKeys>
  * Compute the Smart Account counterfactual address from a mnemonic.
  *
  * This is a convenience function for the recovery flow. The Smart Account
- * address is deterministic given the EOA address and the account factory.
+ * address is deterministic: same mnemonic + same chain = same address,
+ * regardless of whether the account has been deployed on-chain yet.
  *
- * For the PoC, this returns the EOA address. In production, use the
- * Pimlico/ZeroDev SDK to compute the counterfactual Smart Account address
- * from the EOA + factory + salt.
+ * Uses the canonical SimpleAccountFactory v0.7 getAddress() view function.
+ * Requires RPC connectivity (but no gas -- it's a view call).
  *
  * @param mnemonic - 12-word BIP-39 mnemonic
- * @returns Smart Account address (hex string)
+ * @param chainId - Chain ID (default: 10200 for Chiado, 100 for Gnosis)
+ * @returns Smart Account address (checksummed hex string)
  */
 export async function mnemonicToSmartAccountAddress(
-  mnemonic: string
+  mnemonic: string,
+  chainId: number = DEFAULT_CHAIN_ID
 ): Promise<string> {
-  const keys = await mnemonicToKeys(mnemonic);
-  // TODO: Replace with actual Smart Account counterfactual address computation
-  // using Pimlico SDK: toSimpleSmartAccount({ client, owner: eoaAddress, ... })
-  // For PoC, we use the EOA address directly.
-  return keys.eoaAddress;
+  if (!validateMnemonic(mnemonic)) {
+    throw new Error("Invalid BIP-39 mnemonic");
+  }
+
+  // Derive the EOA address from the mnemonic (no RPC needed for this step)
+  const seed = bip39.mnemonicToSeedSync(mnemonic);
+  const { HDKey, privateKeyToAccount } = await import("viem/accounts");
+  const hdKey = HDKey.fromMasterSeed(seed);
+  const derived = hdKey.derive(DERIVATION_PATH);
+
+  if (!derived.privateKey) {
+    throw new Error("Failed to derive private key from seed");
+  }
+
+  const privateKey = Buffer.from(derived.privateKey);
+  const account = privateKeyToAccount(
+    `0x${privateKey.toString("hex")}` as `0x${string}`
+  );
+
+  // Compute the Smart Account address via the factory
+  const { getSmartAccountAddress } = await import("../userop/builder");
+  return getSmartAccountAddress(account.address, chainId);
 }
 
 /**

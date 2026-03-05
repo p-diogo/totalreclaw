@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "totalreclaw-mcp": "dist/index.js"
+    "totalreclaw-mcp": "dist/index.js",
+    "totalreclaw-setup": "dist/cli/setup.js"
   },
   "scripts": {
     "build": "tsc",
@@ -13,7 +14,8 @@
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",
     "clean": "rm -rf dist",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "setup": "node dist/cli/setup.js"
   },
   "keywords": [
     "totalreclaw",
@@ -25,18 +27,24 @@
   "author": "TotalReclaw Team",
   "license": "MIT",
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@totalreclaw/client": "file:../client"
+    "@noble/hashes": "^2.0.1",
+    "@scure/bip39": "^2.0.1",
+    "@totalreclaw/client": "file:../client",
+    "permissionless": "^0.3.4",
+    "porter-stemmer": "^0.9.1",
+    "viem": "^2.47.0"
   },
   "devDependencies": {
-    "typescript": "^5.3.0",
-    "@types/node": "^20.11.0",
-    "jest": "^29.7.0",
     "@types/jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
+    "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
-    "eslint": "^8.56.0"
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0"

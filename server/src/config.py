@@ -54,14 +54,23 @@ class Settings(BaseSettings):
     # ERC-4337 / Pimlico configuration (Phase 3 — Subgraph)
     pimlico_api_key: str = ""
     pimlico_webhook_secret: str = ""
-    pimlico_chain_id: int = 100  # Gnosis mainnet (100), Chiado testnet (10200)
-    pimlico_bundler_url: str = "https://api.pimlico.io/v2/100/rpc"  # Gnosis Chain
+    pimlico_chain_id: int = 10200  # Chiado testnet (10200), Gnosis mainnet (100)
+    pimlico_bundler_url: str = "https://api.pimlico.io/v2/10200/rpc"  # Chiado testnet
     data_edge_address: str = ""  # Set after deployment
     entry_point_address: str = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"  # ERC-4337 v0.7
 
     # Relay rate limiting (per Smart Account address)
     relay_rate_limit_ops: int = 100
     relay_rate_limit_window_seconds: int = 3600
+
+    # Subgraph endpoint (Graph Studio URL, set after deployment)
+    subgraph_endpoint: str = ""
+
+    # Proxy tier limits (per calendar month, per user)
+    free_tier_writes_per_month: int = 100
+    free_tier_reads_per_month: int = 1000
+    pro_tier_writes_per_month: int = 10000
+    pro_tier_reads_per_month: int = 100000
 
     # Stripe configuration (fiat payments)
     stripe_price_id: str = ""

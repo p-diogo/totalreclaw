@@ -1,12 +1,17 @@
 /**
- * Subgraph store path — writes facts on-chain via ERC-4337 UserOps.
+ * TotalReclaw MCP - Subgraph store path
  *
- * Used when TOTALRECLAW_SUBGRAPH_MODE=true. Replaces the HTTP POST
+ * Writes facts on-chain via ERC-4337 UserOps.
+ *
+ * Used when subgraph mode is enabled. Replaces the HTTP POST
  * to /v1/store with an on-chain transaction flow.
  *
  * Builds UserOps client-side using `permissionless` + `viem` and submits
  * them through the TotalReclaw relay server, which proxies bundler/paymaster
  * JSON-RPC to Pimlico with its own API key. Clients never need a Pimlico key.
+ *
+ * Adapted from skill/plugin/subgraph-store.ts for the MCP server context.
+ * Config can be injected directly (for MCP server state) or read from env vars.
  */
 
 import { createPublicClient, http, type Hex, type Address, type Chain } from 'viem';
@@ -141,7 +146,7 @@ export function encodeVarint(value: number): Buffer {
 // ---------------------------------------------------------------------------
 
 /** Resolve a viem Chain object from chain ID */
-function getChainFromId(chainId: number): Chain {
+export function getChainFromId(chainId: number): Chain {
   switch (chainId) {
     case 100:
       return gnosis;
@@ -153,7 +158,7 @@ function getChainFromId(chainId: number): Chain {
 }
 
 /** Build the relay bundler RPC URL from the relay server URL */
-function getRelayBundlerUrl(relayUrl: string): string {
+export function getRelayBundlerUrl(relayUrl: string): string {
   return `${relayUrl}/v1/bundler`;
 }
 
@@ -179,11 +184,11 @@ export async function submitFactOnChain(
   config: SubgraphStoreConfig,
 ): Promise<{ txHash: string; userOpHash: string; success: boolean }> {
   if (!config.relayUrl) {
-    throw new Error('Relay URL (TOTALRECLAW_SERVER_URL) is required for on-chain submission');
+    throw new Error('Relay URL is required for on-chain submission');
   }
 
   if (!config.mnemonic) {
-    throw new Error('Mnemonic (TOTALRECLAW_MASTER_PASSWORD) is required for on-chain submission');
+    throw new Error('Mnemonic is required for on-chain submission');
   }
 
   const chain = getChainFromId(config.chainId);
@@ -212,6 +217,7 @@ export async function submitFactOnChain(
 
   // 4. Create a SimpleSmartAccount (auto-generates initCode if undeployed)
   const smartAccount = await toSimpleSmartAccount({
+    // @ts-ignore - viem/permissionless type intersection conflict
     client: publicClient,
     owner: ownerAccount,
     entryPoint: {
@@ -241,7 +247,7 @@ export async function submitFactOnChain(
   const calldata = `0x${protobufPayload.toString('hex')}` as Hex;
 
   // Use sendUserOperation to get the userOpHash, then wait for receipt
-  const userOpHash = await smartAccountClient.sendUserOperation({
+  const userOpHash = await (smartAccountClient as any).sendUserOperation({
     calls: [
       {
         to: dataEdgeAddress,
@@ -269,13 +275,18 @@ export async function submitFactOnChain(
 
 /**
  * Check if subgraph mode is enabled.
+ *
+ * Checks the environment variable by default. Can be overridden by passing
+ * an explicit value (useful when MCP server manages its own config state).
  */
-export function isSubgraphMode(): boolean {
+export function isSubgraphMode(override?: boolean): boolean {
+  if (override !== undefined) return override;
   return process.env.TOTALRECLAW_SUBGRAPH_MODE === 'true';
 }
 
 /**
- * Get subgraph configuration from environment variables.
+ * Get subgraph configuration from environment variables, with optional
+ * overrides for constructor injection from MCP server state.
  *
  * After the relay refactor, clients only need:
  *   - TOTALRECLAW_MASTER_PASSWORD -- BIP-39 mnemonic
@@ -286,9 +297,12 @@ export function isSubgraphMode(): boolean {
  * Removed from client-side config (now server-side only):
  *   - PIMLICO_API_KEY
  *   - TOTALRECLAW_SUBGRAPH_ENDPOINT
+ *
+ * @param overrides - Optional partial config to override env var values.
+ *                    Useful for MCP server injecting config from its state.
  */
-export function getSubgraphConfig(): SubgraphStoreConfig {
-  return {
+export function getSubgraphConfig(overrides?: Partial<SubgraphStoreConfig>): SubgraphStoreConfig {
+  const envConfig: SubgraphStoreConfig = {
     relayUrl: process.env.TOTALRECLAW_SERVER_URL || 'http://localhost:8000',
     mnemonic: process.env.TOTALRECLAW_MASTER_PASSWORD || '',
     cachePath: process.env.TOTALRECLAW_CACHE_PATH || `${process.env.HOME}/.totalreclaw/cache.enc`,
@@ -296,4 +310,10 @@ export function getSubgraphConfig(): SubgraphStoreConfig {
     dataEdgeAddress: process.env.TOTALRECLAW_DATA_EDGE_ADDRESS || DEFAULT_DATA_EDGE_ADDRESS,
     entryPointAddress: process.env.TOTALRECLAW_ENTRYPOINT_ADDRESS || DEFAULT_ENTRYPOINT_ADDRESS,
   };
+
+  if (overrides) {
+    return { ...envConfig, ...overrides };
+  }
+
+  return envConfig;
 }

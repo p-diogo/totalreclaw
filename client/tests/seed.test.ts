@@ -4,10 +4,29 @@ import {
   mnemonicToSmartAccountAddress,
   validateMnemonic,
   DERIVATION_PATH,
+  DEFAULT_CHAIN_ID,
 } from "../src/crypto/seed";
 
+// Mock the getSmartAccountAddress function to avoid RPC calls in tests.
+// Returns a deterministic address based on the owner address for test isolation.
+jest.mock("../src/userop/builder", () => ({
+  ...jest.requireActual("../src/userop/builder"),
+  getSmartAccountAddress: jest.fn(
+    async (ownerAddress: string, _chainId: number) => {
+      // Return a deterministic mock Smart Account address derived from the owner.
+      // This mimics the real behavior: same owner -> same Smart Account address.
+      const crypto = require("crypto");
+      const hash = crypto
+        .createHash("sha256")
+        .update(ownerAddress)
+        .digest("hex");
+      return ("0x" + hash.slice(0, 40)) as `0x${string}`;
+    }
+  ),
+}));
+
 describe("Seed Module", () => {
-  // Known test vector — DO NOT use this mnemonic for real funds
+  // Known test vector -- DO NOT use this mnemonic for real funds
   const TEST_MNEMONIC =
     "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
@@ -36,7 +55,9 @@ describe("Seed Module", () => {
     });
 
     it("should reject invalid mnemonic", () => {
-      expect(validateMnemonic("not a valid mnemonic phrase at all")).toBe(false);
+      expect(validateMnemonic("not a valid mnemonic phrase at all")).toBe(
+        false
+      );
     });
 
     it("should reject empty string", () => {
@@ -72,6 +93,17 @@ describe("Seed Module", () => {
       expect(keys.eoaAddress).toMatch(/^0x[0-9a-fA-F]{40}$/);
     });
 
+    it("should derive a Smart Account address (20 bytes hex)", async () => {
+      const keys = await mnemonicToKeys(TEST_MNEMONIC);
+      expect(keys.smartAccountAddress).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    });
+
+    it("should derive different EOA and Smart Account addresses", async () => {
+      const keys = await mnemonicToKeys(TEST_MNEMONIC);
+      // The Smart Account address is a CREATE2 deployment, not the EOA itself
+      expect(keys.smartAccountAddress).not.toEqual(keys.eoaAddress);
+    });
+
     it("should be deterministic (same mnemonic = same keys)", async () => {
       const keys1 = await mnemonicToKeys(TEST_MNEMONIC);
       const keys2 = await mnemonicToKeys(TEST_MNEMONIC);
@@ -79,6 +111,7 @@ describe("Seed Module", () => {
       expect(keys1.authKey.equals(keys2.authKey)).toBe(true);
       expect(keys1.privateKey.equals(keys2.privateKey)).toBe(true);
       expect(keys1.eoaAddress).toEqual(keys2.eoaAddress);
+      expect(keys1.smartAccountAddress).toEqual(keys2.smartAccountAddress);
     });
 
     it("should derive different keys for different mnemonics", async () => {
@@ -97,6 +130,11 @@ describe("Seed Module", () => {
       await expect(mnemonicToKeys("invalid mnemonic")).rejects.toThrow(
         "Invalid BIP-39 mnemonic"
       );
+    });
+
+    it("should accept a custom chainId parameter", async () => {
+      const keys = await mnemonicToKeys(TEST_MNEMONIC, 100);
+      expect(keys.smartAccountAddress).toMatch(/^0x[0-9a-fA-F]{40}$/);
     });
   });
 
@@ -117,6 +155,23 @@ describe("Seed Module", () => {
       const m2 = "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong";
       const a2 = await mnemonicToSmartAccountAddress(m2);
       expect(a1).not.toEqual(a2);
+    });
+
+    it("should throw for invalid mnemonic", async () => {
+      await expect(
+        mnemonicToSmartAccountAddress("invalid mnemonic")
+      ).rejects.toThrow("Invalid BIP-39 mnemonic");
+    });
+
+    it("should accept a custom chainId parameter", async () => {
+      const addr = await mnemonicToSmartAccountAddress(TEST_MNEMONIC, 100);
+      expect(addr).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    });
+  });
+
+  describe("DEFAULT_CHAIN_ID", () => {
+    it("should be Chiado testnet (10200)", () => {
+      expect(DEFAULT_CHAIN_ID).toBe(10200);
     });
   });
 

@@ -118,6 +118,45 @@ CREATE TRIGGER trigger_facts_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
 
+-- ============ Subscriptions Table ============
+-- Tracks subscription state per wallet address (billing tier, Stripe IDs, free-tier usage)
+-- See also: database/migrations/001_subscriptions.sql
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+    wallet_address      TEXT PRIMARY KEY,
+    tier                TEXT NOT NULL DEFAULT 'free',            -- 'free' | 'pro'
+    source              TEXT,                                    -- 'stripe' | 'coinbase_commerce'
+    stripe_id           TEXT,                                    -- Stripe Subscription ID (sub_xxx)
+    stripe_customer_id  TEXT,                                    -- Stripe Customer ID (cus_xxx)
+    coinbase_id         TEXT,                                    -- Coinbase Commerce charge ID (future)
+    expires_at          TIMESTAMPTZ,                             -- NULL for free tier
+    free_writes_used    INTEGER NOT NULL DEFAULT 0,
+    free_writes_reset_at TIMESTAMPTZ,                            -- Last monthly counter reset
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Index for Stripe subscription lookups (webhook handler)
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_id
+    ON subscriptions (stripe_id)
+    WHERE stripe_id IS NOT NULL;
+
+-- Index for Stripe customer lookups (checkout reuse)
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_customer
+    ON subscriptions (stripe_customer_id)
+    WHERE stripe_customer_id IS NOT NULL;
+
+-- Index for Coinbase Commerce charge lookups (webhook reconciliation)
+CREATE INDEX IF NOT EXISTS idx_subscriptions_coinbase_id
+    ON subscriptions (coinbase_id)
+    WHERE coinbase_id IS NOT NULL;
+
+-- Apply updated_at trigger to subscriptions table
+CREATE OR REPLACE TRIGGER trigger_subscriptions_updated_at
+    BEFORE UPDATE ON subscriptions
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
 -- ============ Cleanup Job (Optional) ============
 -- For production, set up pg_cron or external job to:
 -- 1. DELETE FROM tombstones WHERE deleted_at < NOW() - INTERVAL '30 days'

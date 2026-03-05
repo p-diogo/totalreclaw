@@ -1,14 +1,20 @@
 /**
- * Subgraph search path — queries facts via GraphQL hash_in.
+ * TotalReclaw MCP - Subgraph search path
  *
- * Used when TOTALRECLAW_SUBGRAPH_MODE=true. Replaces the HTTP POST
+ * Queries facts via GraphQL hash_in through the relay server.
+ *
+ * Used when subgraph mode is enabled. Replaces the HTTP POST
  * to /v1/search with a GraphQL query to the subgraph via the relay server.
  *
  * The relay server proxies GraphQL queries to Graph Studio with its own
  * API key at `${relayUrl}/v1/subgraph`. Clients never need a subgraph endpoint.
  *
+ * Adapted from skill/plugin/subgraph-search.ts for the MCP server context.
+ * Accepts relay URL as a parameter (not just env var) so the MCP server can
+ * pass its configured URL.
+ *
  * Improvements (v3):
- *   A1: blindIndices → blindIndexes (Graph Node pluralization)
+ *   A1: blindIndices -> blindIndexes (Graph Node pluralization)
  *   A2: Small parallel batches (5 trapdoors each) for recall
  *   A3: orderBy: id, orderDirection: desc (recency proxy)
  *   A4: Cursor-based pagination for saturated batches
@@ -17,7 +23,7 @@
  *         (fact_: { isActive: true }) + client-side safety net
  */
 
-import { getSubgraphConfig } from './subgraph-store.js';
+import { getSubgraphConfig } from './store.js';
 
 export interface SubgraphSearchFact {
   id: string;
@@ -29,8 +35,8 @@ export interface SubgraphSearchFact {
 }
 
 /** Small batches so rare trapdoor matches aren't drowned by common ones. */
-const TRAPDOOR_BATCH_SIZE = parseInt(process.env.TOTALRECLAW_TRAPDOOR_BATCH_SIZE ?? '5', 10);
-const PAGE_SIZE = parseInt(process.env.TOTALRECLAW_SUBGRAPH_PAGE_SIZE ?? '5000', 10);
+const DEFAULT_TRAPDOOR_BATCH_SIZE = 5;
+const DEFAULT_PAGE_SIZE = 5000;
 
 /**
  * Execute a single GraphQL query against the subgraph endpoint.
@@ -128,20 +134,30 @@ interface SearchResponse {
  *      paginate that chunk using id_gt cursor until exhausted or
  *      maxCandidates reached.
  *   4. Dedup across all chunks by fact id.
+ *
+ * @param owner         - Smart Account address (hex)
+ * @param trapdoors     - Blind index hashes to search for
+ * @param maxCandidates - Maximum number of candidate facts to return
+ * @param relayUrl      - Optional relay URL override. If not provided,
+ *                        falls back to getSubgraphConfig().relayUrl.
  */
 export async function searchSubgraph(
   owner: string,
   trapdoors: string[],
   maxCandidates: number,
+  relayUrl?: string,
 ): Promise<SubgraphSearchFact[]> {
-  const config = getSubgraphConfig();
-  const subgraphUrl = `${config.relayUrl}/v1/subgraph`;
+  const effectiveRelayUrl = relayUrl ?? getSubgraphConfig().relayUrl;
+  const subgraphUrl = `${effectiveRelayUrl}/v1/subgraph`;
   const allResults = new Map<string, SubgraphSearchFact>();
+
+  const trapdoorBatchSize = parseInt(process.env.TOTALRECLAW_TRAPDOOR_BATCH_SIZE ?? String(DEFAULT_TRAPDOOR_BATCH_SIZE), 10);
+  const pageSize = parseInt(process.env.TOTALRECLAW_SUBGRAPH_PAGE_SIZE ?? String(DEFAULT_PAGE_SIZE), 10);
 
   // Split trapdoors into small chunks for parallel dispatch.
   const chunks: string[][] = [];
-  for (let i = 0; i < trapdoors.length; i += TRAPDOOR_BATCH_SIZE) {
-    chunks.push(trapdoors.slice(i, i + TRAPDOOR_BATCH_SIZE));
+  for (let i = 0; i < trapdoors.length; i += trapdoorBatchSize) {
+    chunks.push(trapdoors.slice(i, i + trapdoorBatchSize));
   }
 
   // Phase 1: Parallel initial queries (one per chunk).
@@ -150,7 +166,7 @@ export async function searchSubgraph(
       const data = await gqlQuery<SearchResponse>(
         subgraphUrl,
         SEARCH_QUERY,
-        { trapdoors: chunk, owner, first: PAGE_SIZE },
+        { trapdoors: chunk, owner, first: pageSize },
       );
       return { chunk, entries: data?.blindIndexes ?? [] };
     }),
@@ -166,7 +182,7 @@ export async function searchSubgraph(
         allResults.set(entry.fact.id, entry.fact);
       }
     }
-    if (entries.length >= PAGE_SIZE) {
+    if (entries.length >= pageSize) {
       saturatedChunks.push(chunk);
     }
   }
@@ -184,7 +200,7 @@ export async function searchSubgraph(
       const data = await gqlQuery<SearchResponse>(
         subgraphUrl,
         PAGINATE_QUERY,
-        { trapdoors: chunk, owner, first: PAGE_SIZE, lastId },
+        { trapdoors: chunk, owner, first: pageSize, lastId },
       );
 
       const entries = data?.blindIndexes ?? [];
@@ -198,7 +214,7 @@ export async function searchSubgraph(
       }
 
       // If we got fewer than PAGE_SIZE, this chunk is exhausted.
-      if (entries.length < PAGE_SIZE) break;
+      if (entries.length < pageSize) break;
 
       lastId = entries[entries.length - 1].id;
     }
@@ -211,10 +227,18 @@ export async function searchSubgraph(
  * Get fact count from the subgraph for dynamic pool sizing.
  * Uses the globalStates entity for a lightweight single-row lookup
  * instead of fetching and counting individual fact IDs.
+ *
+ * @param owner    - Smart Account address (hex) — currently unused by globalStates
+ *                   (which is aggregate), but kept for API consistency.
+ * @param relayUrl - Optional relay URL override. If not provided,
+ *                   falls back to getSubgraphConfig().relayUrl.
  */
-export async function getSubgraphFactCount(owner: string): Promise<number> {
-  const config = getSubgraphConfig();
-  const subgraphUrl = `${config.relayUrl}/v1/subgraph`;
+export async function getSubgraphFactCount(
+  owner: string,
+  relayUrl?: string,
+): Promise<number> {
+  const effectiveRelayUrl = relayUrl ?? getSubgraphConfig().relayUrl;
+  const subgraphUrl = `${effectiveRelayUrl}/v1/subgraph`;
 
   // globalStates is a singleton entity (id: "global") with aggregate counters.
   // It is NOT per-owner — it tracks totals across the entire subgraph.

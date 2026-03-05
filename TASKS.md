@@ -2,7 +2,7 @@
 
 > **Source of truth for all agents.** Read this file first. Claim tasks before starting work. Update status as you go.
 
-**Last updated:** 2026-03-03 (session 20 — billing & go-live architecture)
+**Last updated:** 2026-03-05 (session 27 — Phase 19 complete 10/10, Phase 20 planned)
 **Roadmap:** See `docs/ROADMAP.md` for the full product roadmap.
 
 ---
@@ -35,6 +35,8 @@
 | Phase 16 | Gnosis Go-Live (Billing + Deploy) | COMPLETED — 6/6 tasks. Billing, deploy, recall fix, paymaster, Chiado deploy + gas validation |
 | Phase 14 | Retrieval Improvements v3 | MOSTLY COMPLETE — 13/13 tasks done (T331-T332 deferred to future). |
 | Phase 17 | E2E Integration Tests v2 (Relay + Billing) | COMPLETED — 130/130 assertions, 7 journeys + edge cases, all Tier 1 tests pass |
+| Phase 18 | Chiado Beta Launch | IN PROGRESS — Production on Chiado testnet + Graph Studio |
+| Phase 19 | MCP Onboarding + Railway Fix | COMPLETED — 10/10 tasks. Setup CLI, subgraph wiring, billing tools, Railway debug, AA cost analysis |
 | PoC v2 | LSH + Semantic Search | COMPLETED — 122 tests, local embeddings, BM25/cosine/RRF reranking |
 | Benchmark | 5-Way Memory Comparison | COMPLETED — 5-way benchmark done, retrieval improvements validated (+48% semantic recall) |
 | LSH Tuning Spec | Multi-Tenant SaaS LSH Guidance | COMPLETED — `docs/specs/totalreclaw/lsh-tuning.md` |
@@ -629,13 +631,156 @@ Plan: `plans/2026-02-26-benchmark-4way.md`
 
 | Priority | Task | Notes |
 |----------|------|-------|
-| **HIGH** | MCP onboarding implementation | Spec at `docs/specs/totalreclaw/mcp-onboarding.md` — needs user decision on approach |
-| **Medium** | Merge/PR decision for feature/subgraph | Branch includes subgraph v2 + E2E tests + billing + retrieval improvements |
+| **HIGH** | Phase 18: Chiado Beta Launch | Production deployment on Chiado testnet + Graph Studio |
+| **Pending** | MCP onboarding implementation | Spec at `docs/specs/totalreclaw/mcp-onboarding.md` — deferred |
 | **Pending** | MCP auto-memory | Spec at `docs/specs/totalreclaw/mcp-auto-memory.md` |
 | **Pending** | T086: Make totalreclaw repo public | Needs @pdiogo action |
 | **Deferred** | T331-T332: Architecture (Celestia DA, Arbitrum Nova) | Lower priority until after MVP launch |
+| **Deferred** | Migration tool (OpenClaw → TotalReclaw) | Research done: parse Markdown memory files → LLM extract → encrypt → store |
+
+---
+
+## Phase 18: Chiado Beta Launch — IN PROGRESS
+
+**Goal:** Production deployment on Chiado testnet + Graph Studio. Real domain, real Stripe payments, real beta users — but testnet chain. Relay server on Railway (free tier).
+**Env vars checklist:** `docs/deployment/env-vars-checklist.md`
+**Architecture:** Plugin → Pimlico → Chiado → Graph Studio Indexers (writes). Plugin → Graph Studio GraphQL (reads). Relay = billing gateway only.
+**Decision:** ERC-4337 UserOp building done client-side via `permissionless` SDK. Pimlico API key in plugin config (restricted by sponsorship policy webhook). Relay does NOT handle UserOps — only billing + Pimlico webhook.
+
+### Phase A: Code Fixes
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T400 | Fix UserOp builder: Smart Account address (permissionless SDK) | completed | session-25 | — | Done: `builder.ts` rewritten with `toSimpleSmartAccount()`, `createSmartAccountClient()`, `createPimlicoClient()`. 217 tests pass. |
+| T401 | Fix UserOp builder: ERC-4337 canonical signing hash | completed | session-25 | T400 | Done: `permissionless` handles canonical signing internally via `SmartAccountClient`. |
+| T402 | Fix UserOp builder: initCode for first-time users | completed | session-25 | T400 | Done: `toSimpleSmartAccount()` auto-generates initCode. No manual factory calldata. |
+| T403 | Fix plugin subgraph-store.ts: proper UserOp flow | completed | session-25 | T400 | Done: `submitFactOnChain()` via permissionless SDK. Then refactored to use relay proxy. |
+| T404 | Fix relay URL mismatch | completed | session-25 | — | Resolved: All client traffic routes through relay server (`/v1/bundler`, `/v1/subgraph`). No direct Pimlico/Graph Studio access. |
+| T430 | Relay proxy: POST /v1/bundler (Pimlico proxy + billing) | completed | session-25 | T405 | Done: `server/src/relay/proxy.py`. JSON-RPC proxy with subscription checks. |
+| T431 | Relay proxy: POST /v1/subgraph (Graph Studio proxy + billing) | completed | session-25 | T430 | Done: Same file. GraphQL proxy with read quota checks. |
+| T432 | Client-side relay refactor (remove PIMLICO_API_KEY) | completed | session-25 | T430 | Done: builder.ts, subgraph-store.ts, subgraph-search.ts all route through relay. 13/13 tests pass. |
+| T433 | Paymaster provider cost analysis | completed | session-25 | — | Done: `docs/analysis/paymaster-cost-comparison.md`. Pimlico for beta → self-hosted bundler at scale. |
+| T405 | Add subscriptions table to schema.sql | completed | session-25 | — | Done: `server/src/db/schema.sql` + indexes + trigger |
+| T406 | Fix .env.example files | completed | session-25 | — | Done: Chiado URL, DATA_EDGE_ADDRESS, billing sections |
+| T407 | Update Cloudflare WAF paths | completed | session-25 | — | Done: All rules updated to `/v1/` prefix + relay + billing endpoints |
+
+### Phase B: Chiado Deployment
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T410 | Update subgraph.yaml for Chiado | completed | session-25 | — | Done: network: gnosis-chiado, address: 0x048879..., startBlock: 20073108 |
+| T411 | Deploy subgraph to Graph Studio | pending | — | T410 | @pdiogo getting GRAPH_AUTH_TOKEN |
+| T412 | Deploy relay to Railway | pending | — | T405, T406 | @pdiogo has Railway account. Domain: api.totalreclaw.xyz |
+| T413 | Configure Pimlico sponsorship policy | pending | — | T400 | PIMLICO_API_KEY obtained: pim_cGBd6dt... Skip webhook for beta. |
+| T414 | E2E validation: plugin → chain → subgraph → read | blocked | — | T403, T411, T413 | Full pipeline test on Chiado |
+| T415 | Update beta tester guide | blocked | — | T414 | Update docs/guides/beta-tester-guide.md with production config |
+
+### Phase C: Production Polish (Chiado testnet, Graph Studio)
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T420 | Domain + Cloudflare setup | pending | — | T412 | Domain: totalreclaw.xyz. Nameservers on Cloudflare. Need CNAME for api subdomain after Railway deploy. |
+| T421 | CORS origins update | pending | — | T420 | Set CORS_ORIGINS=https://totalreclaw.xyz |
+| T422 | Stripe product + pricing setup | blocked | — | T412 | Create "TotalReclaw Pro" product ($3/mo). Needs Stripe account from @pdiogo |
+| T423 | Coinbase Commerce setup (optional) | blocked | — | T412 | Can skip for initial beta |
+| T424 | Plugin production env var docs | completed | session-25 | — | Done: Updated beta-tester-guide.md with Chiado subgraph env vars, Pimlico, chain config |
+
+---
+
+## Phase 19: MCP Onboarding + Railway Fix — COMPLETED
+
+**Goal:** MCP server gets setup CLI, subgraph dual-mode, billing tools. Server gets verbose DB URL logging for Railway debugging. AA provider comparison doc with migration path.
+
+### Phase 19A: Railway DB Fix
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T500 | Add verbose DB URL logging to server startup | completed | session-27 | — | Done: `server/src/main.py` logs redacted URL + scheme before init_db() |
+| T501 | Research Railway CLI/SDK for automated deployments | completed | session-27 | — | Done: `docs/deployment/railway-cli-guide.md` — CLI install, logs, env vars, GraphQL API |
+
+### Phase 19B: MCP Setup CLI
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T510 | Create mcp/src/cli/setup.ts — interactive setup wizard | completed | session-27 | — | Done: BIP-39 wizard, key derivation, registration, credential save, config snippet |
+| T511 | Create mcp/tests/setup-cli.test.ts | completed | session-27 | T510 | Done: 21 tests — key derivation, mnemonic validation, credential persistence, cross-validation |
+
+### Phase 19C: MCP Subgraph Wiring
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T520 | Create mcp/src/subgraph/ module — copy from plugin | completed | session-27 | — | Done: 7 files (crypto, lsh, embedding, reranker, store, search, index). Config injection added. |
+
+### Phase 19D: MCP Billing Tools
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T530 | Create mcp/src/tools/status.ts + upgrade.ts | completed | session-27 | T510, T520 | Done: Billing status + upgrade checkout tools with auth |
+| T531 | Integration: wire all new code into mcp/src/index.ts | completed | session-27 | T510, T520, T530 | Done: Dual-mode (HTTP/subgraph), argv routing, 7 tools, quota error handling |
+| T532 | Update prompts.ts with billing guidance | completed | session-27 | T530 | Done: STATUS/UPGRADE descriptions + billing section in SERVER_INSTRUCTIONS |
+
+### Phase 19E: AA Provider Cost Analysis
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T540 | Write docs/analysis/aa-provider-comparison.md | completed | session-27 | — | Done: 739 lines, 13 providers, CDP deep dive, 3 migration scenarios, self-hosted bundler guide |
+
+---
+
+## Phase 20: Chiado MVP Production Readiness — PLANNED
+
+**Goal:** DB-backed usage tracking, self-hosted Alto bundler, E2E testing of full pipeline, deploy to Chiado testnet for beta testers.
+**Decision:** Self-hosted Alto on Gnosis from day one (skip CDP). Cost: ~$0.00076/op + $5-30/mo infra.
+**Free tier design:** Counter in DB (`subscriptions.free_writes_used`), limit from env var (`FREE_TIER_WRITES_PER_MONTH`). Changing the limit never resets counters.
+
+### Part A: DB-Backed Usage Tracking
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T600 | Replace in-memory `_MonthlyUsageTracker` with PostgreSQL queries | pending | — | — | Use `subscriptions.free_writes_used` + `free_writes_reset_at`. Atomic increment on write. Monthly reset when period changes. |
+| T601 | Wire GET /v1/billing/status to real DB counts | pending | — | T600 | Return actual `free_writes_used` from DB + current `FREE_TIER_WRITES_PER_MONTH` from env. |
+| T602 | Add `user_usage` table for read tracking | pending | — | T600 | Separate from subscriptions. Schema: `(user_id, period, read_count, write_count)`. |
+
+### Part B: Self-Hosted Bundler (Alto on Chiado)
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T610 | Alto bundler Docker Compose setup | pending | — | — | TypeScript bundler, Chiado RPC, executor wallet funded with testnet xDAI |
+| T611 | Deploy VerifyingPaymaster contract on Chiado | pending | — | T610 | Use Coinbase's open-source contract. Signer = server's signing key. |
+| T612 | Paymaster signing service | pending | — | T611 | HTTP endpoint: validate user eligibility, sign sponsorship. Runs alongside Alto. |
+| T613 | Update relay proxy for self-hosted bundler URL | pending | — | T610 | Change `PIMLICO_BUNDLER_URL` env var to Alto instance. Consider renaming to `BUNDLER_URL`. |
+| T614 | Fund executor wallet with Chiado testnet xDAI | pending | — | T610 | Faucet: https://faucet.chiadochain.net/ |
+
+### Part C: E2E Testing (Full Pipeline)
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T620 | E2E: Store memory → on-chain → subgraph index → recall | pending | — | T600, T610 | Full pipeline with mock bundler + mock subgraph. Verify protobuf, blind indices, encryption. |
+| T621 | E2E: Free tier quota enforcement | pending | — | T600 | Store N+1 facts where N=FREE_TIER_LIMIT. Verify 403 on N+1. Verify counter persists across "restarts". |
+| T622 | E2E: Quota exceeded → upgrade flow | pending | — | T621 | Verify 403 response includes upgrade_url. Verify totalreclaw_status shows usage. Verify totalreclaw_upgrade returns checkout_url. |
+| T623 | E2E: Dynamic limit change (100→200) | pending | — | T621 | User at 80/100 → change limit to 200 → user can write 120 more. Counter not reset. |
+| T624 | E2E: Subscription upgrade bypasses free tier | pending | — | T621 | Pro tier user has higher limit. Verify writes succeed beyond free tier cap. |
+
+### Part D: Cost Analysis Update
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T630 | Update aa-provider-comparison.md for self-hosted Gnosis decision | pending | — | — | Reflect skip-CDP, self-hosted Alto from day one on Gnosis. |
+
+### Part E: Deployment
+
+| ID | Task | Status | Owner | Depends | Notes |
+|----|------|--------|-------|---------|-------|
+| T640 | Deploy subgraph to Graph Studio | pending | — | — | Needs GRAPH_AUTH_TOKEN from @pdiogo |
+| T641 | Configure domain CNAME (api.totalreclaw.xyz → Railway) | pending | — | — | Cloudflare DNS |
+| T642 | Set CORS_ORIGINS for production | pending | — | T641 | `https://totalreclaw.xyz` |
+| T643 | Update beta tester guide with final config | pending | — | T620 | After E2E validation passes |
+
+---
 
 ### Session History
+
+- **Session 27:** Phase 19 complete (10/10). MCP onboarding (setup CLI, subgraph wiring, billing tools, 7 tools, dual-mode), Railway DB URL logging, Railway CLI guide, AA provider comparison (13 providers, 739 lines). Phase 20 planned (DB usage tracking, self-hosted Alto, E2E testing).
 
 - **Session 23 (cont'd-2):** Both handoff plans executed by parallel agents: `docs/guides/beta-tester-guide.md` (641 lines, 14 sections, reproducible MVP setup guide) and `docs/analysis/gas-cost-extrapolation.md` (591 lines, 4 user profiles, sensitivity analysis). Key finding: free tier 100/mo is well-calibrated, Pro $3-5/mo covers all profiles with 74-96% margins. Corrected gas analysis: LLM extraction uses agent's own LLM (not a separate cost). **NEXT:** Audit `skill/plugin/llm-client.ts` to ensure NO separate LLM provider/model config is needed — extraction must use the underlying agent's LLM out of the box.
 - **Session 23 (cont'd):** Completed T322 (index compaction), T326 (query intent detection), T330 (semantic dedup). Phase 14 now fully complete (13/13). 85/85 reranker, 33/33 semantic-dedup, 209/209 client tests pass. Created 3 handoff docs: beta-tester-guide, gas-cost-extrapolation, mcp-onboarding.

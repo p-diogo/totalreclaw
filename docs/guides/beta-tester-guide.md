@@ -120,13 +120,23 @@ Write all 12 words on paper, in the exact order shown. Double-check every word. 
 Create or edit a `.env` file in the plugin directory (`skill/plugin/.env`) with the following contents:
 
 ```
+# --- Required ---
 TOTALRECLAW_MASTER_PASSWORD="word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
 TOTALRECLAW_SERVER_URL="https://api.totalreclaw.dev"
+
+# --- Subgraph mode (on-chain storage) ---
+TOTALRECLAW_SUBGRAPH_MODE="true"
+TOTALRECLAW_SUBGRAPH_ENDPOINT="https://api.studio.thegraph.com/query/<ID>/totalreclaw/version/latest"
+PIMLICO_API_KEY="<provided-by-totalreclaw-team>"
+TOTALRECLAW_CHAIN_ID="10200"
+TOTALRECLAW_DATA_EDGE_ADDRESS="0x048879569E394af3fC6721d8d44DdcfcDD407543"
 ```
 
 Replace `word1 word2 ...` with your actual 12-word phrase. Keep the quotes around it.
 
-If the production server URL has not been provided to you yet, the TotalReclaw team will share it before your beta test begins.
+The TotalReclaw team will provide you with the exact `TOTALRECLAW_SUBGRAPH_ENDPOINT` URL and `PIMLICO_API_KEY` before your beta test begins. The other values above are already correct for the Chiado testnet.
+
+> **Note:** `TOTALRECLAW_SERVER_URL` is still needed even in subgraph mode — it handles user registration and billing.
 
 Your agent's LLM API key (e.g., `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`) should already be configured in your OpenClaw environment. TotalReclaw auto-detects it — no extra LLM setup is needed.
 
@@ -392,14 +402,10 @@ If you switch to a new computer or install TotalReclaw on a second agent, you ca
 ### Steps
 
 1. Install the TotalReclaw plugin on the new device (follow [Section 2](#2-installation)).
-2. Create a `.env` file and set `TOTALRECLAW_MASTER_PASSWORD` to your 12-word phrase:
-   ```
-   TOTALRECLAW_MASTER_PASSWORD="word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
-   TOTALRECLAW_SERVER_URL="https://api.totalreclaw.dev"
-   ```
+2. Create a `.env` file with the same configuration as in [Step 3](#step-3-set-your-environment-variables) — use the same 12-word phrase and the same subgraph/Pimlico settings.
 3. Start a conversation with your agent.
-4. The plugin derives the same wallet address and encryption key from your phrase.
-5. All your memories are automatically retrieved from the server and decrypted on your device.
+4. The plugin derives the same Smart Account address and encryption key from your phrase.
+5. All your memories are automatically retrieved from the subgraph and decrypted on your device.
 6. If you have an active Pro subscription, it is recognized automatically (same wallet address).
 
 > **If recovery does not work,** double-check every word in your recovery phrase and its
@@ -512,13 +518,17 @@ TotalReclaw auto-detects your agent's LLM provider and API key. No extra configu
 
 ### Subgraph Mode Variables (Advanced)
 
-These variables are only relevant if you enable on-chain storage via the subgraph. Most beta testers should leave these at their defaults (server mode).
+These variables control on-chain storage via the subgraph. **For the Chiado beta, subgraph mode is the default.**
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `TOTALRECLAW_SUBGRAPH_MODE` | Set to `true` to use on-chain subgraph storage instead of the HTTP server. | `false` |
-| `TOTALRECLAW_RELAY_URL` | Relay endpoint for on-chain writes (subgraph mode only). | `http://localhost:8545` |
-| `TOTALRECLAW_SUBGRAPH_ENDPOINT` | GraphQL endpoint for subgraph reads (subgraph mode only). | `http://localhost:8000/subgraphs/name/totalreclaw` |
+| `TOTALRECLAW_SUBGRAPH_MODE` | Set to `true` to use on-chain subgraph storage. **Set this to `true` for beta.** | `false` |
+| `TOTALRECLAW_SUBGRAPH_ENDPOINT` | GraphQL endpoint for subgraph reads (Graph Studio URL). | `http://localhost:8000/subgraphs/name/totalreclaw` |
+| `PIMLICO_API_KEY` | Pimlico API key for ERC-4337 UserOp submission. Gas is sponsored — you don't pay anything. **Required for subgraph mode.** | -- |
+| `TOTALRECLAW_CHAIN_ID` | Chain ID for on-chain transactions. `10200` = Chiado testnet, `100` = Gnosis mainnet. | `10200` |
+| `TOTALRECLAW_DATA_EDGE_ADDRESS` | Address of the EventfulDataEdge smart contract on Chiado. | `0x048879569E394af3fC6721d8d44DdcfcDD407543` |
+| `TOTALRECLAW_ENTRYPOINT_ADDRESS` | ERC-4337 EntryPoint v0.7 address. Same on all chains. | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` |
+| `TOTALRECLAW_RELAY_URL` | Legacy relay endpoint (fallback for local dev without Pimlico). Not needed in production. | `http://localhost:8545` |
 | `TOTALRECLAW_SUBGRAPH_PAGE_SIZE` | Maximum results per subgraph query page. | `5000` |
 | `TOTALRECLAW_TRAPDOOR_BATCH_SIZE` | Number of trapdoors per batch in subgraph queries. | `5` |
 

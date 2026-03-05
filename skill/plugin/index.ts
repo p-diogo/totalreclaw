@@ -29,7 +29,7 @@ import { initLLMClient, generateEmbedding, getEmbeddingDims } from './llm-client
 import { LSHHasher } from './lsh.js';
 import { rerank, cosineSimilarity, detectQueryIntent, INTENT_WEIGHTS, type RerankerCandidate } from './reranker.js';
 import { deduplicateBatch } from './semantic-dedup.js';
-import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitToRelay } from './subgraph-store.js';
+import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitFactOnChain } from './subgraph-store.js';
 import { searchSubgraph, getSubgraphFactCount } from './subgraph-search.js';
 import { PluginHotCache, type HotFact } from './hot-cache-wrapper.js';
 import crypto from 'node:crypto';
@@ -527,7 +527,7 @@ async function storeExtractedFacts(
           agentId: 'openclaw-plugin-auto',
           encryptedEmbedding: embeddingResult?.encryptedEmbedding,
         });
-        await submitToRelay(protobuf, config);
+        await submitFactOnChain(protobuf, config);
       } else {
         await apiClient.store(userId, [payload], authKeyHex);
       }
@@ -678,7 +678,7 @@ const plugin = {
             };
 
             if (isSubgraphMode()) {
-              // Subgraph mode: encode as Protobuf and submit via relay
+              // Subgraph mode: encode as Protobuf and submit on-chain via relay UserOp
               const config = getSubgraphConfig();
               const protobuf = encodeFactProtobuf({
                 id: factId,
@@ -692,7 +692,7 @@ const plugin = {
                 agentId: 'openclaw-plugin',
                 encryptedEmbedding: embeddingResult?.encryptedEmbedding,
               });
-              await submitToRelay(protobuf, config);
+              await submitFactOnChain(protobuf, config);
             } else {
               await apiClient!.store(userId!, [factPayload], authKeyHex!);
             }

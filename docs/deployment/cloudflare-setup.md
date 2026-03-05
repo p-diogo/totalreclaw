@@ -64,13 +64,21 @@ Expression: not (
     http.request.uri.path eq "/" or
     http.request.uri.path eq "/health" or
     http.request.uri.path eq "/ready" or
-    http.request.uri.path eq "/register" or
-    http.request.uri.path eq "/store" or
-    http.request.uri.path eq "/search" or
-    http.request.uri.path eq "/export" or
-    http.request.uri.path eq "/account" or
-    http.request.uri.path eq "/sync" or
-    http.request.uri.path matches "^/facts/[a-zA-Z0-9-]+$"
+    http.request.uri.path eq "/metrics" or
+    http.request.uri.path eq "/v1/register" or
+    http.request.uri.path eq "/v1/store" or
+    http.request.uri.path eq "/v1/search" or
+    http.request.uri.path eq "/v1/export" or
+    http.request.uri.path eq "/v1/account" or
+    http.request.uri.path eq "/v1/sync" or
+    http.request.uri.path eq "/v1/relay/sponsor" or
+    http.request.uri.path matches "^/v1/relay/status/.*$" or
+    http.request.uri.path eq "/v1/relay/webhook/pimlico" or
+    http.request.uri.path eq "/v1/billing/checkout" or
+    http.request.uri.path eq "/v1/billing/checkout/crypto" or
+    http.request.uri.path eq "/v1/billing/webhook/stripe" or
+    http.request.uri.path eq "/v1/billing/webhook/coinbase" or
+    http.request.uri.path eq "/v1/billing/status"
 )
 Action: Block
 ```
@@ -87,7 +95,7 @@ Action: Block
 **Rule 3: Require Authorization header on protected endpoints**
 ```
 Expression: (
-    http.request.uri.path in {"/store" "/search" "/export" "/account" "/sync"} and
+    http.request.uri.path in {"/v1/store" "/v1/search" "/v1/export" "/v1/account" "/v1/sync" "/v1/relay/sponsor" "/v1/billing/checkout" "/v1/billing/checkout/crypto" "/v1/billing/status"} and
     not any(http.request.headers["authorization"][*] contains "Bearer")
 )
 Action: Block
@@ -101,7 +109,7 @@ Create rate limiting rules under Security > WAF > Rate Limiting Rules:
 
 **Rule 1: Registration abuse**
 ```
-Expression: http.request.uri.path eq "/register"
+Expression: http.request.uri.path eq "/v1/register"
 Rate: 5 requests per 1 minute
 Per: IP
 Action: Block for 10 minutes
@@ -109,7 +117,7 @@ Action: Block for 10 minutes
 
 **Rule 2: General API abuse**
 ```
-Expression: http.request.uri.path in {"/store" "/search"}
+Expression: http.request.uri.path in {"/v1/store" "/v1/search"}
 Rate: 300 requests per 1 minute
 Per: IP
 Action: Block for 5 minutes
@@ -117,7 +125,7 @@ Action: Block for 5 minutes
 
 **Rule 3: Export abuse**
 ```
-Expression: http.request.uri.path eq "/export"
+Expression: http.request.uri.path eq "/v1/export"
 Rate: 10 requests per 1 minute
 Per: IP
 Action: Block for 10 minutes

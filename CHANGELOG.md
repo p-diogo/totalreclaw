@@ -5,7 +5,140 @@
 
 ---
 
+## 2026-03-05
+
+### Session 27 | Claude (opus) | MCP Onboarding Implementation + Railway Fix
+
+**Branch:** `main`
+**Phase 19:** 10/10 tasks completed via 5 parallel agents
+
+**Railway DB Fix (T500-T501):**
+- Added verbose DB URL logging to `server/src/main.py` — logs redacted URL + scheme before `init_db()`
+- Created `docs/deployment/railway-cli-guide.md` — CLI install, deploy, logs, env vars, GraphQL API
+
+**MCP Setup CLI (T510-T511):**
+- Created `mcp/src/cli/setup.ts` — interactive wizard: generate/import BIP-39 mnemonic, HKDF key derivation (byte-identical to plugin), server registration, credential save (~/.totalreclaw/credentials.json), prints config snippet for Claude Desktop/Cursor
+- Created `mcp/tests/setup-cli.test.ts` — 21 tests (key derivation, mnemonic validation, credential persistence, cross-validation with plugin crypto)
+- Added `@noble/hashes`, `@scure/bip39` deps + custom Jest resolver for ESM
+
+**MCP Subgraph Wiring (T520):**
+- Created `mcp/src/subgraph/` module — 7 files adapted from `skill/plugin/`:
+  - `crypto.ts`, `lsh.ts`, `embedding.ts`, `reranker.ts` (direct copies)
+  - `store.ts` (config injection overrides), `search.ts` (relay URL parameter)
+  - `index.ts` (barrel exports)
+- Added `viem`, `permissionless`, `@huggingface/transformers`, `porter-stemmer` deps
+
+**MCP Billing Tools + Integration (T530-T532):**
+- Created `mcp/src/tools/status.ts` — `totalreclaw_status` tool (GET /v1/billing/status)
+- Created `mcp/src/tools/upgrade.ts` — `totalreclaw_upgrade` tool (POST /v1/billing/checkout)
+- Rewired `mcp/src/index.ts`:
+  - argv routing: `setup` subcommand → CLI wizard
+  - Dual-mode state: HTTP (existing) vs Subgraph (BIP-39 mnemonic + SUBGRAPH_MODE=true)
+  - 7 tools registered (was 5): + totalreclaw_status, totalreclaw_upgrade
+  - Subgraph handlers: remember (encrypt→embed→protobuf→on-chain), recall (trapdoors→search→decrypt→rerank), forget (tombstone)
+  - Quota error handling: catches 403/quota_exceeded, returns structured error with upgrade pointer
+- Updated `mcp/src/prompts.ts` — STATUS/UPGRADE tool descriptions + billing section in SERVER_INSTRUCTIONS
+- Updated `mcp/src/tools/index.ts` — exports for new tools
+- **196/196 tests pass**, TypeScript compiles cleanly
+
+**Railway now working** — verbose logging confirmed scheme. Server deployed successfully.
+
+**Phase 20 planned** (next session):
+- DB-backed usage tracking (replace in-memory `_MonthlyUsageTracker` with PostgreSQL)
+- Self-hosted Alto bundler on Chiado (skip CDP, go Gnosis from day one)
+- E2E testing: full pipeline (store→chain→subgraph→recall), quota enforcement, dynamic limits
+- Free tier design: counter in DB, limit from env var. Changing limit doesn't reset counters.
+- Decision: Alto (Pimlico open-source bundler) on Gnosis. $0.00076/op + $5-30/mo infra.
+
+**AA Provider Cost Analysis (T540):**
+- Created `docs/analysis/aa-provider-comparison.md` — 739 lines, 13 providers compared
+- **Coinbase CDP recommended for beta**: $15-16K credits, Base-only, 33mo @ 100 users
+- **Migration path**: Scenario A (stay on Base, swap bundler) is zero-impact; Scenario B (cross-chain) analyzed with dual-subgraph fan-out code; self-hosted Alto bundler recommended at scale ($30-60/mo)
+
+---
+
+### Session 26 | Claude (opus) | Architecture Refactor + MCP Onboarding Design
+
+**Branch:** `feature/subgraph`
+
+**Architecture change: Relay as unified proxy**
+- All client traffic now routes through relay server (no direct Pimlico/Graph Studio access)
+- `POST /v1/bundler` — JSON-RPC proxy to Pimlico with billing checks (T430)
+- `POST /v1/subgraph` — GraphQL proxy to Graph Studio with read quota checks (T431)
+- Client-side refactored: removed `PIMLICO_API_KEY`, `TOTALRECLAW_SUBGRAPH_ENDPOINT` from plugin/client (T432)
+- Users only need `TOTALRECLAW_MASTER_PASSWORD` + `TOTALRECLAW_SERVER_URL` (can be hardcoded default)
+
+**Paymaster cost analysis** (T433): `docs/analysis/paymaster-cost-comparison.md`
+- Pimlico: $0.0105/op (credit-based, chain-agnostic)
+- Coinbase CDP: $0.00535/op (Base only, $15K credits available)
+- Self-operated bundler on Gnosis: $0.00076/op (14x cheaper)
+- Decision: Pimlico for beta → self-hosted bundler at scale
+
+**MCP onboarding brainstorm** (in progress):
+- Setup CLI: `npx @totalreclaw/mcp-server setup` (new user + existing user paths)
+- Billing tools: `totalreclaw_status` + `totalreclaw_upgrade`
+- Auto-store nudge: reminder appended to recall results
+- Target: OpenClaw + Claude Desktop users for beta
+
+**Production progress:**
+- Domain: `totalreclaw.xyz` (Cloudflare nameservers configured)
+- Railway: account ready, deployment guide written
+- Pimlico API key: obtained
+- Graph auth token: @pdiogo getting from Graph Studio
+
+---
+
 ## 2026-03-04
+
+### Session 25 | Claude (opus) | Chiado Beta Launch (Phase 18)
+
+**Branch:** `main`
+**Goal:** Production deployment on Chiado testnet + Graph Studio. Real domain, real Stripe, real beta users — testnet chain.
+
+**Architecture decisions:**
+- ERC-4337 UserOp building moved client-side via `permissionless` SDK (Pimlico's official library)
+- Plugin talks to Pimlico directly (no relay server for writes)
+- Relay server = billing gateway only (Stripe/Coinbase + Pimlico sponsorship webhook)
+- Smart Account address = deterministic CREATE2(factory, EOA, salt=0) — user only needs seed phrase
+- Free tiers for beta: Railway ($5/mo credit), Graph Studio (free), Pimlico free tier (~100 ops/day)
+- Production = Chiado testnet + Graph Studio indexing (NOT Gnosis mainnet yet)
+
+**Env vars checklist:** `docs/deployment/env-vars-checklist.md` — comprehensive guide for all service signups
+
+**Phase 18 tasks created:** T400-T424 in TASKS.md
+
+**Completed (3 parallel agents):**
+
+Agent 1 — UserOp builder rewrite (T400-T402):
+- Rewrote `client/src/userop/builder.ts` with `permissionless` SDK
+  - `toSimpleSmartAccount()` for deterministic CREATE2 Smart Account
+  - `createSmartAccountClient()` with Pimlico paymaster sponsorship
+  - Auto initCode, canonical signing, gas estimation — all handled by SDK
+  - New exports: `getSmartAccountAddress()`, `sendFactOnChain()`, `submitUserOperation()`
+- Updated `client/src/crypto/seed.ts`: added `smartAccountAddress` to `SeedDerivedKeys`, `DEFAULT_CHAIN_ID = 10200`
+- Updated `client/src/userop/index.ts` with new exports
+- Updated tests: 217/217 pass (25 seed tests, 13 userop tests)
+- Installed `permissionless@0.3.4` + `tslib` in client
+
+Agent 2 — Plugin store path rewrite (T403-T404):
+- Rewrote `skill/plugin/subgraph-store.ts` with `permissionless` SDK
+  - New `submitFactOnChain()` builds UserOps client-side via Pimlico
+  - Falls back to legacy relay if `PIMLICO_API_KEY` not set
+  - New config fields: `pimlicoApiKey`, `chainId`, `dataEdgeAddress`, `entryPointAddress`
+- Updated `skill/plugin/index.ts`: `submitToRelay()` → `submitFactOnChain()`
+- Installed `permissionless` + `viem` in skill/plugin
+
+Agent 3 — Server/schema/docs fixes (T405-T407, T410):
+- Added `subscriptions` table to `server/src/db/schema.sql` (3 indexes, trigger)
+- Fixed `server/.env.example` (Chiado URLs, billing sections)
+- Updated `server/src/config.py` defaults to Chiado (chain_id 10200)
+- Updated `subgraph/subgraph.yaml` for Chiado (network, address, startBlock)
+- Updated `docs/deployment/cloudflare-setup.md` WAF paths to `/v1/` prefix
+
+**Blocked on @pdiogo:**
+- Pimlico API key, Graph Studio deploy key, Stripe account, Railway account, domain decision
+
+---
 
 ### Session 24 | Claude (opus) | LLM Audit + Merge + Repo Cleanup
 

@@ -28,6 +28,13 @@ Do NOT store:
 - Before storing a new fact, check recalled memories to avoid duplicates
 - When the user corrects information, store the correction (the system handles deduplication)
 - Use importance 7-9 for core identity/preferences, 4-6 for moderate facts, 1-3 for minor details
+
+### Billing & Quota
+When a totalreclaw_remember call fails with "quota_exceeded":
+1. Inform the user they've reached their free tier limit
+2. Offer to check their usage with totalreclaw_status
+3. If they want to upgrade, use totalreclaw_upgrade to get a checkout link
+Do NOT repeatedly attempt to store memories after a quota error.
 `;
 
 // Keep backward-compat export name (some callers may still reference it)
@@ -111,6 +118,31 @@ EXAMPLES:
 PARAMETERS:
 - format: Output format "markdown" or "json" (default: markdown)
 - namespace: Export only specific namespace (optional)`;
+
+export const STATUS_TOOL_DESCRIPTION = `Check your TotalReclaw subscription status and usage.
+
+Shows:
+- Current tier (free/pro)
+- Free writes used vs limit
+- Subscription expiry date
+
+Use this when:
+- User asks about their memory quota or usage
+- Before storing many memories, to check remaining capacity
+- User asks about billing or subscription`;
+
+export const UPGRADE_TOOL_DESCRIPTION = `Upgrade to TotalReclaw Pro for unlimited encrypted memories.
+
+Returns a checkout URL for the user to complete payment.
+
+Payment options:
+- card: Stripe checkout (credit/debit card)
+- crypto: Coinbase Commerce (USDC, USDT, ETH on multiple chains)
+
+Use this when:
+- User hits their free tier limit
+- User asks about upgrading or pricing
+- A remember call returns a quota_exceeded error`;
 
 export const IMPORT_TOOL_DESCRIPTION = `Import memories from an exported backup.
 
