@@ -131,7 +131,9 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     coinbase_id         TEXT,                                    -- Coinbase Commerce charge ID (future)
     expires_at          TIMESTAMPTZ,                             -- NULL for free tier
     free_writes_used    INTEGER NOT NULL DEFAULT 0,
-    free_writes_reset_at TIMESTAMPTZ,                            -- Last monthly counter reset
+    free_writes_reset_at TIMESTAMPTZ,                            -- Last monthly write counter reset
+    free_reads_used     INTEGER NOT NULL DEFAULT 0,
+    free_reads_reset_at TIMESTAMPTZ,                             -- Last monthly read counter reset
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -156,6 +158,11 @@ CREATE OR REPLACE TRIGGER trigger_subscriptions_updated_at
     BEFORE UPDATE ON subscriptions
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at();
+
+-- ============ v0.3.2 Migration: Read tracking (for existing databases) ============
+-- Run these ALTER statements AFTER initial schema creation for upgrades:
+-- ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS free_reads_used INTEGER NOT NULL DEFAULT 0;
+-- ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS free_reads_reset_at TIMESTAMPTZ;
 
 -- ============ Cleanup Job (Optional) ============
 -- For production, set up pg_cron or external job to:

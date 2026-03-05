@@ -11,21 +11,21 @@ Endpoints:
 
 Both endpoints require wallet-based auth (Authorization: Bearer <auth_key>)
 and enforce per-user monthly usage limits based on subscription tier.
+Usage tracking is persistent (PostgreSQL-backed via the subscriptions table).
 
 Write operations (eth_sendUserOperation) are rate-limited more strictly
 than read-like RPC calls (gas estimation, receipt polling).
 """
 import json
 import logging
-import time
-from collections import defaultdict
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 
+from ..billing.stripe_service import StripeService
 from ..config import get_settings
 from ..db import get_db, Database
 from ..dependencies import get_current_user
@@ -45,185 +45,119 @@ _WRITE_RPC_METHODS = frozenset({
 
 
 # ---------------------------------------------------------------------------
-# Monthly usage tracker (in-memory, resets on server restart)
-#
-# In production, this should be backed by a database counter (like the
-# subscriptions.free_writes_used column). For the proxy PoC, in-memory
-# tracking is acceptable — it's conservative (resets to 0 on restart,
-# giving the user a fresh allowance).
+# Testing helper (no-op — kept for backward compatibility with test code
+# that may import it; DB-backed tracking needs no in-memory reset).
 # ---------------------------------------------------------------------------
 
-class _MonthlyUsageTracker:
-    """
-    Per-user monthly usage counter.
-
-    Tracks how many write and read proxy operations each user has performed
-    in the current calendar month. Automatically resets when a new month
-    starts.
-    """
-
-    def __init__(self):
-        self._writes: Dict[str, List[float]] = defaultdict(list)
-        self._reads: Dict[str, List[float]] = defaultdict(list)
-        self._current_month: Optional[str] = None
-
-    def _maybe_reset(self) -> None:
-        """Reset all counters if the calendar month has changed."""
-        now = datetime.now(timezone.utc)
-        month_key = f"{now.year}-{now.month:02d}"
-        if self._current_month != month_key:
-            self._writes.clear()
-            self._reads.clear()
-            self._current_month = month_key
-
-    def record_write(self, user_id: str) -> None:
-        self._maybe_reset()
-        self._writes[user_id].append(time.time())
-
-    def record_read(self, user_id: str) -> None:
-        self._maybe_reset()
-        self._reads[user_id].append(time.time())
-
-    def get_write_count(self, user_id: str) -> int:
-        self._maybe_reset()
-        return len(self._writes.get(user_id, []))
-
-    def get_read_count(self, user_id: str) -> int:
-        self._maybe_reset()
-        return len(self._reads.get(user_id, []))
-
-
-_usage = _MonthlyUsageTracker()
-
-
 def _reset_usage_tracker() -> None:
-    """Reset usage tracker (for testing)."""
-    global _usage
-    _usage = _MonthlyUsageTracker()
+    """No-op. Retained for backward compatibility with test imports.
+
+    DB-backed usage tracking does not require an in-memory reset.
+    """
+    pass
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-async def _get_user_tier(
+async def _check_write_quota(
+    wallet_address: Optional[str],
     user_id: str,
     db: Database,
-    wallet_address: Optional[str] = None,
-) -> str:
+) -> Optional[JSONResponse]:
     """
-    Determine the user's subscription tier.
+    Check if the user has remaining write quota (DB-backed).
 
-    The subscriptions table is keyed by wallet_address (not user_id).
-    The client can provide a wallet_address via the X-Wallet-Address
-    header to allow the server to look up the subscription.
+    Uses StripeService.check_and_increment_free_usage() which handles:
+    - Monthly reset (checks free_writes_reset_at vs current month start)
+    - Atomic increment (SELECT FOR UPDATE + UPDATE)
+    - Pro tier bypass
+    - Returns True/False
 
-    If no wallet_address is provided or the lookup fails, defaults to
-    the free tier.
+    If no wallet_address is provided, falls back to allowing the request
+    (user-id-only clients cannot be quota-tracked via the subscriptions
+    table which is keyed by wallet_address).
 
-    Args:
-        user_id: The authenticated user's ID (for logging).
-        db: Database instance.
-        wallet_address: Optional wallet address for subscription lookup.
-
-    Returns:
-        "pro" or "free"
+    Returns None if allowed, or a 403 JSONResponse if quota exceeded.
     """
     if not wallet_address:
-        return "free"
-
-    from sqlalchemy import text as sa_text
+        # Without a wallet address we cannot look up the subscription.
+        # Allow the request — the relay is still auth-gated.
+        return None
 
     try:
-        async with db.session() as session:
-            result = await session.execute(
-                sa_text("""
-                    SELECT tier, expires_at
-                    FROM subscriptions
-                    WHERE wallet_address = :addr
-                """),
-                {"addr": wallet_address.lower()},
+        svc = StripeService(db)
+        allowed = await svc.check_and_increment_free_usage(wallet_address)
+        if not allowed:
+            settings = get_settings()
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "error": "quota_exceeded",
+                    "message": (
+                        f"Write limit reached for this month. "
+                        f"Upgrade for higher limits."
+                    ),
+                    "upgrade_url": "https://totalreclaw.xyz/pricing",
+                },
             )
-            row = result.fetchone()
-
-            if row is None:
-                return "free"
-
-            # Check expiration for pro tier
-            if row.tier == "pro":
-                if row.expires_at and row.expires_at < datetime.now(timezone.utc):
-                    return "free"
-                return "pro"
-
-            return "free"
-
+        return None
     except Exception as exc:
-        # On DB errors, default to free tier (conservative)
+        # On DB errors, log and allow the request (fail-open for proxy).
         logger.warning(
-            "Failed to check subscription tier for user %s (wallet %s): %s",
+            "Failed to check write quota for user %s (wallet %s): %s",
             user_id, wallet_address, exc,
         )
-        return "free"
+        return None
 
 
-def _check_write_quota(user_id: str, tier: str) -> Optional[JSONResponse]:
+async def _check_read_quota(
+    wallet_address: Optional[str],
+    user_id: str,
+    db: Database,
+) -> Optional[JSONResponse]:
     """
-    Check if the user has remaining write quota.
+    Check if the user has remaining read quota (DB-backed).
+
+    Uses StripeService.check_and_increment_free_read_usage() which handles:
+    - Monthly reset (checks free_reads_reset_at vs current month start)
+    - Atomic increment (SELECT FOR UPDATE + UPDATE)
+    - Pro/free tier limit selection
+    - Returns True/False
+
+    If no wallet_address is provided, falls back to allowing the request.
 
     Returns None if allowed, or a 403 JSONResponse if quota exceeded.
     """
-    settings = get_settings()
+    if not wallet_address:
+        # Without a wallet address we cannot look up the subscription.
+        # Allow the request — the relay is still auth-gated.
+        return None
 
-    if tier == "pro":
-        limit = settings.pro_tier_writes_per_month
-    else:
-        limit = settings.free_tier_writes_per_month
-
-    count = _usage.get_write_count(user_id)
-
-    if count >= limit:
-        return JSONResponse(
-            status_code=403,
-            content={
-                "error": "quota_exceeded",
-                "message": (
-                    f"{'Free' if tier == 'free' else 'Pro'} tier write limit "
-                    f"reached ({count}/{limit} this month)"
-                ),
-                "upgrade_url": "https://totalreclaw.com/pricing",
-            },
+    try:
+        svc = StripeService(db)
+        allowed = await svc.check_and_increment_free_read_usage(wallet_address)
+        if not allowed:
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "error": "quota_exceeded",
+                    "message": (
+                        f"Read limit reached for this month. "
+                        f"Upgrade for higher limits."
+                    ),
+                    "upgrade_url": "https://totalreclaw.xyz/pricing",
+                },
+            )
+        return None
+    except Exception as exc:
+        # On DB errors, log and allow the request (fail-open for proxy).
+        logger.warning(
+            "Failed to check read quota for user %s (wallet %s): %s",
+            user_id, wallet_address, exc,
         )
-    return None
-
-
-def _check_read_quota(user_id: str, tier: str) -> Optional[JSONResponse]:
-    """
-    Check if the user has remaining read quota.
-
-    Returns None if allowed, or a 403 JSONResponse if quota exceeded.
-    """
-    settings = get_settings()
-
-    if tier == "pro":
-        limit = settings.pro_tier_reads_per_month
-    else:
-        limit = settings.free_tier_reads_per_month
-
-    count = _usage.get_read_count(user_id)
-
-    if count >= limit:
-        return JSONResponse(
-            status_code=403,
-            content={
-                "error": "quota_exceeded",
-                "message": (
-                    f"{'Free' if tier == 'free' else 'Pro'} tier read limit "
-                    f"reached ({count}/{limit} this month)"
-                ),
-                "upgrade_url": "https://totalreclaw.com/pricing",
-            },
-        )
-    return None
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -283,10 +217,11 @@ async def proxy_bundler(
         # handle the error. We don't quota-gate unparseable requests.
         pass
 
-    # Only check billing for write operations
+    # Check + increment write quota BEFORE forwarding (atomic DB check).
+    # The StripeService method increments the counter as part of the check,
+    # so we do NOT need a separate "record" step after forwarding.
     if is_write:
-        tier = await _get_user_tier(user_id, db, x_wallet_address)
-        quota_error = _check_write_quota(user_id, tier)
+        quota_error = await _check_write_quota(x_wallet_address, user_id, db)
         if quota_error is not None:
             return quota_error
 
@@ -313,10 +248,6 @@ async def proxy_bundler(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Failed to connect to Pimlico bundler",
         )
-
-    # Record usage after successful forwarding (for write operations)
-    if is_write:
-        _usage.record_write(user_id)
 
     # Return Pimlico's response as-is
     return Response(
@@ -371,9 +302,8 @@ async def proxy_subgraph(
             detail=f"Failed to read request body: {exc}",
         )
 
-    # Check read quota
-    tier = await _get_user_tier(user_id, db, x_wallet_address)
-    quota_error = _check_read_quota(user_id, tier)
+    # Check + increment read quota BEFORE forwarding (atomic DB check).
+    quota_error = await _check_read_quota(x_wallet_address, user_id, db)
     if quota_error is not None:
         return quota_error
 
@@ -397,9 +327,6 @@ async def proxy_subgraph(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Failed to connect to subgraph endpoint",
         )
-
-    # Record usage after successful forwarding
-    _usage.record_read(user_id)
 
     # Return the subgraph response as-is
     return Response(

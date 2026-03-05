@@ -99,8 +99,8 @@ class CoinbaseService:
             "metadata": {
                 "wallet_address": wallet_address,
             },
-            "redirect_url": "https://totalreclaw.com/payment/success",
-            "cancel_url": "https://totalreclaw.com/payment/cancel",
+            "redirect_url": "https://totalreclaw.xyz/payment/success",
+            "cancel_url": "https://totalreclaw.xyz/payment/cancel",
         }
 
         headers = {

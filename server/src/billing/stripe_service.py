@@ -15,6 +15,7 @@ from typing import Optional
 import stripe
 from sqlalchemy import text
 
+from ..config import get_settings
 from ..db.database import Database
 
 logger = logging.getLogger(__name__)
@@ -23,11 +24,9 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ---------------------------------------------------------------------------
 
-# Free-tier write limit per calendar month. Override via FREE_TIER_LIMIT env.
-FREE_TIER_LIMIT: int = int(os.environ.get("FREE_TIER_LIMIT", "100"))
-
 # Stripe keys — loaded from environment at import time.
 # The service methods validate they are set before using them.
+
 STRIPE_SECRET_KEY: str = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET: str = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 STRIPE_PRICE_ID: str = os.environ.get("STRIPE_PRICE_ID", "")
@@ -101,14 +100,14 @@ class StripeService:
             success_url=(
                 os.environ.get(
                     "STRIPE_SUCCESS_URL",
-                    "https://totalreclaw.com/billing/success"
+                    "https://totalreclaw.xyz/billing/success"
                     "?session_id={CHECKOUT_SESSION_ID}",
                 )
             ),
             cancel_url=(
                 os.environ.get(
                     "STRIPE_CANCEL_URL",
-                    "https://totalreclaw.com/billing/cancel",
+                    "https://totalreclaw.xyz/billing/cancel",
                 )
             ),
         )
@@ -201,6 +200,7 @@ class StripeService:
                 "free_writes_limit": int,
             }
         """
+        settings = get_settings()
         row = await self._get_subscription(wallet_address)
 
         if row is None:
@@ -210,7 +210,7 @@ class StripeService:
                 "source": None,
                 "expires_at": None,
                 "free_writes_used": 0,
-                "free_writes_limit": FREE_TIER_LIMIT,
+                "free_writes_limit": settings.free_tier_writes_per_month,
             }
 
         # Check if pro subscription has expired
@@ -228,7 +228,7 @@ class StripeService:
                 row["expires_at"].isoformat() if row["expires_at"] else None
             ),
             "free_writes_used": row["free_writes_used"],
-            "free_writes_limit": FREE_TIER_LIMIT,
+            "free_writes_limit": settings.free_tier_writes_per_month,
         }
 
     # ------------------------------------------------------------------
@@ -255,6 +255,8 @@ class StripeService:
         Returns:
             True if the write is allowed, False otherwise.
         """
+        settings = get_settings()
+
         async with self.db.session() as session:
             # Upsert the subscription row if it doesn't exist yet
             await session.execute(
@@ -306,7 +308,7 @@ class StripeService:
             else:
                 current_usage = row.free_writes_used
 
-            if current_usage >= FREE_TIER_LIMIT:
+            if current_usage >= settings.free_tier_writes_per_month:
                 return False
 
             # Increment
@@ -314,6 +316,100 @@ class StripeService:
                 text("""
                     UPDATE subscriptions
                     SET free_writes_used = free_writes_used + 1,
+                        updated_at = NOW()
+                    WHERE wallet_address = :wallet
+                """),
+                {"wallet": wallet_address},
+            )
+
+            return True
+
+    async def check_and_increment_free_read_usage(
+        self,
+        wallet_address: str,
+    ) -> bool:
+        """
+        Check whether a free-tier wallet may perform another read.
+
+        If allowed, atomically increments the counter and returns True.
+        If the wallet is on the pro tier, checks pro read limits.
+        If the tier limit is reached, returns False.
+
+        Monthly reset: if *free_reads_reset_at* is older than the start of
+        the current calendar month (UTC), the counter is reset to 0 first.
+
+        Args:
+            wallet_address: The user's wallet address.
+
+        Returns:
+            True if the read is allowed, False otherwise.
+        """
+        settings = get_settings()
+
+        async with self.db.session() as session:
+            # Upsert the subscription row if it doesn't exist yet
+            await session.execute(
+                text("""
+                    INSERT INTO subscriptions (wallet_address, tier, free_reads_used)
+                    VALUES (:wallet, 'free', 0)
+                    ON CONFLICT (wallet_address) DO NOTHING
+                """),
+                {"wallet": wallet_address},
+            )
+
+            # Fetch current state
+            result = await session.execute(
+                text("""
+                    SELECT tier, free_reads_used, free_reads_reset_at, expires_at
+                    FROM subscriptions
+                    WHERE wallet_address = :wallet
+                    FOR UPDATE
+                """),
+                {"wallet": wallet_address},
+            )
+            row = result.fetchone()
+
+            # Determine tier and limit
+            is_pro = False
+            if row.tier == "pro":
+                if row.expires_at and row.expires_at < datetime.now(timezone.utc):
+                    pass  # expired — treat as free
+                else:
+                    is_pro = True
+
+            limit = (
+                settings.pro_tier_reads_per_month if is_pro
+                else settings.free_tier_reads_per_month
+            )
+
+            # Monthly reset check
+            now = datetime.now(timezone.utc)
+            month_start = now.replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
+            if row.free_reads_reset_at is None or row.free_reads_reset_at < month_start:
+                await session.execute(
+                    text("""
+                        UPDATE subscriptions
+                        SET free_reads_used = 0,
+                            free_reads_reset_at = :month_start,
+                            updated_at = NOW()
+                        WHERE wallet_address = :wallet
+                    """),
+                    {"wallet": wallet_address, "month_start": month_start},
+                )
+                current_usage = 0
+            else:
+                current_usage = row.free_reads_used
+
+            if current_usage >= limit:
+                return False
+
+            # Increment
+            await session.execute(
+                text("""
+                    UPDATE subscriptions
+                    SET free_reads_used = free_reads_used + 1,
                         updated_at = NOW()
                     WHERE wallet_address = :wallet
                 """),
@@ -334,6 +430,7 @@ class StripeService:
                     SELECT wallet_address, tier, source, stripe_id,
                            stripe_customer_id, coinbase_id, expires_at,
                            free_writes_used, free_writes_reset_at,
+                           free_reads_used, free_reads_reset_at,
                            created_at, updated_at
                     FROM subscriptions
                     WHERE wallet_address = :wallet
@@ -353,6 +450,8 @@ class StripeService:
                 "expires_at": row.expires_at,
                 "free_writes_used": row.free_writes_used,
                 "free_writes_reset_at": row.free_writes_reset_at,
+                "free_reads_used": row.free_reads_used,
+                "free_reads_reset_at": row.free_reads_reset_at,
                 "created_at": row.created_at,
                 "updated_at": row.updated_at,
             }

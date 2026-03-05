@@ -108,27 +108,48 @@ class BillingMockDB:
             # ----- INSERT INTO subscriptions ... ON CONFLICT ... -----
             if sql.upper().startswith("INSERT INTO SUBSCRIPTIONS"):
                 wallet = params.get("wallet") or params.get("addr")
+
+                # Detect tier from SQL literal VALUES (e.g. VALUES(:wallet, 'pro', ...))
+                detected_tier = "free"
+                if "'pro'" in sql:
+                    detected_tier = "pro"
+                # Params override if present
+                if "tier" in params:
+                    detected_tier = params["tier"]
+
+                # Detect source from SQL literal VALUES
+                detected_source = None
+                if "'stripe'" in sql and "source" in sql.lower():
+                    detected_source = "stripe"
+                elif "'coinbase_commerce'" in sql and "source" in sql.lower():
+                    detected_source = "coinbase_commerce"
+                if "source" in params:
+                    detected_source = params["source"]
+
                 if wallet and wallet not in self._db.subscriptions:
                     self._db.subscriptions[wallet] = {
                         "wallet_address": wallet,
-                        "tier": params.get("tier", "free") if "tier" in sql.lower() else "free",
-                        "source": params.get("source") if "source" in sql.lower() else None,
+                        "tier": detected_tier,
+                        "source": detected_source,
                         "stripe_id": params.get("stripe_id") if "stripe_id" in params else None,
                         "stripe_customer_id": params.get("cus_id") if "cus_id" in params else None,
                         "coinbase_id": params.get("cid") if "cid" in params else None,
                         "expires_at": params.get("expires") or params.get("exp"),
                         "free_writes_used": 0,
                         "free_writes_reset_at": None,
+                        "free_reads_used": 0,
+                        "free_reads_reset_at": None,
                         "created_at": datetime.now(timezone.utc),
                         "updated_at": datetime.now(timezone.utc),
                     }
                 elif wallet and wallet in self._db.subscriptions:
                     # ON CONFLICT ... DO UPDATE
                     row = self._db.subscriptions[wallet]
-                    if "tier" in params:
-                        row["tier"] = params["tier"]
                     if "DO UPDATE" in sql.upper():
-                        for key in ("stripe_id", "cus_id", "source"):
+                        row["tier"] = detected_tier
+                        if detected_source:
+                            row["source"] = detected_source
+                        for key in ("stripe_id", "cus_id"):
                             if key in params:
                                 mapped = key if key != "cus_id" else "stripe_customer_id"
                                 row[mapped] = params[key]
@@ -138,13 +159,6 @@ class BillingMockDB:
                             row["expires_at"] = params["expires"]
                         if "exp" in params:
                             row["expires_at"] = params["exp"]
-                        # Detect tier in the SET clause
-                        if "'pro'" in sql:
-                            row["tier"] = "pro"
-                        if "'stripe'" in sql and "source" in sql.lower():
-                            row["source"] = "stripe"
-                        if "'coinbase_commerce'" in sql and "source" in sql.lower():
-                            row["source"] = "coinbase_commerce"
                     row["updated_at"] = datetime.now(timezone.utc)
                 return _EmptyResult()
 
@@ -173,15 +187,23 @@ class BillingMockDB:
                         row["stripe_id"] = params["stripe_id"]
                     if "free_writes_used = 0" in sql:
                         row["free_writes_used"] = 0
+                    if "free_reads_used = 0" in sql:
+                        row["free_reads_used"] = 0
                     if "month_start" in params:
-                        row["free_writes_reset_at"] = params["month_start"]
+                        # Determine which reset field to update based on SQL
+                        if "free_reads_reset_at" in sql:
+                            row["free_reads_reset_at"] = params["month_start"]
+                        else:
+                            row["free_writes_reset_at"] = params["month_start"]
                     if "free_writes_used = free_writes_used + 1" in sql:
                         row["free_writes_used"] = row.get("free_writes_used", 0) + 1
+                    if "free_reads_used = free_reads_used + 1" in sql:
+                        row["free_reads_used"] = row.get("free_reads_used", 0) + 1
                     row["updated_at"] = datetime.now(timezone.utc)
                 return _EmptyResult()
 
             # ----- SELECT ... FROM subscriptions WHERE wallet_address = :wallet -----
-            if "FROM subscriptions" in sql.upper().replace("\n", " "):
+            if "FROM SUBSCRIPTIONS" in sql.upper().replace("\n", " "):
                 wallet = params.get("wallet") or params.get("addr") or params.get("sid")
                 # Look up by stripe_id if that's the parameter
                 if "stripe_id = :sid" in sql:
@@ -756,21 +778,23 @@ class TestFreeTierUsage:
         assert db.subscriptions[TEST_WALLET]["free_writes_used"] == 2
 
     @pytest.mark.asyncio
-    @patch("src.billing.stripe_service.FREE_TIER_LIMIT", 3)
     @patch("src.billing.stripe_service.STRIPE_SECRET_KEY", "sk_test_fake")
     async def test_free_tier_limit_reached(self):
-        """After FREE_TIER_LIMIT writes, check_and_increment_free_usage returns False."""
+        """After free_tier_writes_per_month writes, check_and_increment_free_usage returns False."""
         db = BillingMockDB()
         svc = _make_stripe_service(db)
 
-        # Use up all 3 free writes
-        for _ in range(3):
-            result = await svc.check_and_increment_free_usage(TEST_WALLET)
-            assert result is True
+        # Patch get_settings to return a low write limit
+        mock_settings = _make_mock_settings(free_tier_writes_per_month=3)
+        with patch("src.billing.stripe_service.get_settings", return_value=mock_settings):
+            # Use up all 3 free writes
+            for _ in range(3):
+                result = await svc.check_and_increment_free_usage(TEST_WALLET)
+                assert result is True
 
-        # The 4th call should be denied
-        result = await svc.check_and_increment_free_usage(TEST_WALLET)
-        assert result is False
+            # The 4th call should be denied
+            result = await svc.check_and_increment_free_usage(TEST_WALLET)
+            assert result is False
 
     @pytest.mark.asyncio
     @patch("src.billing.stripe_service.STRIPE_SECRET_KEY", "sk_test_fake")
@@ -788,6 +812,8 @@ class TestFreeTierUsage:
             "expires_at": datetime.now(timezone.utc) + timedelta(days=30),
             "free_writes_used": 9999,  # Way over limit
             "free_writes_reset_at": datetime.now(timezone.utc),
+            "free_reads_used": 0,
+            "free_reads_reset_at": datetime.now(timezone.utc),
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
@@ -798,6 +824,138 @@ class TestFreeTierUsage:
 
 
 # ---------------------------------------------------------------------------
+# Free-tier read usage tests
+# ---------------------------------------------------------------------------
+
+class TestFreeReadUsage:
+    """Tests for StripeService.check_and_increment_free_read_usage."""
+
+    @pytest.mark.asyncio
+    @patch("src.billing.stripe_service.STRIPE_SECRET_KEY", "sk_test_fake")
+    async def test_free_read_usage_increments(self):
+        """check_and_increment_free_read_usage increments the free_reads_used counter."""
+        db = BillingMockDB()
+        svc = _make_stripe_service(db)
+
+        # First call: should succeed and create the subscription row
+        result = await svc.check_and_increment_free_read_usage(TEST_WALLET)
+        assert result is True
+
+        sub = db.subscriptions.get(TEST_WALLET)
+        assert sub is not None
+        assert sub["free_reads_used"] == 1
+
+        # Second call: counter goes to 2
+        result2 = await svc.check_and_increment_free_read_usage(TEST_WALLET)
+        assert result2 is True
+        assert db.subscriptions[TEST_WALLET]["free_reads_used"] == 2
+
+    @pytest.mark.asyncio
+    @patch("src.billing.stripe_service.STRIPE_SECRET_KEY", "sk_test_fake")
+    async def test_free_read_limit_reached(self):
+        """After free_tier_reads_per_month reads, check returns False."""
+        db = BillingMockDB()
+        svc = _make_stripe_service(db)
+
+        # Patch get_settings to return a low read limit
+        mock_settings = _make_mock_settings(free_tier_reads_per_month=3)
+        with patch("src.billing.stripe_service.get_settings", return_value=mock_settings):
+            # Use up all 3 free reads
+            for _ in range(3):
+                result = await svc.check_and_increment_free_read_usage(TEST_WALLET)
+                assert result is True
+
+            # The 4th call should be denied
+            result = await svc.check_and_increment_free_read_usage(TEST_WALLET)
+            assert result is False
+
+    @pytest.mark.asyncio
+    @patch("src.billing.stripe_service.STRIPE_SECRET_KEY", "sk_test_fake")
+    async def test_pro_tier_has_higher_read_limit(self):
+        """Pro-tier users get pro_tier_reads_per_month limit."""
+        db = BillingMockDB()
+        # Pre-seed a pro subscription with reads near the free limit
+        db.subscriptions[TEST_WALLET] = {
+            "wallet_address": TEST_WALLET,
+            "tier": "pro",
+            "source": "stripe",
+            "stripe_id": "sub_test_pro",
+            "stripe_customer_id": "cus_test_pro",
+            "coinbase_id": None,
+            "expires_at": datetime.now(timezone.utc) + timedelta(days=30),
+            "free_writes_used": 0,
+            "free_writes_reset_at": datetime.now(timezone.utc),
+            "free_reads_used": 5,  # Over a hypothetical free limit of 3
+            "free_reads_reset_at": datetime.now(timezone.utc),
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        }
+
+        svc = _make_stripe_service(db)
+
+        # Pro tier with high limit should still allow reads
+        mock_settings = _make_mock_settings(
+            free_tier_reads_per_month=3,
+            pro_tier_reads_per_month=100000,
+        )
+        with patch("src.billing.stripe_service.get_settings", return_value=mock_settings):
+            result = await svc.check_and_increment_free_read_usage(TEST_WALLET)
+            assert result is True
+            assert db.subscriptions[TEST_WALLET]["free_reads_used"] == 6
+
+    @pytest.mark.asyncio
+    @patch("src.billing.stripe_service.STRIPE_SECRET_KEY", "sk_test_fake")
+    async def test_read_write_counters_independent(self):
+        """Read and write counters are tracked independently."""
+        db = BillingMockDB()
+        svc = _make_stripe_service(db)
+
+        # Do some writes
+        await svc.check_and_increment_free_usage(TEST_WALLET)
+        await svc.check_and_increment_free_usage(TEST_WALLET)
+
+        # Do some reads
+        await svc.check_and_increment_free_read_usage(TEST_WALLET)
+
+        sub = db.subscriptions[TEST_WALLET]
+        assert sub["free_writes_used"] == 2
+        assert sub["free_reads_used"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Subscription status with settings tests
+# ---------------------------------------------------------------------------
+
+class TestSubscriptionStatusSettings:
+    """Tests that subscription status uses get_settings() for limits."""
+
+    @pytest.mark.asyncio
+    @patch("src.billing.stripe_service.STRIPE_SECRET_KEY", "sk_test_fake")
+    async def test_status_uses_settings_for_limit(self):
+        """get_subscription_status returns the limit from get_settings()."""
+        db = BillingMockDB()
+        svc = _make_stripe_service(db)
+
+        mock_settings = _make_mock_settings(free_tier_writes_per_month=200)
+        with patch("src.billing.stripe_service.get_settings", return_value=mock_settings):
+            status = await svc.get_subscription_status(TEST_WALLET)
+            assert status["free_writes_limit"] == 200
+            assert status["tier"] == "free"
+
+    @pytest.mark.asyncio
+    @patch("src.billing.stripe_service.STRIPE_SECRET_KEY", "sk_test_fake")
+    async def test_status_with_different_settings_value(self):
+        """Changing settings value changes the returned limit."""
+        db = BillingMockDB()
+        svc = _make_stripe_service(db)
+
+        mock_settings = _make_mock_settings(free_tier_writes_per_month=500)
+        with patch("src.billing.stripe_service.get_settings", return_value=mock_settings):
+            status = await svc.get_subscription_status(TEST_WALLET)
+            assert status["free_writes_limit"] == 500
+
+
+# ---------------------------------------------------------------------------
 # Helpers for unit-level service tests
 # ---------------------------------------------------------------------------
 
@@ -805,6 +963,22 @@ def _make_stripe_service(db: BillingMockDB):
     """Instantiate a StripeService with a mock DB, bypassing Stripe key config."""
     from src.billing.stripe_service import StripeService
     return StripeService(db)
+
+
+def _make_mock_settings(**overrides):
+    """Create a mock Settings object with configurable tier limits.
+
+    Default values match the real config.py defaults. Override any
+    setting by passing it as a keyword argument.
+    """
+    defaults = {
+        "free_tier_writes_per_month": 100,
+        "free_tier_reads_per_month": 1000,
+        "pro_tier_writes_per_month": 10000,
+        "pro_tier_reads_per_month": 100000,
+    }
+    defaults.update(overrides)
+    return type("MockSettings", (), defaults)()
 
 
 # ---------------------------------------------------------------------------
