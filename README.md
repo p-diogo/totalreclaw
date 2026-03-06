@@ -2,10 +2,10 @@
 
 **Your AI agent knows more about you than your closest friends. You should be the only one who controls that.**
 
-TotalReclaw is a zero-knowledge encrypted memory layer for AI agents. Your data is encrypted on your device before it touches any server — and it's stored on a decentralized network that no company owns or controls. You hold the only keys.
+TotalReclaw is a zero-knowledge encrypted memory layer for AI agents. Your data is encrypted on your device before it leaves — no one can read it, not even us. You hold the only keys.
 
-- **Zero-knowledge** — Encrypted end-to-end. The server, the chain, the indexer — none of them can read it. Only you hold the keys.
-- **Portable** — One 12-word phrase. Move between agents, export anytime, no lock-in.
+- **Zero-knowledge** — E2E encrypted. Only you can read your data.
+- **Portable** — One 12-word phrase. Any device, any agent, no lock-in.
 - **Decentralized** — No company stores your data. Lives on a decentralized network indexed by [The Graph](https://thegraph.com).
 
 ---
