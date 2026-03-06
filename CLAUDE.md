@@ -57,7 +57,6 @@
 ```
 /totalreclaw
 ├── CLAUDE.md              # This file
-├── CHANGELOG.md           # Change history
 │
 ├── server/                # FastAPI + PostgreSQL backend
 ├── client/                # TypeScript client library (E2EE, LSH, embeddings)

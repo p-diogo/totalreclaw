@@ -1,92 +1,131 @@
 # TotalReclaw
 
-**Zero-knowledge encrypted memory vault for AI agents** -- the "password manager for AI memory."
+**Zero-knowledge encrypted memory for AI agents.**
 
-## Current Status
+**Encrypted** -- Your data is encrypted on your device before it leaves. Zero-knowledge: even the server can't read it.
+**Portable** -- One 12-word recovery phrase works on any device or agent. One-click plaintext export. No lock-in.
+**On-chain** -- Memories are stored encrypted on Gnosis Chain and indexed by The Graph's decentralized network.
 
-**PoC v2 Complete** -- Full E2EE search pipeline with LSH, embeddings, and hybrid reranking. 343 tests passing.
+---
 
-| Component | Status | Tests |
-|-----------|--------|-------|
-| Server (FastAPI + PostgreSQL) | Complete | 221 |
-| Client (TypeScript, E2EE) | Complete | -- |
-| OpenClaw Plugin (PoC v2) | Complete | 38 + 32 + 52 |
-| NanoClaw MCP Server | Complete | 32 (TAP) |
-| Generic MCP Server | Complete | -- |
+## What is TotalReclaw?
+
+Your AI agent remembers things across conversations -- preferences, decisions, facts about your projects and life. Everything is encrypted on your device before reaching the server, so no one can read your memories except you. The same 12-word recovery phrase works on any device or agent, so your memories follow you everywhere.
+
+---
 
 ## Quick Start
 
-### Prerequisites
+### Option A: OpenClaw (recommended -- fully automatic)
 
-- Docker & Docker Compose
-- Node.js 20+
-- Python 3.11+
-
-### Run Server
+During private beta, install from GitHub:
 
 ```bash
-cd server
-docker-compose up -d
-# Server at http://localhost:8080
+git clone https://github.com/p-diogo/totalreclaw.git ~/totalreclaw
+cd ~/totalreclaw/skill/plugin && npm install
+openclaw plugins install -l ./
 ```
 
-### Run Client
+Or just ask your agent:
 
-```bash
-cd client
-npm install
-npm run build
-npm test
-```
+> "Install the totalreclaw skill from https://github.com/p-diogo/totalreclaw"
 
-### Use in OpenClaw
+The agent handles setup: generates your encryption keys and registers you. You'll be asked to write down a 12-word recovery phrase -- that's the only thing you need to keep safe.
 
-```bash
-cd skill
-npm install
-openclaw plugins enable totalreclaw
-```
+After setup, memory is automatic. Your agent remembers important things from conversations and loads relevant memories at the start of each new one. No commands needed.
+
+> After beta, this will be available directly via `clawhub install totalreclaw`.
+
+### Option B: Claude Desktop / Cursor / Any MCP Agent
+
+1. Run the setup wizard:
+   ```bash
+   npx @totalreclaw/mcp-server setup
+   ```
+   The wizard generates your recovery phrase, sets up encryption, registers you, and prints a config snippet.
+
+2. Paste the config snippet into your MCP client (the wizard tells you exactly where).
+
+3. Start chatting. Your agent has memory tools it can use when appropriate.
+
+MCP agents use explicit tool calls rather than automatic hooks -- the agent decides when to remember and recall, and you can also ask it directly ("remember that I prefer dark mode" or "what do you remember about my project?").
+
+---
+
+## How It Works
+
+1. **You set up with a 12-word recovery phrase** (like a crypto wallet)
+2. **All memories are encrypted on your device** before reaching the server
+3. **The server stores only encrypted blobs** + blind search indices -- it can never read your data
+4. **Data is anchored on-chain** (Gnosis Chain), indexed by The Graph's decentralized network
+5. **Same phrase on any device = same keys = same memories**
+
+---
+
+## Free Tier & Pricing
+
+| Tier | Writes | Reads | Price |
+|------|--------|-------|-------|
+| **Free** | 100/month | Unlimited | $0 |
+| **Pro** | 10,000/month | Unlimited | $2-5/month |
+
+Counter resets at the start of each calendar month. Pay with card (Stripe) or crypto (Coinbase Commerce). When you hit the limit, your agent tells you and provides an upgrade link.
+
+> Pricing is not finalized during beta.
+
+---
 
 ## Architecture
 
 ```
 +-------------------------------------------------------------------------+
-|                           CLIENT (OpenClaw Skill)                       |
+|                        CLIENT (your device)                             |
 +-------------------------------------------------------------------------+
 |  +--------------+  +--------------+  +--------------+  +-------------+ |
 |  | Fact Extract |->|   Encrypt    |->| Generate LSH |->| Blind Index | |
 |  |    (LLM)     |  | (AES-256-GCM)|  |   Buckets    |  |  (SHA-256)  | |
 |  +--------------+  +--------------+  +--------------+  +-------------+ |
 +-------------------------------------------------------------------------+
-                               | HTTP + JSON
+                               |
                                v
 +-------------------------------------------------------------------------+
-|                        SERVER (FastAPI + PostgreSQL)                    |
+|                     SERVER (encrypted storage)                          |
 +-------------------------------------------------------------------------+
-|  - facts (encrypted_ciphertext, blind_indices[], encrypted_embedding)  |
-|  - Search: blind_trapdoors -> GIN index -> encrypted candidates        |
+|  Stores: encrypted ciphertext, blind indices, encrypted embeddings     |
+|  Search: blind trapdoors -> GIN index -> return encrypted candidates   |
+|  Never sees plaintext.                                                  |
 +-------------------------------------------------------------------------+
                                |
                                v
 +-------------------------------------------------------------------------+
-|                         CLIENT (Re-ranking)                             |
+|                   CLIENT (decryption + re-ranking)                      |
 +-------------------------------------------------------------------------+
-|  Decrypt 400-5000 candidates -> BM25 + Cosine + RRF fusion -> Top K   |
+|  Decrypt candidates -> BM25 + cosine similarity + RRF fusion -> Top K  |
 +-------------------------------------------------------------------------+
 ```
 
-## Key Features
+**Client-side:** AES-256-GCM encryption, locality-sensitive hashing (LSH) for blind indices, local embeddings (bge-small-en-v1.5, no API keys needed).
 
-| Feature | Description |
-|---------|-------------|
-| **E2EE with AES-256-GCM** | Server never sees plaintext facts or embeddings |
-| **LSH Blind Indices** | Search encrypted data using locality-sensitive hashing (32-bit x 20 tables) |
-| **Local Embeddings** | bge-small-en-v1.5 ONNX model runs client-side (no API keys needed) |
-| **Client-side Re-ranking** | BM25 + cosine similarity + RRF fusion with stemmed blind indices |
-| **Dynamic Candidate Pool** | 400-5000 candidates based on fact count |
-| **Export/Import** | One-click plaintext export. No vendor lock-in. |
-| **MCP Server** | Works with Claude Desktop, OpenClaw, any MCP client |
-| **BIP-39 Mnemonic** | Same 12-word phrase derives encryption keys and future Ethereum wallet |
+**Server:** FastAPI + PostgreSQL. Stores only encrypted data. Blind trapdoor search over GIN indices.
+
+**On-chain:** Gnosis Chain for data anchoring. The Graph subgraph for decentralized indexing.
+
+**Search:** The server returns encrypted candidates matched by blind indices. The client decrypts them locally and re-ranks using BM25 + cosine similarity with reciprocal rank fusion (RRF).
+
+---
+
+## Self-Hosting
+
+```bash
+cd server
+cp .env.example .env   # Configure your database URL, secrets, etc.
+docker-compose up -d
+# Server runs at http://localhost:8080
+```
+
+Point your client at your own server URL by setting the `TOTALRECLAW_SERVER_URL` environment variable.
+
+---
 
 ## Repository Structure
 
@@ -94,77 +133,46 @@ openclaw plugins enable totalreclaw
 totalreclaw/
 ├── server/          # FastAPI + PostgreSQL backend
 ├── client/          # TypeScript client library (E2EE, LSH, embeddings)
-├── skill/           # OpenClaw plugin (PoC v2: embedding, LSH, reranker)
-├── skill-nanoclaw/  # NanoClaw skill package + self-contained MCP server
-├── mcp/             # Generic MCP server (for Claude Desktop, etc.)
+├── skill/           # OpenClaw skill (encryption, LSH, reranker)
+├── skill-nanoclaw/  # NanoClaw skill package + MCP server
+├── mcp/             # MCP server for Claude Desktop, Cursor, etc.
 ├── contracts/       # Solidity contracts (EventfulDataEdge, Paymaster)
-├── subgraph/        # Graph Node indexer (AssemblyScript mappings)
+├── subgraph/        # The Graph subgraph (AssemblyScript mappings)
 ├── database/        # Database schema
-├── tests/           # Integration tests
-└── docs/            # Specs, guides, PRD, roadmap
+├── tests/           # Integration and E2E tests
+└── docs/            # Specs, guides, and deployment docs
 ```
 
-## Benchmark Results
-
-5-way benchmark comparison (TotalReclaw v2 vs Mem0 vs QMD vs LanceDB vs TotalReclaw v1):
-
-| System | Overall Recall | Semantic Recall | Privacy |
-|--------|---------------|-----------------|---------|
-| TotalReclaw v2 (E2EE) | 24.3% | 24.3% | Zero-knowledge |
-| LanceDB (plaintext) | 24.7% | 24.7% | None |
-| TotalReclaw v1 (E2EE) | 16.4% | 16.4% | Zero-knowledge |
-
-TotalReclaw v2 achieves within 0.4% of LanceDB's semantic recall while maintaining full zero-knowledge E2EE.
-
-## Related Repositories
-
-| Repo | Description |
-|------|-------------|
-| [totalreclaw](https://github.com/p-diogo/totalreclaw) | Product code (this repo) |
-| [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal) | Benchmarks, testbed, research, archive (private, maintainers only) |
-| [totalreclaw-website](https://github.com/p-diogo/totalreclaw-website) | Landing page |
+---
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [CLAUDE.md](./CLAUDE.md) | Project guide for AI agents |
-| [TASKS.md](./TASKS.md) | Live task tracking |
-| [CHANGELOG.md](./CHANGELOG.md) | Complete change history |
-| [docs/specs/](./docs/specs/) | Technical specifications (by product) |
-| [docs/prd.md](./docs/prd.md) | Product Requirements Document |
-| [docs/ROADMAP.md](./docs/ROADMAP.md) | Phased roadmap |
+- [Beta Tester Guide](./docs/guides/beta-tester-guide.md) -- getting started, troubleshooting, known limitations
+- [Detailed Technical Guide](./docs/guides/beta-tester-guide-detailed.md) -- full reference with configuration and environment variables
+- [Architecture Spec](./docs/specs/totalreclaw/architecture.md) -- E2EE design with LSH + blind buckets
+- [Crypto Modules](./docs/architecture/crypto-modules.md) -- key derivation, encryption, and hashing internals
+- [totalreclaw.xyz](https://totalreclaw.xyz) -- project homepage
 
-### Technical Specs
+---
 
-- **[architecture.md](./docs/specs/totalreclaw/architecture.md)** -- E2EE with LSH + Blind Buckets (zero-knowledge search)
-- **[server.md](./docs/specs/totalreclaw/server.md)** -- Server PoC v0.3.1b (Auth + Dedup)
-- **[skill-openclaw.md](./docs/specs/totalreclaw/skill-openclaw.md)** -- OpenClaw plugin integration
-- **[skill-nanoclaw.md](./docs/specs/totalreclaw/skill-nanoclaw.md)** -- NanoClaw MCP integration
-- **[mcp-server.md](./docs/specs/totalreclaw/mcp-server.md)** -- Generic MCP Server
-- **[mcp-auto-memory.md](./docs/specs/totalreclaw/mcp-auto-memory.md)** -- MCP Auto-Memory for generic hosts
-- **[benchmark.md](./docs/specs/totalreclaw/benchmark.md)** -- Benchmark Harness (OMBH)
-- **[conflict-resolution.md](./docs/specs/totalreclaw/conflict-resolution.md)** -- Multi-Agent Conflict Resolution v0.3.2
+## npm Packages
 
-## Testing
+| Package | Description |
+|---------|-------------|
+| [@totalreclaw/client](https://www.npmjs.com/package/@totalreclaw/client) | TypeScript client library (E2EE, LSH, embeddings) |
+| [@totalreclaw/mcp-server](https://www.npmjs.com/package/@totalreclaw/mcp-server) | MCP server for Claude Desktop, Cursor, etc. |
 
-```bash
-# Server tests (221 tests)
-cd server && pip install -r requirements.txt && python -m pytest tests/ -v
+---
 
-# Plugin E2E tests (38 tests)
-cd skill/plugin && npm install && npm test
+## Contributing
 
-# LSH tests (32 tests)
-cd skill/plugin && npx tsx lsh.test.ts
+Coming soon. For now, please [file issues on GitHub](https://github.com/p-diogo/totalreclaw/issues).
 
-# Reranker tests (52 tests)
-cd skill/plugin && npx tsx reranker.test.ts
-
-# Client tests
-cd client && npm install && npm test
-```
+---
 
 ## License
 
-MIT
+This project is dual-licensed:
+
+- **Server** (`server/`) -- [AGPL-3.0](./server/LICENSE)
+- **All other code** -- [MIT](./LICENSE)
