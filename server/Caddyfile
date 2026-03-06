@@ -9,7 +9,7 @@
 #
 # Usage:
 # - Development: Replace {$DOMAIN} with localhost
-# - Production: Set DOMAIN env var to your domain (e.g., api.totalreclaw.dev)
+# - Production: Set DOMAIN env var to your domain (e.g., api.totalreclaw.xyz)
 
 {$DOMAIN:localhost} {
     # ============ TLS Configuration ============

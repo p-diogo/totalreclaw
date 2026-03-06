@@ -47,7 +47,7 @@ const SUBGRAPH_ENDPOINT = 'http://localhost:8000/subgraphs/name/totalreclaw';
 // Note: We use provider.getSigner(0) instead of a hardcoded key to ensure we get
 // the actual Hardhat account that deployed (and owns) the contracts.
 
-/** Path to OMBH ground truth data (in totalreclaw-internal repo). */
+/** Path to OMBH ground truth data (in totalreclaw-internal repo, private, maintainers only). */
 const OMBH_FACTS_PATH = path.resolve(
   __dirname, '..', '..', '..', 'totalreclaw-internal',
   'ombh', 'synthetic-benchmark', 'ground-truth', 'facts-ingested.json',
@@ -412,7 +412,7 @@ async function main() {
 
   if (!fs.existsSync(OMBH_FACTS_PATH)) {
     console.error(`ERROR: Facts file not found: ${OMBH_FACTS_PATH}`);
-    console.error('Make sure totalreclaw-internal repo is cloned alongside this repo.');
+    console.error('Make sure totalreclaw-internal repo (private, maintainers only) is cloned alongside this repo.');
     process.exit(1);
   }
   if (!fs.existsSync(OMBH_QUERIES_PATH)) {

@@ -100,7 +100,7 @@ interface RegisterResponse {
 async function registerWithServer(
   serverUrl: string,
   authKeyHash: string,
-  saltBase64: string,
+  saltHex: string,
 ): Promise<string> {
   const url = `${serverUrl.replace(/\/+$/, '')}/v1/register`;
 
@@ -109,7 +109,7 @@ async function registerWithServer(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       auth_key_hash: authKeyHash,
-      salt: saltBase64,
+      salt: saltHex,
     }),
   });
 
@@ -134,7 +134,7 @@ async function registerWithServer(
 
 export interface SavedCredentials {
   userId: string;
-  salt: string; // base64
+  salt: string; // hex
   serverUrl: string;
 }
 
@@ -243,7 +243,7 @@ export async function runSetup(): Promise<void> {
 
     const { authKey, salt } = deriveAuthKey(mnemonic);
     const authKeyHash = computeAuthKeyHash(authKey);
-    const saltBase64 = Buffer.from(salt).toString('base64');
+    const saltHex = Buffer.from(salt).toString('hex');
 
     console.log('\nKeys derived successfully.');
 
@@ -261,7 +261,7 @@ export async function runSetup(): Promise<void> {
 
     let userId: string;
     try {
-      userId = await registerWithServer(serverUrl, authKeyHash, saltBase64);
+      userId = await registerWithServer(serverUrl, authKeyHash, saltHex);
       console.log(`Registered successfully. User ID: ${userId}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -275,7 +275,7 @@ export async function runSetup(): Promise<void> {
 
     const credentials: SavedCredentials = {
       userId,
-      salt: saltBase64,
+      salt: saltHex,
       serverUrl,
     };
 

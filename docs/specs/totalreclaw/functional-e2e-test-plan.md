@@ -1596,5 +1596,5 @@ After initial implementation, the test suite can be extended to cover:
 2. **E1 (Stable prefix / Observational Memory):** Add Scenario I testing stable prefix cache behavior over 50+ turns.
 3. **E2 (Tiered memory categories):** Modify Scenario A to validate that preferences decay slower than episodic facts.
 4. **Multi-user isolation:** Run two conversation drivers simultaneously against the same server, verifying zero cross-user leakage.
-5. **5-instance comparison benchmark (from totalreclaw-internal):** Once the test infra is stable, port the existing 5-way comparison harness to use this framework for apples-to-apples comparisons.
+5. **5-instance comparison benchmark (from totalreclaw-internal, private, maintainers only):** Once the test infra is stable, port the existing 5-way comparison harness to use this framework for apples-to-apples comparisons.
 6. **Regression CI:** Run Scenarios C and H in CI on every PR to catch regressions in B2 (noise filtering) and overall behavior.

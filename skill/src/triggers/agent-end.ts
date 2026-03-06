@@ -29,6 +29,7 @@ import {
   type LLMClient,
   type VectorStoreClient,
 } from '../extraction';
+import { debugLog } from '../debug';
 
 // ============================================================================
 // Types
@@ -100,18 +101,14 @@ export async function agentEnd(
   // Update turn counter
   options.state.turnCount++;
 
-  if (options.debug) {
-    console.log(`[TotalReclaw] Agent end hook - Turn ${options.state.turnCount}`);
-  }
+  debugLog(!!options.debug, `Agent end hook - Turn ${options.state.turnCount}`);
 
   try {
     // Step 1: Check if we should extract this turn
     const shouldExtract = shouldExtractThisTurn(context, options);
 
     if (!shouldExtract) {
-      if (options.debug) {
-        console.log(`[TotalReclaw] Skipping extraction this turn`);
-      }
+      debugLog(!!options.debug, `Skipping extraction this turn`);
 
       return {
         factsExtracted: 0,
@@ -169,9 +166,7 @@ function shouldExtractThisTurn(
 
   // Always extract for explicit memory commands
   if (isExplicitMemoryCommand(context.userMessage)) {
-    if (options.debug) {
-      console.log(`[TotalReclaw] Explicit memory command detected`);
-    }
+    debugLog(!!options.debug, `Explicit memory command detected`);
     return true;
   }
 
@@ -197,12 +192,10 @@ async function runExtractionAsync(
 ): Promise<void> {
   const result = await runExtraction(context, options);
 
-  if (options.debug) {
-    console.log(
-      `[TotalReclaw] Async extraction completed: ${result.factsExtracted} extracted, ` +
-      `${result.factsStored} stored, ${result.factsSkipped} skipped`
-    );
-  }
+  debugLog(!!options.debug,
+    `Async extraction completed: ${result.factsExtracted} extracted, ` +
+    `${result.factsStored} stored, ${result.factsSkipped} skipped`
+  );
 }
 
 /**
@@ -239,9 +232,7 @@ async function runExtraction(
     const extractionResult = await extractor.extractFacts(context, trigger);
     result.factsExtracted = extractionResult.facts.length;
 
-    if (options.debug) {
-      console.log(`[TotalReclaw] Extracted ${result.factsExtracted} facts in ${extractionResult.processingTimeMs}ms`);
-    }
+    debugLog(!!options.debug, `Extracted ${result.factsExtracted} facts in ${extractionResult.processingTimeMs}ms`);
 
     // Filter and store facts
     for (const fact of extractionResult.facts) {
@@ -262,9 +253,7 @@ async function runExtraction(
         await storeFact(fact, options);
         result.factsStored++;
 
-        if (options.debug) {
-          console.log(`[TotalReclaw] Stored fact: "${fact.factText}" (importance: ${fact.importance})`);
-        }
+        debugLog(!!options.debug, `Stored fact: "${fact.factText}" (importance: ${fact.importance})`);
       } catch (storeError) {
         console.error(`[TotalReclaw] Failed to store fact:`, storeError);
         result.factsSkipped++;

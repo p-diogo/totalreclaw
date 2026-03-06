@@ -56,6 +56,7 @@ import {
   type LLMClient,
   type VectorStoreClient,
 } from './extraction';
+import { debugLog } from './debug';
 
 // ============================================================================
 // Types
@@ -259,7 +260,7 @@ export class TotalReclawSkill {
           isNewUser = true;
 
           // Store credentials for future use (caller should persist these)
-          console.log(`[TotalReclaw] Registered new user: ${userId}`);
+          debugLog(`Registered new user: ${userId}`);
         }
       }
 

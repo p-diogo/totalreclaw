@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -208,7 +209,7 @@ async function loadCredentials(path: string): Promise<{ userId: string; salt: Bu
   const parsed = JSON.parse(data) as StoredCredentials;
   return {
     userId: parsed.userId,
-    salt: Buffer.from(parsed.salt, 'base64'),
+    salt: Buffer.from(parsed.salt, 'hex'),
   };
 }
 
@@ -218,7 +219,7 @@ async function saveCredentials(path: string, credentials: { userId: string; salt
   await fs.mkdir(dir, { recursive: true }).catch(() => {});
   const data: StoredCredentials = {
     userId: credentials.userId,
-    salt: credentials.salt.toString('base64'),
+    salt: credentials.salt.toString('hex'),
   };
   await fs.writeFile(path, JSON.stringify(data, null, 2), 'utf-8');
 }

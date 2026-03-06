@@ -34,6 +34,6 @@ keeping the server self-contained minimizes deployment complexity.
 
 ## Testing
 
-The full Docker test harness lives in the `totalreclaw-internal` repo at
+The full Docker test harness lives in the `totalreclaw-internal` repo (private, maintainers only) at
 `testbed/functional-test-nanoclaw/`. See `run-pipeline-test.sh` for the
 32-test TAP pipeline validation.

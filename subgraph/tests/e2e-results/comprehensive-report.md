@@ -3,7 +3,7 @@
 **Generated:** 2026-03-02
 **Branch:** `feature/subgraph` (8+ commits ahead of main)
 **Environment:** Hardhat localhost + Docker Compose (Graph Node 0.35.1, PostgreSQL 16, IPFS)
-**Benchmark data:** 415 OMBH facts + 140 queries (totalreclaw-internal ground truth)
+**Benchmark data:** 415 OMBH facts + 140 queries (totalreclaw-internal ground truth, private, maintainers only)
 
 ---
 

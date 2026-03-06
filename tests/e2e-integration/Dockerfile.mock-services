@@ -1,0 +1,14 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package.json and install deps
+COPY mock-services-package.json ./package.json
+RUN npm install --production
+
+# Copy mock services source
+COPY mock-services.ts .
+
+EXPOSE 9090
+
+CMD ["npx", "tsx", "mock-services.ts"]

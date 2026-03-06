@@ -15,6 +15,7 @@ import * as ort from 'onnxruntime-node';
 import * as path from 'path';
 import * as fs from 'fs';
 import type { Fact, RerankedResult } from '@totalreclaw/client';
+import { debugLog } from '../debug';
 
 // ============================================================================
 // Configuration
@@ -378,11 +379,9 @@ export class CrossEncoderReranker {
 
       this.isLoaded = true;
 
-      if (this.config.debug) {
-        console.log(
-          `CrossEncoderReranker loaded successfully from ${this.modelPath}`
-        );
-      }
+      debugLog(!!this.config.debug,
+        `CrossEncoderReranker loaded successfully from ${this.modelPath}`
+      );
     } catch (error) {
       if (this.config.debug) {
         console.warn(
@@ -476,7 +475,7 @@ export class CrossEncoderReranker {
       // Log latency if debug enabled
       if (this.config.debug) {
         const latency = Date.now() - startTime;
-        console.log(
+        debugLog(true,
           `CrossEncoder reranked ${candidates.length} documents in ${latency}ms ` +
           `(${(latency / candidates.length).toFixed(1)}ms per doc)`
         );

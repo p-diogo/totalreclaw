@@ -121,7 +121,7 @@ TotalReclaw v2 achieves within 0.4% of LanceDB's semantic recall while maintaini
 | Repo | Description |
 |------|-------------|
 | [totalreclaw](https://github.com/p-diogo/totalreclaw) | Product code (this repo) |
-| [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal) | Benchmarks, testbed, research, archive |
+| [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal) | Benchmarks, testbed, research, archive (private, maintainers only) |
 | [totalreclaw-website](https://github.com/p-diogo/totalreclaw-website) | Landing page |
 
 ## Documentation

@@ -16,7 +16,7 @@ Architecture: `Client -> Cloudflare -> Caddy (TLS) -> FastAPI`
 
 ## 1. DNS Setup
 
-1. Add your domain to Cloudflare (e.g., `api.totalreclaw.dev`)
+1. Add your domain to Cloudflare (e.g., `api.totalreclaw.xyz`)
 2. Set the A record to point to your server IP
 3. **Enable Proxy mode** (orange cloud icon) -- this routes traffic through Cloudflare
 4. Set TTL to "Auto"
@@ -167,7 +167,7 @@ Create page rules under Rules > Page Rules:
 
 **Cache bypass for API:**
 ```
-URL: api.totalreclaw.dev/*
+URL: api.totalreclaw.xyz/*
 Setting: Cache Level = Bypass
 ```
 

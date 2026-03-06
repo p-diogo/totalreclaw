@@ -1076,7 +1076,7 @@ async function syncToClaudeMd(
 
 ```bash
 # Required
-TOTALRECLAW_SERVER_URL=https://api.totalreclaw.dev
+TOTALRECLAW_SERVER_URL=https://api.totalreclaw.xyz
 TOTALRECLAW_MASTER_PASSWORD=<from user>
 
 # Optional
@@ -1267,7 +1267,7 @@ if (!isMain) {
 
 ```bash
 # In container environment
-TOTALRECLAW_SERVER_URL=https://api.totalreclaw.dev
+TOTALRECLAW_SERVER_URL=https://api.totalreclaw.xyz
 TOTALRECLAW_ENABLED=true
 TOTALRECLAW_AUTO_EXTRACT=true
 TOTALRECLAW_EXTRACT_INTERVAL=5  # turns
@@ -1291,7 +1291,7 @@ TOTALRECLAW_MAX_CONTEXT=8       # memories in context
 ### Main Channel Commands
 
 ```
-@Andy configure memory server https://api.totalreclaw.dev
+@Andy configure memory server https://api.totalreclaw.xyz
 @Andy set memory password [master password]
 @Andy export all memories
 @Andy sync memories with CLAUDE.md

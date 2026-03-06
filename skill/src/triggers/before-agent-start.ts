@@ -21,6 +21,7 @@ import type {
   TotalReclawSkillConfig,
 } from '../types';
 import { CrossEncoderReranker, getCrossEncoderReranker } from '../reranker/cross-encoder';
+import { debugLog } from '../debug';
 
 // ============================================================================
 // Types
@@ -194,9 +195,7 @@ export async function beforeAgentStart(
     // Step 1: Build search query from user message and recent context
     const searchQuery = buildSearchQuery(context);
 
-    if (options.debug) {
-      console.log(`[TotalReclaw] Searching for: "${searchQuery}"`);
-    }
+    debugLog(!!options.debug, `Searching for: "${searchQuery}"`);
 
     // Step 2: Retrieve candidate memories from TotalReclaw
     const searchStart = Date.now();
@@ -207,9 +206,7 @@ export async function beforeAgentStart(
     metrics.searchLatencyMs = Date.now() - searchStart;
     metrics.candidatesRetrieved = candidates.length;
 
-    if (options.debug) {
-      console.log(`[TotalReclaw] Retrieved ${candidates.length} candidates in ${metrics.searchLatencyMs}ms`);
-    }
+    debugLog(!!options.debug, `Retrieved ${candidates.length} candidates in ${metrics.searchLatencyMs}ms`);
 
     // If no candidates, return empty result early
     if (candidates.length === 0) {
@@ -240,9 +237,7 @@ export async function beforeAgentStart(
     );
     metrics.rerankLatencyMs = Date.now() - rerankStart;
 
-    if (options.debug) {
-      console.log(`[TotalReclaw] Reranked in ${metrics.rerankLatencyMs}ms`);
-    }
+    debugLog(!!options.debug, `Reranked in ${metrics.rerankLatencyMs}ms`);
 
     // Convert CrossEncoderResult back to RerankedResult format
     const memories: RerankedResult[] = rerankedResults.map(result => ({
@@ -264,10 +259,10 @@ export async function beforeAgentStart(
     metrics.totalLatencyMs = Date.now() - startTime;
 
     if (options.debug) {
-      console.log(`[TotalReclaw] Hook completed in ${metrics.totalLatencyMs}ms`);
-      console.log(`  - Search: ${metrics.searchLatencyMs}ms`);
-      console.log(`  - Rerank: ${metrics.rerankLatencyMs}ms`);
-      console.log(`  - Format: ${metrics.formatLatencyMs}ms`);
+      debugLog(true, `Hook completed in ${metrics.totalLatencyMs}ms`);
+      debugLog(true, `  Search: ${metrics.searchLatencyMs}ms`);
+      debugLog(true, `  Rerank: ${metrics.rerankLatencyMs}ms`);
+      debugLog(true, `  Format: ${metrics.formatLatencyMs}ms`);
     }
 
     return {

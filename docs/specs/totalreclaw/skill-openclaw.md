@@ -276,7 +276,7 @@ decay_score = importance * Math.exp(-days_since_last_access / 30) * usage_freque
 memory:
   totalreclaw:
     enabled: true
-    serverUrl: "https://api.totalreclaw.dev"
+    serverUrl: "https://api.totalreclaw.xyz"
     autoExtractEveryTurns: 5
     minImportanceForAutoStore: 6
     forgetThreshold: 0.3
@@ -304,7 +304,7 @@ memory:
 | Config Key | Description | Default |
 |------------|-------------|---------|
 | `memory.totalreclaw.enabled` | Enable/disable TotalReclaw | `true` |
-| `memory.totalreclaw.serverUrl` | TotalReclaw server URL | `"https://api.totalreclaw.dev"` |
+| `memory.totalreclaw.serverUrl` | TotalReclaw server URL | `"https://api.totalreclaw.xyz"` |
 | `memory.totalreclaw.autoExtractEveryTurns` | Turns between extractions | `5` |
 | `memory.totalreclaw.minImportanceForAutoStore` | Minimum importance to auto-store | `6` |
 | `memory.totalreclaw.forgetThreshold` | Decay score threshold for eviction | `0.3` |

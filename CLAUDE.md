@@ -1,9 +1,4 @@
-# TotalReclaw - Project Guide for AI Agents
-
-> **CRITICAL: All agents MUST read this file at the start of every session.**
-> **CRITICAL: All agents MUST update TASKS.md and CHANGELOG.md as they work.**
-
----
+# TotalReclaw - Project Guide
 
 ## Project Overview
 
@@ -59,13 +54,9 @@
 
 ## Repository Structure
 
-This is the **product code** repository. Internal tooling (benchmarks, testbed, archive)
-lives in [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal).
-
 ```
 /totalreclaw
-├── CLAUDE.md              # THIS FILE - Read first!
-├── TASKS.md               # Live task tracking (todo, in-progress, blocked)
+├── CLAUDE.md              # This file
 ├── CHANGELOG.md           # Change history
 │
 ├── server/                # FastAPI + PostgreSQL backend
@@ -79,7 +70,7 @@ lives in [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal)
 ├── subgraph/              # Graph Node indexer (AssemblyScript mappings)
 ├── database/              # Database schema (schema.sql)
 ├── tests/                 # Integration tests
-│   ├── e2e-functional/    # E2E functional test suite (66/66 + 130/130 assertions)
+│   ├── e2e-functional/    # E2E functional test suite
 │   └── parity/            # Parity tests (plugin vs NanoClaw)
 │
 └── docs/                  # Specs and guides
@@ -94,44 +85,9 @@ lives in [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal)
     └── ROADMAP.md         # Phased roadmap
 ```
 
-## Related Repositories
-
-| Repo | Purpose | URL |
-|------|---------|-----|
-| `totalreclaw-internal` | Benchmarks, testbed, research, archive, plans | [github.com/p-diogo/totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal) |
-| `totalreclaw-website` | Landing page | [github.com/p-diogo/totalreclaw-website](https://github.com/p-diogo/totalreclaw-website) |
-
 ---
 
-## Agent Coordination Rules
-
-### MANDATORY for ALL Agents
-
-1. **READ FIRST** -- At session start, read:
-   - This file (CLAUDE.md)
-   - TASKS.md (understand current state)
-   - CHANGELOG.md (understand recent changes)
-
-2. **UPDATE AS YOU WORK** (real-time, not at the end):
-   - Claim tasks in TASKS.md (set `owner` and `status: in_progress`) BEFORE starting work
-   - Log all changes in CHANGELOG.md with timestamp
-   - Release tasks when done (`status: completed`)
-   - **This enables parallel agents** -- if another agent is running concurrently, it checks TASKS.md to avoid conflicts
-
-3. **PERSIST STATE IN FILES** -- Never keep state only in memory. If an agent crashes, another must be able to resume from TASKS.md.
-
-4. **COMMUNICATE VIA CHANGELOG** -- If you need to leave a message for the next agent, put it in CHANGELOG.md.
-
-5. **ALWAYS DELEGATE TO SUBAGENTS -- NEVER DO IMPLEMENTATION IN THE MAIN SESSION** -- Use the Task tool to delegate ALL implementation work, research, and testing to subagents. The main session is ONLY for coordination, decision-making, and user communication. This is a hard rule, not a suggestion. Launch multiple agents in parallel when tasks are independent.
-
-6. **COMPACTION PROTOCOL** -- Whenever the user says "prepare for compaction" (or similar), you MUST:
-   - Update TASKS.md with current status of all in-progress work
-   - Update CHANGELOG.md with everything done in the current session
-   - This is mandatory because multiple agents work on this project in parallel -- the files are the shared state.
-
----
-
-## Current Technical Specifications
+## Technical Specifications
 
 Specs are organized by product area under `docs/specs/`:
 
@@ -145,12 +101,9 @@ Specs are organized by product area under `docs/specs/`:
 | MCP Server | `mcp-server.md` | Implemented |
 | MCP Auto-Memory (Generic Hosts) | `mcp-auto-memory.md` | Spec complete |
 | Benchmark Harness (OMBH) | `benchmark.md` | Implemented |
-| Benchmark v2 Improvements | `benchmark-v2-improvements.md` | Spec complete |
 | LSH Tuning (Multi-Tenant SaaS) | `lsh-tuning.md` | Complete |
 | Conflict Resolution v0.3.2 | `conflict-resolution.md` | Design complete, not implemented |
-| Retrieval Improvements v3 | `retrieval-improvements-v3.md` | Implemented (13/13 tasks) |
-| MCP Onboarding | `mcp-onboarding.md` | Spec complete, not started |
-| E2E Test Plan v2 (Billing) | `e2e-test-plan-v2.md` | Implemented (130/130 assertions) |
+| Retrieval Improvements v3 | `retrieval-improvements-v3.md` | Implemented |
 
 ### Subgraph (Decentralized) -- `docs/specs/subgraph/`
 | Spec | File | Status |
@@ -174,7 +127,6 @@ Specs are organized by product area under `docs/specs/`:
 | LSH parameters | RESOLVED | 32-bit x 20 tables, 98.1% Recall@8 on real data |
 | Authentication | RESOLVED | HKDF auth with SHA-256 key hashing |
 | Conflict resolution (Layers 3-4) | MEDIUM | Spec'd in v0.3.2, not implemented |
-| Mem0 competitive benchmark | MEDIUM | Retrieval-only done, E2E deferred |
 | Load testing | MEDIUM | Not done -- need to validate <140ms p95 |
 | Graceful shutdown | LOW | Not yet configured in uvicorn |
 
@@ -189,7 +141,7 @@ Specs are organized by product area under `docs/specs/`:
 
 ---
 
-## Commands
+## Build and Test
 
 ```bash
 # Server
@@ -211,38 +163,7 @@ cd skill-nanoclaw && npm install
 
 ---
 
-## Contact & Context
+## Current Status
 
-- **User**: @pdiogo
-- **Project started**: February 2026
-- **Current phase**: Post Session 24 -- All phases complete, ship prep + MCP onboarding next (see TASKS.md)
-- **Current version**: v0.2.0 (PoC v2)
-
----
-
-## Recovery Instructions (If Session Crashes)
-
-If you're a new agent picking up this project:
-
-1. **READ FIRST**:
-   - This file (CLAUDE.md)
-   - TASKS.md -- see current status
-   - CHANGELOG.md -- see what's been done
-
-2. **Current Phase**: Check TASKS.md for current phase
-
-3. **Key Files**:
-   - Tech specs: `docs/specs/totalreclaw/` (core), `docs/specs/subgraph/`, `docs/specs/tee/`
-   - PRD: `docs/prd.md`
-   - Roadmap: `docs/ROADMAP.md`
-   - Plans: In [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal) repo under `plans/`
-   - Benchmarks/testbed: In [totalreclaw-internal](https://github.com/p-diogo/totalreclaw-internal) repo
-
-4. **Before Starting Work**:
-   - Claim tasks in TASKS.md (set owner and status: in_progress)
-   - Check if dependencies are complete
-
-5. **After Completing Work**:
-   - Mark tasks complete in TASKS.md
-   - Log changes in CHANGELOG.md
-   - Update any affected documentation
+- **Version**: v0.2.0 (PoC v2)
+- **Phase**: Private Beta

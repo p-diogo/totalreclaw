@@ -89,18 +89,18 @@ describe('Auth & Credentials Edge Cases', () => {
     });
   });
 
-  describe('invalid base64 salt in credentials', () => {
-    it('detects non-base64 salt string', () => {
-      const creds = { userId: 'user-1', salt: '!!!not-base64!!!' };
-      // Attempt to decode -- Buffer.from with base64 silently ignores invalid chars
-      const decoded = Buffer.from(creds.salt, 'base64');
+  describe('invalid hex salt in credentials', () => {
+    it('detects non-hex salt string', () => {
+      const creds = { userId: 'user-1', salt: '!!!not-hex!!!' };
+      // Attempt to decode -- Buffer.from with hex silently ignores invalid chars
+      const decoded = Buffer.from(creds.salt, 'hex');
       // The decoded result would be garbage, but should not throw
       expect(decoded).toBeInstanceOf(Buffer);
     });
 
     it('detects empty salt string', () => {
       const creds = { userId: 'user-1', salt: '' };
-      const decoded = Buffer.from(creds.salt, 'base64');
+      const decoded = Buffer.from(creds.salt, 'hex');
       expect(decoded.length).toBe(0);
     });
   });

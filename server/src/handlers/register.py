@@ -52,7 +52,7 @@ async def register(
     Register a new user.
 
     The client sends:
-    - auth_key_hash: SHA256(HKDF(master_password, salt, "openmemory-auth-v1"))
+    - auth_key_hash: SHA256(HKDF(master_password, salt, "totalreclaw-auth-key-v1"))
     - salt: Random 32 bytes used for HKDF derivation
 
     The server:

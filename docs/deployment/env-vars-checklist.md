@@ -81,7 +81,7 @@ The Studio GraphQL endpoint will be something like:
 | Variable | Where Used | How to Get |
 |----------|-----------|------------|
 | `DATABASE_URL` | Relay server | Railway provisions this automatically when you add PostgreSQL |
-| `DOMAIN` | Caddy / Cloudflare | Your chosen domain (e.g., `api.totalreclaw.dev`) |
+| `DOMAIN` | Caddy / Cloudflare | Your chosen domain (e.g., `api.totalreclaw.xyz`) |
 
 **Setup steps**:
 1. Create account at [railway.app](https://railway.app/)
@@ -100,7 +100,7 @@ The Studio GraphQL endpoint will be something like:
 | `CORS_ORIGINS` | Server config | Your frontend URL(s) |
 
 **Decision needed**: What domain will you use?
-- Option A: `api.totalreclaw.dev` (if you own `totalreclaw.dev`)
+- Option A: `api.totalreclaw.xyz` (if you own `totalreclaw.xyz`)
 - Option B: `totalreclaw.railway.app` (Railway auto-domain, free, no DNS setup)
 - Option C: Something else?
 

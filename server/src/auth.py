@@ -2,7 +2,7 @@
 Authentication module for TotalReclaw Server.
 
 Implements HKDF-SHA256 based authentication:
-- Registration: auth_key = HKDF(master_password, salt, "openmemory-auth-v1")
+- Registration: auth_key = HKDF(master_password, salt, "totalreclaw-auth-key-v1")
 - Server stores SHA256(auth_key) and salt
 - Every request: Client sends auth_key in Authorization header
 - Server computes SHA256(auth_key) and looks up user
@@ -19,7 +19,7 @@ from hkdf import Hkdf as HKDF
 
 
 # Constants from config
-AUTH_KEY_INFO = b"openmemory-auth-v1"
+AUTH_KEY_INFO = b"totalreclaw-auth-key-v1"
 HKDF_LENGTH = 32  # 256 bits
 SALT_LENGTH = 32  # 256 bits
 

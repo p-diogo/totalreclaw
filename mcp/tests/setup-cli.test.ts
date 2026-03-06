@@ -198,7 +198,7 @@ describe('Setup CLI - Credential Persistence', () => {
   it('should save credentials to file', () => {
     const creds: SavedCredentials = {
       userId: 'test-user-123',
-      salt: Buffer.from('test-salt-bytes').toString('base64'),
+      salt: Buffer.from('test-salt-bytes').toString('hex'),
       serverUrl: 'https://api.totalreclaw.xyz',
     };
 

@@ -33,6 +33,7 @@ import {
   type VectorStoreClient,
   type ExistingFact,
 } from '../extraction';
+import { debugLog } from '../debug';
 
 // ============================================================================
 // Types
@@ -114,8 +115,8 @@ export async function preCompaction(
   const startTime = Date.now();
 
   if (options.debug) {
-    console.log(`[TotalReclaw] Pre-compaction hook started`);
-    console.log(`[TotalReclaw] Analyzing ${context.history.length} turns`);
+    debugLog(true, `Pre-compaction hook started`);
+    debugLog(true, `Analyzing ${context.history.length} turns`);
   }
 
   try {
@@ -123,13 +124,13 @@ export async function preCompaction(
     const result = await runComprehensiveExtraction(context, options);
 
     if (options.debug) {
-      console.log(`[TotalReclaw] Pre-compaction completed in ${result.processingTimeMs}ms`);
-      console.log(`  - Extracted: ${result.factsExtracted}`);
-      console.log(`  - Stored: ${result.factsStored}`);
-      console.log(`  - Skipped: ${result.duplicatesSkipped}`);
+      debugLog(true, `Pre-compaction completed in ${result.processingTimeMs}ms`);
+      debugLog(true, `  Extracted: ${result.factsExtracted}`);
+      debugLog(true, `  Stored: ${result.factsStored}`);
+      debugLog(true, `  Skipped: ${result.duplicatesSkipped}`);
       if (result.graphStats) {
-        console.log(`  - Entities: ${result.graphStats.uniqueEntities}`);
-        console.log(`  - Relations: ${result.graphStats.uniqueRelations}`);
+        debugLog(true, `  Entities: ${result.graphStats.uniqueEntities}`);
+        debugLog(true, `  Relations: ${result.graphStats.uniqueRelations}`);
       }
     }
 
@@ -190,16 +191,12 @@ async function runComprehensiveExtraction(
     const extractionResult = await extractor.extractFacts(context, 'pre_compaction');
     result.factsExtracted = extractionResult.facts.length;
 
-    if (options.debug) {
-      console.log(`[TotalReclaw] Raw extraction: ${result.factsExtracted} facts`);
-    }
+    debugLog(!!options.debug, `Raw extraction: ${result.factsExtracted} facts`);
 
     // Step 3: Get existing memories for deduplication
     const existingMemories = await getExistingMemories(context, options);
 
-    if (options.debug) {
-      console.log(`[TotalReclaw] Found ${existingMemories.length} existing memories for deduplication`);
-    }
+    debugLog(!!options.debug, `Found ${existingMemories.length} existing memories for deduplication`);
 
     // Step 4: Create deduplicator and process facts
     const deduplicator = createDeduplicator(
@@ -223,9 +220,7 @@ async function runComprehensiveExtraction(
       const consolidatedFacts = await consolidateGraph(deduplicatedFacts, options);
       result.graphStats = consolidatedFacts.stats;
 
-      if (options.debug) {
-        console.log(`[TotalReclaw] Graph consolidation: ${result.graphStats.entitiesMerged} entities merged`);
-      }
+      debugLog(!!options.debug, `Graph consolidation: ${result.graphStats.entitiesMerged} entities merged`);
     }
 
     // Step 7: Store facts in batch

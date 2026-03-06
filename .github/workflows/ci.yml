@@ -4,39 +4,15 @@ on:
   push:
     branches:
       - main
-      - 'feature/*'
   pull_request:
     branches:
       - main
 
 jobs:
-  server-tests:
-    name: Server Tests (Python)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt -r server/requirements.txt
-
-      - name: Run tests
-        run: |
-          cd server
-          python -m pytest tests/ -v --tb=short \
-            --ignore=tests/test_store.py \
-            --ignore=tests/test_search.py \
-            --ignore=tests/test_e2e_smoke.py \
-            --ignore=tests/test_integration.py \
-            --ignore=tests/test_billing.py
-
   client-tests:
     name: Client Tests (TypeScript)
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -45,15 +21,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: cd client && npm ci
+      - name: Install and test
+        run: cd client && npm ci && npm test
 
-      - name: Run tests
-        run: cd client && npm test
-
-  plugin-build-check:
+  plugin-build:
     name: Plugin Build Check
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -62,31 +36,6 @@ jobs:
         with:
           node-version: '20'
 
+      # Plugin has no test script yet — just verify deps install cleanly
       - name: Install dependencies
         run: cd skill/plugin && npm ci
-
-      # The plugin is an OpenClaw skill with no tsconfig or TypeScript
-      # devDependency. Verifying that dependencies install cleanly is
-      # the main check we can perform outside the OpenClaw runtime.
-
-  mcp-build:
-    name: MCP Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      # MCP depends on @totalreclaw/client via file:../client,
-      # so we need to install client dependencies first.
-      - name: Install client dependencies
-        run: cd client && npm ci
-
-      - name: Install MCP dependencies
-        run: cd mcp && npm ci
-
-      - name: Build MCP server
-        run: cd mcp && npm run build

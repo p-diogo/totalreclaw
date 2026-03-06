@@ -31,7 +31,7 @@ Upload encrypted doc + encrypted embedding + blind indices (still kept for exact
 Search (client → TEE):
 
 Client encrypts query embedding with master key.
-Client calls https://tee.totalreclaw.dev/search with encrypted query + attestation nonce.
+Client calls https://tee.totalreclaw.xyz/search with encrypted query + attestation nonce.
 Load balancer routes to healthy enclave.
 Enclave: decrypts query inside TEE, performs full ANN + BM25 on decrypted-in-memory index, returns only encrypted top results.
 Client decrypts final results.

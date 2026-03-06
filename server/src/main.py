@@ -157,7 +157,7 @@ app = FastAPI(
 
     The auth_key is derived from the user's master password using HKDF-SHA256:
     ```
-    auth_key = HKDF-SHA256(master_password, salt, "openmemory-auth-v1")
+    auth_key = HKDF-SHA256(master_password, salt, "totalreclaw-auth-key-v1")
     ```
 
     ## Zero-Knowledge Design

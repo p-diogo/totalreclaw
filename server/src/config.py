@@ -119,8 +119,8 @@ def get_settings() -> Settings:
 
 
 # Auth configuration constants
-AUTH_KEY_INFO = b"openmemory-auth-v1"
-ENCRYPTION_KEY_INFO = b"openmemory-enc-v1"
+AUTH_KEY_INFO = b"totalreclaw-auth-key-v1"
+ENCRYPTION_KEY_INFO = b"totalreclaw-encryption-key-v1"
 HKDF_LENGTH = 32  # 256 bits
 SALT_LENGTH = 32  # 256 bits
 

@@ -57,6 +57,7 @@ backups/
 
 # Session plans and implementation details (private)
 plans/
+docs/plans/
 
 # IDE
 .vscode/
@@ -98,6 +99,10 @@ generated/
 
 # Docker
 docker-compose.override.yml
+
+# Internal coordination files (not for public repo)
+TASKS.md
+CHANGELOG.md
 
 # Misc
 *.tgz

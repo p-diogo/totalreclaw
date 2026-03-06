@@ -1,17 +1,17 @@
-# OpenMemory Database Backup - Cron Configuration
+# TotalReclaw Database Backup - Cron Configuration
 #
 # Install with: crontab -e
-# Or place in /etc/cron.d/openmemory-backup
+# Or place in /etc/cron.d/totalreclaw-backup
 #
 # Adjust paths below to match your installation.
 
 # ============ Daily Backup at 3 AM ============
 # Keeps the last 7 backups by default (configurable via BACKUP_RETAIN)
-0 3 * * * /path/to/openmemory/server/scripts/backup.sh /path/to/backups >> /var/log/openmemory-backup.log 2>&1
+0 3 * * * /path/to/totalreclaw/server/scripts/backup.sh /path/to/backups >> /var/log/totalreclaw-backup.log 2>&1
 
 # ============ Custom retention (keep 30 days) ============
-# 0 3 * * * BACKUP_RETAIN=30 /path/to/openmemory/server/scripts/backup.sh /path/to/backups >> /var/log/openmemory-backup.log 2>&1
+# 0 3 * * * BACKUP_RETAIN=30 /path/to/totalreclaw/server/scripts/backup.sh /path/to/backups >> /var/log/totalreclaw-backup.log 2>&1
 
 # ============ Weekly full backup to remote storage ============
 # Pair with rclone, aws s3 cp, or rsync for off-site copies:
-# 0 4 * * 0 rclone copy /path/to/backups remote:openmemory-backups/ >> /var/log/openmemory-backup.log 2>&1
+# 0 4 * * 0 rclone copy /path/to/backups remote:totalreclaw-backups/ >> /var/log/totalreclaw-backup.log 2>&1
