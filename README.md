@@ -2,9 +2,9 @@
 
 **Zero-knowledge encrypted memory for AI agents.**
 
-**Encrypted** -- Your data is encrypted on your device before it leaves. Zero-knowledge: even the server can't read it.
-**Portable** -- One 12-word recovery phrase works on any device or agent. One-click plaintext export. No lock-in.
-**On-chain** -- Memories are stored encrypted on Gnosis Chain and indexed by The Graph's decentralized network.
+- **Encrypted** — Your data is encrypted on your device before it leaves. Zero-knowledge: even the server can't read it.
+- **Portable** — One 12-word recovery phrase works on any device or agent. One-click plaintext export. No lock-in.
+- **On-chain** — Memories stored encrypted on the blockchain, indexed by [The Graph](https://thegraph.com)'s decentralized network.
 
 ---
 
