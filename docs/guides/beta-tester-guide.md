@@ -2,7 +2,7 @@
 
 **What it is:** Encrypted memory that works across sessions. Your AI remembers your preferences, decisions, and context -- and only you can read it. Not even our server sees your data.
 
-**Works with:** OpenClaw, Claude Desktop, Cursor, or any MCP-compatible agent.
+**Works with:** OpenClaw, Claude Desktop, Cursor, NanoClaw, or any MCP-compatible agent.
 
 ---
 
@@ -47,6 +47,24 @@ You can always be explicit too -- "remember that I prefer dark mode" or "what do
 
 **Note:** MCP agents don't have automatic memory like OpenClaw. The agent uses the tools when contextually appropriate, and you can also explicitly ask it to remember or recall things.
 
+### NanoClaw
+
+NanoClaw agents get TotalReclaw memory automatically — no setup required on your end. The NanoClaw admin adds a `TOTALRECLAW_MASTER_PASSWORD` secret for your group, and the agent-runner spawns `@totalreclaw/mcp-server` as a background process.
+
+**What this means for you:**
+- Your agent has 7 memory tools available: remember, recall, forget, export, import, status, upgrade
+- Memory is shared within your NanoClaw group (same namespace = same memories)
+- All data is encrypted with your group's master password before leaving the container
+- Subgraph mode, billing, and quota work identically to Claude Desktop / Cursor
+
+**To verify it's working**, ask your agent:
+
+> "What's my TotalReclaw status?"
+
+If TotalReclaw is configured, the agent will show your tier, usage, and storage mode.
+
+**Recovery:** Your group's memory is tied to the `TOTALRECLAW_MASTER_PASSWORD`. If the admin changes it, previous memories become inaccessible. The admin should treat this password like a recovery phrase.
+
 ---
 
 ## How It Works
@@ -80,7 +98,7 @@ Your 12-word recovery phrase is the only thing you need to access your memories 
 
 **Write it down and store it safely.** If you lose it, your memories are unrecoverable -- that's the point of zero-knowledge encryption.
 
-To recover: just run the setup again (OpenClaw: reinstall the skill; MCP: re-run the setup wizard) and enter your existing phrase when prompted.
+To recover: just run the setup again (OpenClaw: reinstall the skill; MCP: re-run the setup wizard) and enter your existing phrase when prompted. NanoClaw users: ask your group admin — recovery is managed via the group's master password.
 
 ---
 
