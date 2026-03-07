@@ -147,7 +147,7 @@ TOTALRECLAW_SUBGRAPH_MODE="true"
 TOTALRECLAW_SUBGRAPH_ENDPOINT="https://api.studio.thegraph.com/query/41768/total-reclaw-chiado/version/latest"
 PIMLICO_API_KEY="<provided-by-totalreclaw-team>"
 TOTALRECLAW_CHAIN_ID="10200"
-TOTALRECLAW_DATA_EDGE_ADDRESS="0x048879569E394af3fC6721d8d44DdcfcDD407543"
+TOTALRECLAW_DATA_EDGE_ADDRESS="0x16C4fDBa8da731995ADFC367727b5929893f0B20"
 ```
 
 Replace `word1 word2 ...` with your actual 12-word phrase. Keep the quotes around it.
@@ -724,7 +724,7 @@ The OpenClaw plugin auto-detects your agent's LLM provider and API key for fact 
 | `TOTALRECLAW_RELEVANCE_THRESHOLD` | Minimum cosine relevance score for auto-injecting memories into context. | `0.3` |
 | `TOTALRECLAW_SEMANTIC_SKIP_THRESHOLD` | Cosine similarity threshold for deduplication. Facts too similar to existing ones are skipped. | `0.85` |
 | `TOTALRECLAW_CACHE_TTL_MS` | Hot cache time-to-live in milliseconds. Cached results within this window are reused for similar queries. | `300000` (5 minutes) |
-| `TOTALRECLAW_TWO_TIER_SEARCH` | Enable two-tier search (LSH-only for auto-search, full word+LSH for explicit recall). | `true` |
+| `TOTALRECLAW_KEEP_NATIVE_MEMORY` | Keep OpenClaw's native MEMORY.md file. When `false` (default), TotalReclaw cleans up cleartext memory files to prevent plaintext leakage. Set to `true` if you want both TotalReclaw and OpenClaw's native memory. | `false` |
 | `TOTALRECLAW_LLM_MODEL` | **Advanced.** Override the auto-detected extraction model. TotalReclaw automatically derives a cheap model from your agent's provider (e.g., Anthropic → `claude-haiku-4-5`, OpenAI → `gpt-4.1-mini`). Only set this if the auto-derived model doesn't work for you. | Auto-detected |
 
 ### Subgraph Mode Variables (Advanced)
@@ -734,13 +734,10 @@ These variables control on-chain storage via the subgraph. **For the Chiado beta
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `TOTALRECLAW_SUBGRAPH_MODE` | Set to `true` to use on-chain subgraph storage. **Set this to `true` for beta.** | `false` |
-| `TOTALRECLAW_SUBGRAPH_ENDPOINT` | GraphQL endpoint for subgraph reads (Graph Studio URL). | `https://api.studio.thegraph.com/query/41768/total-reclaw-chiado/version/latest` |
-| `PIMLICO_API_KEY` | Pimlico API key for ERC-4337 UserOp submission. Gas is sponsored — you don't pay anything. **Required for subgraph mode.** | -- |
 | `TOTALRECLAW_CHAIN_ID` | Chain ID for on-chain transactions. `10200` = Chiado testnet, `100` = Gnosis mainnet. | `10200` |
-| `TOTALRECLAW_DATA_EDGE_ADDRESS` | Address of the EventfulDataEdge smart contract on Chiado. | `0x048879569E394af3fC6721d8d44DdcfcDD407543` |
+| `TOTALRECLAW_DATA_EDGE_ADDRESS` | Address of the EventfulDataEdge smart contract on Chiado. | `0x16C4fDBa8da731995ADFC367727b5929893f0B20` |
 | `TOTALRECLAW_ENTRYPOINT_ADDRESS` | ERC-4337 EntryPoint v0.7 address. Same on all chains. | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` |
-| `TOTALRECLAW_RELAY_URL` | Legacy relay endpoint (fallback for local dev without Pimlico). Not needed in production. | `http://localhost:8545` |
-| `TOTALRECLAW_SUBGRAPH_PAGE_SIZE` | Maximum results per subgraph query page. | `5000` |
+| `TOTALRECLAW_SUBGRAPH_PAGE_SIZE` | Maximum results per subgraph query page (Graph Studio limit: 1000). | `1000` |
 | `TOTALRECLAW_TRAPDOOR_BATCH_SIZE` | Number of trapdoors per batch in subgraph queries. | `5` |
 
 ---

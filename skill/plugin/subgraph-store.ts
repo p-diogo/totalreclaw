@@ -301,6 +301,33 @@ export function isSubgraphMode(): boolean {
  *   - PIMLICO_API_KEY
  *   - TOTALRECLAW_SUBGRAPH_ENDPOINT
  */
+/**
+ * Derive the Smart Account address from a BIP-39 mnemonic.
+ * This is the on-chain owner identity used in the subgraph.
+ */
+export async function deriveSmartAccountAddress(mnemonic: string, chainId?: number): Promise<string> {
+  const chain: Chain = (chainId ?? 10200) === 100 ? gnosis : gnosisChiado;
+  const ownerAccount = mnemonicToAccount(mnemonic);
+  const entryPointAddr = (process.env.TOTALRECLAW_ENTRYPOINT_ADDRESS || DEFAULT_ENTRYPOINT_ADDRESS) as Address;
+  const rpcUrl = process.env.TOTALRECLAW_RPC_URL;
+
+  const publicClient = createPublicClient({
+    chain,
+    transport: rpcUrl ? http(rpcUrl) : http(),
+  });
+
+  const smartAccount = await toSimpleSmartAccount({
+    client: publicClient,
+    owner: ownerAccount,
+    entryPoint: {
+      address: entryPointAddr,
+      version: '0.7',
+    },
+  });
+
+  return smartAccount.address.toLowerCase();
+}
+
 export function getSubgraphConfig(): SubgraphStoreConfig {
   return {
     relayUrl: process.env.TOTALRECLAW_SERVER_URL || 'http://localhost:8000',

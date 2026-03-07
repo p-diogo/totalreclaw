@@ -206,6 +206,12 @@ TotalReclaw is a zero-knowledge encrypted memory vault for AI agents. Think of i
 
 ## Instructions for the LLM
 
+### IMPORTANT: Do Not Write Cleartext Memory Files
+
+TotalReclaw handles all memory storage with end-to-end encryption. **Do NOT write to MEMORY.md, USER.md, memory/*.md, or any other plaintext memory files.** All memories and user preferences are stored encrypted on-chain and recalled automatically — writing cleartext files defeats the zero-knowledge guarantee.
+
+If you need to store a memory, use the `totalreclaw_remember` tool. If you need to recall memories, use `totalreclaw_recall`. Never persist user information to local files, including USER.md.
+
 ### When to Use Each Tool
 
 #### totalreclaw_remember

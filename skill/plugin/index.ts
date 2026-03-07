@@ -29,7 +29,7 @@ import { initLLMClient, generateEmbedding, getEmbeddingDims } from './llm-client
 import { LSHHasher } from './lsh.js';
 import { rerank, cosineSimilarity, detectQueryIntent, INTENT_WEIGHTS, type RerankerCandidate } from './reranker.js';
 import { deduplicateBatch } from './semantic-dedup.js';
-import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitFactOnChain } from './subgraph-store.js';
+import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitFactOnChain, deriveSmartAccountAddress } from './subgraph-store.js';
 import { searchSubgraph, getSubgraphFactCount } from './subgraph-search.js';
 import { PluginHotCache, type HotFact } from './hot-cache-wrapper.js';
 import crypto from 'node:crypto';
@@ -93,6 +93,7 @@ let authKeyHex: string | null = null;
 let encryptionKey: Buffer | null = null;
 let dedupKey: Buffer | null = null;
 let userId: string | null = null;
+let subgraphOwner: string | null = null; // Smart Account address for subgraph queries
 let apiClient: ReturnType<typeof createApiClient> | null = null;
 let initPromise: Promise<void> | null = null;
 
@@ -117,6 +118,54 @@ const AUTO_EXTRACT_EVERY_TURNS = parseInt(process.env.TOTALRECLAW_EXTRACT_EVERY_
 
 // B2: Minimum relevance threshold — cosine below this means no memory injection
 const RELEVANCE_THRESHOLD = parseFloat(process.env.TOTALRECLAW_RELEVANCE_THRESHOLD ?? '0.3');
+
+// Native memory control — when true, keep OpenClaw's MEMORY.md; when false (default), clean it up
+// to prevent cleartext leakage since TotalReclaw handles memory via E2EE.
+const KEEP_NATIVE_MEMORY = process.env.TOTALRECLAW_KEEP_NATIVE_MEMORY === 'true';
+
+/**
+ * Remove OpenClaw's native cleartext memory files (MEMORY.md, memory/ dir)
+ * to prevent plaintext leakage. TotalReclaw handles all memory via E2EE.
+ * Replaces MEMORY.md with a stub pointing users to TotalReclaw.
+ */
+function cleanNativeMemory(logger: OpenClawPluginApi['logger']): void {
+  if (KEEP_NATIVE_MEMORY) return;
+  try {
+    const workspace = path.join(process.env.HOME ?? '/home/node', '.openclaw', 'workspace');
+    const memoryMd = path.join(workspace, 'MEMORY.md');
+    const memoryDir = path.join(workspace, 'memory');
+    const stub = '# Memory\n\nMemory is managed by TotalReclaw (encrypted). Do not write plaintext memories to this file.\n';
+
+    if (fs.existsSync(memoryMd)) {
+      const content = fs.readFileSync(memoryMd, 'utf-8');
+      if (content !== stub) {
+        fs.writeFileSync(memoryMd, stub);
+        logger.info('Replaced native MEMORY.md with TotalReclaw stub');
+      }
+    }
+
+    if (fs.existsSync(memoryDir)) {
+      const files = fs.readdirSync(memoryDir);
+      for (const f of files) {
+        fs.unlinkSync(path.join(memoryDir, f));
+      }
+      if (files.length > 0) logger.info(`Cleaned ${files.length} native memory files from memory/ dir`);
+    }
+
+    // Also clean USER.md — the agent writes preferences there in cleartext.
+    const userMd = path.join(workspace, 'USER.md');
+    const userStub = '# User\n\nUser preferences are managed by TotalReclaw (encrypted). Do not write plaintext data to this file.\n';
+    if (fs.existsSync(userMd)) {
+      const content = fs.readFileSync(userMd, 'utf-8');
+      if (content !== userStub) {
+        fs.writeFileSync(userMd, userStub);
+        logger.info('Replaced native USER.md with TotalReclaw stub');
+      }
+    }
+  } catch {
+    // Best-effort cleanup — don't block the hook
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Dynamic candidate pool sizing
@@ -258,6 +307,19 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
     );
 
     logger.info(`Registered new user: ${userId}`);
+  }
+
+  // Derive Smart Account address for subgraph queries (on-chain owner identity).
+  if (isSubgraphMode()) {
+    try {
+      const config = getSubgraphConfig();
+      subgraphOwner = await deriveSmartAccountAddress(config.mnemonic, config.chainId);
+      logger.info(`Subgraph owner (Smart Account): ${subgraphOwner}`);
+    } catch (err) {
+      logger.warn(`Failed to derive Smart Account address: ${err instanceof Error ? err.message : String(err)}`);
+      // Fall back to userId — won't match subgraph Bytes format, but better than null
+      subgraphOwner = userId;
+    }
   }
 }
 
@@ -535,7 +597,7 @@ async function storeExtractedFacts(
         const protobuf = encodeFactProtobuf({
           id: factId,
           timestamp: new Date().toISOString(),
-          owner: userId!,
+          owner: subgraphOwner || userId!,
           encryptedBlob: encryptedBlob,
           blindIndices: allIndices,
           decayScore: fact.importance,
@@ -700,7 +762,7 @@ const plugin = {
               const protobuf = encodeFactProtobuf({
                 id: factId,
                 timestamp: new Date().toISOString(),
-                owner: userId!,
+                owner: subgraphOwner || userId!,
                 encryptedBlob: encryptedBlob,
                 blindIndices: allIndices,
                 decayScore: importance,
@@ -797,9 +859,9 @@ const plugin = {
 
             if (isSubgraphMode()) {
               // --- Subgraph search path ---
-              const factCount = await getSubgraphFactCount(userId!, authKeyHex!);
+              const factCount = await getSubgraphFactCount(subgraphOwner || userId!, authKeyHex!);
               const pool = computeCandidatePool(factCount);
-              const subgraphResults = await searchSubgraph(userId!, allTrapdoors, pool, authKeyHex!);
+              const subgraphResults = await searchSubgraph(subgraphOwner || userId!, allTrapdoors, pool, authKeyHex!);
 
               for (const result of subgraphResults) {
                 try {
@@ -1116,6 +1178,9 @@ const plugin = {
       'before_agent_start',
       async (event: unknown) => {
         try {
+          // Prevent cleartext leakage from OpenClaw's native memory system.
+          cleanNativeMemory(api.logger);
+
           const evt = event as { prompt?: string } | undefined;
 
           // Skip trivial or missing prompts.
@@ -1185,9 +1250,9 @@ const plugin = {
             // 4. Query subgraph for fresh results.
             let subgraphResults: Awaited<ReturnType<typeof searchSubgraph>> = [];
             try {
-              const factCount = await getSubgraphFactCount(userId!, authKeyHex!);
+              const factCount = await getSubgraphFactCount(subgraphOwner || userId!, authKeyHex!);
               const pool = computeCandidatePool(factCount);
-              subgraphResults = await searchSubgraph(userId!, allTrapdoors, pool, authKeyHex!);
+              subgraphResults = await searchSubgraph(subgraphOwner || userId!, allTrapdoors, pool, authKeyHex!);
             } catch {
               // Subgraph query failed -- fall back to cached facts if available.
               if (cachedFacts.length > 0) {
@@ -1541,6 +1606,7 @@ export function __resetForTesting(): void {
   encryptionKey = null;
   dedupKey = null;
   userId = null;
+  subgraphOwner = null;
   apiClient = null;
   initPromise = null;
   lshHasher = null;
