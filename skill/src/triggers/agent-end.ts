@@ -14,6 +14,9 @@
  * This hook is ASYNC and does NOT block the user.
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import type { TotalReclaw } from '@totalreclaw/client';
 import type {
   AgentEndResult,
@@ -30,6 +33,8 @@ import {
   type VectorStoreClient,
 } from '../extraction';
 import { debugLog } from '../debug';
+
+const BILLING_CACHE_PATH = path.join(os.homedir(), '.totalreclaw', 'billing-cache.json');
 
 // ============================================================================
 // Types
@@ -65,6 +70,8 @@ interface ExtractionResult {
   factsStored: number;
   factsSkipped: number;
   processingTimeMs: number;
+  quotaExceeded?: boolean;
+  quotaMessage?: string;
 }
 
 // ============================================================================
@@ -133,6 +140,17 @@ export async function agentEnd(
 
     // Step 3: Run extraction synchronously
     const result = await runExtraction(context, options);
+
+    // Propagate quota exceeded info
+    if (result.quotaExceeded) {
+      return {
+        factsExtracted: result.factsExtracted,
+        factsStored: result.factsStored,
+        processingTimeMs: Date.now() - startTime,
+        quotaExceeded: true,
+        quotaMessage: result.quotaMessage,
+      };
+    }
 
     return {
       factsExtracted: result.factsExtracted,
@@ -255,6 +273,27 @@ async function runExtraction(
 
         debugLog(!!options.debug, `Stored fact: "${fact.factText}" (importance: ${fact.importance})`);
       } catch (storeError) {
+        const storeErrorMsg = storeError instanceof Error ? storeError.message : String(storeError);
+
+        // Check for 403 quota exceeded
+        if (storeErrorMsg.includes('403') || storeErrorMsg.includes('quota') || storeErrorMsg.includes('Quota')) {
+          debugLog(!!options.debug, `Quota exceeded (403) during store: ${storeErrorMsg}`);
+
+          // Invalidate billing cache so next before_agent_start refreshes
+          try {
+            if (fs.existsSync(BILLING_CACHE_PATH)) {
+              fs.unlinkSync(BILLING_CACHE_PATH);
+            }
+          } catch (e) {
+            debugLog(!!options.debug, 'Failed to invalidate billing cache:', e);
+          }
+
+          result.quotaExceeded = true;
+          result.quotaMessage = 'TotalReclaw quota exceeded. New memories cannot be stored until the quota resets next month or you upgrade your plan.';
+          // Stop trying to store more facts
+          break;
+        }
+
         console.error(`[TotalReclaw] Failed to store fact:`, storeError);
         result.factsSkipped++;
       }

@@ -109,6 +109,11 @@
             "description": "Export format"
           }
         }
+      },
+      {
+        "name": "totalreclaw_status",
+        "description": "Check billing and subscription status, including quota usage and upgrade options",
+        "parameters": {}
       }
     ],
     "config": {

@@ -21,6 +21,9 @@
  * ```
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import {
   TotalReclaw,
   type Fact,
@@ -29,6 +32,7 @@ import {
   type ExportedData,
   TotalReclawError,
   TotalReclawErrorCode,
+  deriveKeys,
 } from '@totalreclaw/client';
 import type {
   TotalReclawSkillConfig,
@@ -176,6 +180,14 @@ class TotalReclawVectorStoreAdapter implements VectorStoreClient {
 }
 
 // ============================================================================
+// Billing Constants
+// ============================================================================
+
+const BILLING_CACHE_PATH = path.join(os.homedir(), '.totalreclaw', 'billing-cache.json');
+const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
+const QUOTA_WARNING_THRESHOLD = 0.8; // 80%
+
+// ============================================================================
 // TotalReclawSkill Class
 // ============================================================================
 
@@ -192,6 +204,7 @@ export class TotalReclawSkill {
   private state: SkillState;
   private llmAdapter: OpenClawLLMAdapter | null = null;
   private vectorStoreAdapter: TotalReclawVectorStoreAdapter | null = null;
+  private authKeyHex: string | null = null;
 
   /**
    * Create a new TotalReclawSkill instance
@@ -254,10 +267,29 @@ export class TotalReclawSkill {
             this.config.masterPassword,
             this.config.salt
           );
+
+          // Derive auth key hex for billing API calls
+          try {
+            const { authKey } = await deriveKeys(this.config.masterPassword, this.config.salt);
+            this.authKeyHex = authKey.toString('hex');
+          } catch (e) {
+            debugLog('Failed to derive auth key for billing:', e);
+          }
         } else {
           // Register new user
           const userId = await this.client.register(this.config.masterPassword);
           isNewUser = true;
+
+          // Derive auth key hex for billing API calls
+          const salt = this.client.getSalt();
+          if (salt) {
+            try {
+              const { authKey } = await deriveKeys(this.config.masterPassword, salt);
+              this.authKeyHex = authKey.toString('hex');
+            } catch (e) {
+              debugLog('Failed to derive auth key for billing:', e);
+            }
+          }
 
           // Store credentials for future use (caller should persist these)
           debugLog(`Registered new user: ${userId}`);
@@ -334,6 +366,44 @@ export class TotalReclawSkill {
     this.ensureInitialized();
     const startTime = Date.now();
 
+    // Billing cache check
+    let billingWarning = '';
+    try {
+      let needsRefresh = true;
+      let billingData: any = null;
+
+      if (fs.existsSync(BILLING_CACHE_PATH)) {
+        const cached = JSON.parse(fs.readFileSync(BILLING_CACHE_PATH, 'utf-8'));
+        if (Date.now() - cached.timestamp < CACHE_MAX_AGE_MS) {
+          needsRefresh = false;
+          billingData = cached.data;
+        }
+      }
+
+      if (needsRefresh && this.authKeyHex) {
+        // Make API call to refresh cache
+        const serverUrl = this.config.serverUrl.replace(/\/+$/, '');
+        const response = await fetch(`${serverUrl}/v1/billing/status`, {
+          headers: { 'Authorization': `Bearer ${this.authKeyHex}` }
+        });
+        if (response.ok) {
+          billingData = await response.json();
+          fs.mkdirSync(path.dirname(BILLING_CACHE_PATH), { recursive: true });
+          fs.writeFileSync(BILLING_CACHE_PATH, JSON.stringify({ timestamp: Date.now(), data: billingData }));
+        }
+      }
+
+      if (billingData && billingData.free_writes_limit > 0) {
+        const usageRatio = billingData.free_writes_used / billingData.free_writes_limit;
+        if (usageRatio >= QUOTA_WARNING_THRESHOLD) {
+          billingWarning = `\n\n⚠️ TotalReclaw quota warning: ${billingData.free_writes_used}/${billingData.free_writes_limit} writes used this month (${Math.round(usageRatio * 100)}%). ` +
+            (billingData.upgrade_url ? `Upgrade: ${billingData.upgrade_url}` : 'Resets next month.');
+        }
+      }
+    } catch (e) {
+      debugLog('billing cache check failed:', e);
+    }
+
     try {
       // Search for relevant memories based on user message
       const memories = await this.client!.recall(
@@ -366,8 +436,8 @@ export class TotalReclawSkill {
       // Update cache
       this.state.cachedMemories = rankedMemories;
 
-      // Format context string
-      const contextString = this.formatMemoriesForContext(rankedMemories);
+      // Format context string and append billing warning
+      const contextString = this.formatMemoriesForContext(rankedMemories) + billingWarning;
 
       return {
         memories: rankedMemories,
@@ -377,10 +447,10 @@ export class TotalReclawSkill {
     } catch (error) {
       console.error('[TotalReclaw] onBeforeAgentStart failed:', error);
 
-      // Return empty result on error
+      // Return empty result on error (still include billing warning if available)
       return {
         memories: [],
-        contextString: '',
+        contextString: billingWarning,
         latencyMs: Date.now() - startTime,
       };
     }
@@ -421,8 +491,39 @@ export class TotalReclawSkill {
       // Extract facts
       const extractionResult = await this.extractFacts(context, trigger);
 
-      // Store extracted facts
-      const storedCount = await this.storeExtractedFacts(extractionResult.facts);
+      // Store extracted facts (with 403 handling)
+      let storedCount: number;
+      let quotaExceededMessage = '';
+      try {
+        storedCount = await this.storeExtractedFacts(extractionResult.facts);
+      } catch (storeError) {
+        // Check for 403 quota exceeded
+        const errorMsg = storeError instanceof Error ? storeError.message : String(storeError);
+        if (errorMsg.includes('403') || errorMsg.includes('quota') || errorMsg.includes('Quota')) {
+          debugLog('Quota exceeded (403) during agent_end store:', errorMsg);
+
+          // Invalidate billing cache so next before_agent_start refreshes
+          try {
+            if (fs.existsSync(BILLING_CACHE_PATH)) {
+              fs.unlinkSync(BILLING_CACHE_PATH);
+            }
+          } catch (e) {
+            debugLog('Failed to invalidate billing cache:', e);
+          }
+
+          quotaExceededMessage = `TotalReclaw quota exceeded. New memories cannot be stored until the quota resets next month or you upgrade your plan.`;
+
+          return {
+            factsExtracted: extractionResult.facts.length,
+            factsStored: 0,
+            processingTimeMs: Date.now() - startTime,
+            quotaExceeded: true,
+            quotaMessage: quotaExceededMessage,
+          } as AgentEndResult;
+        }
+        // Re-throw non-quota errors
+        throw storeError;
+      }
 
       // Update last extraction timestamp
       this.state.lastExtraction = new Date();
@@ -611,6 +712,31 @@ export class TotalReclawSkill {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to export memories: ${message}`);
+    }
+  }
+
+  /**
+   * totalreclaw_status tool
+   *
+   * Check billing/subscription status.
+   *
+   * @returns Formatted status summary
+   */
+  async status(): Promise<string> {
+    this.ensureInitialized();
+
+    try {
+      const { statusTool } = await import('./tools/status');
+      const result = await statusTool(this.config.serverUrl, this.authKeyHex || '');
+
+      if (!result.success) {
+        throw new Error(result.error || 'Unknown error');
+      }
+
+      return result.formatted || 'No billing information available.';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to fetch billing status: ${message}`);
     }
   }
 

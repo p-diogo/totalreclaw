@@ -13,6 +13,9 @@
  * Target latency: <100ms total
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import type { TotalReclaw } from '@totalreclaw/client';
 import type { RerankedResult, Fact } from '@totalreclaw/client';
 import type {
@@ -24,8 +27,12 @@ import { CrossEncoderReranker, getCrossEncoderReranker } from '../reranker/cross
 import { debugLog } from '../debug';
 
 // ============================================================================
-// Types
+// Billing Constants
 // ============================================================================
+
+const BILLING_CACHE_PATH = path.join(os.homedir(), '.totalreclaw', 'billing-cache.json');
+const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
+const QUOTA_WARNING_THRESHOLD = 0.8; // 80%
 
 /**
  * Options for the before-agent-start hook
@@ -41,6 +48,8 @@ export interface BeforeAgentStartOptions {
   contextFormatter?: (memories: RerankedResult[]) => string;
   /** Whether to enable debug logging */
   debug?: boolean;
+  /** Hex-encoded auth key for billing API calls (optional) */
+  authKeyHex?: string;
 }
 
 /**
@@ -191,6 +200,44 @@ export async function beforeAgentStart(
     memoriesReturned: 0,
   };
 
+  // Billing cache check
+  let billingWarning = '';
+  try {
+    let needsRefresh = true;
+    let billingData: any = null;
+
+    if (fs.existsSync(BILLING_CACHE_PATH)) {
+      const cached = JSON.parse(fs.readFileSync(BILLING_CACHE_PATH, 'utf-8'));
+      if (Date.now() - cached.timestamp < CACHE_MAX_AGE_MS) {
+        needsRefresh = false;
+        billingData = cached.data;
+      }
+    }
+
+    if (needsRefresh && options.authKeyHex) {
+      // Make API call to refresh cache
+      const serverUrl = options.config.serverUrl.replace(/\/+$/, '');
+      const response = await fetch(`${serverUrl}/v1/billing/status`, {
+        headers: { 'Authorization': `Bearer ${options.authKeyHex}` }
+      });
+      if (response.ok) {
+        billingData = await response.json();
+        fs.mkdirSync(path.dirname(BILLING_CACHE_PATH), { recursive: true });
+        fs.writeFileSync(BILLING_CACHE_PATH, JSON.stringify({ timestamp: Date.now(), data: billingData }));
+      }
+    }
+
+    if (billingData && billingData.free_writes_limit > 0) {
+      const usageRatio = billingData.free_writes_used / billingData.free_writes_limit;
+      if (usageRatio >= QUOTA_WARNING_THRESHOLD) {
+        billingWarning = `\n\n⚠️ TotalReclaw quota warning: ${billingData.free_writes_used}/${billingData.free_writes_limit} writes used this month (${Math.round(usageRatio * 100)}%). ` +
+          (billingData.upgrade_url ? `Upgrade: ${billingData.upgrade_url}` : 'Resets next month.');
+      }
+    }
+  } catch (e) {
+    debugLog(!!options.debug, 'billing cache check failed:', e);
+  }
+
   try {
     // Step 1: Build search query from user message and recent context
     const searchQuery = buildSearchQuery(context);
@@ -251,7 +298,7 @@ export async function beforeAgentStart(
     // Step 4: Format memories for context injection
     const formatStart = Date.now();
     const formatter = options.contextFormatter || formatMemoriesForContext;
-    const contextString = formatter(memories);
+    const contextString = formatter(memories) + billingWarning;
     metrics.formatLatencyMs = Date.now() - formatStart;
     metrics.memoriesReturned = memories.length;
 
@@ -274,10 +321,10 @@ export async function beforeAgentStart(
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     console.error('[TotalReclaw] beforeAgentStart hook failed:', errorMsg);
 
-    // Return empty result on error to avoid blocking the agent
+    // Return empty result on error (still include billing warning if available)
     return {
       memories: [],
-      contextString: '',
+      contextString: billingWarning,
       latencyMs: Date.now() - startTime,
     };
   }

@@ -52,7 +52,8 @@
       "totalreclaw_remember",
       "totalreclaw_recall",
       "totalreclaw_forget",
-      "totalreclaw_export"
+      "totalreclaw_export",
+      "totalreclaw_status"
     ],
     "configSchema": "./dist/config.schema.json"
   }

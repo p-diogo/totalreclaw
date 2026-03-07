@@ -157,6 +157,10 @@ export interface AgentEndResult {
   factsStored: number;
   /** Processing time in ms */
   processingTimeMs: number;
+  /** Whether quota was exceeded (403) */
+  quotaExceeded?: boolean;
+  /** Human-readable quota message for the agent */
+  quotaMessage?: string;
 }
 
 /**
