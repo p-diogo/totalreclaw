@@ -54,7 +54,8 @@ You can always be explicit too -- "remember that I prefer dark mode" or "what do
 1. **You set up with a 12-word recovery phrase** (like a crypto wallet)
 2. **All memories are encrypted on your device** before reaching our server
 3. **The server only stores encrypted blobs** -- it can never read them
-4. **Same phrase on any device = same keys = same memories**
+4. **Your data is anchored on-chain** (Gnosis Chain testnet) and indexed by The Graph — no single server controls your memories
+5. **Same phrase on any device = same keys = same memories**
 
 ---
 
@@ -80,6 +81,19 @@ Your 12-word recovery phrase is the only thing you need to access your memories 
 **Write it down and store it safely.** If you lose it, your memories are unrecoverable -- that's the point of zero-knowledge encryption.
 
 To recover: just run the setup again (OpenClaw: reinstall the skill; MCP: re-run the setup wizard) and enter your existing phrase when prompted.
+
+---
+
+## Storage Modes
+
+TotalReclaw supports two storage modes:
+
+| Mode | How It Works | When to Use |
+|------|-------------|-------------|
+| **Subgraph (default)** | Encrypted facts are submitted on-chain (Gnosis Chain) via ERC-4337 and indexed by The Graph. Gas is sponsored — you pay nothing. | Default for all beta testers |
+| **HTTP** | Encrypted facts are stored in the server's database. Faster, but centralized. | Set `TOTALRECLAW_SUBGRAPH_MODE=false` |
+
+During beta, subgraph mode uses the Chiado testnet. Both modes encrypt your data identically — the difference is where the encrypted blobs are stored.
 
 ---
 
@@ -115,6 +129,7 @@ For detailed technical troubleshooting, see [beta-tester-guide-detailed.md](./be
 - Free tier limit (100 writes/month) and Pro pricing ($2-5/month) are not finalized
 - MCP agents rely on explicit tool use rather than automatic memory hooks
 - Beta runs on testnet infrastructure -- expect occasional downtime
+- Subgraph mode (on-chain storage) is enabled by default when using a 12-word recovery phrase. Set `TOTALRECLAW_SUBGRAPH_MODE=false` to use HTTP-only mode
 
 ---
 
@@ -151,4 +166,4 @@ Use any future expiry date, any 3-digit CVC, and any billing address.
 
 ---
 
-*TotalReclaw beta v0.2.0 -- [totalreclaw.xyz](https://totalreclaw.xyz)*
+*TotalReclaw beta v1.0-beta -- [totalreclaw.xyz](https://totalreclaw.xyz)*

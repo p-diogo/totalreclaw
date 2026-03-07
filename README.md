@@ -6,13 +6,13 @@ TotalReclaw is a zero-knowledge encrypted memory layer for AI agents. Your data 
 
 - **Zero-knowledge** — E2E encrypted. Only you can read your data.
 - **Portable** — One 12-word phrase. Any device, any agent, no lock-in.
-- **Decentralized** — No company stores your data. Lives on a decentralized network indexed by [The Graph](https://thegraph.com).
+- **Decentralized** — Optionally anchor your data on-chain (Gnosis Chain), indexed by [The Graph](https://thegraph.com). No vendor lock-in.
 
 ---
 
 ## What is TotalReclaw?
 
-Your AI agent remembers things across conversations — preferences, decisions, facts about your projects and life. That data is more personal than your search history. It shouldn't live on someone else's servers. TotalReclaw encrypts everything on your device, stores it on a decentralized network only you hold the keys to, and works across any agent.
+Your AI agent remembers things across conversations — preferences, decisions, facts about your projects and life. That data is more personal than your search history. It shouldn't live on someone else's servers in plaintext. TotalReclaw encrypts everything on your device, stores only encrypted blobs that no one else can read, and works across any agent.
 
 ---
 
@@ -59,8 +59,16 @@ MCP agents use explicit tool calls rather than automatic hooks -- the agent deci
 1. **You set up with a 12-word recovery phrase** (like a crypto wallet)
 2. **All memories are encrypted on your device** before reaching the server
 3. **The server stores only encrypted blobs** + blind search indices -- it can never read your data
-4. **Data is anchored on-chain** (Gnosis Chain), indexed by The Graph's decentralized network
+4. **On-chain mode** (opt-in) anchors data on Gnosis Chain, indexed by The Graph's decentralized network
 5. **Same phrase on any device = same keys = same memories**
+
+---
+
+## Why TotalReclaw?
+
+Other AI memory solutions exist — [Mem0](https://mem0.ai), [Zep](https://getzep.com), and others. They work well, but they read your data. Your memories, preferences, and personal context live on their servers in plaintext.
+
+TotalReclaw is different: your data is encrypted before it leaves your device. The server stores only encrypted blobs and blind search indices — it can never read your memories. One 12-word phrase gives you access from any device, any agent, with no vendor lock-in.
 
 ---
 
@@ -110,7 +118,7 @@ Counter resets at the start of each calendar month. Pay with card (Stripe) or cr
 
 **Server:** FastAPI + PostgreSQL. Stores only encrypted data. Blind trapdoor search over GIN indices.
 
-**On-chain:** Gnosis Chain for data anchoring. The Graph subgraph for decentralized indexing.
+**On-chain (opt-in):** Gnosis Chain for data anchoring. The Graph subgraph for decentralized indexing.
 
 **Search:** The server returns encrypted candidates matched by blind indices. The client decrypts them locally and re-ranks using BM25 + cosine similarity with reciprocal rank fusion (RRF).
 

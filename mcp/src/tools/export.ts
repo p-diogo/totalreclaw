@@ -1,4 +1,4 @@
-import { TotalReclaw } from '@totalreclaw/client';
+import { TotalReclaw, RerankedResult } from '@totalreclaw/client';
 import { EXPORT_TOOL_DESCRIPTION } from '../prompts.js';
 
 export interface ExportInput {
@@ -58,7 +58,7 @@ export async function handleExport(
     const ns = input.namespace || defaultNamespace;
 
     const filtered = ns !== 'default'
-      ? results.filter(r => r.fact.metadata.tags?.includes(`namespace:${ns}`))
+      ? results.filter((r: RerankedResult) => r.fact.metadata.tags?.includes(`namespace:${ns}`))
       : results;
 
     const exportedAt = new Date().toISOString();
@@ -69,7 +69,7 @@ export async function handleExport(
         version: '1.0.0',
         exported_at: exportedAt,
         namespace: ns,
-        facts: filtered.map(r => ({
+        facts: filtered.map((r: RerankedResult) => ({
           id: r.fact.id,
           text: r.fact.text,
           importance: Math.round((r.fact.metadata.importance ?? 0.5) * 10),

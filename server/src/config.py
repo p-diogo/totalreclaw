@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     # Rate limiting (per hour)
-    rate_limit_register_per_hour: int = 10
+    rate_limit_register_per_hour: int = 5
     rate_limit_store_per_hour: int = 1000
     rate_limit_search_per_hour: int = 1000
     rate_limit_sync_per_hour: int = 1000

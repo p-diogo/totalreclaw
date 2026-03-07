@@ -3,6 +3,7 @@ Search endpoint for TotalReclaw Server.
 
 Implements blind index search using PostgreSQL GIN index.
 """
+import re
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
@@ -14,6 +15,8 @@ from ..auth import verify_auth_key, hash_auth_key, AuthError
 from ..db import get_db, Database
 from ..dependencies import get_current_user
 from ..search_telemetry import telemetry_store, SearchSample
+
+_HEX64_RE = re.compile(r'^[a-f0-9]{64}$')
 
 router = APIRouter(tags=["search"])
 
@@ -99,6 +102,15 @@ async def search(
                 error_code=ErrorCode.INVALID_REQUEST,
                 error_message="No trapdoors provided"
             )
+
+        # Validate trapdoor format (must be SHA-256 hashes)
+        for trapdoor in request_obj.trapdoors:
+            if not _HEX64_RE.match(trapdoor):
+                return SearchResponseJSON(
+                    success=False,
+                    error_code=ErrorCode.INVALID_REQUEST,
+                    error_message="Invalid trapdoor format: expected 64-char hex SHA-256 hashes"
+                )
 
         # Clamp max_candidates to reasonable range
         max_candidates = min(max(request_obj.max_candidates, 1), 10000)

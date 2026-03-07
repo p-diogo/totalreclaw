@@ -276,12 +276,13 @@ export async function submitFactOnChain(
 /**
  * Check if subgraph mode is enabled.
  *
- * Checks the environment variable by default. Can be overridden by passing
- * an explicit value (useful when MCP server manages its own config state).
+ * Returns true unless TOTALRECLAW_SUBGRAPH_MODE is explicitly set to "false".
+ * Can be overridden by passing an explicit value (useful when MCP server
+ * manages its own config state).
  */
 export function isSubgraphMode(override?: boolean): boolean {
   if (override !== undefined) return override;
-  return process.env.TOTALRECLAW_SUBGRAPH_MODE === 'true';
+  return process.env.TOTALRECLAW_SUBGRAPH_MODE !== 'false';
 }
 
 /**
@@ -291,7 +292,7 @@ export function isSubgraphMode(override?: boolean): boolean {
  * After the relay refactor, clients only need:
  *   - TOTALRECLAW_MASTER_PASSWORD -- BIP-39 mnemonic
  *   - TOTALRECLAW_SERVER_URL -- relay server URL (default: http://localhost:8000)
- *   - TOTALRECLAW_SUBGRAPH_MODE -- "true" to enable
+ *   - TOTALRECLAW_SUBGRAPH_MODE -- set "false" to disable (default: enabled with valid mnemonic)
  *   - TOTALRECLAW_CHAIN_ID -- optional, defaults to 10200 (Chiado)
  *
  * Removed from client-side config (now server-side only):

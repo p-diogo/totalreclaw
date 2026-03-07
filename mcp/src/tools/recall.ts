@@ -1,4 +1,4 @@
-import { TotalReclaw } from '@totalreclaw/client';
+import { TotalReclaw, RerankedResult } from '@totalreclaw/client';
 import { RECALL_TOOL_DESCRIPTION } from '../prompts.js';
 
 export interface RecallInput {
@@ -92,19 +92,19 @@ export async function handleRecall(
     let filtered = results;
     if (input.min_importance !== undefined) {
       const minImp = input.min_importance / 10;
-      filtered = results.filter(r =>
+      filtered = results.filter((r: RerankedResult) =>
         (r.fact.metadata.importance ?? 0.5) >= minImp
       );
     }
 
     if (input.namespace || defaultNamespace !== 'default') {
       const ns = input.namespace || defaultNamespace;
-      filtered = filtered.filter(r =>
+      filtered = filtered.filter((r: RerankedResult) =>
         r.fact.metadata.tags?.includes(`namespace:${ns}`)
       );
     }
 
-    const memories = filtered.map(r => {
+    const memories = filtered.map((r: RerankedResult) => {
       const ageMs = Date.now() - r.fact.createdAt.getTime();
       const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
 

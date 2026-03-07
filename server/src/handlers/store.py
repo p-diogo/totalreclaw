@@ -5,6 +5,7 @@ Stores encrypted facts with blind indices.
 """
 import json
 import logging
+import re
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -16,6 +17,8 @@ from ..db import get_db, Database
 from ..dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
+
+_HEX64_RE = re.compile(r'^[a-f0-9]{64}$')
 
 router = APIRouter(tags=["storage"])
 
@@ -119,6 +122,23 @@ async def store(
                     success=False,
                     error_code=ErrorCode.INVALID_REQUEST,
                     error_message=f"Invalid hex encoding in fact {fact.id}"
+                )
+
+            # Validate blind index format (must be SHA-256 hashes)
+            for idx in fact.blind_indices:
+                if not _HEX64_RE.match(idx):
+                    return StoreResponseJSON(
+                        success=False,
+                        error_code=ErrorCode.INVALID_REQUEST,
+                        error_message=f"Invalid blind index format in fact {fact.id}: expected 64-char hex"
+                    )
+
+            # Validate content fingerprint format (must be SHA-256 hash)
+            if fact.content_fp and not _HEX64_RE.match(fact.content_fp):
+                return StoreResponseJSON(
+                    success=False,
+                    error_code=ErrorCode.INVALID_REQUEST,
+                    error_message=f"Invalid content fingerprint format in fact {fact.id}: expected 64-char hex"
                 )
 
             # v0.3.1b: Content fingerprint dedup check

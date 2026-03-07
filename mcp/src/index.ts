@@ -100,11 +100,14 @@ let subgraphState: SubgraphState | null = null;
  *
  * Subgraph mode requires:
  *   1. TOTALRECLAW_MASTER_PASSWORD is a valid BIP-39 mnemonic
- *   2. TOTALRECLAW_SUBGRAPH_MODE=true
+ *
+ * Subgraph mode is enabled by default when a valid mnemonic is provided.
+ * Set TOTALRECLAW_SUBGRAPH_MODE=false to force HTTP mode.
  */
 function detectServerMode(): ServerMode {
   if (!MASTER_PASSWORD) return 'http';
-  if (process.env.TOTALRECLAW_SUBGRAPH_MODE !== 'true') return 'http';
+  // Subgraph mode is opt-out: enabled by default when mnemonic is valid
+  if (process.env.TOTALRECLAW_SUBGRAPH_MODE === 'false') return 'http';
 
   const words = MASTER_PASSWORD.trim().split(/\s+/);
   if (words.length !== 12 && words.length !== 24) return 'http';
@@ -628,7 +631,7 @@ const server = new Server(
 setOnRememberCallback(() => {
   invalidateMemoryContextCache();
   // Notify subscribed clients that the resource has been updated
-  server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch(() => {});
+  server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch((err) => console.error('Failed to send resource update:', err));
 });
 
 // ── Layer 2 + 3: Tool handlers ───────────────────────────────────────────────
@@ -673,7 +676,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const result = await handleRememberSubgraph(subgraphState, args);
             // Invalidate cache after successful store
             invalidateMemoryContextCache();
-            server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch(() => {});
+            server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch((err) => console.error('Failed to send resource update:', err));
             return result;
           } catch (error) {
             if (isQuotaExceededError(error)) {
@@ -689,7 +692,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         case 'totalreclaw_forget': {
           const result = await handleForgetSubgraph(subgraphState, args);
           invalidateMemoryContextCache();
-          server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch(() => {});
+          server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch((err) => console.error('Failed to send resource update:', err));
           return result;
         }
 
@@ -750,7 +753,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await handleForget(client, args, DEFAULT_NAMESPACE);
         // Invalidate cache on forget too
         invalidateMemoryContextCache();
-        server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch(() => {});
+        server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch((err) => console.error('Failed to send resource update:', err));
         return result;
       }
 

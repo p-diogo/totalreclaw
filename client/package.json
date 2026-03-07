@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc || true",
+    "build": "tsc",
+    "postinstall": "find node_modules/ox -name '*.ts' -not -path '*/node_modules/*' -not -path '*/_types/*' -delete 2>/dev/null; true",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",

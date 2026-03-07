@@ -1,4 +1,4 @@
-import { TotalReclaw } from '@totalreclaw/client';
+import { TotalReclaw, RerankedResult } from '@totalreclaw/client';
 import { FORGET_TOOL_DESCRIPTION } from '../prompts.js';
 
 export interface ForgetIntput {
@@ -69,7 +69,7 @@ export async function handleForget(
       const results = await client.recall(input.query, 50);
       const ns = input.namespace || defaultNamespace;
 
-      const toDelete = results.filter(r => {
+      const toDelete = results.filter((r: RerankedResult) => {
         if (ns !== 'default') {
           return r.fact.metadata.tags?.includes(`namespace:${ns}`);
         }

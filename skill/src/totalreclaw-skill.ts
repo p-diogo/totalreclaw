@@ -187,6 +187,28 @@ const BILLING_CACHE_PATH = path.join(os.homedir(), '.totalreclaw', 'billing-cach
 const CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
 const QUOTA_WARNING_THRESHOLD = 0.8; // 80%
 
+interface BillingCacheData {
+  tier: string;
+  free_writes_used: number;
+  free_writes_limit: number;
+  free_reads_used: number;
+  free_reads_limit: number;
+  checked_at: number;
+}
+
+function isBillingCacheData(data: unknown): data is BillingCacheData {
+  if (typeof data !== 'object' || data === null) return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.tier === 'string' &&
+    typeof d.free_writes_used === 'number' &&
+    typeof d.free_writes_limit === 'number' &&
+    typeof d.free_reads_used === 'number' &&
+    typeof d.free_reads_limit === 'number' &&
+    typeof d.checked_at === 'number'
+  );
+}
+
 // ============================================================================
 // TotalReclawSkill Class
 // ============================================================================
@@ -370,11 +392,11 @@ export class TotalReclawSkill {
     let billingWarning = '';
     try {
       let needsRefresh = true;
-      let billingData: any = null;
+      let billingData: BillingCacheData | null = null;
 
       if (fs.existsSync(BILLING_CACHE_PATH)) {
         const cached = JSON.parse(fs.readFileSync(BILLING_CACHE_PATH, 'utf-8'));
-        if (Date.now() - cached.timestamp < CACHE_MAX_AGE_MS) {
+        if (Date.now() - cached.timestamp < CACHE_MAX_AGE_MS && isBillingCacheData(cached.data)) {
           needsRefresh = false;
           billingData = cached.data;
         }
@@ -387,9 +409,12 @@ export class TotalReclawSkill {
           headers: { 'Authorization': `Bearer ${this.authKeyHex}` }
         });
         if (response.ok) {
-          billingData = await response.json();
-          fs.mkdirSync(path.dirname(BILLING_CACHE_PATH), { recursive: true });
-          fs.writeFileSync(BILLING_CACHE_PATH, JSON.stringify({ timestamp: Date.now(), data: billingData }));
+          const parsed: unknown = await response.json();
+          if (isBillingCacheData(parsed)) {
+            billingData = parsed;
+            fs.mkdirSync(path.dirname(BILLING_CACHE_PATH), { recursive: true });
+            fs.writeFileSync(BILLING_CACHE_PATH, JSON.stringify({ timestamp: Date.now(), data: billingData }));
+          }
         }
       }
 

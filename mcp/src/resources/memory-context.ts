@@ -1,4 +1,4 @@
-import { TotalReclaw } from '@totalreclaw/client';
+import { TotalReclaw, RerankedResult } from '@totalreclaw/client';
 
 // ── Resource Definition ──────────────────────────────────────────────────────
 
@@ -55,20 +55,20 @@ export async function readMemoryContext(
     // Filter by namespace if not default
     let filtered = results;
     if (defaultNamespace !== 'default') {
-      filtered = results.filter(r =>
+      filtered = results.filter((r: RerankedResult) =>
         r.fact.metadata.tags?.includes(`namespace:${defaultNamespace}`)
       );
     }
 
     // Sort by importance (descending), then by recency (newest first)
     const sorted = filtered
-      .map(r => ({
+      .map((r: RerankedResult) => ({
         text: r.fact.text,
         importance: Math.round((r.fact.metadata.importance ?? 0.5) * 10),
         createdAt: r.fact.createdAt,
         score: r.score,
       }))
-      .sort((a, b) => {
+      .sort((a: { importance: number; createdAt: Date }, b: { importance: number; createdAt: Date }) => {
         // Primary: importance descending
         if (b.importance !== a.importance) return b.importance - a.importance;
         // Secondary: recency descending
@@ -77,10 +77,10 @@ export async function readMemoryContext(
       .slice(0, 20);
 
     // Partition into high-priority and recent
-    const highPriority = sorted.filter(f => f.importance >= 7);
+    const highPriority = sorted.filter((f: { importance: number }) => f.importance >= 7);
     const recent = sorted
-      .filter(f => f.importance < 7)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .filter((f: { importance: number }) => f.importance < 7)
+      .sort((a: { createdAt: Date }, b: { createdAt: Date }) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, 10);
 
     const lines: string[] = ['## Your Memory Context', ''];
