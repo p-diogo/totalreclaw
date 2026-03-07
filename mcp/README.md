@@ -1,18 +1,26 @@
 # @totalreclaw/mcp-server
 
-MCP (Model Context Protocol) server for TotalReclaw - zero-knowledge encrypted memory.
+MCP (Model Context Protocol) server for TotalReclaw — zero-knowledge encrypted memory for AI agents.
 
-## Installation
+Works with Claude Desktop, Cursor, Windsurf, and any MCP-compatible client.
 
-```bash
-npm install @totalreclaw/mcp-server
-```
+## Quick Start
 
-## Usage
+### 1. Generate your recovery phrase
 
-### With Claude Desktop
+Your **recovery phrase** is a 12-word BIP-39 mnemonic that derives all encryption keys. TotalReclaw never sends it to the server — it stays on your machine.
 
-Add to your `claude_desktop_config.json`:
+**New user:** Generate a mnemonic using any BIP-39 tool, or let TotalReclaw generate one on first run.
+
+**Returning user:** Use your existing 12-word phrase to restore your memories on a new device.
+
+> **Save your recovery phrase somewhere safe.** It's the only way to recover your encrypted memories.
+
+### 2. Add to your MCP client
+
+#### Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
@@ -21,84 +29,69 @@ Add to your `claude_desktop_config.json`:
       "command": "npx",
       "args": ["-y", "@totalreclaw/mcp-server"],
       "env": {
-        "TOTALRECLAW_SERVER_URL": "http://localhost:8080",
-        "TOTALRECLAW_MASTER_PASSWORD": "your-secure-password"
+        "TOTALRECLAW_SERVER_URL": "https://api.totalreclaw.xyz",
+        "TOTALRECLAW_MASTER_PASSWORD": "your twelve word recovery phrase goes here replace these words",
+        "TOTALRECLAW_SUBGRAPH_MODE": "true"
       }
     }
   }
 }
 ```
 
-### With NanoClaw
+#### Cursor / Windsurf
 
-See the `@totalreclaw/skill-nanoclaw` package for NanoClaw integration.
+Add to your MCP settings (Settings > MCP Servers):
 
-### Environment Variables
+```json
+{
+  "totalreclaw": {
+    "command": "npx",
+    "args": ["-y", "@totalreclaw/mcp-server"],
+    "env": {
+      "TOTALRECLAW_SERVER_URL": "https://api.totalreclaw.xyz",
+      "TOTALRECLAW_MASTER_PASSWORD": "your twelve word recovery phrase goes here replace these words",
+      "TOTALRECLAW_SUBGRAPH_MODE": "true"
+    }
+  }
+}
+```
+
+### 3. Verify
+
+Ask your AI agent: *"Do you have access to TotalReclaw memory tools?"*
+
+It should confirm access to `totalreclaw_remember`, `totalreclaw_recall`, `totalreclaw_forget`, and `totalreclaw_export`.
+
+## How It Works
+
+All encryption happens **client-side** inside the MCP server process on your machine:
+
+1. Facts are encrypted with AES-256-GCM before leaving your device
+2. Search uses blind indices (SHA-256 hashes) — the server never sees your search terms
+3. Your recovery phrase derives all keys via Argon2id + HKDF — the server never sees it
+4. With subgraph mode, encrypted facts are stored on-chain (Gnosis Chain) and indexed by The Graph
+
+The server only ever sees ciphertext and hashed tokens.
+
+## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `TOTALRECLAW_SERVER_URL` | TotalReclaw server URL | `http://127.0.0.1:8080` |
-| `TOTALRECLAW_MASTER_PASSWORD` | Master password for encryption | Required |
-| `TOTALRECLAW_NAMESPACE` | Default namespace | `default` |
-| `TOTALRECLAW_CREDENTIALS_PATH` | Path to store credentials | `/workspace/.totalreclaw/credentials.json` |
+| `TOTALRECLAW_SERVER_URL` | TotalReclaw server URL | `https://api.totalreclaw.xyz` |
+| `TOTALRECLAW_MASTER_PASSWORD` | 12-word BIP-39 recovery phrase | Required |
+| `TOTALRECLAW_SUBGRAPH_MODE` | Enable on-chain storage via The Graph | `true` |
+| `TOTALRECLAW_NAMESPACE` | Default namespace for memory isolation | `default` |
+| `TOTALRECLAW_CHAIN_ID` | Chain ID (10200=Chiado testnet, 100=Gnosis) | `10200` |
 
 ## Available Tools
 
-### totalreclaw_remember
-
-Store a fact in encrypted memory.
-
-```json
-{
-  "fact": "User prefers dark mode",
-  "importance": 7,
-  "namespace": "work"
-}
-```
-
-### totalreclaw_recall
-
-Search memories semantically.
-
-```json
-{
-  "query": "user preferences",
-  "k": 8,
-  "min_importance": 5
-}
-```
-
-### totalreclaw_forget
-
-Delete a memory.
-
-```json
-{
-  "fact_id": "uuid-of-fact"
-}
-```
-
-### totalreclaw_export
-
-Export all memories for portability.
-
-```json
-{
-  "format": "markdown"
-}
-```
-
-### totalreclaw_import
-
-Import memories from backup.
-
-```json
-{
-  "content": "...",
-  "format": "json",
-  "merge_strategy": "skip_existing"
-}
-```
+| Tool | Description |
+|------|-------------|
+| `totalreclaw_remember` | Store a fact in encrypted memory |
+| `totalreclaw_recall` | Search memories by natural language query |
+| `totalreclaw_forget` | Delete a specific memory by ID |
+| `totalreclaw_export` | Export all memories decrypted as Markdown or JSON |
+| `totalreclaw_status` | Check billing status and quota usage |
 
 ## Development
 

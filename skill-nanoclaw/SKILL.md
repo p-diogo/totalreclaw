@@ -1,33 +1,48 @@
 # TotalReclaw Skill for NanoClaw
 
-This skill adds zero-knowledge encrypted memory to NanoClaw using the generic TotalReclaw MCP Server.
+Zero-knowledge encrypted memory for NanoClaw agents, powered by the `@totalreclaw/mcp-server`.
 
-## Installation
+## Setup
 
-1. Install the TotalReclaw MCP server:
-   ```bash
-   npm install @totalreclaw/mcp-server
-   ```
+### Step 1: Recovery phrase
 
-2. Configure environment variables:
-   ```bash
-   TOTALRECLAW_SERVER_URL=http://localhost:8080
-   TOTALRECLAW_MASTER_PASSWORD=your-secure-password
-   TOTALRECLAW_NAMESPACE=${groupFolder}
-   ```
+The **recovery phrase** is a 12-word BIP-39 mnemonic that derives all encryption keys client-side. TotalReclaw never sends it to the server.
 
-3. Add MCP server to NanoClaw config
+- **New user:** Generate a 12-word BIP-39 mnemonic. Save it securely — it's the only way to recover your memories.
+- **Returning user:** Use your existing phrase to restore memories on a new device.
+
+### Step 2: Configure environment
+
+Set these in your NanoClaw deployment (Docker env, `.env` file, or platform config):
+
+```bash
+TOTALRECLAW_SERVER_URL=https://api.totalreclaw.xyz
+TOTALRECLAW_MASTER_PASSWORD="your twelve word recovery phrase here"
+TOTALRECLAW_SUBGRAPH_MODE=true
+```
+
+The NanoClaw agent-runner automatically spawns the MCP server with these variables.
+
+### Step 3: Verify
+
+Ask the agent: *"Do you have access to TotalReclaw memory tools?"* It should confirm access to `totalreclaw_remember`, `totalreclaw_recall`, `totalreclaw_forget`, and `totalreclaw_export`.
+
+## How It Works
+
+All encryption happens inside the MCP server process — the TotalReclaw server only sees ciphertext and hashed tokens:
+
+- Facts encrypted with AES-256-GCM before leaving the container
+- Search uses blind indices (SHA-256 hashes), not plaintext
+- Recovery phrase derives all keys via Argon2id + HKDF
+- With subgraph mode, encrypted facts are stored on-chain (Gnosis Chain) and indexed by The Graph
 
 ## Hooks
 
-### before-agent-start
-Retrieves relevant memories before processing user message.
-
-### agent-end
-Extracts and stores facts periodically after agent turns.
-
-### pre-compact
-Full extraction before context truncation.
+| Hook | Description |
+|------|-------------|
+| `before-agent-start` | Retrieves relevant memories before processing user message |
+| `agent-end` | Extracts and stores facts periodically after agent turns |
+| `pre-compact` | Full extraction before context truncation |
 
 ## Namespace Mapping
 
@@ -42,17 +57,20 @@ This provides memory isolation between different contexts.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `TOTALRECLAW_SERVER_URL` | TotalReclaw server URL | `http://127.0.0.1:8080` |
-| `TOTALRECLAW_MASTER_PASSWORD` | Master password for encryption | Required |
-| `TOTALRECLAW_NAMESPACE` | Default namespace | `default` |
+| `TOTALRECLAW_SERVER_URL` | TotalReclaw server URL | `https://api.totalreclaw.xyz` |
+| `TOTALRECLAW_MASTER_PASSWORD` | 12-word BIP-39 recovery phrase | Required |
+| `TOTALRECLAW_SUBGRAPH_MODE` | Enable on-chain storage via The Graph | `true` |
+| `TOTALRECLAW_NAMESPACE` | Default namespace | Group folder name |
 | `TOTALRECLAW_AUTO_EXTRACT` | Enable automatic extraction | `true` |
 | `TOTALRECLAW_EXTRACT_INTERVAL` | Turns between extractions | `5` |
+| `TOTALRECLAW_CHAIN_ID` | Chain ID (10200=Chiado, 100=Gnosis) | `10200` |
 
-## Usage
+## Available Tools
 
-The agent automatically has access to these MCP tools:
-- `totalreclaw_remember` - Store a fact
-- `totalreclaw_recall` - Search memories
-- `totalreclaw_forget` - Delete a memory
-- `totalreclaw_export` - Export vault
-- `totalreclaw_import` - Import from backup
+| Tool | Description |
+|------|-------------|
+| `totalreclaw_remember` | Store a fact in encrypted memory |
+| `totalreclaw_recall` | Search memories by natural language query |
+| `totalreclaw_forget` | Delete a specific memory by ID |
+| `totalreclaw_export` | Export all memories decrypted as Markdown or JSON |
+| `totalreclaw_status` | Check billing status and quota usage |
