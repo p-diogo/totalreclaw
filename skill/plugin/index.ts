@@ -110,7 +110,6 @@ let lastQueryEmbedding: number[] | null = null;
 // Feature flags — configurable for A/B testing
 const CACHE_TTL_MS = parseInt(process.env.TOTALRECLAW_CACHE_TTL_MS ?? String(5 * 60 * 1000), 10);
 const SEMANTIC_SKIP_THRESHOLD = parseFloat(process.env.TOTALRECLAW_SEMANTIC_SKIP_THRESHOLD ?? '0.85');
-const TWO_TIER_SEARCH = process.env.TOTALRECLAW_TWO_TIER_SEARCH !== 'false'; // default: true
 
 // Auto-extract throttle (C3): only extract every N turns in agent_end hook
 let turnsSinceLastExtraction = 0;
@@ -1169,10 +1168,9 @@ const plugin = {
               }
             }
 
-            // 3. Merge trapdoors — hook path uses LSH-only for lighter query (C1).
-            // Only use lightweight LSH-only trapdoors if two-tier search is enabled
-            const hookTrapdoors = TWO_TIER_SEARCH && lshTrapdoors.length > 0 ? lshTrapdoors : [...wordTrapdoors, ...lshTrapdoors];
-            const allTrapdoors = hookTrapdoors;
+            // 3. Merge trapdoors — always include word trapdoors for small-dataset coverage.
+            // LSH alone has low collision probability on <100 facts, causing 0 matches.
+            const allTrapdoors = [...wordTrapdoors, ...lshTrapdoors];
 
             // If we have cached facts and no trapdoors, return cached facts.
             if (allTrapdoors.length === 0 && cachedFacts.length > 0) {

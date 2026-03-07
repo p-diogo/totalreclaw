@@ -12,7 +12,14 @@
     "deployedAt": "2026-03-07T02:25:00.000Z",
     "deployedVia": "CREATE2 factory (0x4e59b44847b379578588920cA78FbF26c0B4956C) using Smart Account + Pimlico",
     "deployTxHash": "0xe4abfeafd89ce4cb29592147826edbd00f031f484b2d0e956ab43dbff9db6fcb",
-    "startBlock": 20125067
+    "startBlock": 20125067,
+    "subgraph": {
+      "slug": "total-reclaw-chiado",
+      "studioUrl": "https://thegraph.com/studio/subgraph/total-reclaw-chiado",
+      "queryEndpoint": "https://api.studio.thegraph.com/query/41768/total-reclaw-chiado/version/latest",
+      "currentVersion": "0.2.0",
+      "deploymentId": "QmdGySGJNMehDEBvS481bNzJWaUZzGv1bNHAmS2bhWvM8C"
+    }
   },
   "fork_deprecated": {
     "_warning": "rpc.chiadochain.net is on a DIFFERENT FORK. These contracts do NOT exist on the canonical chain.",
