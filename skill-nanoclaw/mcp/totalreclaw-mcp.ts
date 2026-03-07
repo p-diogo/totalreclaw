@@ -478,6 +478,10 @@ function createApiClient(serverUrl: string) {
     } catch {
       body = '(could not read response body)';
     }
+    // Surface quota exceeded errors with a recognizable message
+    if (res.status === 403 && (body.includes('QUOTA_EXCEEDED') || body.includes('quota'))) {
+      throw new Error(`${context}: HTTP 403 - quota_exceeded - ${body}`);
+    }
     throw new Error(`${context}: HTTP ${res.status} - ${body}`);
   }
 
@@ -1069,6 +1073,36 @@ OUTPUT FORMATS:
 - markdown: Human-readable format (default)
 - json: Machine-readable format`;
 
+const STATUS_DESCRIPTION = `Check your TotalReclaw subscription status and usage.
+
+Shows:
+- Current tier (free/pro)
+- Free writes used vs limit
+- Free reads used vs limit
+- Subscription reset date
+
+Use this when:
+- User asks about their memory quota or usage
+- Before storing many memories, to check remaining capacity
+- User asks about billing or subscription`;
+
+const IMPORT_DESCRIPTION = `Import memories from an exported backup.
+
+WHEN TO USE:
+- User wants to restore memories from backup
+- User wants to transfer memories from another TotalReclaw instance
+- User has a JSON or Markdown export they want to import
+
+ACCEPTS:
+- JSON format: {"facts": [{"text": "...", "importance": 5}, ...]}
+- JSON array: [{"text": "...", "importance": 5}, ...]
+- Markdown format: sections with ## headings (from totalreclaw_export)
+
+PARAMETERS:
+- content: The exported content (JSON or Markdown string) (required)
+- format: "json" or "markdown" (auto-detected if omitted)
+- validate_only: If true, parse and validate without importing (default: false)`;
+
 // =========================================================================
 // Tool Definitions
 // =========================================================================
@@ -1145,6 +1179,84 @@ const exportToolDef = {
     },
   },
 };
+
+const statusToolDef = {
+  name: 'totalreclaw_status',
+  description: STATUS_DESCRIPTION,
+  inputSchema: {
+    type: 'object' as const,
+    properties: {},
+  },
+};
+
+const importToolDef = {
+  name: 'totalreclaw_import',
+  description: IMPORT_DESCRIPTION,
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      content: {
+        type: 'string',
+        description: 'The exported content (JSON or Markdown string)',
+      },
+      format: {
+        type: 'string',
+        enum: ['markdown', 'json'],
+        description: 'Format of content (auto-detected if not specified)',
+      },
+      validate_only: {
+        type: 'boolean',
+        default: false,
+        description: 'Parse and validate without importing',
+      },
+    },
+    required: ['content'],
+  },
+};
+
+// =========================================================================
+// Quota Error Handling
+// =========================================================================
+
+function isQuotaExceededError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return msg.includes('quota_exceeded') || msg.includes('quota exceeded') || msg.includes('http 403');
+  }
+  return false;
+}
+
+function quotaExceededResult(): ToolResult {
+  return {
+    content: [{
+      type: 'text',
+      text: JSON.stringify({
+        error: 'quota_exceeded',
+        message: 'Write quota exceeded for this month. Use totalreclaw_status to check your usage, or upgrade at https://totalreclaw.xyz/pricing',
+      }),
+    }],
+    isError: true,
+  };
+}
+
+// =========================================================================
+// Subgraph Mode Detection
+// =========================================================================
+
+type ServerMode = 'http' | 'subgraph';
+
+function detectServerMode(): ServerMode {
+  if (!MASTER_PASSWORD) return 'http';
+  if (process.env.TOTALRECLAW_SUBGRAPH_MODE === 'false') return 'http';
+
+  const words = MASTER_PASSWORD.trim().split(/\s+/);
+  if (words.length !== 12 && words.length !== 24) return 'http';
+  if (!validateMnemonic(MASTER_PASSWORD.trim(), wordlist)) return 'http';
+
+  return 'subgraph';
+}
+
+const serverMode = detectServerMode();
 
 // =========================================================================
 // Tool Handlers
@@ -1436,6 +1548,268 @@ async function handleExport(args: Record<string, unknown>): Promise<ToolResult> 
   });
 }
 
+async function handleStatus(_args: Record<string, unknown>): Promise<ToolResult> {
+  const s = await ensureInitialized();
+  const baseUrl = SERVER_URL.replace(/\/+$/, '');
+
+  try {
+    const res = await fetch(`${baseUrl}/v1/billing/status`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${s.authKeyHex}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      return errorResult(`Failed to fetch billing status (HTTP ${res.status}): ${body || res.statusText}`);
+    }
+
+    const data = (await res.json()) as Record<string, unknown>;
+
+    const tier = (data.tier as string) || 'free';
+    const freeWritesUsed = (data.free_writes_used as number) ?? 0;
+    const freeWritesLimit = (data.free_writes_limit as number) ?? 0;
+    const freeReadsUsed = (data.free_reads_used as number) ?? 0;
+    const freeReadsLimit = (data.free_reads_limit as number) ?? 0;
+    const freeWritesResetAt = data.free_writes_reset_at as string | undefined;
+    const upgradeUrl = data.upgrade_url as string | undefined;
+
+    const tierLabel = tier === 'pro' ? 'Pro' : 'Free';
+    const lines: string[] = [
+      `Tier: ${tierLabel}`,
+      `Writes: ${freeWritesUsed}/${freeWritesLimit} used`,
+      `Reads: ${freeReadsUsed}/${freeReadsLimit} used`,
+    ];
+
+    if (freeWritesResetAt) {
+      lines.push(`Resets: ${new Date(freeWritesResetAt).toLocaleDateString()}`);
+    }
+
+    if (tier !== 'pro' && upgradeUrl) {
+      lines.push(`Upgrade: ${upgradeUrl}`);
+    }
+
+    return textResult({
+      success: true,
+      tier,
+      free_writes_used: freeWritesUsed,
+      free_writes_limit: freeWritesLimit,
+      free_reads_used: freeReadsUsed,
+      free_reads_limit: freeReadsLimit,
+      free_writes_reset_at: freeWritesResetAt,
+      upgrade_url: upgradeUrl,
+      formatted: lines.join('\n'),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return errorResult(`Failed to check billing status: ${message}`);
+  }
+}
+
+// =========================================================================
+// Import Helpers
+// =========================================================================
+
+interface ParsedImportFact {
+  text: string;
+  importance?: number;
+  id?: string;
+}
+
+function detectImportFormat(content: string): 'json' | 'markdown' {
+  const trimmed = content.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    return 'json';
+  }
+  return 'markdown';
+}
+
+function parseJsonImport(content: string): { facts: ParsedImportFact[]; errors: string[] } {
+  const errors: string[] = [];
+  const facts: ParsedImportFact[] = [];
+
+  try {
+    const data = JSON.parse(content);
+    const factArray = Array.isArray(data) ? data : data.facts;
+    if (!Array.isArray(factArray)) {
+      errors.push('JSON must contain a facts array or be a JSON array');
+      return { facts, errors };
+    }
+
+    for (let i = 0; i < factArray.length; i++) {
+      const item = factArray[i];
+      if (!item.text || typeof item.text !== 'string') {
+        errors.push(`Fact ${i}: missing or invalid text field`);
+        continue;
+      }
+      facts.push({
+        text: item.text,
+        importance: item.importance,
+        id: item.id,
+      });
+    }
+  } catch (e) {
+    errors.push(`JSON parse error: ${e instanceof Error ? e.message : 'Unknown error'}`);
+  }
+
+  return { facts, errors };
+}
+
+function parseMarkdownImport(content: string): { facts: ParsedImportFact[]; errors: string[] } {
+  const errors: string[] = [];
+  const facts: ParsedImportFact[] = [];
+
+  const sections = content.split(/^---$/m);
+
+  for (const section of sections) {
+    const headingMatch = section.match(/^##\s+(.+)$/m);
+    if (!headingMatch) continue;
+
+    const text = headingMatch[1].trim();
+
+    let importance: number | undefined;
+    const impMatch = section.match(/\*\*Importance:\*\*\s*(\d+)/);
+    if (impMatch) {
+      importance = parseInt(impMatch[1], 10);
+    }
+
+    let id: string | undefined;
+    const idMatch = section.match(/ID:\s*`([^`]+)`/);
+    if (idMatch) {
+      id = idMatch[1];
+    }
+
+    facts.push({ text, importance, id });
+  }
+
+  return { facts, errors };
+}
+
+async function handleImport(args: Record<string, unknown>): Promise<ToolResult> {
+  const content = args.content as string | undefined;
+  if (!content || typeof content !== 'string' || content.trim().length === 0) {
+    return errorResult('Invalid input: content is required');
+  }
+
+  const formatArg = args.format as string | undefined;
+  const validateOnly = args.validate_only === true;
+  const format = formatArg || detectImportFormat(content);
+
+  let parsed: { facts: ParsedImportFact[]; errors: string[] };
+  if (format === 'json') {
+    parsed = parseJsonImport(content);
+  } else {
+    parsed = parseMarkdownImport(content);
+  }
+
+  if (parsed.errors.length > 0) {
+    return textResult({
+      success: false,
+      facts_parsed: parsed.facts.length,
+      facts_imported: 0,
+      errors: parsed.errors,
+    });
+  }
+
+  if (parsed.facts.length === 0) {
+    return textResult({
+      success: true,
+      facts_parsed: 0,
+      facts_imported: 0,
+      message: 'No facts found in content',
+    });
+  }
+
+  if (validateOnly) {
+    return textResult({
+      success: true,
+      facts_parsed: parsed.facts.length,
+      facts_imported: 0,
+      message: 'Validate-only mode: no facts were imported',
+    });
+  }
+
+  const s = await ensureInitialized();
+
+  let imported = 0;
+  let skipped = 0;
+  const importErrors: string[] = [];
+
+  // Process facts in batches to avoid overwhelming the server
+  const BATCH_SIZE = 50;
+  for (let batchStart = 0; batchStart < parsed.facts.length; batchStart += BATCH_SIZE) {
+    const batch = parsed.facts.slice(batchStart, batchStart + BATCH_SIZE);
+    const payloads: StoreFactPayload[] = [];
+
+    for (const fact of batch) {
+      try {
+        const factText = fact.text.trim();
+        const importance = fact.importance ?? 5;
+
+        // Encrypt
+        const encryptedB64 = encrypt(factText, s.encryptionKey);
+        const encryptedBlob = Buffer.from(encryptedB64, 'base64').toString('hex');
+
+        // Generate blind indices
+        const searchableText = `${factText} namespace:${NAMESPACE}`;
+        const blindIndices = generateBlindIndices(searchableText);
+
+        // Generate embedding + LSH
+        const embeddingResult = await generateEmbeddingAndLSH(factText, s.encryptionKey);
+        const allIndices = embeddingResult
+          ? [...blindIndices, ...embeddingResult.lshBuckets]
+          : blindIndices;
+
+        // Content fingerprint for dedup
+        const contentFp = generateContentFingerprint(factText, s.dedupKey);
+
+        const factId = crypto.randomUUID();
+        payloads.push({
+          id: factId,
+          timestamp: new Date().toISOString(),
+          encrypted_blob: encryptedBlob,
+          blind_indices: allIndices,
+          decay_score: importance,
+          source: `nanoclaw:${NAMESPACE}:import`,
+          content_fp: contentFp,
+          agent_id: `nanoclaw:${NAMESPACE}`,
+          encrypted_embedding: embeddingResult?.encryptedEmbedding,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        importErrors.push(`Failed to process fact "${fact.text.substring(0, 40)}...": ${msg}`);
+        skipped++;
+      }
+    }
+
+    if (payloads.length > 0) {
+      try {
+        const result = await api.store(s.userId, payloads, s.authKeyHex);
+        const dupes = result.duplicate_ids?.length ?? 0;
+        imported += payloads.length - dupes;
+        skipped += dupes;
+      } catch (err) {
+        if (isQuotaExceededError(err)) {
+          return quotaExceededResult();
+        }
+        const msg = err instanceof Error ? err.message : String(err);
+        importErrors.push(`Batch store failed: ${msg}`);
+        skipped += payloads.length;
+      }
+    }
+  }
+
+  return textResult({
+    success: imported > 0 || importErrors.length === 0,
+    facts_parsed: parsed.facts.length,
+    facts_imported: imported,
+    facts_skipped: skipped,
+    errors: importErrors.length > 0 ? importErrors : undefined,
+  });
+}
+
 // =========================================================================
 // MCP Server Setup
 // =========================================================================
@@ -1455,30 +1829,69 @@ server.setRequestHandler(ListToolsRequestSchema, async (_request, _extra) => ({
     recallToolDef,
     forgetToolDef,
     exportToolDef,
+    importToolDef,
+    statusToolDef,
   ],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request, _extra) => {
   const { name, arguments: args } = request.params;
+  const typedArgs = (args ?? {}) as Record<string, unknown>;
+
+  // Subgraph mode guard: detect but don't support (NanoClaw lacks viem/permissionless deps).
+  // Status tool works in both modes (uses HTTP billing endpoint).
+  if (serverMode === 'subgraph' && name !== 'totalreclaw_status') {
+    return errorResult(
+      'Subgraph mode detected (BIP-39 mnemonic provided) but not yet supported in NanoClaw MCP. ' +
+      'Use @totalreclaw/mcp-server (npm) for on-chain storage, or set TOTALRECLAW_SUBGRAPH_MODE=false ' +
+      'to force HTTP mode with this server.',
+    );
+  }
 
   try {
     switch (name) {
-      case 'totalreclaw_remember':
-        return await handleRemember((args ?? {}) as Record<string, unknown>);
+      case 'totalreclaw_remember': {
+        try {
+          return await handleRemember(typedArgs);
+        } catch (error) {
+          if (isQuotaExceededError(error)) {
+            return quotaExceededResult();
+          }
+          throw error;
+        }
+      }
 
       case 'totalreclaw_recall':
-        return await handleRecall((args ?? {}) as Record<string, unknown>);
+        return await handleRecall(typedArgs);
 
       case 'totalreclaw_forget':
-        return await handleForget((args ?? {}) as Record<string, unknown>);
+        return await handleForget(typedArgs);
 
       case 'totalreclaw_export':
-        return await handleExport((args ?? {}) as Record<string, unknown>);
+        return await handleExport(typedArgs);
+
+      case 'totalreclaw_import': {
+        try {
+          return await handleImport(typedArgs);
+        } catch (error) {
+          if (isQuotaExceededError(error)) {
+            return quotaExceededResult();
+          }
+          throw error;
+        }
+      }
+
+      case 'totalreclaw_status':
+        return await handleStatus(typedArgs);
 
       default:
         return errorResult(`Unknown tool: ${name}`);
     }
   } catch (error) {
+    // Final catch-all: check for quota error at the top level
+    if (isQuotaExceededError(error)) {
+      return quotaExceededResult();
+    }
     const message = error instanceof Error ? error.message : 'Unknown error';
     log(`Tool ${name} error: ${message}`);
     return errorResult(message);
@@ -1492,7 +1905,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request, _extra) => {
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  log(`TotalReclaw MCP server started (namespace: ${NAMESPACE}, server: ${SERVER_URL})`);
+  const modeLabel = serverMode === 'subgraph' ? 'subgraph (guard active)' : 'HTTP';
+  log(`TotalReclaw MCP server started (mode: ${modeLabel}, namespace: ${NAMESPACE}, server: ${SERVER_URL})`);
 }
 
 main().catch((error) => {

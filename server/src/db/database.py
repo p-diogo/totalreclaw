@@ -1,6 +1,8 @@
 """
 Database connection and session management for TotalReclaw Server.
 """
+import asyncio
+import logging
 import os
 import re
 from contextlib import asynccontextmanager
@@ -828,11 +830,39 @@ class Database:
 _db: Optional[Database] = None
 
 
-async def init_db(database_url: Optional[str] = None) -> Database:
-    """Initialize the global database instance."""
+async def init_db(database_url: Optional[str] = None, max_retries: int = 5, base_delay: float = 1.0) -> Database:
+    """Initialize the global database instance with retry logic.
+
+    Retries the initial connection with exponential backoff to handle
+    transient failures during deployment (e.g., database not yet ready).
+
+    Args:
+        database_url: Database connection URL. If None, uses settings.
+        max_retries: Maximum number of connection attempts.
+        base_delay: Base delay in seconds (doubles each retry).
+
+    Returns:
+        Initialized Database instance.
+    """
     global _db
+    logger = logging.getLogger(__name__)
     _db = Database(database_url)
-    await _db.init()
+
+    for attempt in range(max_retries):
+        try:
+            await _db.init()
+            return _db
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            delay = base_delay * (2 ** attempt)
+            logger.warning(
+                f"DB connection attempt {attempt + 1}/{max_retries} failed: {e}. "
+                f"Retrying in {delay:.1f}s..."
+            )
+            await asyncio.sleep(delay)
+
+    # Should not reach here, but satisfy type checker
     return _db
 
 

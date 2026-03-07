@@ -5,6 +5,7 @@ Zero-knowledge encrypted memory vault server for Phase 4.
 """
 import logging
 import re
+import signal
 import uuid
 import time
 from contextlib import asynccontextmanager
@@ -119,7 +120,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     logger.info(f"Environment: {settings.environment}")
 
     try:
-        # Initialize database
+        # Initialize database (with retry for transient failures)
         logger.info("Initializing database connection...")
         db_url = settings.database_url
         # Redact password but show scheme + host for debugging
@@ -131,6 +132,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     except Exception as e:
         logger.error(f"Failed to connect to database: {e}")
         raise
+
+    # Register signal handlers for graceful shutdown
+    import asyncio
+    loop = asyncio.get_running_loop()
+
+    def _signal_handler(sig: signal.Signals) -> None:
+        logger.info(f"Received {sig.name}, initiating graceful shutdown...")
+
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        loop.add_signal_handler(sig, _signal_handler, sig)
 
     yield
 

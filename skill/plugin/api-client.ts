@@ -100,7 +100,10 @@ export function createApiClient(serverUrl: string) {
     } catch {
       body = '(could not read response body)';
     }
-    throw new Error(`${context}: HTTP ${res.status} - ${body}`);
+    const hint = res.status === 401
+      ? ' Authentication failed. If using a recovery phrase, check that all 12 words are in the correct order and spelled correctly.'
+      : '';
+    throw new Error(`${context}: HTTP ${res.status} - ${body}${hint}`);
   }
 
   // ------------------------------------------------------------------

@@ -584,6 +584,28 @@ async function handleForgetSubgraph(
   }
 }
 
+// ── Auth error helper ────────────────────────────────────────────────────────
+
+const AUTH_HINT_MESSAGE =
+  'Authentication failed. If using a recovery phrase, check that all 12 words are in the correct order and spelled correctly.';
+
+/**
+ * Check if an error is a 401 authentication error and return a helpful message.
+ */
+function isAuthError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message;
+    return (
+      msg.includes('401') ||
+      msg.includes('UNAUTHORIZED') ||
+      msg.includes('Not authenticated') ||
+      msg.includes('AUTH_FAILED') ||
+      msg.includes('Invalid credentials')
+    );
+  }
+  return false;
+}
+
 // ── Quota error helper ──────────────────────────────────────────────────────
 
 /**
@@ -776,6 +798,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Final catch-all: check for quota error at the top level too
     if (isQuotaExceededError(error)) {
       return quotaExceededResponse();
+    }
+
+    // Provide a helpful hint for authentication failures
+    if (isAuthError(error)) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            error: AUTH_HINT_MESSAGE,
+          }),
+        }],
+        isError: true,
+      };
     }
 
     return {

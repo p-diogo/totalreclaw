@@ -345,10 +345,17 @@ export async function beforeAgentStart(
   } catch (error) {
     debugLog(!!options.debug, 'beforeAgentStart recall/rerank failed:', error);
 
+    // Provide a helpful hint for authentication failures
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const isAuthFailure = errorMsg.includes('401') || errorMsg.includes('UNAUTHORIZED') || errorMsg.includes('AUTH_FAILED');
+    const authHint = isAuthFailure
+      ? '\n\nTotalReclaw authentication failed. If using a recovery phrase, check that all 12 words are in the correct order and spelled correctly.'
+      : '';
+
     // Return empty result on error (still include billing warning if available)
     return {
       memories: [],
-      contextString: billingWarning,
+      contextString: billingWarning + authHint,
       latencyMs: Date.now() - startTime,
     };
   }
