@@ -228,8 +228,25 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
     // First run -- register with the server.
     const authHash = computeAuthKeyHash(keys.authKey);
     const saltHex = keys.salt.toString('hex');
-    const result = await apiClient.register(authHash, saltHex);
-    userId = result.user_id;
+
+    let registeredUserId: string | undefined;
+    try {
+      const result = await apiClient.register(authHash, saltHex);
+      registeredUserId = result.user_id;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('USER_EXISTS') && isSubgraphMode()) {
+        // In subgraph mode, derive a deterministic userId from the auth key
+        // hash. The server is only a relay proxy — userId is used as the
+        // subgraph owner field and must be consistent between store/search.
+        registeredUserId = authHash.slice(0, 32);
+        logger.info(`Using derived userId for subgraph mode (server returned USER_EXISTS)`);
+      } else {
+        throw err;
+      }
+    }
+
+    userId = registeredUserId!;
 
     // Persist credentials so we can resume later.
     const dir = path.dirname(CREDENTIALS_PATH);
@@ -344,7 +361,8 @@ function encryptToHex(plaintext: string, key: Buffer): string {
  * Decrypt a hex-encoded ciphertext blob into a UTF-8 string.
  */
 function decryptFromHex(hexBlob: string, key: Buffer): string {
-  const b64 = Buffer.from(hexBlob, 'hex').toString('base64');
+  const hex = hexBlob.startsWith('0x') ? hexBlob.slice(2) : hexBlob;
+  const b64 = Buffer.from(hex, 'hex').toString('base64');
   return decrypt(b64, key);
 }
 
@@ -514,7 +532,7 @@ async function storeExtractedFacts(
       };
 
       if (isSubgraphMode()) {
-        const config = getSubgraphConfig();
+        const config = { ...getSubgraphConfig(), authKeyHex: authKeyHex! };
         const protobuf = encodeFactProtobuf({
           id: factId,
           timestamp: new Date().toISOString(),
@@ -679,7 +697,7 @@ const plugin = {
 
             if (isSubgraphMode()) {
               // Subgraph mode: encode as Protobuf and submit on-chain via relay UserOp
-              const config = getSubgraphConfig();
+              const config = { ...getSubgraphConfig(), authKeyHex: authKeyHex! };
               const protobuf = encodeFactProtobuf({
                 id: factId,
                 timestamp: new Date().toISOString(),
@@ -780,9 +798,9 @@ const plugin = {
 
             if (isSubgraphMode()) {
               // --- Subgraph search path ---
-              const factCount = await getSubgraphFactCount(userId!);
+              const factCount = await getSubgraphFactCount(userId!, authKeyHex!);
               const pool = computeCandidatePool(factCount);
-              const subgraphResults = await searchSubgraph(userId!, allTrapdoors, pool);
+              const subgraphResults = await searchSubgraph(userId!, allTrapdoors, pool, authKeyHex!);
 
               for (const result of subgraphResults) {
                 try {
@@ -1169,9 +1187,9 @@ const plugin = {
             // 4. Query subgraph for fresh results.
             let subgraphResults: Awaited<ReturnType<typeof searchSubgraph>> = [];
             try {
-              const factCount = await getSubgraphFactCount(userId!);
+              const factCount = await getSubgraphFactCount(userId!, authKeyHex!);
               const pool = computeCandidatePool(factCount);
-              subgraphResults = await searchSubgraph(userId!, allTrapdoors, pool);
+              subgraphResults = await searchSubgraph(userId!, allTrapdoors, pool, authKeyHex!);
             } catch {
               // Subgraph query failed -- fall back to cached facts if available.
               if (cachedFacts.length > 0) {

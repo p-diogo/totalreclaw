@@ -98,13 +98,12 @@ async def register(
                 error_message="salt must be 32 bytes"
             )
 
-        # Check if user already exists with this auth_key_hash
+        # Idempotent registration: if user already exists, return their user_id
         existing_user = await db.get_user_by_auth_hash(auth_key_hash)
         if existing_user:
             return RegisterResponseJSON(
-                success=False,
-                error_code=ErrorCode.USER_EXISTS,
-                error_message="User with this auth key already exists"
+                success=True,
+                user_id=existing_user.user_id
             )
 
         # Generate user ID (UUIDv7-like, using UUID4 for PoC)

@@ -22,7 +22,7 @@ import { createPimlicoClient } from 'permissionless/clients/pimlico';
 // ---------------------------------------------------------------------------
 
 /** Default EventfulDataEdge contract address on Chiado testnet */
-const DEFAULT_DATA_EDGE_ADDRESS = '0x048879569E394af3fC6721d8d44DdcfcDD407543';
+const DEFAULT_DATA_EDGE_ADDRESS = '0x16C4fDBa8da731995ADFC367727b5929893f0B20';
 
 /** Well-known ERC-4337 EntryPoint v0.7 address (same on all chains) */
 const DEFAULT_ENTRYPOINT_ADDRESS = '0x0000000071727De22E5E9d8BAf0edAc6f37da032';
@@ -34,6 +34,8 @@ export interface SubgraphStoreConfig {
   chainId: number;            // 10200 for Chiado, 100 for Gnosis
   dataEdgeAddress: string;    // EventfulDataEdge contract address
   entryPointAddress: string;  // ERC-4337 EntryPoint v0.7
+  authKeyHex?: string;        // HKDF auth key for relay server Authorization header
+  rpcUrl?: string;            // Override chain RPC URL for public client reads
 }
 
 export interface FactPayload {
@@ -191,19 +193,29 @@ export async function submitFactOnChain(
   const dataEdgeAddress = config.dataEdgeAddress as Address;
   const entryPointAddr = (config.entryPointAddress || entryPoint07Address) as Address;
 
+  // Build authenticated transport for relay server proxy
+  const authTransport = config.authKeyHex
+    ? http(bundlerRpcUrl, {
+        fetchOptions: {
+          headers: { Authorization: `Bearer ${config.authKeyHex}` },
+        },
+      })
+    : http(bundlerRpcUrl);
+
   // 1. Derive EOA signer from mnemonic (BIP-44 m/44'/60'/0'/0/0)
   const ownerAccount = mnemonicToAccount(config.mnemonic);
 
-  // 2. Create a public client for chain reads (via relay bundler proxy)
+  // 2. Create a public client for chain reads (using explicit RPC if configured,
+  //    NOT the bundler proxy which only supports ERC-4337 JSON-RPC methods)
   const publicClient = createPublicClient({
     chain,
-    transport: http(bundlerRpcUrl),
+    transport: config.rpcUrl ? http(config.rpcUrl) : http(),
   });
 
   // 3. Create Pimlico client for bundler + paymaster operations (via relay)
   const pimlicoClient = createPimlicoClient({
     chain,
-    transport: http(bundlerRpcUrl),
+    transport: authTransport,
     entryPoint: {
       address: entryPointAddr,
       version: '0.7',
@@ -224,7 +236,7 @@ export async function submitFactOnChain(
   const smartAccountClient = createSmartAccountClient({
     account: smartAccount,
     chain,
-    bundlerTransport: http(bundlerRpcUrl),
+    bundlerTransport: authTransport,
     // Paymaster sponsorship proxied through relay to Pimlico
     paymaster: pimlicoClient,
     userOperation: {
@@ -297,5 +309,6 @@ export function getSubgraphConfig(): SubgraphStoreConfig {
     chainId: parseInt(process.env.TOTALRECLAW_CHAIN_ID || '10200'),
     dataEdgeAddress: process.env.TOTALRECLAW_DATA_EDGE_ADDRESS || DEFAULT_DATA_EDGE_ADDRESS,
     entryPointAddress: process.env.TOTALRECLAW_ENTRYPOINT_ADDRESS || DEFAULT_ENTRYPOINT_ADDRESS,
+    rpcUrl: process.env.TOTALRECLAW_RPC_URL || undefined,
   };
 }

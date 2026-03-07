@@ -128,9 +128,14 @@ export function createApiClient(serverUrl: string) {
       });
       await assertOk(res, 'register');
       const json = (await res.json()) as Record<string, unknown>;
-      if (!json.success) {
+      if (!json.success && json.error_code !== 'USER_EXISTS') {
         throw new Error(
           `register: server returned success=false - ${json.error_code}: ${json.error_message}`,
+        );
+      }
+      if (!json.user_id) {
+        throw new Error(
+          `register: server did not return user_id (error_code=${json.error_code})`,
         );
       }
       return { user_id: json.user_id as string };

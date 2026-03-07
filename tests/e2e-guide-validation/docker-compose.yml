@@ -1,0 +1,82 @@
+services:
+  # --- Graph Node infrastructure (indexes canonical Chiado) ---
+  graph-postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: graph-node
+      POSTGRES_PASSWORD: let-me-in
+      POSTGRES_DB: graph-node
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - graph-pgdata:/var/lib/postgresql/data
+
+  graph-ipfs:
+    image: ipfs/kubo:latest
+    volumes:
+      - graph-ipfsdata:/data/ipfs
+
+  graph-node:
+    image: graphprotocol/graph-node:latest
+    ports:
+      - "127.0.0.1:18000:8000"   # GraphQL HTTP
+      - "127.0.0.1:18020:8020"  # JSON-RPC admin
+    depends_on:
+      - graph-postgres
+      - graph-ipfs
+    environment:
+      postgres_host: graph-postgres
+      postgres_port: 5432
+      postgres_user: graph-node
+      postgres_pass: let-me-in
+      postgres_db: graph-node
+      ipfs: "graph-ipfs:5001"
+      # Canonical Chiado RPC (NOT the forked rpc.chiadochain.net)
+      ethereum: "gnosis-chiado:https://gnosis-chiado-rpc.publicnode.com"
+      GRAPH_LOG: info
+      GRAPH_GRAPHQL_MAX_FIRST: "5000"
+
+  # --- Subgraph proxy: routes /v1/subgraph to local graph-node,
+  #     everything else to api.totalreclaw.xyz ---
+  subgraph-proxy:
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:18888:80"
+    depends_on:
+      - graph-node
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # --- OpenClaw with TotalReclaw plugin ---
+  openclaw:
+    build:
+      context: ../..
+      dockerfile: tests/e2e-guide-validation/Dockerfile.openclaw
+    environment:
+      ZAI_API_KEY: "${ZAI_API_KEY}"
+      # Point to local proxy which splits traffic:
+      #   /v1/subgraph -> local graph-node
+      #   /v1/bundler, /v1/register, etc -> api.totalreclaw.xyz
+      TOTALRECLAW_SERVER_URL: "http://subgraph-proxy:80"
+      TOTALRECLAW_MASTER_PASSWORD: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+      TOTALRECLAW_SUBGRAPH_MODE: "true"
+      TOTALRECLAW_CHAIN_ID: "10200"
+      TOTALRECLAW_DATA_EDGE_ADDRESS: "0x16C4fDBa8da731995ADFC367727b5929893f0B20"
+      TOTALRECLAW_RPC_URL: "https://gnosis-chiado-rpc.publicnode.com"
+      TOTALRECLAW_TWO_TIER_SEARCH: "false"
+      TOTALRECLAW_EXTRACT_EVERY_TURNS: "1"
+      OPENCLAW_GATEWAY_TOKEN: "guide-test-token-2026"
+    ports:
+      - "127.0.0.1:18789:18789"
+    depends_on:
+      - subgraph-proxy
+    volumes:
+      - totalreclaw-creds:/home/node/.totalreclaw
+    tmpfs:
+      - /tmp:size=100M
+    security_opt:
+      - no-new-privileges
+
+volumes:
+  totalreclaw-creds:
+  graph-pgdata:
+  graph-ipfsdata:

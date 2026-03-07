@@ -40,11 +40,16 @@ async function gqlQuery<T>(
   endpoint: string,
   query: string,
   variables: Record<string, unknown>,
+  authKeyHex?: string,
 ): Promise<T | null> {
   try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authKeyHex) {
+      headers['Authorization'] = `Bearer ${authKeyHex}`;
+    }
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ query, variables }),
     });
     if (!response.ok) return null;
@@ -133,6 +138,7 @@ export async function searchSubgraph(
   owner: string,
   trapdoors: string[],
   maxCandidates: number,
+  authKeyHex?: string,
 ): Promise<SubgraphSearchFact[]> {
   const config = getSubgraphConfig();
   const subgraphUrl = `${config.relayUrl}/v1/subgraph`;
@@ -151,6 +157,7 @@ export async function searchSubgraph(
         subgraphUrl,
         SEARCH_QUERY,
         { trapdoors: chunk, owner, first: PAGE_SIZE },
+        authKeyHex,
       );
       return { chunk, entries: data?.blindIndexes ?? [] };
     }),
@@ -185,6 +192,7 @@ export async function searchSubgraph(
         subgraphUrl,
         PAGINATE_QUERY,
         { trapdoors: chunk, owner, first: PAGE_SIZE, lastId },
+        authKeyHex,
       );
 
       const entries = data?.blindIndexes ?? [];
@@ -212,7 +220,7 @@ export async function searchSubgraph(
  * Uses the globalStates entity for a lightweight single-row lookup
  * instead of fetching and counting individual fact IDs.
  */
-export async function getSubgraphFactCount(owner: string): Promise<number> {
+export async function getSubgraphFactCount(owner: string, authKeyHex?: string): Promise<number> {
   const config = getSubgraphConfig();
   const subgraphUrl = `${config.relayUrl}/v1/subgraph`;
 
@@ -230,6 +238,7 @@ export async function getSubgraphFactCount(owner: string): Promise<number> {
     subgraphUrl,
     query,
     {},
+    authKeyHex,
   );
 
   if (data?.globalStates && data.globalStates.length > 0) {
