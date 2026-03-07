@@ -7,14 +7,16 @@
  * The relay server proxies GraphQL queries to Graph Studio with its own
  * API key at `${relayUrl}/v1/subgraph`. Clients never need a subgraph endpoint.
  *
- * Improvements (v3):
- *   A1: blindIndices → blindIndexes (Graph Node pluralization)
- *   A2: Small parallel batches (5 trapdoors each) for recall
- *   A3: orderBy: id, orderDirection: desc (recency proxy)
- *   A4: Cursor-based pagination for saturated batches
- *   C4: globalStates for lightweight fact count
- *   T322: Index compaction — filter out inactive facts at query level
- *         (fact_: { isActive: true }) + client-side safety net
+ * Query cost optimization:
+ *   Phase 1: Single query with ALL trapdoors (1 query).
+ *   Phase 2: If saturated (1000 results), split into small parallel batches
+ *            so rare trapdoor matches aren't drowned by common ones.
+ *   Phase 3: Cursor-based pagination for any saturated batch.
+ *
+ * This minimizes Graph Network query costs (pay-per-query via GRT):
+ *   - Small datasets (<1000 matches): 1 query total
+ *   - Medium datasets: 1 + N batch queries
+ *   - Large datasets: 1 + N batches + pagination queries
  */
 
 import { getSubgraphConfig } from './subgraph-store.js';
@@ -28,8 +30,9 @@ export interface SubgraphSearchFact {
   isActive: boolean;
 }
 
-/** Small batches so rare trapdoor matches aren't drowned by common ones. */
+/** Batch size for Phase 2 split queries. */
 const TRAPDOOR_BATCH_SIZE = parseInt(process.env.TOTALRECLAW_TRAPDOOR_BATCH_SIZE ?? '5', 10);
+/** Graph Studio / Graph Network hard limit on `first` argument. */
 const PAGE_SIZE = parseInt(process.env.TOTALRECLAW_SUBGRAPH_PAGE_SIZE ?? '1000', 10);
 
 /**
@@ -60,10 +63,7 @@ async function gqlQuery<T>(
   }
 }
 
-/** GraphQL query for blind index lookup — uses Graph Node's `blindIndexes` pluralization.
- *  T322: Added `fact_: { isActive: true }` relation filter to exclude blind index
- *  entries pointing to soft-deleted facts (decayScore < 0.3) at the query level.
- *  Graph Node relation filters use the `field_: { subfield: value }` syntax. */
+/** GraphQL query for blind index lookup. */
 const SEARCH_QUERY = `
   query SearchByBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!) {
     blindIndexes(
@@ -88,8 +88,7 @@ const SEARCH_QUERY = `
   }
 `;
 
-/** Pagination query — cursor-based using id_gt, ascending for deterministic walk.
- *  T322: Added `fact_: { isActive: true }` to match SEARCH_QUERY filtering. */
+/** Pagination query — cursor-based using id_gt, ascending for deterministic walk. */
 const PAGINATE_QUERY = `
   query PaginateBlindIndex($trapdoors: [String!]!, $owner: Bytes!, $first: Int!, $lastId: String!) {
     blindIndexes(
@@ -123,16 +122,60 @@ interface SearchResponse {
   blindIndexes?: BlindIndexEntry[];
 }
 
+/** Collect facts from blind index entries, deduplicating by fact id. */
+function collectFacts(
+  entries: BlindIndexEntry[],
+  allResults: Map<string, SubgraphSearchFact>,
+): void {
+  for (const entry of entries) {
+    if (entry.fact && entry.fact.isActive !== false && !allResults.has(entry.fact.id)) {
+      allResults.set(entry.fact.id, entry.fact);
+    }
+  }
+}
+
+/**
+ * Paginate a single trapdoor chunk until exhausted or maxCandidates reached.
+ */
+async function paginateChunk(
+  subgraphUrl: string,
+  chunk: string[],
+  owner: string,
+  allResults: Map<string, SubgraphSearchFact>,
+  maxCandidates: number,
+  authKeyHex?: string,
+): Promise<void> {
+  let lastId = '';
+  while (allResults.size < maxCandidates) {
+    const data = await gqlQuery<SearchResponse>(
+      subgraphUrl,
+      PAGINATE_QUERY,
+      { trapdoors: chunk, owner, first: PAGE_SIZE, lastId },
+      authKeyHex,
+    );
+    const entries = data?.blindIndexes ?? [];
+    if (entries.length === 0) break;
+    collectFacts(entries, allResults);
+    if (entries.length < PAGE_SIZE) break;
+    lastId = entries[entries.length - 1].id;
+  }
+}
+
 /**
  * Search the subgraph for facts matching the given trapdoors.
  *
- * Strategy:
- *   1. Split trapdoors into small chunks (TRAPDOOR_BATCH_SIZE=5).
- *   2. Fire all chunks in parallel via Promise.all.
- *   3. If any chunk returns exactly PAGE_SIZE results (saturated),
- *      paginate that chunk using id_gt cursor until exhausted or
- *      maxCandidates reached.
- *   4. Dedup across all chunks by fact id.
+ * Adaptive strategy to minimize query costs:
+ *
+ *   Phase 1: Single query with ALL trapdoors.
+ *     - If not saturated (< PAGE_SIZE results): done. 1 query total.
+ *     - If saturated: common trapdoors may be drowning rare ones. Go to Phase 2.
+ *
+ *   Phase 2: Split trapdoors into small parallel batches (TRAPDOOR_BATCH_SIZE=5).
+ *     - Each batch independently gets up to PAGE_SIZE results.
+ *     - Rare trapdoor matches get their own budget.
+ *
+ *   Phase 3: Cursor-based pagination for any saturated batch.
+ *     - Only for power users with very large datasets.
  */
 export async function searchSubgraph(
   owner: string,
@@ -144,14 +187,34 @@ export async function searchSubgraph(
   const subgraphUrl = `${config.relayUrl}/v1/subgraph`;
   const allResults = new Map<string, SubgraphSearchFact>();
 
-  // Split trapdoors into small chunks for parallel dispatch.
+  // -----------------------------------------------------------------------
+  // Phase 1: Single query with all trapdoors (1 query)
+  // -----------------------------------------------------------------------
+  const phase1 = await gqlQuery<SearchResponse>(
+    subgraphUrl,
+    SEARCH_QUERY,
+    { trapdoors, owner, first: PAGE_SIZE },
+    authKeyHex,
+  );
+
+  const phase1Entries = phase1?.blindIndexes ?? [];
+  collectFacts(phase1Entries, allResults);
+
+  // Not saturated — we got everything in 1 query. Done.
+  if (phase1Entries.length < PAGE_SIZE) {
+    return Array.from(allResults.values());
+  }
+
+  // -----------------------------------------------------------------------
+  // Phase 2: Saturated — split into small batches for better rare-word recall.
+  // Common trapdoors were drowning rare ones in the single-query result.
+  // -----------------------------------------------------------------------
   const chunks: string[][] = [];
   for (let i = 0; i < trapdoors.length; i += TRAPDOOR_BATCH_SIZE) {
     chunks.push(trapdoors.slice(i, i + TRAPDOOR_BATCH_SIZE));
   }
 
-  // Phase 1: Parallel initial queries (one per chunk).
-  const initialResults = await Promise.all(
+  const batchResults = await Promise.all(
     chunks.map(async (chunk) => {
       const data = await gqlQuery<SearchResponse>(
         subgraphUrl,
@@ -163,53 +226,20 @@ export async function searchSubgraph(
     }),
   );
 
-  // Collect initial results and identify saturated batches.
-  // T322: Client-side safety net — skip facts where isActive is false,
-  // in case the subgraph endpoint doesn't support relation filters (e.g. mock).
   const saturatedChunks: string[][] = [];
-  for (const { chunk, entries } of initialResults) {
-    for (const entry of entries) {
-      if (entry.fact && entry.fact.isActive !== false && !allResults.has(entry.fact.id)) {
-        allResults.set(entry.fact.id, entry.fact);
-      }
-    }
+  for (const { chunk, entries } of batchResults) {
+    collectFacts(entries, allResults);
     if (entries.length >= PAGE_SIZE) {
       saturatedChunks.push(chunk);
     }
   }
 
-  // Phase 2: Cursor-based pagination for saturated batches.
-  // Only paginate if we haven't yet reached maxCandidates.
+  // -----------------------------------------------------------------------
+  // Phase 3: Cursor-based pagination for saturated batches (power users).
+  // -----------------------------------------------------------------------
   for (const chunk of saturatedChunks) {
     if (allResults.size >= maxCandidates) break;
-
-    // Find the last blind-index id from the initial results for this chunk.
-    // We need to re-query with ascending order for deterministic cursor walk.
-    let lastId = '';
-
-    while (allResults.size < maxCandidates) {
-      const data = await gqlQuery<SearchResponse>(
-        subgraphUrl,
-        PAGINATE_QUERY,
-        { trapdoors: chunk, owner, first: PAGE_SIZE, lastId },
-        authKeyHex,
-      );
-
-      const entries = data?.blindIndexes ?? [];
-      if (entries.length === 0) break;
-
-      for (const entry of entries) {
-        // T322: Client-side safety net for pagination results too.
-        if (entry.fact && entry.fact.isActive !== false && !allResults.has(entry.fact.id)) {
-          allResults.set(entry.fact.id, entry.fact);
-        }
-      }
-
-      // If we got fewer than PAGE_SIZE, this chunk is exhausted.
-      if (entries.length < PAGE_SIZE) break;
-
-      lastId = entries[entries.length - 1].id;
-    }
+    await paginateChunk(subgraphUrl, chunk, owner, allResults, maxCandidates, authKeyHex);
   }
 
   return Array.from(allResults.values());
@@ -224,8 +254,6 @@ export async function getSubgraphFactCount(owner: string, authKeyHex?: string): 
   const config = getSubgraphConfig();
   const subgraphUrl = `${config.relayUrl}/v1/subgraph`;
 
-  // globalStates is a singleton entity (id: "global") with aggregate counters.
-  // It is NOT per-owner — it tracks totals across the entire subgraph.
   const query = `
     query FactCount {
       globalStates(first: 1) {
