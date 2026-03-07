@@ -104,6 +104,7 @@ To recover: just run the setup again (OpenClaw: reinstall the skill; MCP: re-run
 | "Not authenticated" / 401 | Check your recovery phrase -- exact words, exact order |
 | Memories not appearing | Try an explicit recall: "what do you remember about X?" |
 | Quota exceeded (403) | Wait for monthly reset or upgrade to Pro |
+| Want to test billing | Use test card `4242 4242 4242 4242` with any expiry/CVC |
 
 For detailed technical troubleshooting, see [beta-tester-guide-detailed.md](./beta-tester-guide-detailed.md).
 
@@ -114,6 +115,32 @@ For detailed technical troubleshooting, see [beta-tester-guide-detailed.md](./be
 - Free tier limit (100 writes/month) and Pro pricing ($2-5/month) are not finalized
 - MCP agents rely on explicit tool use rather than automatic memory hooks
 - Beta runs on testnet infrastructure -- expect occasional downtime
+
+---
+
+## Billing & Subscriptions (Beta)
+
+Billing is in **test mode** during beta — no real charges. To test the upgrade flow:
+
+**Test card numbers (Stripe test mode):**
+| Card Number | Result |
+|-------------|--------|
+| `4242 4242 4242 4242` | Successful payment |
+| `4000 0000 0000 3220` | Requires 3D Secure authentication |
+| `4000 0000 0000 9995` | Payment declined |
+
+Use any future expiry date, any 3-digit CVC, and any billing address.
+
+**Checking your subscription status:**
+- **OpenClaw:** Ask your agent "What's my TotalReclaw subscription status?"
+- **MCP agents:** The agent has a `status` tool that shows your tier, usage, and limits
+
+**What happens at the quota limit:**
+- Free tier: 100 writes/month, unlimited reads
+- When you hit the limit, your agent will tell you and provide an upgrade link
+- After upgrading (with a test card), writes resume immediately
+
+**Monthly reset:** Usage counters reset at the start of each calendar month.
 
 ---
 
