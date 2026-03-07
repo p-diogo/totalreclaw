@@ -568,15 +568,9 @@ Create the `/add-totalreclaw` skill package for NanoClaw's skills engine.
 +-- modify/
 |   +-- container/
 |   |   +-- agent-runner/
-|   |       +-- package.json        # Add @totalreclaw/client dependency
+|   |       +-- package.json        # Add @totalreclaw/mcp-server dependency
 |   |       +-- src/
-|   |           +-- mcp/
-|   |               +-- totalreclaw-mcp.ts   # MCP server implementation
-|   |               +-- tools/
-|   |                   +-- remember.ts
-|   |                   +-- recall.ts
-|   |                   +-- forget.ts
-|   |                   +-- export.ts
+|   |           +-- nanoclaw-agent-runner.ts  # Spawns @totalreclaw/mcp-server via npx
 |   +-- src/
 |       +-- container-runtime.ts    # Add TotalReclaw env vars
 +-- add/
@@ -616,21 +610,28 @@ modifies:
   - container/agent-runner/src/index.ts
 
 adds:
-  - container/agent-runner/src/mcp/totalreclaw-mcp.ts
-  - container/agent-runner/src/mcp/tools/*.ts
   - src/totalreclaw/hooks/*.ts
   - src/totalreclaw/extraction/*.ts
+
+npmDependencies:
+  - "@totalreclaw/mcp-server": "^1.0.0"
 ```
 
-### Phase 2: MCP Server Implementation (Week 1-2)
+### Phase 2: MCP Server Integration (Week 1-2)
 
-#### totalreclaw-mcp.ts
+> **Architecture change (v0.3.0):** NanoClaw no longer maintains a self-contained MCP server.
+> Instead, `nanoclaw-agent-runner.ts` spawns the published `@totalreclaw/mcp-server` npm
+> package as a stdio child process, ensuring full feature parity with Claude Desktop and
+> all other MCP clients.
+
+#### nanoclaw-agent-runner.ts
+
+The agent-runner registers `@totalreclaw/mcp-server` as an MCP server:
 
 ```typescript
 /**
- * TotalReclaw MCP Server for NanoClaw
- *
- * Provides tools for encrypted memory operations.
+ * NanoClaw agent-runner that registers TotalReclaw MCP server.
+ * Spawns `@totalreclaw/mcp-server` via npx — no custom MCP code needed.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -1432,13 +1433,7 @@ nanoclaw/
 |   |       +-- agent-runner/
 |   |           +-- package.json          # MODIFIED
 |   |           +-- src/
-|   |               +-- mcp/
-|   |                   +-- totalreclaw-mcp.ts
-|   |                   +-- tools/
-|   |                       +-- remember.ts
-|   |                       +-- recall.ts
-|   |                       +-- forget.ts
-|   |                       +-- export.ts
+|   |               +-- nanoclaw-agent-runner.ts  # Spawns @totalreclaw/mcp-server
 |   +-- add/
 |       +-- src/
 |           +-- totalreclaw/

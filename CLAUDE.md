@@ -63,7 +63,7 @@
 ├── skill/                 # OpenClaw plugin (PoC v2: embedding, LSH, reranker)
 ├── skill-nanoclaw/        # NanoClaw skill package + MCP server
 │   ├── src/               # Hooks, extraction logic
-│   └── mcp/               # Self-contained MCP server (totalreclaw-mcp.ts)
+│   └── mcp/               # NanoClaw agent-runner (spawns @totalreclaw/mcp-server)
 ├── mcp/                   # Generic MCP server (for Claude Desktop, etc.)
 ├── contracts/             # Solidity smart contracts (EventfulDataEdge, Paymaster)
 ├── subgraph/              # Graph Node indexer (AssemblyScript mappings)

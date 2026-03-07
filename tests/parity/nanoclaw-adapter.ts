@@ -1,22 +1,16 @@
 /**
- * NanoClaw Adapter for Parity Tests
+ * MCP Crypto Adapter for Parity Tests
  *
- * Extracts the pure crypto/LSH/reranker functions from the NanoClaw
- * monolithic MCP file (skill-nanoclaw/mcp/totalreclaw-mcp.ts) into a
- * testable module.
+ * Standalone re-implementation of TotalReclaw's crypto, LSH, and reranker
+ * primitives using @noble/hashes. Used to verify parity with the OpenClaw
+ * plugin (skill/plugin/*.ts).
  *
- * WHY: The monolith has top-level side effects (MCP server startup) that
- * make it unimportable for testing. This adapter re-implements the same
- * functions using identical code, sourced directly from the monolith.
- *
- * INVARIANT: These functions MUST be byte-for-byte identical to the ones
- * in totalreclaw-mcp.ts. If the monolith changes, update this file and
- * re-run the parity test. The parity test compares this adapter's output
- * against the OpenClaw plugin's output -- if both match, both
- * implementations are correct.
+ * NOTE: The old NanoClaw monolith (totalreclaw-mcp.ts) has been removed.
+ * NanoClaw now spawns @totalreclaw/mcp-server via npx. This adapter
+ * remains as a standalone reference implementation for parity testing.
  *
  * IMPORTANT: Do NOT modify the function logic here. If you need to change
- * behavior, change the source of truth (totalreclaw-mcp.ts and the plugin
+ * behavior, change the source of truth (mcp/src/index.ts and the plugin
  * files) and then update this adapter to match.
  */
 
@@ -30,7 +24,7 @@ import { stemmer } from 'porter-stemmer';
 import crypto from 'node:crypto';
 
 // =========================================================================
-// Crypto (from totalreclaw-mcp.ts lines 258-432)
+// Crypto primitives (Argon2id + HKDF key derivation, AES-GCM encryption)
 // =========================================================================
 
 const AUTH_KEY_INFO = 'totalreclaw-auth-key-v1';
@@ -197,7 +191,7 @@ export function generateContentFingerprint(plaintext: string, dedupKey: Buffer):
 }
 
 // =========================================================================
-// LSH Seed Derivation (from totalreclaw-mcp.ts lines 226-253)
+// LSH Seed Derivation (HKDF with LSH_SEED_INFO)
 // =========================================================================
 
 const LSH_SEED_INFO = 'openmemory-lsh-seed-v1';
@@ -222,7 +216,7 @@ export function deriveLshSeed(password: string, salt: Buffer): Uint8Array {
 }
 
 // =========================================================================
-// LSH Hasher (from totalreclaw-mcp.ts lines 118-224)
+// LSH Hasher (locality-sensitive hashing for blind search indices)
 // =========================================================================
 
 export class LSHHasher {
@@ -322,7 +316,7 @@ export class LSHHasher {
 }
 
 // =========================================================================
-// Reranker (from totalreclaw-mcp.ts lines 828-1006)
+// Reranker (BM25 + cosine + RRF fusion)
 // =========================================================================
 
 const STOP_WORDS = new Set([

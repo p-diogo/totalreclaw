@@ -498,7 +498,7 @@ If the user asks about their subscription or usage, call totalreclaw_status.
 | Component | Why no change |
 |-----------|---------------|
 | `skill/plugin/crypto.ts` | MCP server already uses the same key derivation (via `@totalreclaw/client`) |
-| `skill-nanoclaw/mcp/totalreclaw-mcp.ts` | NanoClaw MCP is self-contained; it gets billing through the OpenClaw agent, not through its own tools |
+| `skill-nanoclaw/mcp/nanoclaw-agent-runner.ts` | NanoClaw now spawns `@totalreclaw/mcp-server` (npm package) — no longer self-contained |
 | Relay server auth | Same wallet-signature auth; MCP server signs requests the same way as the skill |
 | Subgraph / smart contracts | No changes; billing is in the relay layer, not on-chain |
 

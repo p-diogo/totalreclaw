@@ -457,8 +457,8 @@ async function runQuery(
           },
         },
         totalreclaw: {
-          command: 'node',
-          args: [path.join(__dirname, 'totalreclaw-mcp.js')],
+          command: 'npx',
+          args: ['@totalreclaw/mcp-server'],
           env: {
             TOTALRECLAW_SERVER_URL: process.env.TOTALRECLAW_SERVER_URL || 'http://totalreclaw-server:8080',
             TOTALRECLAW_MASTER_PASSWORD: sdkEnv.TOTALRECLAW_MASTER_PASSWORD || '',

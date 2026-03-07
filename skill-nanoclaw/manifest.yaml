@@ -15,7 +15,8 @@ modifies:
   - container/agent-runner/src/index.ts
 
 adds:
-  - container/agent-runner/src/mcp/totalreclaw-mcp.ts
-  - container/agent-runner/src/mcp/tools/*.ts
   - src/totalreclaw/hooks/*.ts
   - src/totalreclaw/extraction/*.ts
+
+npmDependencies:
+  - "@totalreclaw/mcp-server": "^1.0.0"

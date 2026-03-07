@@ -1,13 +1,13 @@
 /**
- * Parity Tests: OpenClaw Plugin vs NanoClaw MCP
+ * Parity Tests: OpenClaw Plugin vs MCP Server Crypto
  *
- * Verifies that the NanoClaw MCP server (skill-nanoclaw/mcp/totalreclaw-mcp.ts)
- * produces byte-identical outputs to the OpenClaw plugin (skill/plugin/*.ts)
+ * Verifies that the @totalreclaw/mcp-server (mcp/src/index.ts) produces
+ * byte-identical outputs to the OpenClaw plugin (skill/plugin/*.ts)
  * for all shared cryptographic, LSH, and reranker operations.
  *
- * This is a P0 gap identified in the test audit: both codebases contain
- * self-contained copies of the same algorithms. Any drift between them
- * would cause memories written by one to be unreadable by the other.
+ * NOTE: NanoClaw now spawns @totalreclaw/mcp-server via npx, so there is
+ * only ONE MCP implementation. These parity tests validate that the plugin
+ * and MCP server share identical crypto primitives.
  *
  * Run with: cd tests/parity && npm install && npx tsx parity-test.ts
  *
@@ -20,13 +20,11 @@
  * Architecture:
  *   - Plugin functions: imported from plugin-adapter.ts (mirrors skill/plugin/*.ts
  *     with corrected import specifiers for raw tsx execution)
- *   - NanoClaw functions: imported from nanoclaw-adapter.ts (extracted from
- *     the monolith to avoid MCP server side-effects)
+ *   - MCP functions: imported from nanoclaw-adapter.ts (standalone re-implementation
+ *     of crypto primitives using @noble/hashes)
  *
- * Both adapters contain functions copied verbatim from their respective
- * source files. The parity test verifies they produce byte-identical
- * outputs for the same inputs. If either source drifts, the adapters must
- * be updated to match -- the test will catch any divergence.
+ * Both adapters contain functions implementing the same algorithms. The parity
+ * test verifies they produce byte-identical outputs for the same inputs.
  */
 
 // ---------------------------------------------------------------------------
