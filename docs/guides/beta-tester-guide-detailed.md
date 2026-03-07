@@ -724,7 +724,6 @@ The OpenClaw plugin auto-detects your agent's LLM provider and API key for fact 
 | `TOTALRECLAW_RELEVANCE_THRESHOLD` | Minimum cosine relevance score for auto-injecting memories into context. | `0.3` |
 | `TOTALRECLAW_SEMANTIC_SKIP_THRESHOLD` | Cosine similarity threshold for deduplication. Facts too similar to existing ones are skipped. | `0.85` |
 | `TOTALRECLAW_CACHE_TTL_MS` | Hot cache time-to-live in milliseconds. Cached results within this window are reused for similar queries. | `300000` (5 minutes) |
-| `TOTALRECLAW_KEEP_NATIVE_MEMORY` | Keep OpenClaw's native MEMORY.md file. When `false` (default), TotalReclaw cleans up cleartext memory files to prevent plaintext leakage. Set to `true` if you want both TotalReclaw and OpenClaw's native memory. | `false` |
 | `TOTALRECLAW_LLM_MODEL` | **Advanced.** Override the auto-detected extraction model. TotalReclaw automatically derives a cheap model from your agent's provider (e.g., Anthropic → `claude-haiku-4-5`, OpenAI → `gpt-4.1-mini`). Only set this if the auto-derived model doesn't work for you. | Auto-detected |
 
 ### Subgraph Mode Variables (Advanced)

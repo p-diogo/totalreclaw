@@ -186,6 +186,46 @@ Total Facts: 127
 
 ---
 
+## Post-Install Setup
+
+After installing TotalReclaw, the agent MUST complete setup automatically. **Do NOT ask the user to set environment variables manually.**
+
+### Step 1: Set the server URL
+
+The TotalReclaw server URL is always `https://api.totalreclaw.xyz`. Set it in the OpenClaw config:
+
+```json
+{ "env": { "TOTALRECLAW_SERVER_URL": "https://api.totalreclaw.xyz" } }
+```
+
+### Step 2: Master password (recovery phrase)
+
+The master password is a **12-word BIP-39 mnemonic** — like a crypto wallet seed phrase. It derives all encryption keys. The server never sees it.
+
+Ask the user:
+> "Do you have an existing TotalReclaw recovery phrase you'd like to restore, or should I generate a new one?"
+
+- **New user:** Generate a random 12-word BIP-39 mnemonic and set it as `TOTALRECLAW_MASTER_PASSWORD`. Then display it prominently with a warning:
+  > "⚠️ SAVE YOUR RECOVERY PHRASE — it's the only way to recover your memories if you switch devices: `[phrase]`"
+- **Returning user:** Ask them to provide their existing 12-word phrase, then set it as `TOTALRECLAW_MASTER_PASSWORD`.
+
+### Step 3: Enable subgraph mode
+
+Set `TOTALRECLAW_SUBGRAPH_MODE=true` in the config to enable on-chain storage (required for beta).
+
+### Step 4: Set memory slot
+
+Register TotalReclaw as the memory plugin:
+```json
+{ "plugins": { "slots": { "memory": "totalreclaw" } } }
+```
+
+### Step 5: Restart and verify
+
+Restart the gateway, then confirm the plugin loaded by checking that `totalreclaw_remember`, `totalreclaw_recall`, `totalreclaw_forget`, and `totalreclaw_export` tools are available.
+
+---
+
 ## Description
 
 TotalReclaw is a zero-knowledge encrypted memory vault for AI agents. Think of it as a "password manager for AI memory" that provides:
@@ -208,9 +248,9 @@ TotalReclaw is a zero-knowledge encrypted memory vault for AI agents. Think of i
 
 ### IMPORTANT: Do Not Write Cleartext Memory Files
 
-TotalReclaw handles all memory storage with end-to-end encryption. **Do NOT write to MEMORY.md, USER.md, memory/*.md, or any other plaintext memory files.** All memories and user preferences are stored encrypted on-chain and recalled automatically — writing cleartext files defeats the zero-knowledge guarantee.
+TotalReclaw handles all memory storage with end-to-end encryption. **Do NOT write facts, preferences, or decisions to MEMORY.md or memory/*.md files.** All memories are stored encrypted on-chain and recalled automatically — writing cleartext files defeats the zero-knowledge guarantee.
 
-If you need to store a memory, use the `totalreclaw_remember` tool. If you need to recall memories, use `totalreclaw_recall`. Never persist user information to local files, including USER.md.
+If you need to store a memory, use the `totalreclaw_remember` tool. If you need to recall memories, use `totalreclaw_recall`.
 
 ### When to Use Each Tool
 
@@ -512,7 +552,7 @@ Default configuration values:
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `serverUrl` | `http://127.0.0.1:8080` | TotalReclaw server URL |
+| `serverUrl` | `https://api.totalreclaw.xyz` | TotalReclaw server URL |
 | `autoExtractEveryTurns` | `5` | Turns between automatic extractions |
 | `minImportanceForAutoStore` | `6` | Minimum importance to auto-store |
 | `maxMemoriesInContext` | `8` | Maximum memories to inject into context |

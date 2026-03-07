@@ -119,51 +119,46 @@ const AUTO_EXTRACT_EVERY_TURNS = parseInt(process.env.TOTALRECLAW_EXTRACT_EVERY_
 // B2: Minimum relevance threshold — cosine below this means no memory injection
 const RELEVANCE_THRESHOLD = parseFloat(process.env.TOTALRECLAW_RELEVANCE_THRESHOLD ?? '0.3');
 
-// Native memory control — when true, keep OpenClaw's MEMORY.md; when false (default), clean it up
-// to prevent cleartext leakage since TotalReclaw handles memory via E2EE.
-const KEEP_NATIVE_MEMORY = process.env.TOTALRECLAW_KEEP_NATIVE_MEMORY === 'true';
-
 /**
- * Remove OpenClaw's native cleartext memory files (MEMORY.md, memory/ dir)
- * to prevent plaintext leakage. TotalReclaw handles all memory via E2EE.
- * Replaces MEMORY.md with a stub pointing users to TotalReclaw.
+ * Ensure MEMORY.md has a TotalReclaw header so the agent knows encrypted
+ * memories are injected automatically via the before_agent_start hook.
+ *
+ * Option 3 approach: don't delete or stub MEMORY.md — let the agent use it
+ * for workspace-level notes, but make clear that user facts/preferences are
+ * handled by TotalReclaw's E2EE pipeline. This avoids confusing the agent
+ * (OpenClaw's system prompt still tells it to search MEMORY.md) while
+ * guiding it away from writing sensitive data in cleartext.
  */
-function cleanNativeMemory(logger: OpenClawPluginApi['logger']): void {
-  if (KEEP_NATIVE_MEMORY) return;
+const MEMORY_HEADER = `# Memory
+
+> **TotalReclaw is active.** Your encrypted memories are loaded automatically
+> at the start of each conversation — no need to search this file for them.
+> Use \`totalreclaw_remember\` to store new memories and \`totalreclaw_recall\`
+> to search. Do NOT write user facts, preferences, or decisions to this file.
+> This file is for workspace-level notes only (non-sensitive).
+
+`;
+
+function ensureMemoryHeader(logger: OpenClawPluginApi['logger']): void {
   try {
     const workspace = path.join(process.env.HOME ?? '/home/node', '.openclaw', 'workspace');
     const memoryMd = path.join(workspace, 'MEMORY.md');
-    const memoryDir = path.join(workspace, 'memory');
-    const stub = '# Memory\n\nMemory is managed by TotalReclaw (encrypted). Do not write plaintext memories to this file.\n';
 
     if (fs.existsSync(memoryMd)) {
       const content = fs.readFileSync(memoryMd, 'utf-8');
-      if (content !== stub) {
-        fs.writeFileSync(memoryMd, stub);
-        logger.info('Replaced native MEMORY.md with TotalReclaw stub');
+      if (!content.includes('TotalReclaw is active')) {
+        fs.writeFileSync(memoryMd, MEMORY_HEADER + content);
+        logger.info('Added TotalReclaw header to MEMORY.md');
       }
-    }
-
-    if (fs.existsSync(memoryDir)) {
-      const files = fs.readdirSync(memoryDir);
-      for (const f of files) {
-        fs.unlinkSync(path.join(memoryDir, f));
-      }
-      if (files.length > 0) logger.info(`Cleaned ${files.length} native memory files from memory/ dir`);
-    }
-
-    // Also clean USER.md — the agent writes preferences there in cleartext.
-    const userMd = path.join(workspace, 'USER.md');
-    const userStub = '# User\n\nUser preferences are managed by TotalReclaw (encrypted). Do not write plaintext data to this file.\n';
-    if (fs.existsSync(userMd)) {
-      const content = fs.readFileSync(userMd, 'utf-8');
-      if (content !== userStub) {
-        fs.writeFileSync(userMd, userStub);
-        logger.info('Replaced native USER.md with TotalReclaw stub');
-      }
+    } else {
+      // Create MEMORY.md with the header so the agent doesn't get ENOENT
+      const dir = path.dirname(memoryMd);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(memoryMd, MEMORY_HEADER);
+      logger.info('Created MEMORY.md with TotalReclaw header');
     }
   } catch {
-    // Best-effort cleanup — don't block the hook
+    // Best-effort — don't block the hook
   }
 }
 
@@ -1179,7 +1174,7 @@ const plugin = {
       async (event: unknown) => {
         try {
           // Prevent cleartext leakage from OpenClaw's native memory system.
-          cleanNativeMemory(api.logger);
+          ensureMemoryHeader(api.logger);
 
           const evt = event as { prompt?: string } | undefined;
 
