@@ -142,17 +142,14 @@ Create or edit a `.env` file in the plugin directory (`skill/plugin/.env`) with 
 TOTALRECLAW_MASTER_PASSWORD="word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
 TOTALRECLAW_SERVER_URL="https://api.totalreclaw.xyz"
 
-# --- Subgraph mode (on-chain storage) ---
+# --- Subgraph mode (on-chain storage, enabled by default) ---
 TOTALRECLAW_SUBGRAPH_MODE="true"
-TOTALRECLAW_SUBGRAPH_ENDPOINT="https://api.studio.thegraph.com/query/41768/total-reclaw-chiado/version/latest"
-PIMLICO_API_KEY="<provided-by-totalreclaw-team>"
 TOTALRECLAW_CHAIN_ID="10200"
-TOTALRECLAW_DATA_EDGE_ADDRESS="0x16C4fDBa8da731995ADFC367727b5929893f0B20"
 ```
 
 Replace `word1 word2 ...` with your actual 12-word phrase. Keep the quotes around it.
 
-The TotalReclaw team will provide you with the `PIMLICO_API_KEY` before your beta test begins. The other values above are already correct for the Chiado testnet.
+The values above are all you need for the Chiado testnet. Subgraph endpoint and bundler/paymaster access are handled automatically by the relay server.
 
 > **Note:** `TOTALRECLAW_SERVER_URL` is always required -- it handles user registration and billing, even in subgraph mode.
 
@@ -477,7 +474,7 @@ If you switch to a new computer or install TotalReclaw on a second agent, you ca
 ### OpenClaw Plugin Recovery
 
 1. Install the TotalReclaw plugin on the new device (follow [Section 2](#2-installation)).
-2. Create a `.env` file with the same configuration as in [Step 3](#step-3-set-your-environment-variables-openclaw-plugin) -- use the same 12-word phrase and the same subgraph/Pimlico settings.
+2. Create a `.env` file with the same configuration as in [Step 3](#step-3-set-your-environment-variables-openclaw-plugin) -- use the same 12-word phrase and the same server URL.
 3. Start a conversation with your agent.
 4. The plugin derives the same Smart Account address and encryption key from your phrase.
 5. All your memories are automatically retrieved from the subgraph and decrypted on your device.
