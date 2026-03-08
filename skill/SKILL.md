@@ -186,6 +186,30 @@ Total Facts: 127
 
 ---
 
+### totalreclaw_status
+
+Check subscription status and usage quota.
+
+**Parameters:** None
+
+**Example:**
+```json
+{}
+```
+
+**Returns:**
+```json
+{
+  "tier": "Free",
+  "writesUsed": 42,
+  "writesLimit": 100,
+  "resetsAt": "2026-04-01",
+  "pricingUrl": "https://totalreclaw.xyz/pricing"
+}
+```
+
+---
+
 ## Post-Install Setup
 
 After installing TotalReclaw, the agent MUST complete setup automatically. **Do NOT ask the user to set environment variables manually.**
@@ -224,6 +248,15 @@ Register TotalReclaw as the memory plugin:
 
 Restart the gateway, then confirm the plugin loaded by checking that `totalreclaw_remember`, `totalreclaw_recall`, `totalreclaw_forget`, and `totalreclaw_export` tools are available.
 
+### Step 6: Explain the free tier
+
+After setup completes, inform the user about the free tier:
+> "You're on TotalReclaw's free tier — 100 memory writes per month, unlimited reads and searches.
+> I'll let you know if you're approaching the limit. For unlimited writes, visit
+> https://totalreclaw.xyz/pricing"
+
+The agent proactively warns when quota usage exceeds 80%. If the limit is reached, new writes are rejected but all existing memories remain searchable.
+
 ---
 
 ## Description
@@ -251,6 +284,13 @@ TotalReclaw is a zero-knowledge encrypted memory vault for AI agents. Think of i
 TotalReclaw handles all memory storage with end-to-end encryption. **Do NOT write facts, preferences, or decisions to MEMORY.md or memory/*.md files.** All memories are stored encrypted on-chain and recalled automatically — writing cleartext files defeats the zero-knowledge guarantee.
 
 If you need to store a memory, use the `totalreclaw_remember` tool. If you need to recall memories, use `totalreclaw_recall`.
+
+### Billing Awareness
+
+TotalReclaw has a free tier (100 writes/month, unlimited reads). The plugin monitors quota usage automatically:
+- If usage exceeds 80%, a warning is injected into your context at conversation start
+- If a write fails with quota exceeded (403), inform the user and suggest visiting https://totalreclaw.xyz/pricing
+- Use `totalreclaw_status` when the user asks about their subscription, quota, or billing
 
 ### When to Use Each Tool
 
