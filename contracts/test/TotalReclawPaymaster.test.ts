@@ -17,7 +17,7 @@ describe("TotalReclawPaymaster", function () {
 
     // Deploy EventfulDataEdge
     const EdgeFactory = await ethers.getContractFactory("EventfulDataEdge");
-    edge = await EdgeFactory.deploy(mockEntryPoint.address);
+    edge = await EdgeFactory.deploy();
     await edge.waitForDeployment();
 
     // Deploy Paymaster

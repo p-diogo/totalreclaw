@@ -9,8 +9,8 @@ const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "0x" + "0".repe
 const BASE_SEPOLIA_RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
 const BASESCAN_API_KEY = process.env.BASESCAN_API_KEY || "";
 const GNOSIS_RPC_URL = process.env.GNOSIS_RPC_URL || "https://rpc.gnosischain.com";
-// NOTE: rpc.chiadochain.net is on a FORK chain. Use publicnode for canonical Chiado.
-const CHIADO_RPC_URL = process.env.CHIADO_RPC_URL || "https://gnosis-chiado-rpc.publicnode.com";
+// NOTE: rpc.chiadochain.net is on a FORK chain. publicnode was returning stale data.
+const CHIADO_RPC_URL = process.env.CHIADO_RPC_URL || "https://rpc.chiado.gnosis.gateway.fm";
 const GNOSISSCAN_API_KEY = process.env.GNOSISSCAN_API_KEY || "";
 
 const config: HardhatUserConfig = {

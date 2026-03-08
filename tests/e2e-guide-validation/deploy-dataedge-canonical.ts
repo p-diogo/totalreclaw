@@ -16,9 +16,10 @@ import { toSimpleSmartAccount } from 'permissionless/accounts';
 import { createPimlicoClient } from 'permissionless/clients/pimlico';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
-// Canonical Chiado RPC (NOT the forked rpc.chiadochain.net)
-const CANONICAL_RPC = 'https://gnosis-chiado-rpc.publicnode.com';
+// Canonical Chiado RPC (NOT the forked rpc.chiadochain.net, NOT stale publicnode)
+const CANONICAL_RPC = 'https://rpc.chiado.gnosis.gateway.fm';
 
 // Arachnid's deterministic CREATE2 deployer (exists on all EVM chains)
 const CREATE2_FACTORY = '0x4e59b44847b379578588920cA78FbF26c0B4956C' as Address;
@@ -52,16 +53,21 @@ async function main() {
   const chainHead = await publicClient.getBlockNumber();
   console.log(`Chain head: ${chainHead}`);
 
-  // 3. First, we need auth key for relay. Derive it the same way the plugin does.
-  // For this script, we'll try without auth first (relay might allow unauthenticated bundler access)
+  // 3. Derive HKDF auth key from mnemonic (same derivation as plugin crypto.ts)
   const bundlerUrl = `${RELAY_URL}/v1/bundler`;
 
-  // Try to get auth key from the plugin's credential derivation
-  // For now, pass auth key if available
-  const authKeyHex = process.env.AUTH_KEY_HEX;
-  const transportOptions = authKeyHex
-    ? { fetchOptions: { headers: { Authorization: `Bearer ${authKeyHex}` } } }
-    : {};
+  // BIP-39: mnemonic -> 512-bit seed via PBKDF2
+  const { mnemonicToSeedSync } = await import('@scure/bip39');
+  const seed = mnemonicToSeedSync(MNEMONIC.trim());
+  const hkdfSalt = Buffer.from(seed.slice(0, 32));
+  const seedBuf = Buffer.from(seed);
+
+  // HKDF-SHA256 to derive auth key
+  const hkdfKey = crypto.hkdfSync('sha256', seedBuf, hkdfSalt, 'totalreclaw-auth-key-v1', 32);
+  const authKeyHex = Buffer.from(hkdfKey).toString('hex');
+  console.log(`Auth key derived (first 8): ${authKeyHex.slice(0, 8)}...`);
+
+  const transportOptions = { fetchOptions: { headers: { Authorization: `Bearer ${authKeyHex}` } } };
 
   const authTransport = http(bundlerUrl, transportOptions);
 
@@ -100,20 +106,8 @@ async function main() {
     },
   });
 
-  // 7. Encode constructor args: _entryPoint = Smart Account address
-  // In ERC-4337 flow: EntryPoint -> Smart Account -> DataEdge
-  // So msg.sender in DataEdge fallback is the Smart Account
-  const constructorArg = smartAccount.address;
-  console.log(`Constructor arg (_entryPoint): ${constructorArg}`);
-
-  // ABI-encode constructor argument (address is padded to 32 bytes)
-  const encodedConstructorArg = encodePacked(
-    ['bytes32'],
-    [('0x' + constructorArg.slice(2).padStart(64, '0')) as Hex]
-  );
-
-  // Full init code = creation bytecode + ABI-encoded constructor args
-  const initCode = (creationBytecode + constructorArg.slice(2).padStart(64, '0')) as Hex;
+  // 7. No constructor args — contract is permissionless
+  const initCode = creationBytecode;
 
   // 8. CREATE2 salt (use a deterministic salt)
   const salt = '0x0000000000000000000000000000000000000000000000000000000000000001' as Hex;
@@ -167,14 +161,6 @@ async function main() {
   if (deployedCode && deployedCode !== '0x') {
     console.log(`\nDataEdge deployed at: ${expectedAddress}`);
     console.log(`Code length: ${deployedCode.length} chars`);
-
-    // Read back the entryPoint to verify
-    const entryPointValue = await publicClient.readContract({
-      address: expectedAddress,
-      abi: artifact.abi,
-      functionName: 'entryPoint',
-    });
-    console.log(`entryPoint set to: ${entryPointValue}`);
 
     const ownerValue = await publicClient.readContract({
       address: expectedAddress,

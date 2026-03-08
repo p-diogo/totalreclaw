@@ -55,18 +55,18 @@ async function main() {
     throw new Error(`Deployer has no ${gasToken}. Fund from faucet first.`);
   }
 
-  // Use canonical EntryPoint for live networks, deployer for local testing
+  // EntryPoint for paymaster (canonical on all chains, deployer for local)
   const entryPointAddr = network.name === "hardhat"
     ? deployer.address
     : ENTRYPOINT_V07;
 
-  console.log(`EntryPoint: ${entryPointAddr}`);
+  console.log(`EntryPoint (for paymaster): ${entryPointAddr}`);
   console.log("");
 
-  // 1. Deploy EventfulDataEdge
+  // 1. Deploy EventfulDataEdge (permissionless — no constructor args)
   console.log("Deploying EventfulDataEdge...");
   const EdgeFactory = await ethers.getContractFactory("EventfulDataEdge");
-  const edge = await EdgeFactory.deploy(entryPointAddr);
+  const edge = await EdgeFactory.deploy();
   await edge.waitForDeployment();
   const edgeAddr = await edge.getAddress();
   const edgeTx = edge.deploymentTransaction();

@@ -10,9 +10,9 @@ dataSources:
     # deploy-contracts.sh updates address + startBlock for localhost deploys
     network: gnosis-chiado
     source:
-      address: "0x16C4fDBa8da731995ADFC367727b5929893f0B20"
+      address: "0xA84c5433110Ccc93e57ec387e630E86Bad86c36f"
       abi: EventfulDataEdge
-      startBlock: 20125067
+      startBlock: 20149969
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

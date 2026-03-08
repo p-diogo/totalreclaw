@@ -22,7 +22,7 @@ import { createPimlicoClient } from 'permissionless/clients/pimlico';
 // ---------------------------------------------------------------------------
 
 /** Default EventfulDataEdge contract address on Chiado testnet */
-const DEFAULT_DATA_EDGE_ADDRESS = '0x16C4fDBa8da731995ADFC367727b5929893f0B20';
+const DEFAULT_DATA_EDGE_ADDRESS = '0xA84c5433110Ccc93e57ec387e630E86Bad86c36f';
 
 /** Well-known ERC-4337 EntryPoint v0.7 address (same on all chains) */
 const DEFAULT_ENTRYPOINT_ADDRESS = '0x0000000071727De22E5E9d8BAf0edAc6f37da032';

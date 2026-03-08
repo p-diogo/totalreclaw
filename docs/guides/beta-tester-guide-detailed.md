@@ -731,7 +731,7 @@ These variables control on-chain storage via the subgraph. **For the Chiado beta
 |----------|-------------|---------|
 | `TOTALRECLAW_SUBGRAPH_MODE` | Set to `true` to use on-chain subgraph storage. **Set this to `true` for beta.** | `false` |
 | `TOTALRECLAW_CHAIN_ID` | Chain ID for on-chain transactions. `10200` = Chiado testnet, `100` = Gnosis mainnet. | `10200` |
-| `TOTALRECLAW_DATA_EDGE_ADDRESS` | Address of the EventfulDataEdge smart contract on Chiado. | `0x16C4fDBa8da731995ADFC367727b5929893f0B20` |
+| `TOTALRECLAW_DATA_EDGE_ADDRESS` | Address of the EventfulDataEdge smart contract on Chiado. | `0xA84c5433110Ccc93e57ec387e630E86Bad86c36f` |
 | `TOTALRECLAW_ENTRYPOINT_ADDRESS` | ERC-4337 EntryPoint v0.7 address. Same on all chains. | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` |
 | `TOTALRECLAW_SUBGRAPH_PAGE_SIZE` | Maximum results per subgraph query page (Graph Studio limit: 1000). | `1000` |
 | `TOTALRECLAW_TRAPDOOR_BATCH_SIZE` | Number of trapdoors per batch in subgraph queries. | `5` |

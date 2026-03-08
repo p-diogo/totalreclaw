@@ -6,8 +6,12 @@ pragma solidity ^0.8.24;
  * @notice Minimal data-availability contract for TotalReclaw.
  *
  * Any call to this contract (via fallback) emits a Log(bytes) event containing
- * the raw calldata. The subgraph indexes these events. Access is restricted to
- * the ERC-4337 EntryPoint address so only validated UserOperations can write.
+ * the raw calldata. The subgraph indexes these events.
+ *
+ * Writes are permissionless — all payloads are AES-256-GCM encrypted, so there
+ * is no confidentiality risk from open writes. The subgraph filters events by
+ * the `owner` field in the protobuf payload, ensuring each user only sees their
+ * own data. Billing/quota enforcement happens at the relay API layer.
  *
  * Design rationale:
  * - No storage slots — all data lives in events (cheapest on-chain DA).
@@ -21,25 +25,11 @@ contract EventfulDataEdge {
     /// @notice Emitted for every write. Contains the full encrypted Protobuf payload.
     event Log(bytes data);
 
-    /// @notice The ERC-4337 EntryPoint address. Only this address can trigger writes.
-    address public entryPoint;
-
-    /// @notice Contract owner (deployer). Can update entryPoint.
+    /// @notice Contract owner (deployer). Can transfer ownership.
     address public owner;
 
-    /// @param _entryPoint The ERC-4337 EntryPoint contract address on this chain.
-    constructor(address _entryPoint) {
-        require(_entryPoint != address(0), "Invalid entryPoint");
-        entryPoint = _entryPoint;
+    constructor() {
         owner = msg.sender;
-    }
-
-    /// @notice Update the EntryPoint address (e.g., after ERC-4337 upgrade).
-    /// @param _newEntryPoint New EntryPoint contract address.
-    function setEntryPoint(address _newEntryPoint) external {
-        require(msg.sender == owner, "Only owner");
-        require(_newEntryPoint != address(0), "Invalid entryPoint");
-        entryPoint = _newEntryPoint;
     }
 
     /// @notice Transfer ownership.
@@ -52,15 +42,14 @@ contract EventfulDataEdge {
 
     /**
      * @notice Fallback function — emits the full calldata as a Log event.
-     * @dev Only callable by the EntryPoint. This is the primary write path:
-     *      EntryPoint validates UserOp signature -> calls Smart Account ->
+     * @dev Permissionless. The write path via ERC-4337:
+     *      EntryPoint validates UserOp signature -> Smart Account ->
      *      Smart Account calls this contract -> fallback() emits Log(calldata).
      *
-     *      In practice, the Smart Account's execute() calls this contract with
-     *      the encrypted Protobuf payload as calldata.
+     *      Security: payloads are E2E encrypted (AES-256-GCM). The server/relay
+     *      never sees plaintext. Quota enforcement is at the relay API layer.
      */
     fallback() external payable {
-        require(msg.sender == entryPoint, "Only EntryPoint");
         emit Log(msg.data);
     }
 
