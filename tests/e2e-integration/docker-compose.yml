@@ -58,7 +58,7 @@ services:
       FREE_TIER_READS_PER_MONTH: "10"
       SUBGRAPH_ENDPOINT: "http://mock-services:9090/subgraph"
       PIMLICO_BUNDLER_URL: "http://mock-services:9090/bundler"
-      DATA_EDGE_ADDRESS: "0x048879569E394af3fC6721d8d44DdcfcDD407543"
+      DATA_EDGE_ADDRESS: "0xA84c5433110Ccc93e57ec387e630E86Bad86c36f"
       ENTRY_POINT_ADDRESS: "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
       # API keys — test-only fake values (never use real keys in tests)
       PIMLICO_API_KEY: "test_pimlico_key_for_e2e"

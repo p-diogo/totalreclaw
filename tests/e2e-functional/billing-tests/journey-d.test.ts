@@ -15,7 +15,7 @@ import crypto from 'node:crypto';
 // Constants
 // ---------------------------------------------------------------------------
 
-const DATA_EDGE_ADDRESS = '0x048879569E394af3fC6721d8d44DdcfcDD407543';
+const DATA_EDGE_ADDRESS = '0xA84c5433110Ccc93e57ec387e630E86Bad86c36f';
 const PIMLICO_WEBHOOK_SECRET = 'whsec_test_pimlico_secret_key_1234567890';
 const STRIPE_WEBHOOK_SECRET = 'whsec_test_stripe_secret_key_9876543210';
 

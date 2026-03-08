@@ -5,7 +5,7 @@
     "chainId": 10200,
     "rpc": "https://rpc.chiadochain.net"
   },
-  "contract": "0x048879569E394af3fC6721d8d44DdcfcDD407543",
+  "contract": "0xA84c5433110Ccc93e57ec387e630E86Bad86c36f",
   "wallet": "0x30d37b26257e03942dFCf12251FC25e41ca38cA8",
   "balanceBefore": "0.998582813493386463",
   "balanceAfter": "0.994281236473312437",

@@ -3,7 +3,7 @@
 **Generated:** 2026-03-04T00:47:48.265Z
 **Network:** Gnosis Chiado Testnet (chainId=10200)
 **RPC:** https://rpc.chiadochain.net
-**Contract:** `0x048879569E394af3fC6721d8d44DdcfcDD407543` (EventfulDataEdge)
+**Contract:** `0xA84c5433110Ccc93e57ec387e630E86Bad86c36f` (EventfulDataEdge)
 **Wallet:** `0x30d37b26257e03942dFCf12251FC25e41ca38cA8`
 **Balance before:** 0.998582813493386463 xDAI
 **Balance after:** 0.994281236473312437 xDAI

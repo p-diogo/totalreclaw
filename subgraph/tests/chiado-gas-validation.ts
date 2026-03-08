@@ -7,7 +7,7 @@
  *
  * Prerequisites:
  *   1. .env file at repo root with DEPLOYER_PRIVATE_KEY and CHIADO_RPC_URL
- *   2. Contract deployed at 0x048879569E394af3fC6721d8d44DdcfcDD407543
+ *   2. Contract deployed at 0xA84c5433110Ccc93e57ec387e630E86Bad86c36f
  *   3. Deployer wallet has xDAI for gas
  *
  * Usage (from subgraph/):
@@ -28,7 +28,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const CHIADO_RPC = process.env.CHIADO_RPC_URL || "https://rpc.chiadochain.net";
 const PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
-const CONTRACT_ADDRESS = "0x048879569E394af3fC6721d8d44DdcfcDD407543";
+const CONTRACT_ADDRESS = "0xA84c5433110Ccc93e57ec387e630E86Bad86c36f";
 
 // xDAI is a stablecoin pegged to $1.00
 const XDAI_PRICE_USD = 1.0;
