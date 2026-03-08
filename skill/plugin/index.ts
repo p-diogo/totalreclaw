@@ -6,6 +6,7 @@
  *   - totalreclaw_recall    -- search and decrypt memories
  *   - totalreclaw_forget    -- soft-delete a memory
  *   - totalreclaw_export    -- export all memories (JSON or Markdown)
+ *   - totalreclaw_status    -- check billing/subscription status
  *
  * Also registers a `before_agent_start` hook that automatically injects
  * relevant memories into the agent's context.
@@ -119,6 +120,42 @@ const AUTO_EXTRACT_EVERY_TURNS = parseInt(process.env.TOTALRECLAW_EXTRACT_EVERY_
 // B2: Minimum relevance threshold — cosine below this means no memory injection
 const RELEVANCE_THRESHOLD = parseFloat(process.env.TOTALRECLAW_RELEVANCE_THRESHOLD ?? '0.3');
 
+// ---------------------------------------------------------------------------
+// Billing cache infrastructure
+// ---------------------------------------------------------------------------
+
+const BILLING_CACHE_PATH = path.join(process.env.HOME ?? '/home/node', '.totalreclaw', 'billing-cache.json');
+const BILLING_CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+const QUOTA_WARNING_THRESHOLD = 0.8; // 80%
+
+interface BillingCache {
+  tier: string;
+  free_writes_used: number;
+  free_writes_limit: number;
+  checked_at: number;
+}
+
+function readBillingCache(): BillingCache | null {
+  try {
+    if (!fs.existsSync(BILLING_CACHE_PATH)) return null;
+    const raw = JSON.parse(fs.readFileSync(BILLING_CACHE_PATH, 'utf-8')) as BillingCache;
+    if (!raw.checked_at || Date.now() - raw.checked_at > BILLING_CACHE_TTL) return null;
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
+function writeBillingCache(cache: BillingCache): void {
+  try {
+    const dir = path.dirname(BILLING_CACHE_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(BILLING_CACHE_PATH, JSON.stringify(cache));
+  } catch {
+    // Best-effort — don't block on cache write failure.
+  }
+}
+
 /**
  * Ensure MEMORY.md has a TotalReclaw header so the agent knows encrypted
  * memories are injected automatically via the before_agent_start hook.
@@ -229,7 +266,7 @@ async function getFactCount(logger: OpenClawPluginApi['logger']): Promise<number
  */
 async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
   const serverUrl =
-    process.env.TOTALRECLAW_SERVER_URL || 'http://totalreclaw-server:8080';
+    process.env.TOTALRECLAW_SERVER_URL || 'https://api.totalreclaw.xyz';
   const masterPassword = process.env.TOTALRECLAW_MASTER_PASSWORD;
 
   if (!masterPassword) {
@@ -606,8 +643,15 @@ async function storeExtractedFacts(
         await apiClient.store(userId, [payload], authKeyHex);
       }
       stored++;
-    } catch {
-      // Skip failed facts (e.g., duplicates return success with duplicate_ids)
+    } catch (err: unknown) {
+      // Check for 403 / quota exceeded — invalidate billing cache so next
+      // before_agent_start re-fetches and warns the user.
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes('403') || errMsg.toLowerCase().includes('quota')) {
+        try { fs.unlinkSync(BILLING_CACHE_PATH); } catch { /* ignore */ }
+        logger.warn(`Quota exceeded — billing cache invalidated. ${errMsg}`);
+      }
+      // Otherwise skip failed facts (e.g., duplicates return success with duplicate_ids)
     }
   }
 
@@ -1166,6 +1210,89 @@ const plugin = {
     );
 
     // ---------------------------------------------------------------
+    // Tool: totalreclaw_status
+    // ---------------------------------------------------------------
+
+    api.registerTool(
+      {
+        name: 'totalreclaw_status',
+        label: 'Status',
+        description:
+          'Check TotalReclaw billing and subscription status — tier, writes used, reset date.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        },
+        async execute() {
+          try {
+            await ensureInitialized(api.logger);
+
+            if (!authKeyHex) {
+              return {
+                content: [{ type: 'text', text: 'Auth credentials are not available. Please initialize first.' }],
+              };
+            }
+
+            const serverUrl = (process.env.TOTALRECLAW_SERVER_URL || 'https://api.totalreclaw.xyz').replace(/\/+$/, '');
+            const response = await fetch(`${serverUrl}/v1/billing/status`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${authKeyHex}`,
+                'Accept': 'application/json',
+              },
+            });
+
+            if (!response.ok) {
+              const body = await response.text().catch(() => '');
+              return {
+                content: [{ type: 'text', text: `Failed to fetch billing status (HTTP ${response.status}): ${body || response.statusText}` }],
+              };
+            }
+
+            const data = await response.json() as Record<string, unknown>;
+            const tier = (data.tier as string) || 'free';
+            const freeWritesUsed = (data.free_writes_used as number) ?? 0;
+            const freeWritesLimit = (data.free_writes_limit as number) ?? 0;
+            const freeWritesResetAt = data.free_writes_reset_at as string | undefined;
+
+            // Update billing cache on success.
+            writeBillingCache({
+              tier,
+              free_writes_used: freeWritesUsed,
+              free_writes_limit: freeWritesLimit,
+              checked_at: Date.now(),
+            });
+
+            const tierLabel = tier === 'pro' ? 'Pro' : 'Free';
+            const lines: string[] = [
+              `Tier: ${tierLabel}`,
+              `Writes: ${freeWritesUsed}/${freeWritesLimit} used this month`,
+            ];
+            if (freeWritesResetAt) {
+              lines.push(`Resets: ${new Date(freeWritesResetAt).toLocaleDateString()}`);
+            }
+            if (tier !== 'pro') {
+              lines.push(`Pricing: https://totalreclaw.xyz/pricing`);
+            }
+
+            return {
+              content: [{ type: 'text', text: lines.join('\n') }],
+              details: { tier, free_writes_used: freeWritesUsed, free_writes_limit: freeWritesLimit },
+            };
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            api.logger.error(`totalreclaw_status failed: ${message}`);
+            return {
+              content: [{ type: 'text', text: `Failed to check status: ${message}` }],
+            };
+          }
+        },
+      },
+      { name: 'totalreclaw_status' },
+    );
+
+    // ---------------------------------------------------------------
     // Hook: before_agent_start
     // ---------------------------------------------------------------
 
@@ -1184,6 +1311,38 @@ const plugin = {
           }
 
           await ensureInitialized(api.logger);
+
+          // Billing cache check — warn if quota is approaching limit.
+          let billingWarning = '';
+          try {
+            let cache = readBillingCache();
+            if (!cache && authKeyHex) {
+              // Cache is stale or missing — fetch fresh billing status.
+              const billingUrl = (process.env.TOTALRECLAW_SERVER_URL || 'https://api.totalreclaw.xyz').replace(/\/+$/, '');
+              const billingResp = await fetch(`${billingUrl}/v1/billing/status`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${authKeyHex}`, 'Accept': 'application/json' },
+              });
+              if (billingResp.ok) {
+                const billingData = await billingResp.json() as Record<string, unknown>;
+                cache = {
+                  tier: (billingData.tier as string) || 'free',
+                  free_writes_used: (billingData.free_writes_used as number) ?? 0,
+                  free_writes_limit: (billingData.free_writes_limit as number) ?? 0,
+                  checked_at: Date.now(),
+                };
+                writeBillingCache(cache);
+              }
+            }
+            if (cache && cache.free_writes_limit > 0) {
+              const usageRatio = cache.free_writes_used / cache.free_writes_limit;
+              if (usageRatio >= QUOTA_WARNING_THRESHOLD) {
+                billingWarning = `\n\nTotalReclaw quota warning: ${cache.free_writes_used}/${cache.free_writes_limit} writes used this month (${Math.round(usageRatio * 100)}%). Visit https://totalreclaw.xyz/pricing to upgrade.`;
+              }
+            }
+          } catch {
+            // Best-effort — don't block on billing check failure.
+          }
 
           if (isSubgraphMode()) {
             // --- Subgraph mode: hot cache first, then background refresh ---
@@ -1224,7 +1383,7 @@ const plugin = {
                 const lines = cachedFacts.slice(0, 8).map((f, i) =>
                   `${i + 1}. ${f.text} (importance: ${f.importance}/10, cached)`,
                 );
-                return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` };
+                return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` + billingWarning };
               }
             }
 
@@ -1237,7 +1396,7 @@ const plugin = {
               const lines = cachedFacts.slice(0, 8).map((f, i) =>
                 `${i + 1}. ${f.text} (importance: ${f.importance}/10, cached)`,
               );
-              return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` };
+              return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` + billingWarning };
             }
 
             if (allTrapdoors.length === 0) return undefined;
@@ -1254,7 +1413,7 @@ const plugin = {
                 const lines = cachedFacts.slice(0, 8).map((f, i) =>
                   `${i + 1}. ${f.text} (importance: ${f.importance}/10, cached)`,
                 );
-                return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` };
+                return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` + billingWarning };
               }
               return undefined;
             }
@@ -1266,7 +1425,7 @@ const plugin = {
               const lines = cachedFacts.slice(0, 8).map((f, i) =>
                 `${i + 1}. ${f.text} (importance: ${f.importance}/10, cached)`,
               );
-              return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` };
+              return { prependContext: `## Relevant Memories\n\n${lines.join('\n')}` + billingWarning };
             }
 
             // 5. Decrypt subgraph results and build reranker input.
@@ -1372,7 +1531,7 @@ const plugin = {
             });
             const contextString = `## Relevant Memories\n\n${lines.join('\n')}`;
 
-            return { prependContext: contextString };
+            return { prependContext: contextString + billingWarning };
           }
 
           // --- Server mode (existing behavior) ---
@@ -1484,7 +1643,7 @@ const plugin = {
           });
           const contextString = `## Relevant Memories\n\n${lines.join('\n')}`;
 
-          return { prependContext: contextString };
+          return { prependContext: contextString + billingWarning };
         } catch (err: unknown) {
           // The hook must NEVER throw -- log and return undefined.
           const message = err instanceof Error ? err.message : String(err);
