@@ -650,6 +650,7 @@ async function storeExtractedFacts(
       if (errMsg.includes('403') || errMsg.toLowerCase().includes('quota')) {
         try { fs.unlinkSync(BILLING_CACHE_PATH); } catch { /* ignore */ }
         logger.warn(`Quota exceeded — billing cache invalidated. ${errMsg}`);
+        break; // Stop trying to store remaining facts — they'll all fail too
       }
       // Otherwise skip failed facts (e.g., duplicates return success with duplicate_ids)
     }
