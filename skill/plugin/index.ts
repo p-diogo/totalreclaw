@@ -1235,7 +1235,8 @@ const plugin = {
             }
 
             const serverUrl = (process.env.TOTALRECLAW_SERVER_URL || 'https://api.totalreclaw.xyz').replace(/\/+$/, '');
-            const response = await fetch(`${serverUrl}/v1/billing/status`, {
+            const walletAddr = subgraphOwner || userId || '';
+            const response = await fetch(`${serverUrl}/v1/billing/status?wallet_address=${encodeURIComponent(walletAddr)}`, {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${authKeyHex}`,
@@ -1319,7 +1320,8 @@ const plugin = {
             if (!cache && authKeyHex) {
               // Cache is stale or missing — fetch fresh billing status.
               const billingUrl = (process.env.TOTALRECLAW_SERVER_URL || 'https://api.totalreclaw.xyz').replace(/\/+$/, '');
-              const billingResp = await fetch(`${billingUrl}/v1/billing/status`, {
+              const walletParam = encodeURIComponent(subgraphOwner || userId || '');
+              const billingResp = await fetch(`${billingUrl}/v1/billing/status?wallet_address=${walletParam}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${authKeyHex}`, 'Accept': 'application/json' },
               });

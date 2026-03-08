@@ -64,6 +64,7 @@ export interface StatusToolResult {
 export async function statusTool(
   serverUrl: string,
   authKeyHex: string,
+  walletAddress?: string,
 ): Promise<StatusToolResult> {
   if (!serverUrl) {
     return {
@@ -80,7 +81,8 @@ export async function statusTool(
   }
 
   try {
-    const url = `${serverUrl.replace(/\/+$/, '')}/v1/billing/status`;
+    const baseUrl = `${serverUrl.replace(/\/+$/, '')}/v1/billing/status`;
+    const url = walletAddress ? `${baseUrl}?wallet_address=${encodeURIComponent(walletAddress)}` : baseUrl;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -157,8 +159,9 @@ export async function statusTool(
 export function createStatusTool(
   serverUrl: string,
   authKeyHex: string,
+  walletAddress?: string,
 ): () => Promise<StatusToolResult> {
-  return () => statusTool(serverUrl, authKeyHex);
+  return () => statusTool(serverUrl, authKeyHex, walletAddress);
 }
 
 export default statusTool;
