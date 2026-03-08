@@ -30,7 +30,7 @@ import { initLLMClient, generateEmbedding, getEmbeddingDims } from './llm-client
 import { LSHHasher } from './lsh.js';
 import { rerank, cosineSimilarity, detectQueryIntent, INTENT_WEIGHTS, type RerankerCandidate } from './reranker.js';
 import { deduplicateBatch } from './semantic-dedup.js';
-import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitFactOnChain, deriveSmartAccountAddress } from './subgraph-store.js';
+import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitFactOnChain, deriveSmartAccountAddress, type FactPayload } from './subgraph-store.js';
 import { searchSubgraph, getSubgraphFactCount } from './subgraph-search.js';
 import { PluginHotCache, type HotFact } from './hot-cache-wrapper.js';
 import crypto from 'node:crypto';
@@ -1095,12 +1095,35 @@ const plugin = {
           try {
             await ensureInitialized(api.logger);
 
-            await apiClient!.deleteFact(params.factId, authKeyHex!);
-
-            return {
-              content: [{ type: 'text', text: `Memory ${params.factId} deleted` }],
-              details: { deleted: true },
-            };
+            if (isSubgraphMode()) {
+              // On-chain tombstone: write a minimal protobuf with decayScore=0
+              // The subgraph will overwrite the fact and set isActive=false
+              const config = { ...getSubgraphConfig(), authKeyHex: authKeyHex! };
+              const tombstone: FactPayload = {
+                id: params.factId,
+                timestamp: new Date().toISOString(),
+                owner: subgraphOwner || userId!,
+                encryptedBlob: '00', // minimal 1-byte placeholder
+                blindIndices: [],
+                decayScore: 0,
+                source: 'tombstone',
+                contentFp: '',
+                agentId: 'openclaw-plugin',
+              };
+              const protobuf = encodeFactProtobuf(tombstone);
+              const result = await submitFactOnChain(protobuf, config);
+              api.logger.info(`Tombstone written for ${params.factId}: tx=${result.txHash}`);
+              return {
+                content: [{ type: 'text', text: `Memory ${params.factId} deleted (on-chain tombstone, tx: ${result.txHash})` }],
+                details: { deleted: true, txHash: result.txHash },
+              };
+            } else {
+              await apiClient!.deleteFact(params.factId, authKeyHex!);
+              return {
+                content: [{ type: 'text', text: `Memory ${params.factId} deleted` }],
+                details: { deleted: true },
+              };
+            }
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
             api.logger.error(`totalreclaw_forget failed: ${message}`);
@@ -1148,29 +1171,78 @@ const plugin = {
               created_at: string;
             }> = [];
 
-            let cursor: string | undefined;
-            let hasMore = true;
+            if (isSubgraphMode()) {
+              // Query subgraph for all active facts
+              const config = getSubgraphConfig();
+              const relayUrl = config.relayUrl;
+              const PAGE_SIZE = 1000;
+              let skip = 0;
+              let hasMore = true;
+              const owner = subgraphOwner || userId || '';
 
-            while (hasMore) {
-              const page = await apiClient!.exportFacts(authKeyHex!, 1000, cursor);
+              while (hasMore) {
+                const query = `{ facts(where: { owner: "${owner}", isActive: true }, first: ${PAGE_SIZE}, skip: ${skip}, orderBy: sequenceId, orderDirection: asc) { id encryptedBlob source agentId timestamp sequenceId } }`;
 
-              for (const fact of page.facts) {
-                try {
-                  const docJson = decryptFromHex(fact.encrypted_blob, encryptionKey!);
-                  const doc = JSON.parse(docJson) as { text: string; metadata?: Record<string, unknown> };
-                  allFacts.push({
-                    id: fact.id,
-                    text: doc.text,
-                    metadata: doc.metadata ?? {},
-                    created_at: fact.created_at,
-                  });
-                } catch {
-                  // Skip facts we cannot decrypt.
+                const res = await fetch(`${relayUrl}/v1/subgraph`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    ...(authKeyHex ? { Authorization: `Bearer ${authKeyHex}` } : {}),
+                  },
+                  body: JSON.stringify({ query }),
+                });
+
+                const json = (await res.json()) as {
+                  data?: { facts?: Array<{ id: string; encryptedBlob: string; source: string; agentId: string; timestamp: string; sequenceId: string }> };
+                };
+                const facts = json?.data?.facts || [];
+
+                for (const fact of facts) {
+                  try {
+                    let hexBlob = fact.encryptedBlob;
+                    if (hexBlob.startsWith('0x')) hexBlob = hexBlob.slice(2);
+                    const docJson = decryptFromHex(hexBlob, encryptionKey!);
+                    const doc = JSON.parse(docJson) as { text: string; metadata?: Record<string, unknown> };
+                    allFacts.push({
+                      id: fact.id,
+                      text: doc.text,
+                      metadata: doc.metadata ?? {},
+                      created_at: new Date(parseInt(fact.timestamp) * 1000).toISOString(),
+                    });
+                  } catch {
+                    // Skip facts we cannot decrypt
+                  }
                 }
-              }
 
-              cursor = page.cursor ?? undefined;
-              hasMore = page.has_more;
+                skip += PAGE_SIZE;
+                hasMore = facts.length === PAGE_SIZE;
+              }
+            } else {
+              // HTTP server mode — paginate through PostgreSQL facts
+              let cursor: string | undefined;
+              let hasMore = true;
+
+              while (hasMore) {
+                const page = await apiClient!.exportFacts(authKeyHex!, 1000, cursor);
+
+                for (const fact of page.facts) {
+                  try {
+                    const docJson = decryptFromHex(fact.encrypted_blob, encryptionKey!);
+                    const doc = JSON.parse(docJson) as { text: string; metadata?: Record<string, unknown> };
+                    allFacts.push({
+                      id: fact.id,
+                      text: doc.text,
+                      metadata: doc.metadata ?? {},
+                      created_at: fact.created_at,
+                    });
+                  } catch {
+                    // Skip facts we cannot decrypt.
+                  }
+                }
+
+                cursor = page.cursor ?? undefined;
+                hasMore = page.has_more;
+              }
             }
 
             // Format output.
