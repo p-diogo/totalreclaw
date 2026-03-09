@@ -1,0 +1,48 @@
+# Test: Install @totalreclaw/totalreclaw from npm in a clean OpenClaw container
+# Simulates what 'openclaw plugins install @totalreclaw/totalreclaw' does
+FROM node:22-bookworm AS builder
+
+RUN corepack enable
+WORKDIR /openclaw
+RUN git clone --depth 1 https://github.com/openclaw/openclaw.git .
+RUN pnpm install --frozen-lockfile
+RUN pnpm build
+
+FROM node:22-bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=builder /openclaw /app
+
+# Install plugin from npm — this is what 'openclaw plugins install' does
+# Note: we intentionally do NOT run 'npm install' in the plugin dir
+# to simulate the container restriction where npm cache is not writable
+RUN mkdir -p /opt/totalreclaw-npm && \
+    cd /opt/totalreclaw-npm && \
+    npm pack @totalreclaw/totalreclaw 2>/dev/null && \
+    tar xzf totalreclaw-totalreclaw-*.tgz && \
+    mv package plugin && \
+    rm -f *.tgz
+
+# Verify the bundle exists and no node_modules needed
+RUN ls -la /opt/totalreclaw-npm/plugin/dist/index.js
+RUN test ! -d /opt/totalreclaw-npm/plugin/node_modules || echo "WARN: node_modules exists but should not be needed"
+
+# Create writable directories
+RUN mkdir -p /home/node/.openclaw /home/node/.totalreclaw && \
+    chown -R node:node /home/node/.openclaw /home/node/.totalreclaw /app /opt/totalreclaw-npm
+
+COPY tests/e2e-guide-validation/entrypoint-npm.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+USER node
+ENV NODE_ENV=production
+ENV OPENCLAW_NO_TELEMETRY=1
+
+WORKDIR /app
+EXPOSE 18789
+
+ENTRYPOINT ["/entrypoint.sh"]
