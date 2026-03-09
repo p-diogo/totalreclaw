@@ -8,6 +8,7 @@ TotalReclaw is a zero-knowledge encrypted memory vault for AI agents. The projec
 2. **Phase 2 (Free MVP)** -- Ship a production server, publish on Claw Hub, and benchmark against Mem0.
 3. **Phase 3 (Subgraph)** -- Decentralize storage onto Base L2 for censorship-resistant, self-sovereign memory.
 4. **Phase 4 (TEE)** -- Hardware-enforced privacy via Intel TDX / AWS Nitro as a separate product stack.
+5. **Phase 5 (Import)** -- Import & migrate memories from external systems (Mem0, Zep, LLM providers, etc.).
 
 ---
 
@@ -239,6 +240,43 @@ This is NOT an upgrade to the E2EE path -- it is a separate product/stack. The E
 
 ---
 
+## Phase 5: Import & Migration (Future)
+
+**Goal:** Let users consolidate fragmented AI memory from other systems into TotalReclaw. One-time or recurring import, re-encrypted into the user's vault.
+
+**Not started. Post-beta.**
+
+### 5.1 Import from External Memory Systems
+
+Adapters to ingest memories from competing or complementary AI memory products. Each adapter reads from the source system's API or export format, extracts facts, encrypts them client-side, and stores them in TotalReclaw.
+
+| Source | Type | Notes |
+|--------|------|-------|
+| **Mem0** (mem0.ai) | Hosted AI memory | API export of structured memories |
+| **Zep** (getzep.com) | Hosted AI memory | Session-based memory with facts and summaries |
+| **LanceDB** | Vector store | Local or cloud; export embeddings + metadata |
+| **QMD** (OpenClaw native) | Platform memory | OpenClaw's built-in memory system |
+| **Other vector stores** | Generic adapter | Chroma, Pinecone, Weaviate, Milvus, etc. |
+
+### 5.2 Import from Major LLM Providers
+
+Import conversation history and/or memory features from the major LLM providers. These require data export (GDPR/CCPA download or API) followed by LLM-based fact extraction and re-encryption.
+
+| Provider | Data Source | Notes |
+|----------|------------|-------|
+| **Claude** (Anthropic) | Conversation history, memory | Data export or API access |
+| **ChatGPT** (OpenAI) | Conversation history, memory | Data export (Settings → Export) or API |
+| **Gemini** (Google) | Conversation history, memory | Google Takeout or API |
+
+### Design Considerations
+
+- All imports run **client-side** -- source data is decrypted/parsed locally, re-encrypted with the user's key, then stored. Server never sees plaintext.
+- Fact extraction uses the same LLM pipeline as normal memory capture (extract → deduplicate → encrypt → store).
+- Deduplication via content fingerprints prevents double-ingestion if an import is run multiple times.
+- Bulk import should support progress tracking and resumption for large histories.
+
+---
+
 ## Spec Inventory
 
 Maps each spec to its rollout phase:
@@ -256,6 +294,8 @@ Maps each spec to its rollout phase:
 | Seed-to-Subgraph v1.0 | `docs/specs/subgraph/seed-to-subgraph.md` | Phase 3 (Subgraph) | Spec complete |
 | TEE vs E2EE | `docs/specs/tee/architecture.md` | Phase 4 (TEE) | Analysis complete |
 | TDX SaaS v0.4 | `docs/specs/tee/tdx-saas.md` | Phase 4 (TEE) | Spec complete |
+| Import: External Memory Systems | — | Phase 5 (Import) | Not started |
+| Import: LLM Provider Histories | — | Phase 5 (Import) | Not started |
 
 ---
 

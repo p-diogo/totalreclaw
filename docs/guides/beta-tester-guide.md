@@ -20,7 +20,10 @@ Or install manually via terminal:
 openclaw plugins install @totalreclaw/totalreclaw
 ```
 
-The agent handles the rest: it will ask if you have an existing recovery phrase or need a new one, set up encryption, and register you. Write down your 12-word recovery phrase -- that's the only thing you need to keep safe.
+After installation, your agent will ask: *"Do you have an existing recovery phrase, or should I generate a new one?"*
+
+- **New user:** Let it generate one. Write down the 12 words on paper, in exact order.
+- **Returning user:** Enter your existing phrase to restore your memories.
 
 **After setup, memory is fully automatic:**
 - Your agent remembers important things from conversations (preferences, decisions, facts)
@@ -35,7 +38,7 @@ You can always be explicit too -- "remember that I prefer dark mode" or "what do
    ```bash
    npx @totalreclaw/mcp-server setup
    ```
-   The wizard generates your recovery phrase, sets up encryption, registers you, and prints a config snippet to paste into your MCP client.
+   The wizard will ask if you have an existing recovery phrase, generate one if needed, register you, and print a config snippet to paste into your MCP client.
 
 2. Paste the config snippet (the wizard tells you exactly where).
 
