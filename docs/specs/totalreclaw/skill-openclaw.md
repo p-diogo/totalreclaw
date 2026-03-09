@@ -285,7 +285,7 @@ memory:
 
 ### Plugin Manifest
 
-`openclaw-totalreclaw-plugin` (NPM package) that registers hooks via OpenClaw's plugin system.
+`@totalreclaw/totalreclaw` (NPM package) that registers hooks via OpenClaw's plugin system.
 
 ---
 
@@ -345,7 +345,7 @@ memory:
 
 ## 10. Expected Deliverables
 
-- NPM package `openclaw-totalreclaw-plugin`
+- NPM package `@totalreclaw/totalreclaw`
 - Updated TotalReclaw client library with LSH support (see separate spec)
 - Complete README with installation, config examples, and migration guide
 

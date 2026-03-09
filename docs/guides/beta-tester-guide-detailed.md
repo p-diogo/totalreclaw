@@ -820,7 +820,7 @@ This is a beta release. The following items are known limitations that will be a
 - **Free tier threshold:** The default limit of 100 writes/month is provisional and may be adjusted based on usage data. The limit is a server-side configuration value.
 - **Subscription pricing:** The Pro tier price ($2-5/month) is beta pricing and not yet finalized.
 - **Billing tools:** The upgrade flow (`totalreclaw_status`, `totalreclaw_upgrade`) may not be fully wired in all environments. If the agent cannot generate a checkout URL, contact the TotalReclaw team directly.
-- **Auto-extraction timing (OpenClaw only):** The `TOTALRECLAW_EXTRACT_EVERY_TURNS` environment variable controls extraction frequency. The plugin fires extraction on the `agent_end` hook every N turns (default: 5). The skill config also accepts `autoExtractEveryTurns` via the `TOTALRECLAW_AUTO_EXTRACT_EVERY_TURNS` env var.
+- **Auto-extraction timing (OpenClaw only):** The `TOTALRECLAW_EXTRACT_EVERY_TURNS` environment variable controls extraction frequency. The plugin fires extraction on the `agent_end` hook every N turns (default: 5). The skill config also accepts `autoExtractEveryTurns` via the `TOTALRECLAW_EXTRACT_EVERY_TURNS` env var.
 - **MCP server has no auto-memory:** The MCP server does not have lifecycle hooks. It only responds to explicit tool calls. The host agent (Claude Desktop, Cursor) must call `totalreclaw_remember` and `totalreclaw_recall` explicitly.
 - **Batch writes:** On-chain writes are currently sent one fact at a time. Batch writes for gas optimization are not yet implemented.
 - **Decay and eviction engine:** The importance decay formula runs, but tuning is ongoing. Low-importance facts decay over time and may be evicted.
@@ -842,4 +842,4 @@ For those who want to understand the technical architecture:
 
 ---
 
-*This guide was written for TotalReclaw beta v0.2.0 (updated v1.1). If you encounter issues not covered here, contact the TotalReclaw team.*
+*This guide was written for TotalReclaw beta v1.0-beta (updated v1.1). If you encounter issues not covered here, contact the TotalReclaw team.*
