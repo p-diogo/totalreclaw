@@ -13,10 +13,13 @@ services:
       TOTALRECLAW_DATA_EDGE_ADDRESS: "0xA84c5433110Ccc93e57ec387e630E86Bad86c36f"
       TOTALRECLAW_EXTRACT_EVERY_TURNS: "1"
       OPENCLAW_GATEWAY_TOKEN: "guide-test-token-2026"
+      OPENCLAW_RAW_STREAM: "1"
+      PI_RAW_STREAM: "1"
     ports:
       - "127.0.0.1:18789:18789"
     volumes:
       - totalreclaw-creds:/home/node/.totalreclaw
+      - openclaw-config:/home/node/.openclaw
     tmpfs:
       - /tmp:size=100M
     security_opt:
@@ -24,3 +27,4 @@ services:
 
 volumes:
   totalreclaw-creds:
+  openclaw-config:

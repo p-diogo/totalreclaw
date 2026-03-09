@@ -36,6 +36,7 @@ export interface SubgraphStoreConfig {
   entryPointAddress: string;  // ERC-4337 EntryPoint v0.7
   authKeyHex?: string;        // HKDF auth key for relay server Authorization header
   rpcUrl?: string;            // Override chain RPC URL for public client reads
+  walletAddress?: string;     // Smart Account address for billing (X-Wallet-Address header)
 }
 
 export interface FactPayload {
@@ -194,12 +195,12 @@ export async function submitFactOnChain(
   const entryPointAddr = (config.entryPointAddress || entryPoint07Address) as Address;
 
   // Build authenticated transport for relay server proxy
-  const authTransport = config.authKeyHex
-    ? http(bundlerRpcUrl, {
-        fetchOptions: {
-          headers: { Authorization: `Bearer ${config.authKeyHex}` },
-        },
-      })
+  const headers: Record<string, string> = {};
+  if (config.authKeyHex) headers['Authorization'] = `Bearer ${config.authKeyHex}`;
+  if (config.walletAddress) headers['X-Wallet-Address'] = config.walletAddress;
+
+  const authTransport = Object.keys(headers).length > 0
+    ? http(bundlerRpcUrl, { fetchOptions: { headers } })
     : http(bundlerRpcUrl);
 
   // 1. Derive EOA signer from mnemonic (BIP-44 m/44'/60'/0'/0/0)

@@ -67,20 +67,13 @@ If TotalReclaw is not yet listed in the marketplace, install it manually:
 
 1. Open a terminal and navigate to your OpenClaw plugins directory:
    ```
-   cd /path/to/your/openclaw/plugins
+   openclaw plugins install @totalreclaw/totalreclaw
    ```
-2. Clone the TotalReclaw repository:
-   ```
-   git clone https://github.com/p-diogo/totalreclaw.git
-   ```
-3. Install the plugin dependencies:
-   ```
-   cd totalreclaw/skill/plugin
-   npm install --production
-   ```
-4. In your OpenClaw configuration, add TotalReclaw to the plugin list. The plugin registers itself with the ID `totalreclaw`.
+   Or ask your agent: *"Install the totalreclaw plugin"*
 
-5. Verify the plugin appears in your OpenClaw skill/plugin list. You should see **TotalReclaw** described as "Zero-knowledge encrypted memory vault for AI agents."
+2. The plugin registers itself with the ID `totalreclaw` and sets up automatically on first run.
+
+3. Verify the plugin appears in your OpenClaw plugin list. You should see **TotalReclaw** described as "Zero-knowledge encrypted memory vault for AI agents."
 
 ---
 
@@ -103,11 +96,10 @@ npx @totalreclaw/mcp-server setup
 
 The wizard will ask if you already have a recovery phrase. If you are a new user, it generates one, displays it, and asks you to confirm you have saved it before proceeding. It then registers you with the relay server and saves your credentials to `~/.totalreclaw/credentials.json`. See [Section 11](#11-mcp-server-setup-claude-desktop--cursor) for the full MCP setup flow.
 
-**OpenClaw plugin users:** Open a terminal, navigate to the plugin directory, and run:
+**OpenClaw plugin users:** Open a terminal and run:
 
 ```
-cd /path/to/totalreclaw/skill/plugin
-npx tsx generate-mnemonic.ts
+npx @totalreclaw/totalreclaw generate-mnemonic
 ```
 
 You will see output like this:
@@ -118,7 +110,7 @@ You will see output like this:
   apple banana cherry dolphin eagle falcon grape honey iris jungle kite lemon
 
   WRITE THIS DOWN. If you lose it, your memories are unrecoverable.
-  Set it as TOTALRECLAW_MASTER_PASSWORD in your .env file.
+  Set it as TOTALRECLAW_MASTER_PASSWORD in your environment.
 ```
 
 The 12 words shown above are an example. Your actual phrase will be different and unique to you.
@@ -135,7 +127,7 @@ Write all 12 words on paper, in the exact order shown. Double-check every word. 
 
 > **MCP users:** If you used `npx @totalreclaw/mcp-server setup`, your credentials are already saved and the setup wizard printed the config snippet you need. Skip to [Section 11](#11-mcp-server-setup-claude-desktop--cursor).
 
-Create or edit a `.env` file in the plugin directory (`skill/plugin/.env`) with the following contents:
+Set the following environment variables in your OpenClaw configuration (e.g., workspace settings or shell environment):
 
 ```
 # --- Required ---
@@ -147,7 +139,7 @@ TOTALRECLAW_SUBGRAPH_MODE="true"
 TOTALRECLAW_CHAIN_ID="10200"
 ```
 
-Replace `word1 word2 ...` with your actual 12-word phrase. Keep the quotes around it.
+Replace `word1 word2 ...` with your actual 12-word phrase. Keep the quotes around it. These can be set in your OpenClaw workspace environment settings, your shell profile, or any method your OpenClaw instance supports for environment variables.
 
 The values above are all you need for the Chiado testnet. Subgraph endpoint and bundler/paymaster access are handled automatically by the relay server.
 
@@ -474,7 +466,7 @@ If you switch to a new computer or install TotalReclaw on a second agent, you ca
 ### OpenClaw Plugin Recovery
 
 1. Install the TotalReclaw plugin on the new device (follow [Section 2](#2-installation)).
-2. Create a `.env` file with the same configuration as in [Step 3](#step-3-set-your-environment-variables-openclaw-plugin) -- use the same 12-word phrase and the same server URL.
+2. Set the same environment variables as in [Step 3](#step-3-set-your-environment-variables-openclaw-plugin) -- use the same 12-word phrase and the same server URL.
 3. Start a conversation with your agent.
 4. The plugin derives the same Smart Account address and encryption key from your phrase.
 5. All your memories are automatically retrieved from the subgraph and decrypted on your device.
@@ -567,7 +559,7 @@ Restart your MCP client (Claude Desktop, Cursor, etc.). The MCP server starts au
 | Pre-compaction flush | Yes | No |
 | Billing tools (status, upgrade) | Via agent orchestration | Via `totalreclaw_status` and `totalreclaw_upgrade` tools |
 | Import tool | No | Yes (`totalreclaw_import`) |
-| Setup method | `.env` file in plugin directory | `npx @totalreclaw/mcp-server setup` wizard |
+| Setup method | Environment variables in OpenClaw config | `npx @totalreclaw/mcp-server setup` wizard |
 | LLM for fact extraction | Auto-detected from agent's provider | Handled by host agent (Claude, etc.) |
 
 ### Alternative: Environment Variable Only (No Setup Wizard)
@@ -599,10 +591,10 @@ TotalReclaw has two test suites: **functional tests** (plugin-level, mock infras
 
 If you want to run the automated end-to-end test suite to verify the plugin against a mock server:
 
-1. Clone the repository and install dependencies:
+1. Clone the test repository and install dependencies:
    ```
-   git clone https://github.com/p-diogo/totalreclaw.git
-   cd totalreclaw/tests/e2e-functional
+   git clone https://github.com/p-diogo/totalreclaw-plugin.git
+   cd totalreclaw-plugin/tests/e2e-functional
    npm install
    ```
 
@@ -656,7 +648,7 @@ The integration tests run against a real server with PostgreSQL and validate the
 
 1. Start the test infrastructure (requires Docker):
    ```
-   cd totalreclaw/tests/e2e-integration
+   cd totalreclaw-plugin/tests/e2e-integration
    npm install
    docker compose up -d  # Starts PostgreSQL and mock services
    ```
@@ -683,7 +675,7 @@ The integration tests run against a real server with PostgreSQL and validate the
 
 ## 13. Configuration Reference
 
-All configuration is done through environment variables, typically set in a `.env` file in the plugin directory (`skill/plugin/.env`) or in the MCP client config.
+All configuration is done through environment variables, set in your OpenClaw workspace environment settings or in the MCP client config.
 
 ### Required Variables
 
@@ -744,11 +736,11 @@ These variables control on-chain storage via the subgraph. **For the Chiado beta
 
 **Cause:** The `TOTALRECLAW_MASTER_PASSWORD` environment variable is missing or empty.
 
-**Fix (OpenClaw plugin):** Make sure your `.env` file in the plugin directory contains:
+**Fix (OpenClaw plugin):** Make sure the `TOTALRECLAW_MASTER_PASSWORD` environment variable is set in your OpenClaw workspace environment settings:
 ```
 TOTALRECLAW_MASTER_PASSWORD="your twelve words here"
 ```
-Restart the plugin after saving the file.
+Restart the plugin after updating the variable.
 
 **Fix (MCP server):** Make sure the `TOTALRECLAW_MASTER_PASSWORD` env var is set in your MCP client config (e.g., `claude_desktop_config.json`). Alternatively, run `npx @totalreclaw/mcp-server setup` to generate credentials.
 
@@ -763,7 +755,7 @@ Restart the plugin after saving the file.
 **Cause:** The plugin may not be connecting to the correct server, or the auto-search hook may not be triggering.
 
 **Fix:**
-1. Verify that `TOTALRECLAW_SERVER_URL` in your `.env` file points to `https://api.totalreclaw.xyz`.
+1. Verify that `TOTALRECLAW_SERVER_URL` is set to `https://api.totalreclaw.xyz`.
 2. Try an explicit recall: "What do you remember about me?" If this returns results, auto-search is working but may have filtered your query as irrelevant (messages shorter than 5 characters are skipped).
 3. Check the plugin logs for error messages (look for lines starting with `TotalReclaw:`).
 
@@ -795,7 +787,7 @@ Restart the plugin after saving the file.
 
 **Cause:** The plugin could not find an API key for any supported LLM provider.
 
-**Fix:** Add at least one LLM provider API key to your `.env` file. The simplest option:
+**Fix:** Add at least one LLM provider API key to your environment. The simplest option:
 ```
 OPENAI_API_KEY="sk-your-key-here"
 ```

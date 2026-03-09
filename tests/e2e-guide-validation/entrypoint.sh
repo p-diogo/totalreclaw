@@ -35,7 +35,13 @@ cat > /home/node/.openclaw/openclaw.json << ENDCONFIG
           "enabled": true
         }
       }
+    },
+    "controlUi": {
+      "dangerouslyDisableDeviceAuth": true
     }
+  },
+  "tools": {
+    "allow": ["totalreclaw", "group:plugins"]
   },
   "plugins": {
     "allow": ["totalreclaw"],

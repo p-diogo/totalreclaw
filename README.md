@@ -20,23 +20,19 @@ Your AI agent remembers things across conversations — preferences, decisions, 
 
 ### Option A: OpenClaw (recommended -- fully automatic)
 
-During private beta, install from GitHub:
-
 ```bash
-git clone https://github.com/p-diogo/totalreclaw.git ~/totalreclaw
-cd ~/totalreclaw/skill/plugin && npm install
-openclaw plugins install -l ./
+openclaw plugins install @totalreclaw/totalreclaw
 ```
 
 Or just ask your agent:
 
-> "Install the totalreclaw skill from https://github.com/p-diogo/totalreclaw"
+> "Install the totalreclaw plugin"
 
 The agent handles setup: generates your encryption keys and registers you. You'll be asked to write down a 12-word recovery phrase -- that's the only thing you need to keep safe.
 
 After setup, memory is automatic. Your agent remembers important things from conversations and loads relevant memories at the start of each new one. No commands needed.
 
-> After beta, this will be available directly via `clawhub install totalreclaw`.
+**OpenClaw users:** See the [totalreclaw-plugin](https://github.com/p-diogo/totalreclaw-plugin) repo for the full plugin README, tool reference, and configuration docs.
 
 ### Option B: Claude Desktop / Cursor / Any MCP Agent
 
@@ -139,11 +135,13 @@ Point your client at your own server URL by setting the `TOTALRECLAW_SERVER_URL`
 
 ## Repository Structure
 
+**OpenClaw users:** The plugin you install lives in a [separate repo](https://github.com/p-diogo/totalreclaw-plugin). This repo contains the full stack (server, client library, contracts, subgraph).
+
 ```
 totalreclaw/
 ├── server/          # FastAPI + PostgreSQL backend
 ├── client/          # TypeScript client library (E2EE, LSH, embeddings)
-├── skill/           # OpenClaw skill (encryption, LSH, reranker)
+├── skill/           # OpenClaw skill source (mirrored to totalreclaw-plugin)
 ├── skill-nanoclaw/  # NanoClaw skill package + MCP server
 ├── mcp/             # MCP server for Claude Desktop, Cursor, etc.
 ├── contracts/       # Solidity contracts (EventfulDataEdge, Paymaster)

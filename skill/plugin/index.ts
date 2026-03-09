@@ -260,6 +260,9 @@ async function getFactCount(logger: OpenClawPluginApi['logger']): Promise<number
 // Initialisation
 // ---------------------------------------------------------------------------
 
+/** True when master password is missing — tools return setup instructions. */
+let needsSetup = false;
+
 /**
  * Derive keys from the master password, load or create credentials, and
  * register with the server if this is the first run.
@@ -270,8 +273,9 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
   const masterPassword = process.env.TOTALRECLAW_MASTER_PASSWORD;
 
   if (!masterPassword) {
-    logger.error('TOTALRECLAW_MASTER_PASSWORD environment variable not set');
-    throw new Error('TOTALRECLAW_MASTER_PASSWORD not set');
+    needsSetup = true;
+    logger.info('TOTALRECLAW_MASTER_PASSWORD not set — setup required (see SKILL.md Post-Install Setup)');
+    return;
   }
 
   apiClient = createApiClient(serverUrl);
@@ -355,6 +359,12 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
   }
 }
 
+const SETUP_ERROR_MSG =
+  'TotalReclaw setup required. Follow the "Post-Install Setup" steps in SKILL.md:\n' +
+  '1. Set TOTALRECLAW_MASTER_PASSWORD — ask the user if they have an existing recovery phrase or generate a new 12-word BIP-39 mnemonic.\n' +
+  '2. Set TOTALRECLAW_SUBGRAPH_MODE=true\n' +
+  '3. Restart the gateway to apply changes.';
+
 /**
  * Ensure `initialize()` has completed (runs at most once).
  */
@@ -363,6 +373,17 @@ async function ensureInitialized(logger: OpenClawPluginApi['logger']): Promise<v
     initPromise = initialize(logger);
   }
   await initPromise;
+}
+
+/**
+ * Like ensureInitialized, but throws if setup is still needed.
+ * Use in tool handlers where we need a fully configured plugin.
+ */
+async function requireFullSetup(logger: OpenClawPluginApi['logger']): Promise<void> {
+  await ensureInitialized(logger);
+  if (needsSetup) {
+    throw new Error(SETUP_ERROR_MSG);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -625,7 +646,7 @@ async function storeExtractedFacts(
       };
 
       if (isSubgraphMode()) {
-        const config = { ...getSubgraphConfig(), authKeyHex: authKeyHex! };
+        const config = { ...getSubgraphConfig(), authKeyHex: authKeyHex!, walletAddress: subgraphOwner };
         const protobuf = encodeFactProtobuf({
           id: factId,
           timestamp: new Date().toISOString(),
@@ -746,7 +767,7 @@ const plugin = {
         },
         async execute(_toolCallId: string, params: { text: string; type?: string; importance?: number }) {
           try {
-            await ensureInitialized(api.logger);
+            await requireFullSetup(api.logger);
 
             const memoryType = params.type ?? 'fact';
             const importance = params.importance ?? 5;
@@ -798,7 +819,7 @@ const plugin = {
 
             if (isSubgraphMode()) {
               // Subgraph mode: encode as Protobuf and submit on-chain via relay UserOp
-              const config = { ...getSubgraphConfig(), authKeyHex: authKeyHex! };
+              const config = { ...getSubgraphConfig(), authKeyHex: authKeyHex!, walletAddress: subgraphOwner };
               const protobuf = encodeFactProtobuf({
                 id: factId,
                 timestamp: new Date().toISOString(),
@@ -861,7 +882,7 @@ const plugin = {
         },
         async execute(_toolCallId: string, params: { query: string; k?: number }) {
           try {
-            await ensureInitialized(api.logger);
+            await requireFullSetup(api.logger);
 
             const k = Math.min(params.k ?? 8, 20);
 
@@ -1093,12 +1114,12 @@ const plugin = {
         },
         async execute(_toolCallId: string, params: { factId: string }) {
           try {
-            await ensureInitialized(api.logger);
+            await requireFullSetup(api.logger);
 
             if (isSubgraphMode()) {
               // On-chain tombstone: write a minimal protobuf with decayScore=0
               // The subgraph will overwrite the fact and set isActive=false
-              const config = { ...getSubgraphConfig(), authKeyHex: authKeyHex! };
+              const config = { ...getSubgraphConfig(), authKeyHex: authKeyHex!, walletAddress: subgraphOwner };
               const tombstone: FactPayload = {
                 id: params.factId,
                 timestamp: new Date().toISOString(),
@@ -1159,7 +1180,7 @@ const plugin = {
         },
         async execute(_toolCallId: string, params: { format?: string }) {
           try {
-            await ensureInitialized(api.logger);
+            await requireFullSetup(api.logger);
 
             const format = params.format ?? 'json';
 
@@ -1299,7 +1320,7 @@ const plugin = {
         },
         async execute() {
           try {
-            await ensureInitialized(api.logger);
+            await requireFullSetup(api.logger);
 
             if (!authKeyHex) {
               return {
@@ -1385,6 +1406,16 @@ const plugin = {
           }
 
           await ensureInitialized(api.logger);
+
+          // If setup is still needed after init, inject setup instructions
+          if (needsSetup) {
+            return {
+              prependContext:
+                '## TotalReclaw Setup Required\n\n' +
+                'TotalReclaw is installed but needs configuration. Follow the "Post-Install Setup" steps in SKILL.md to complete setup.\n' +
+                'Ask the user: "Do you have an existing TotalReclaw recovery phrase, or should I generate a new one?"',
+            };
+          }
 
           // Billing cache check — warn if quota is approaching limit.
           let billingWarning = '';
@@ -1741,6 +1772,7 @@ const plugin = {
           if (!evt?.success || !evt?.messages || evt.messages.length < 2) return;
 
           await ensureInitialized(api.logger);
+          if (needsSetup) return;
 
           // C3: Throttle auto-extraction to every N turns (configurable via env).
           turnsSinceLastExtraction++;
@@ -1772,6 +1804,7 @@ const plugin = {
           if (!evt?.messages || evt.messages.length < 2) return;
 
           await ensureInitialized(api.logger);
+          if (needsSetup) return;
 
           api.logger.info(
             `Pre-compaction extraction: processing ${evt.messages.length} messages`,
@@ -1803,6 +1836,7 @@ const plugin = {
           if (!evt?.messages || evt.messages.length < 2) return;
 
           await ensureInitialized(api.logger);
+          if (needsSetup) return;
 
           api.logger.info(
             `Pre-reset extraction (${evt.reason ?? 'unknown'}): processing ${evt.messages.length} messages`,

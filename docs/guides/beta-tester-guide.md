@@ -10,21 +10,17 @@
 
 ### OpenClaw (recommended -- fully automatic)
 
-During private beta, install from the GitHub repo. Ask your agent:
+Ask your agent:
 
-> "Install the totalreclaw skill from https://github.com/p-diogo/totalreclaw"
+> "Install the totalreclaw plugin"
 
 Or install manually via terminal:
 
 ```bash
-git clone https://github.com/p-diogo/totalreclaw.git ~/totalreclaw
-cd ~/totalreclaw/skill/plugin && npm install
-openclaw plugins install -l ./
+openclaw plugins install @totalreclaw/totalreclaw
 ```
 
-The agent handles the rest: generates your encryption keys and registers you. You'll be asked to write down a 12-word recovery phrase -- that's the only thing you need to keep safe.
-
-> **Note:** After beta, this will be available directly via `clawhub install totalreclaw`.
+The agent handles the rest: it will ask if you have an existing recovery phrase or need a new one, set up encryption, and register you. Write down your 12-word recovery phrase -- that's the only thing you need to keep safe.
 
 **After setup, memory is fully automatic:**
 - Your agent remembers important things from conversations (preferences, decisions, facts)
@@ -132,7 +128,7 @@ During beta, subgraph mode uses the Chiado testnet. Both modes encrypt your data
 
 | Problem | Fix |
 |---------|-----|
-| Setup not working | Re-run: OpenClaw reinstall or `npx @totalreclaw/mcp-server setup` |
+| Setup not working | Re-run: `openclaw plugins install @totalreclaw/totalreclaw` or `npx @totalreclaw/mcp-server setup` |
 | "Not authenticated" / 401 | Check your recovery phrase -- exact words, exact order |
 | Memories not appearing | Try an explicit recall: "what do you remember about X?" |
 | Quota exceeded (403) | Wait for monthly reset or upgrade to Pro |

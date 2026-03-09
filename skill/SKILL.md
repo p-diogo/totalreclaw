@@ -8,9 +8,7 @@ homepage: https://github.com/p-diogo/totalreclaw
 metadata:
   openclaw:
     requires:
-      env:
-        - TOTALRECLAW_SERVER_URL
-        - TOTALRECLAW_MASTER_PASSWORD
+      env: []
       bins: []
     emoji: "🧠"
     os: ["macos", "linux", "windows"]
