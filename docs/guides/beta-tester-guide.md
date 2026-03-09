@@ -8,11 +8,11 @@
 
 ## TL;DR — OpenClaw Users
 
-```bash
-openclaw plugins install @totalreclaw/totalreclaw
-```
+Ask your agent:
 
-That's it. The agent will guide you through setup (recovery phrase) and memory is automatic from there. Read on for details, other platforms, or troubleshooting.
+> "Install the @totalreclaw/totalreclaw plugin"
+
+That's it. The agent will install it, guide you through setup (recovery phrase), and memory is automatic from there. Read on for details, other platforms, or troubleshooting.
 
 ---
 
@@ -20,7 +20,11 @@ That's it. The agent will guide you through setup (recovery phrase) and memory i
 
 ### OpenClaw (recommended -- fully automatic)
 
-Run in your terminal:
+Ask your OpenClaw agent:
+
+> "Install the @totalreclaw/totalreclaw plugin"
+
+Or if you prefer the terminal:
 
 ```bash
 openclaw plugins install @totalreclaw/totalreclaw
