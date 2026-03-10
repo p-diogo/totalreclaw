@@ -32,7 +32,7 @@ openclaw plugins install @totalreclaw/totalreclaw
 
 After installation, your agent will ask: *"Do you have an existing recovery phrase, or should I generate a new one?"*
 
-- **New user:** Let it generate one. Write down the 12 words on paper, in exact order.
+- **New user:** Let it generate one (it uses a cryptographically secure generator). Write down the 12 words on paper, in exact order.
 - **Returning user:** Enter your existing phrase to restore your memories.
 
 **After setup, memory is fully automatic:**
