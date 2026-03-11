@@ -94,6 +94,8 @@ Cloudflare sits in front of the reverse proxy and provides DDoS mitigation, bot 
 
 | Gap | Description | Current State |
 |-----|-------------|---------------|
+| Temporal awareness | `totalreclaw_timeline` tool for "what changed this month?" queries. Already store timestamps but don't use them for temporal queries. | NOT DONE |
+| Client-side relationship extraction | Extract entity relationships during fact extraction. Store as encrypted graph edges. Enables "what tools does Acme use?" without server-side graphs. | NOT DONE |
 | Row-level security (RLS) | Multi-tenant without Postgres RLS. Defense-in-depth for data isolation | NOT DONE |
 | Distributed tracing (OpenTelemetry) | Cross-request tracing for debugging | NOT DONE |
 | Log aggregation | Central logging system (ELK, Datadog, etc.) | NOT DONE — JSON logs ready for ingestion |
@@ -150,7 +152,45 @@ Before launching the MVP publicly, complete a fair competitive benchmark against
 | Submit to Claw Hub review | Blocked | Repo must be public |
 | Test skill uses host agent's LLM | Pending (T088) | -- |
 
-### 2.4 Multi-Agent Conflict Resolution (`docs/specs/totalreclaw/conflict-resolution.md` v0.3.2)
+### 2.4 Memory Consolidation & Dedup (Pre-MVP)
+
+Reduce fact pile-up by detecting near-duplicates and merging them client-side.
+
+| Task | Description | Status |
+|------|-------------|--------|
+| Near-duplicate detection | Before storing, search for semantically similar facts; merge/replace instead of creating new | NOT DONE |
+| On-demand consolidation | `totalreclaw_consolidate` tool scans all memories and merges duplicates | NOT DONE |
+| Extraction-time dedup | Integrate dedup check into `agent_end` extraction pipeline | NOT DONE |
+
+**Constraint:** All comparison/merging happens client-side (zero-knowledge). Server only has content fingerprints and blind indices.
+
+**Plan:** `plans/2026-03-11-memory-consolidation-dedup.md` (internal repo)
+
+### 2.5 Memory Compression Stats
+
+Surface token reduction metrics that users and integrators can see.
+
+| Task | Description | Status |
+|------|-------------|--------|
+| Track context savings | Measure tokens injected vs full conversation replay | NOT DONE |
+| Surface in `totalreclaw_status` | Show compression ratio alongside tier/usage | NOT DONE |
+
+### 2.6 Competitor Import (MVP — Mem0 + MCP Memory)
+
+Import tools to reduce switching costs. Prioritize the two most common sources for MVP.
+
+| Task | Description | Status |
+|------|-------------|--------|
+| `totalreclaw_import` tool (generic) | Source-agnostic import with adapter pattern | NOT DONE |
+| Mem0 adapter | Import from mem0.ai API export (JSON) | NOT DONE |
+| MCP Memory adapter | Import from `@modelcontextprotocol/server-memory` JSONL | NOT DONE |
+| Progress tracking | Report progress for large imports | NOT DONE |
+
+**Constraint:** All processing client-side. Content fingerprint dedup prevents double-import.
+
+**Plan:** `plans/2026-03-11-competitor-import.md` (internal repo)
+
+### 2.7 Multi-Agent Conflict Resolution (`docs/specs/totalreclaw/conflict-resolution.md` v0.3.2)
 
 Applies to both MVP (PostgreSQL) and future Subgraph path. 4-layer protocol:
 
@@ -250,13 +290,18 @@ This is NOT an upgrade to the E2EE path -- it is a separate product/stack. The E
 
 Adapters to ingest memories from competing or complementary AI memory products. Each adapter reads from the source system's API or export format, extracts facts, encrypts them client-side, and stores them in TotalReclaw.
 
-| Source | Type | Notes |
-|--------|------|-------|
-| **Mem0** (mem0.ai) | Hosted AI memory | API export of structured memories |
-| **Zep** (getzep.com) | Hosted AI memory | Session-based memory with facts and summaries |
-| **LanceDB** | Vector store | Local or cloud; export embeddings + metadata |
-| **QMD** (OpenClaw native) | Platform memory | OpenClaw's built-in memory system |
-| **Other vector stores** | Generic adapter | Chroma, Pinecone, Weaviate, Milvus, etc. |
+**MVP (Phase 2.6):** Mem0 + MCP Memory adapters ship with the free MVP launch.
+
+| Source | Type | Priority | Notes |
+|--------|------|----------|-------|
+| **Mem0** (mem0.ai) | Hosted AI memory | **MVP** | API export of structured memories (JSON, 7-day link) |
+| **MCP Memory Server** | Local JSONL | **MVP** | `@modelcontextprotocol/server-memory` — entities, relations, observations |
+| **MemoClaw** (memoclaw.com) | Hosted API | Post-MVP | SDK is MIT; read via their API, re-encrypt into TotalReclaw |
+| **Zep** (getzep.com) | Hosted AI memory | Post-MVP | Session-based memory with facts and summaries |
+| **LanceDB** | Vector store | Post-MVP | Local or cloud; export embeddings + metadata |
+| **QMD** (OpenClaw native) | Platform memory | Post-MVP | OpenClaw's built-in memory system |
+| **Generic JSON/CSV** | File import | Post-MVP | Catch-all for other tools |
+| **Other vector stores** | Generic adapter | Future | Chroma, Pinecone, Weaviate, Milvus, etc. |
 
 ### 5.2 Import from Major LLM Providers
 

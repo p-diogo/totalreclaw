@@ -1,6 +1,18 @@
-# Claw Hub Publishing Checklist
+# ClawHub Publishing Checklist
 
-Internal notes for preparing the TotalReclaw skill for listing on [clawhub.ai](https://clawhub.ai).
+Internal notes for publishing the TotalReclaw skill on [clawhub.ai](https://clawhub.ai).
+
+---
+
+## How ClawHub Works
+
+ClawHub is the official skill registry for OpenClaw agents. Key facts:
+
+- **SKILL.md IS the listing page** — the full markdown body is rendered as the listing content
+- **Publishing is instant via CLI** — no manual review queue
+- **Automated security scan runs post-publish** — flags suspicious patterns, undeclared env vars, dynamic code execution
+- **No screenshots/video hosted on ClawHub** — embed as markdown image links in SKILL.md if desired
+- **Discovery via vector search** — embedding similarity + slug/name boosts + popularity prior
 
 ---
 
@@ -8,103 +20,100 @@ Internal notes for preparing the TotalReclaw skill for listing on [clawhub.ai](h
 
 ### Ready
 
-- [x] `skill.json` -- Metadata, hooks, tools, config, and Claw Hub fields populated
-- [x] `SKILL.md` -- YAML frontmatter with full metadata; tools, hooks, prompts, and LLM instructions documented
-- [x] `README.md` -- Public-facing documentation with quick start, benchmarks, configuration, and architecture
+- [x] `skill.json` — Metadata, hooks, tools, config, and ClawHub fields populated
+- [x] `SKILL.md` — YAML frontmatter with full metadata; tools, hooks, prompts, and LLM instructions documented
+- [x] `README.md` — Public-facing documentation with quick start, benchmarks, configuration, and architecture
 - [x] Hooks defined: `before_agent_start`, `agent_end`, `pre_compaction`
-- [x] Tools defined: `totalreclaw_remember`, `totalreclaw_recall`, `totalreclaw_forget`, `totalreclaw_export`
+- [x] Tools defined: `totalreclaw_remember`, `totalreclaw_recall`, `totalreclaw_forget`, `totalreclaw_export`, `totalreclaw_status`, `totalreclaw_generate_recovery_phrase`
 - [x] Environment variables documented (`TOTALRECLAW_SERVER_URL`, `TOTALRECLAW_MASTER_PASSWORD`)
 - [x] Benchmark comparison table (98.1% recall@8 with 100% privacy)
 - [x] License declared (MIT)
 - [x] Keywords and OS compatibility specified
+- [x] E2E onboarding tests passing (4/4)
+- [x] E2E subgraph tests passing (9/9)
 
 ### Not Yet Ready
 
-- [ ] **Screenshots** (3-5 required, 1920x1080 PNG) -- must be created manually
-  - Suggested screenshots:
+- [ ] **Screenshots** (optional — linked from external hosting as markdown images in SKILL.md)
+  - Suggested:
     1. Agent remembering a user preference (tool call + response)
     2. Agent recalling memories at conversation start (context injection)
     3. Memory export in JSON format
     4. Encryption in action (showing encrypted vs plaintext data)
-    5. Configuration / environment variable setup
-- [ ] **Demo video** (optional but recommended, 30-90 seconds)
+- [ ] **Demo video** (optional, 30-90 seconds)
   - Show a full cycle: store a memory, start a new conversation, recall it automatically
   - Highlight that the server never sees plaintext
-  - Keep it under 90 seconds
-- [ ] **Icon/logo** (256x256 PNG, transparent background)
-- [ ] **Server deployment guide** -- users need a running TotalReclaw server; link to deployment docs
-- [ ] **End-to-end integration tests** -- verify the full clawhub install flow works
-- [ ] **npm package published** -- `@totalreclaw/skill` must be on npm before listing
+- [ ] **Update skill.json version** — bump to match plugin version (currently 0.1.0, should be 1.0.0)
+- [ ] **Verify SKILL.md frontmatter** matches ClawHub format
 
 ---
 
-## Claw Hub Publishing Process
+## SKILL.md Frontmatter
 
-### Step 1: Prepare Assets
+Ensure the SKILL.md starts with this frontmatter for ClawHub:
 
-1. Create 3-5 screenshots at 1920x1080 resolution, saved as PNG
-2. (Optional) Record a 30-90 second demo video
-3. Create a 256x256 skill icon with transparent background
-4. Verify all files are up to date:
-   - `skill.json`
-   - `SKILL.md` (with YAML frontmatter)
-   - `README.md`
-
-### Step 2: Validate Locally
-
-```bash
-# Validate skill manifest
-clawhub validate ./skill
-
-# Test the install flow locally
-clawhub install --local ./skill
-
-# Run the skill in a test agent
-clawhub test totalreclaw
+```yaml
+---
+name: TotalReclaw
+description: "Zero-knowledge encrypted memory vault for AI agents. AES-256-GCM E2EE — server never sees plaintext. One recovery phrase, full portability."
+version: 1.0.0
+metadata:
+  openclaw:
+    requires:
+      env:
+        - TOTALRECLAW_SERVER_URL
+        - TOTALRECLAW_MASTER_PASSWORD
+    primaryEnv: TOTALRECLAW_MASTER_PASSWORD
+    emoji: "\U0001F9E0"
+    homepage: https://totalreclaw.xyz
+    os: ["macos", "linux", "windows"]
+---
 ```
 
-### Step 3: Submit for Review
+---
+
+## Publish Command
 
 ```bash
-# Authenticate with Claw Hub
-clawhub auth login
+# Login
+clawhub login
 
-# Publish the skill (submits for review)
-clawhub publish ./skill
+# Publish
+clawhub publish ./skill \
+  --slug totalreclaw \
+  --name "TotalReclaw" \
+  --version 1.0.0 \
+  --tags latest,memory,encryption,e2ee,zero-knowledge,privacy,agent-memory,persistent-context \
+  --changelog "Initial release: zero-knowledge encrypted memory vault for AI agents. AES-256-GCM E2EE, blind-index search, on-chain storage via The Graph, one-click plaintext export, 6 tools, 3 lifecycle hooks."
 ```
 
-### Step 4: Security Review
+---
 
-Claw Hub runs an automated security review that takes **2-5 business days**. The review includes:
+## Security Scan Notes
 
-- **Automated scanning** for undeclared environment variables (any env var access not listed in `skill.json` `requires.env` will be flagged)
-- **Dependency audit** for known vulnerabilities
-- **Permission scope check** -- verify the skill only requests necessary permissions
-- **Code review** for data exfiltration patterns (network calls to undeclared endpoints)
-- **Encryption verification** -- skills claiming E2EE will have their crypto implementation reviewed
+The `TOTALRECLAW_MASTER_PASSWORD` env var will likely trigger extra scrutiny from the automated security scanner. The zero-knowledge architecture explanation in SKILL.md should help it pass as `clean`:
 
-If issues are found, you will receive a report with required fixes. Address them and resubmit.
-
-### Step 5: Go Live
-
-Once approved:
-- The skill appears on [clawhub.ai/skills/totalreclaw](https://clawhub.ai/skills/totalreclaw)
-- Users can install with `clawhub install totalreclaw`
-- Monitor install metrics and reviews on the Claw Hub dashboard
+- The password is a 12-word BIP-39 mnemonic used to derive encryption keys
+- It never leaves the client device
+- The server only ever receives encrypted blobs
+- All crypto code is open-source and auditable
 
 ---
 
-## Post-Publishing Maintenance
+## Competitor Context
 
-- **Version updates**: Bump version in `skill.json` and `SKILL.md` frontmatter, then `clawhub publish` again
-- **Responding to reviews**: Monitor the Claw Hub dashboard for user feedback
-- **Security patches**: Critical security fixes can be fast-tracked (24-48 hours review)
-- **Deprecation**: Use `clawhub deprecate totalreclaw@0.1.0` if a version needs to be pulled
+ClawHub has one similar listing: **Everclaw** (also AES-256-GCM encrypted cloud memory, ~2,959 downloads). It is flagged as `suspicious` by the moderation system. TotalReclaw differentiates by:
+
+- Fully open-source (server + client)
+- On-chain data anchoring (Gnosis Chain + The Graph)
+- Seed-phrase portability (no accounts)
+- Competitive benchmark data (98.1% recall@8)
+- Clean security scan (no suspicious patterns)
 
 ---
 
-## Notes
+## Post-Publishing
 
-- The `TOTALRECLAW_MASTER_PASSWORD` env var will likely trigger extra scrutiny during security review. Prepare documentation explaining the zero-knowledge architecture and that the password never leaves the client.
-- Claw Hub listings with benchmark data (like our recall comparison table) tend to rank higher in search results.
-- Consider adding a "Verified E2EE" badge request once the crypto review passes.
+- **Version updates**: Bump version in `skill.json` and SKILL.md frontmatter, then `clawhub publish` again
+- **Monitor**: Check downloads, stars, and comments on the listing
+- **Respond to feedback**: Monitor the ClawHub listing for user comments
