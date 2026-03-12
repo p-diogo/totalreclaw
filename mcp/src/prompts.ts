@@ -35,6 +35,10 @@ When a totalreclaw_remember call fails with "quota_exceeded":
 2. Offer to check their usage with totalreclaw_status
 3. If they want to upgrade, use totalreclaw_upgrade to get a checkout link
 Do NOT repeatedly attempt to store memories after a quota error.
+
+### Importing memories from other tools
+If the user mentions migrating from Mem0, MCP Memory Server, MemoClaw, or any other AI memory tool, offer to use totalreclaw_import_from. Start with dry_run=true to preview, then confirm before importing.
+API keys provided by the user are used only for the import and are never stored.
 `;
 
 // Keep backward-compat export name (some callers may still reference it)
@@ -143,6 +147,20 @@ Use this when:
 - User hits their free tier limit
 - User asks about upgrading or pricing
 - A remember call returns a quota_exceeded error`;
+
+export const IMPORT_FROM_TOOL_DESCRIPTION = `Import memories from other AI memory tools into TotalReclaw.
+
+Supported sources:
+- **mem0**: Import from Mem0 (mem0.ai). Provide api_key + source_user_id, or paste the export JSON.
+- **mcp-memory**: Import from MCP Memory Server (@modelcontextprotocol/server-memory). Provide the memory.jsonl content or file_path. Default path: ~/.mcp-memory/memory.jsonl.
+- **memoclaw**: Import from MemoClaw. Provide api_key + source_user_id, or paste the export JSON.
+- **generic-json**: Import from a generic JSON file. Expects an array of objects with "text" field.
+- **generic-csv**: Import from a CSV file. Expects a header row with "text" column.
+
+Security: API keys are used in-memory only for this import and are never stored.
+Idempotent: Running the same import twice will not create duplicates (content fingerprint dedup).
+
+Use dry_run=true to preview what would be imported without storing anything.`;
 
 export const IMPORT_TOOL_DESCRIPTION = `Import memories from an exported backup.
 

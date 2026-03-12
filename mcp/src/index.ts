@@ -17,11 +17,13 @@ import {
   forgetToolDefinition,
   exportToolDefinition,
   importToolDefinition,
+  importFromToolDefinition,
   handleRemember,
   handleRecall,
   handleForget,
   handleExport,
   handleImport,
+  handleImportFrom,
   statusToolDefinition,
   upgradeToolDefinition,
   handleStatus,
@@ -665,6 +667,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     forgetToolDefinition,
     exportToolDefinition,
     importToolDefinition,
+    importFromToolDefinition,
     statusToolDefinition,
     upgradeToolDefinition,
   ],
@@ -741,6 +744,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             isError: true,
           };
 
+        case 'totalreclaw_import_from':
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                error: 'Import from external sources is not yet supported in subgraph mode. Use HTTP mode for import.',
+              }),
+            }],
+            isError: true,
+          };
+
         default:
           return {
             content: [{
@@ -784,6 +798,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'totalreclaw_import':
         return await handleImport(client, args, DEFAULT_NAMESPACE);
+
+      case 'totalreclaw_import_from':
+        return await handleImportFrom(client, args, DEFAULT_NAMESPACE);
 
       default:
         return {
