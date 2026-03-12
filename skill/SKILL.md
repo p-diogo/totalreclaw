@@ -208,6 +208,77 @@ Check subscription status and usage quota.
 
 ---
 
+### totalreclaw_import_from
+
+Import memories from other AI memory tools into TotalReclaw.
+
+**When to use:** User mentions migrating from Mem0, MCP Memory Server, or wants to import memories from another tool.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| source | string | Yes | Source system: `mem0`, `mcp-memory` (MVP). Post-MVP: `memoclaw`, `generic-json`, `generic-csv` |
+| api_key | string | No | API key for the source (Mem0). Used once, never stored. |
+| source_user_id | string | No | User or agent ID in the source system |
+| content | string | No | File content (JSON, JSONL, or CSV) -- for file-based sources |
+| file_path | string | No | Path to a file on disk -- for file-based sources |
+| namespace | string | No | Target namespace in TotalReclaw. Default: `imported` |
+| dry_run | boolean | No | Preview without importing. Default: `false` |
+
+**Best practice:** Always use `dry_run=true` first to preview, then confirm with the user before importing.
+
+**Example -- import from Mem0 (API):**
+```json
+{
+  "source": "mem0",
+  "api_key": "m0-xxx",
+  "source_user_id": "user-123",
+  "dry_run": true
+}
+```
+
+**Example -- import from MCP Memory Server (file):**
+```json
+{
+  "source": "mcp-memory",
+  "file_path": "~/.mcp-memory/memory.jsonl",
+  "dry_run": true
+}
+```
+
+**Returns (dry run):**
+```json
+{
+  "success": true,
+  "source": "mem0",
+  "total_found": 47,
+  "imported": 0,
+  "skipped_duplicate": 0,
+  "warnings": ["DRY RUN — no facts were imported."],
+  "import_id": "import-1710000000000-abc1234"
+}
+```
+
+**Returns (actual import):**
+```json
+{
+  "success": true,
+  "source": "mem0",
+  "total_found": 47,
+  "imported": 45,
+  "skipped_duplicate": 2,
+  "skipped_invalid": 0,
+  "errors": [],
+  "import_id": "import-1710000000000-abc1234",
+  "duration_ms": 3200
+}
+```
+
+Imported facts are tagged with `import_source:{source}` for easy filtering. The import is idempotent -- running it twice will not create duplicates (content fingerprint dedup).
+
+---
+
 ## Post-Install Setup
 
 After installing TotalReclaw, the agent MUST complete setup automatically. **Do NOT ask the user to set environment variables manually.**
@@ -244,7 +315,7 @@ Register TotalReclaw as the memory plugin:
 
 ### Step 5: Restart and verify
 
-Restart the gateway, then confirm the plugin loaded by checking that `totalreclaw_remember`, `totalreclaw_recall`, `totalreclaw_forget`, and `totalreclaw_export` tools are available.
+Restart the gateway, then confirm the plugin loaded by checking that `totalreclaw_remember`, `totalreclaw_recall`, `totalreclaw_forget`, `totalreclaw_export`, and `totalreclaw_import_from` tools are available.
 
 ### Step 6: Explain the free tier
 
@@ -331,6 +402,15 @@ Use when:
 - The user asks to export, backup, or download their memory data
 - The user wants to see everything you know about them
 - The user is migrating to another system
+
+#### totalreclaw_import_from
+
+Use when:
+- The user mentions migrating from Mem0, MCP Memory Server, or another AI memory tool
+- The user wants to import memories from a file or API
+- The user asks to consolidate memories from multiple tools
+
+Always run with `dry_run=true` first and show the preview before importing. API keys are used in-memory only and never stored.
 
 ---
 
