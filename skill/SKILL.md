@@ -214,11 +214,15 @@ After installing TotalReclaw, the agent MUST complete setup automatically. **Do 
 
 ### Step 1: Set the server URL
 
-The TotalReclaw server URL is always `https://api.totalreclaw.xyz`. Set it in the OpenClaw config:
+The TotalReclaw server URL is always `https://api.totalreclaw.xyz`. Set it via the OpenClaw gateway LaunchAgent (macOS) or systemd unit (Linux) — **not** via `openclaw config set`, which does not support a `gateway.env` key.
 
-```json
-{ "env": { "TOTALRECLAW_SERVER_URL": "https://api.totalreclaw.xyz" } }
+**macOS** — add to `~/Library/LaunchAgents/ai.openclaw.gateway.plist` under `EnvironmentVariables`:
+```xml
+<key>TOTALRECLAW_SERVER_URL</key>
+<string>https://api.totalreclaw.xyz</string>
 ```
+
+Then restart: `openclaw gateway restart`
 
 ### Step 2: Master password (recovery phrase)
 
@@ -231,9 +235,19 @@ Ask the user:
   > "⚠️ SAVE YOUR RECOVERY PHRASE — it's the only way to recover your memories if you switch devices: `[phrase]`"
 - **Returning user:** Ask them to provide their existing 12-word phrase, then set it as `TOTALRECLAW_MASTER_PASSWORD`.
 
+Set it via the LaunchAgent plist (same as Step 1):
+```xml
+<key>TOTALRECLAW_MASTER_PASSWORD</key>
+<string>word1 word2 ... word12</string>
+```
+
 ### Step 3: Enable subgraph mode
 
-Set `TOTALRECLAW_SUBGRAPH_MODE=true` in the config to enable on-chain storage (required for beta).
+Set `TOTALRECLAW_SUBGRAPH_MODE=true` via the LaunchAgent plist (same as Step 1):
+```xml
+<key>TOTALRECLAW_SUBGRAPH_MODE</key>
+<string>true</string>
+```
 
 ### Step 4: Set memory slot
 

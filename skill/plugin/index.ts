@@ -68,7 +68,7 @@ interface OpenClawPluginApi {
 // ---------------------------------------------------------------------------
 
 /** Path where we persist userId + salt across restarts. */
-const CREDENTIALS_PATH = process.env.TOTALRECLAW_CREDENTIALS_PATH || '/home/node/.totalreclaw/credentials.json';
+const CREDENTIALS_PATH = process.env.TOTALRECLAW_CREDENTIALS_PATH || `${process.env.HOME ?? '/home/node'}/.totalreclaw/credentials.json`;
 
 // ---------------------------------------------------------------------------
 // Cosine similarity threshold — skip injection when top result is below this
