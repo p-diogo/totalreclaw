@@ -283,10 +283,10 @@ export async function submitFactOnChain(
 /**
  * Check if subgraph mode is enabled.
  *
- * Returns true unless TOTALRECLAW_SUBGRAPH_MODE is explicitly set to "false".
+ * Returns true only when TOTALRECLAW_SUBGRAPH_MODE is explicitly set to "true".
  */
 export function isSubgraphMode(): boolean {
-  return process.env.TOTALRECLAW_SUBGRAPH_MODE !== 'false';
+  return process.env.TOTALRECLAW_SUBGRAPH_MODE === 'true';
 }
 
 /**
