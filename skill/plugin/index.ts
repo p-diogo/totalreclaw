@@ -7,6 +7,7 @@
  *   - totalreclaw_forget    -- soft-delete a memory
  *   - totalreclaw_export    -- export all memories (JSON or Markdown)
  *   - totalreclaw_status    -- check billing/subscription status
+ *   - totalreclaw_import_from -- import memories from other tools (Mem0, MCP Memory, etc.)
  *
  * Also registers a `before_agent_start` hook that automatically injects
  * relevant memories into the agent's context.
@@ -682,6 +683,101 @@ async function storeExtractedFacts(
   }
 
   return stored;
+}
+
+// ---------------------------------------------------------------------------
+// Import handler (for totalreclaw_import_from tool)
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle import_from tool calls in the plugin context.
+ *
+ * Uses the shared adapters to parse, then stores via storeExtractedFacts().
+ */
+async function handlePluginImportFrom(
+  params: Record<string, unknown>,
+  logger: OpenClawPluginApi['logger'],
+): Promise<Record<string, unknown>> {
+  const startTime = Date.now();
+
+  const source = params.source as string;
+  const validSources = ['mem0', 'mcp-memory', 'memoclaw', 'generic-json', 'generic-csv'];
+
+  if (!source || !validSources.includes(source)) {
+    return { success: false, error: `Invalid source. Must be one of: ${validSources.join(', ')}` };
+  }
+
+  try {
+    const { getAdapter } = await import('./import-adapters/index.js');
+    const adapter = getAdapter(source as import('./import-adapters/types.js').ImportSource);
+
+    const parseResult = await adapter.parse({
+      content: params.content as string | undefined,
+      api_key: params.api_key as string | undefined,
+      source_user_id: params.source_user_id as string | undefined,
+      api_url: params.api_url as string | undefined,
+      file_path: params.file_path as string | undefined,
+    });
+
+    if (parseResult.errors.length > 0 && parseResult.facts.length === 0) {
+      return {
+        success: false,
+        error: `Failed to parse ${adapter.displayName} data`,
+        details: parseResult.errors,
+      };
+    }
+
+    if (params.dry_run) {
+      return {
+        success: true,
+        dry_run: true,
+        source,
+        total_found: parseResult.facts.length,
+        preview: parseResult.facts.slice(0, 10).map((f) => ({
+          type: f.type,
+          text: f.text.slice(0, 100),
+          importance: f.importance,
+        })),
+        warnings: parseResult.warnings,
+      };
+    }
+
+    // Convert NormalizedFact[] to ExtractedFact[] for storeExtractedFacts()
+    const extractedFacts: ExtractedFact[] = parseResult.facts.map((f) => ({
+      text: f.text,
+      type: f.type,
+      importance: f.importance,
+    }));
+
+    // Store in batches of 50
+    let totalStored = 0;
+    const batchSize = 50;
+
+    for (let i = 0; i < extractedFacts.length; i += batchSize) {
+      const batch = extractedFacts.slice(i, i + batchSize);
+      const stored = await storeExtractedFacts(batch, logger);
+      totalStored += stored;
+
+      logger.info(
+        `Import progress: ${Math.min(i + batchSize, extractedFacts.length)}/${extractedFacts.length} processed, ${totalStored} stored`,
+      );
+    }
+
+    return {
+      success: true,
+      source,
+      import_id: crypto.randomUUID(),
+      total_found: parseResult.facts.length,
+      imported: totalStored,
+      skipped: parseResult.facts.length - totalStored,
+      warnings: parseResult.warnings,
+      duration_ms: Date.now() - startTime,
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Unknown error';
+    logger.error(`Import failed: ${msg}`);
+    return { success: false, error: `Import failed: ${msg}` };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1385,6 +1481,66 @@ const plugin = {
         },
       },
       { name: 'totalreclaw_status' },
+    );
+
+    // ---------------------------------------------------------------
+    // Tool: totalreclaw_import_from
+    // ---------------------------------------------------------------
+
+    api.registerTool(
+      {
+        name: 'totalreclaw_import_from',
+        label: 'Import From',
+        description:
+          'Import memories from other AI memory tools (Mem0, MCP Memory Server, MemoClaw, or generic JSON/CSV). ' +
+          'Provide the source name and either an API key or file content. ' +
+          'Use dry_run=true to preview before importing. Idempotent — safe to run multiple times.',
+        parameters: {
+          type: 'object',
+          properties: {
+            source: {
+              type: 'string',
+              enum: ['mem0', 'mcp-memory', 'memoclaw', 'generic-json', 'generic-csv'],
+              description: 'The source system to import from',
+            },
+            api_key: {
+              type: 'string',
+              description: 'API key for the source system (used once, never stored)',
+            },
+            source_user_id: {
+              type: 'string',
+              description: 'User or agent ID in the source system',
+            },
+            content: {
+              type: 'string',
+              description: 'File content (JSON, JSONL, or CSV)',
+            },
+            file_path: {
+              type: 'string',
+              description: 'Path to the file on disk',
+            },
+            namespace: {
+              type: 'string',
+              description: 'Target namespace (default: "imported")',
+            },
+            dry_run: {
+              type: 'boolean',
+              description: 'Preview without importing',
+            },
+          },
+          required: ['source'],
+        },
+        async execute(_toolCallId: string, params: Record<string, unknown>) {
+          try {
+            await requireFullSetup(api.logger);
+            return handlePluginImportFrom(params, api.logger);
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            return { error: message };
+          }
+        },
+      },
+      { name: 'totalreclaw_import_from' },
     );
 
     // ---------------------------------------------------------------
