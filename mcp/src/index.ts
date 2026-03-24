@@ -352,6 +352,7 @@ async function handleRememberSubgraph(
   const pendingFactMeta: Array<{ factId: string; action: string }> = [];
 
   for (const item of textsToStore) {
+    let itemSuperseded = false; // Per-fact flag for action tracking
     try {
       // 1. Generate blind indices (word-based)
       const wordIndices = generateBlindIndices(item.text);
@@ -422,6 +423,7 @@ async function handleRememberSubgraph(
                 pendingPayloads.push(encodeFactProtobuf(tombstonePayload));
                 console.error(`Store-time dedup: queued supersede for ${dupMatch.existingFact.id} (sim=${dupMatch.similarity.toFixed(3)})`);
                 dedupSuperseded++;
+                itemSuperseded = true;
               } else {
                 // Batch mode: apply shouldSupersede logic
                 const action = shouldSupersede(item.importance, dupMatch.existingFact);
@@ -447,6 +449,7 @@ async function handleRememberSubgraph(
                 pendingPayloads.push(encodeFactProtobuf(tombstonePayload));
                 console.error(`Store-time dedup: queued supersede for ${dupMatch.existingFact.id} (sim=${dupMatch.similarity.toFixed(3)})`);
                 dedupSuperseded++;
+                itemSuperseded = true;
               }
             }
           }
@@ -483,7 +486,7 @@ async function handleRememberSubgraph(
       // 8. Encode as protobuf and queue for batch submission
       const protobuf = encodeFactProtobuf(factPayload);
       pendingPayloads.push(protobuf);
-      pendingFactMeta.push({ factId, action: dedupSuperseded > 0 ? 'superseded' : 'created' });
+      pendingFactMeta.push({ factId, action: itemSuperseded ? 'superseded' : 'created' });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       results.push({ success: false, fact_id: '', tx_hash: undefined });

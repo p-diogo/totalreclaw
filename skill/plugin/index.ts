@@ -199,7 +199,7 @@ function isLlmDedupEnabled(): boolean {
  */
 function getExtractInterval(): number {
   const cache = readBillingCache();
-  if (cache?.features?.extraction_interval) return cache.features.extraction_interval;
+  if (cache?.features?.extraction_interval != null) return cache.features.extraction_interval;
   return AUTO_EXTRACT_EVERY_TURNS_ENV;
 }
 
@@ -209,7 +209,7 @@ function getExtractInterval(): number {
  */
 function getMaxFactsPerExtraction(): number {
   const cache = readBillingCache();
-  if (cache?.features?.max_facts_per_extraction) return cache.features.max_facts_per_extraction;
+  if (cache?.features?.max_facts_per_extraction != null) return cache.features.max_facts_per_extraction;
   return MAX_FACTS_PER_EXTRACTION;
 }
 
