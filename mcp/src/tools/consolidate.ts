@@ -11,18 +11,23 @@ export interface ConsolidateInput {
 
 export const consolidateToolDefinition = {
   name: 'totalreclaw_consolidate',
-  description: `Scan all stored memories and merge near-duplicates.
+  description: `Scan every stored memory, cluster near-duplicates, and merge each cluster down to the single best (most-important, most-recent) version. Self-hosted mode only.
 
-Keeps the most important/recent version and removes redundant copies.
-Use this to clean up your memory vault after extended use.
+INVOKE WHEN THE USER SAYS:
+- "clean up / tidy / dedupe my memory"
+- "there are a lot of duplicates in here — consolidate them"
+- "consolidate / consolidation" (explicit)
+- After a big totalreclaw_import_from that may have introduced duplicates
 
-WHEN TO USE:
-- User asks to clean up or deduplicate memories
-- After importing a large batch of memories
-- Periodically for memory hygiene
+WHAT IT DOES: Pulls all facts, runs cosine-similarity clustering via the Rust WASM core, deletes redundant copies (unless dry_run=true). Returns: scanned, clusters, duplicates removed.
+
+WHEN NOT TO USE:
+- The user's on managed service (Base Sepolia or Gnosis) — batch delete isn't possible on-chain. Store-time dedup handles near-duplicates automatically at write time. Tell the user this is only available in self-hosted mode.
+- The user wants to DELETE specific memories → totalreclaw_forget
+- The user is uncertain — always offer dry_run=true first and show the preview
 
 PARAMETERS:
-- dry_run: Preview consolidation without deleting (default: false)`,
+- dry_run: true = preview only (nothing deleted). Default false.`,
   inputSchema: {
     type: 'object',
     properties: {
