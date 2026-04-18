@@ -195,9 +195,21 @@ export const pinToolDefinition = {
         type: 'string',
         description: 'The ID of the fact to pin (from a totalreclaw_recall result).',
       },
+      // Accept `memory_id` as an alias for `fact_id` to match the v1 taxonomy
+      // spec wording (`memory_id` is used by the new retype / set_scope tools).
+      memory_id: {
+        type: 'string',
+        description: 'Alias for fact_id. Prefer fact_id for backward compatibility.',
+      },
       reason: {
         type: 'string',
         description: 'Optional human-readable reason for pinning (logged locally for tuning).',
+      },
+      expires_at: {
+        type: 'string',
+        description:
+          'Optional ISO 8601 timestamp at which the pin should lapse. ' +
+          'Recorded on the new claim; enforcement (auto-unpin after expiry) lives in a future revision.',
       },
     },
     required: ['fact_id'],
@@ -591,12 +603,23 @@ function validatePinArgs(args: unknown): ValidArgs {
     return { ok: false, factId: '', error: 'Invalid input: fact_id is required' };
   }
   const record = args as Record<string, unknown>;
-  const factId = record.fact_id;
-  if (typeof factId !== 'string' || factId.trim().length === 0) {
-    return { ok: false, factId: '', error: 'Invalid input: fact_id must be a non-empty string' };
+  // Accept either `fact_id` (v0) or `memory_id` (v1 spec wording). `fact_id`
+  // wins if both are present so existing MCP consumers keep working.
+  const rawId =
+    typeof record.fact_id === 'string' && record.fact_id.trim().length > 0
+      ? record.fact_id
+      : typeof record.memory_id === 'string'
+        ? record.memory_id
+        : undefined;
+  if (typeof rawId !== 'string' || rawId.trim().length === 0) {
+    return {
+      ok: false,
+      factId: '',
+      error: 'Invalid input: fact_id (or memory_id) must be a non-empty string',
+    };
   }
   const reason = typeof record.reason === 'string' ? record.reason : undefined;
-  return { ok: true, factId: factId.trim(), reason, error: '' };
+  return { ok: true, factId: rawId.trim(), reason, error: '' };
 }
 
 /** Dispatch helper for callers that already hold PinOpDeps (used by index.ts subgraph path). */

@@ -71,6 +71,17 @@ API keys provided by the user are used only for the import and are never stored.
 - If your agent supports a credential vault or secret store, the user's TOTALRECLAW_RECOVERY_PHRASE should be stored there instead of as a plaintext environment variable.
 - TotalReclaw memories are fully portable -- they work across OpenClaw, IronClaw, Claude Desktop, Cursor, NanoClaw, and any MCP-compatible agent.
 
+### User-controlled memory edits (v1)
+In addition to remember + forget, three tools let the user correct stored memories without
+wiping the vault. Use these when the user says something like:
+- "pin that" / "never forget this" → totalreclaw_pin (preserves a fact across auto-resolution)
+- "that was actually a directive, not a preference" → totalreclaw_retype
+- "that was work context" / "file that under personal" → totalreclaw_set_scope
+
+All three operate by supersession: they create a new claim with the override and link it
+back to the original via superseded_by. The original stays in the vault as a tombstone so
+history is inspectable. All three are idempotent (no-op if the target already matches).
+
 ### End of Conversation
 When a substantive conversation is ending (the user says goodbye, the topic is resolved,
 or the conversation naturally concludes), call totalreclaw_debrief with the key takeaways.
@@ -108,10 +119,28 @@ Each fact needs:
   - 5-6: Moderate facts (schedule, minor preferences)
   - 3-4: Low priority (casual mentions)
   - 1-2: Ephemeral (likely to change)
-- type: Category (optional) -- "fact", "preference", "decision", "episodic", "goal", "context", "summary", "rule"
-  - Use "rule" for reusable operational gotchas, conventions, or debugging shortcuts the user
-    wants to remember for next time (e.g. "always check d.get(errors) before trusting empty
-    GraphQL results", "stop the gateway before rm -rf the state dir").
+- type: Memory Taxonomy v1 category (optional). Pick the speech act the user is performing:
+  - "claim" -- assertive state-of-world ("lives in Lisbon", "chose PostgreSQL for analytics").
+    Also use this for decisions; put the "why" in the reasoning field.
+  - "preference" -- expressive taste ("likes dark mode", "prefers coffee over tea").
+  - "directive" -- imperative rule the user wants enforced going forward ("always check
+    d.get(errors)", "never rm -rf without stopping gateway first").
+  - "commitment" -- future intent ("will ship v2 Friday", "planning to migrate to Postgres").
+  - "episode" -- notable past event ("deployed v1.0 on March 15", "had surgery last summer").
+  - "summary" -- ONLY for debrief pipelines — do NOT emit on live-turn extraction.
+  Legacy v0 types (fact, context, decision, rule, goal, episodic) are still accepted and
+  auto-mapped to their v1 equivalents so older host agents keep working.
+- scope: Life-domain tag (optional). One of: work, personal, health, family, creative,
+  finance, misc, unspecified. Defaults to unspecified. Use it when the user gives you a
+  clear scope signal ("for work...", "my doctor said...", "with my kids...").
+- reasoning: Free-form "why" clause (optional). Populate on type=claim when the user
+  expressed a decision with rationale, e.g. text = "Chose PostgreSQL for the analytics store",
+  reasoning = "data is relational and needs ACID guarantees". Separate field (not embedded
+  in text) enables structured queries like "show me all my decisions with their reasoning".
+
+Provenance: the MCP server tags single-fact (explicit) remembers with source=user and
+batch remembers (extraction) with source=user-inferred. Claims you attribute to yourself
+(the assistant) SHOULD be handled sparingly — they score lower at retrieval by design.
 
 The vault handles deduplication automatically. If a similar fact exists, it will be updated rather than duplicated.`;
 
