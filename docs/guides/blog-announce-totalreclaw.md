@@ -202,6 +202,41 @@ Your memory is yours. Let's make it structurally true.
 - [x] No emojis
 - [x] Word count in target range: 2158 words (main body, intro → "Try it")
 
+## Claims verification
+
+All factual claims in the post have been cross-checked against authoritative source docs. Record here so Pedro can audit before publication.
+
+**Verified against authoritative source docs:**
+
+| Claim | Source |
+|---|---|
+| The Graph stats: 1.27T+ queries, 100+ indexers, 90+ chains, 99.99%+ uptime, 75K+ projects | `thegraph.com` homepage + `thegraph.com/docs` |
+| Cloudflare's "your memories are yours" export commitment (direct quote) | blog.cloudflare.com/introducing-agent-memory/ |
+| Cloudflare stack: Durable Objects + Vectorize + Workers AI | same post |
+| Cloudflare retrieval: 5 parallel channels + RRF fusion | same post |
+| TotalReclaw pricing: $3.99 Pro (Gnosis mainnet), free tier (Base Sepolia testnet), both unlimited within tier | `CLAUDE.md` §Current Status + §Infrastructure |
+| Crypto primitives: XChaCha20-Poly1305 payload + Argon2id+HKDF key derivation + LSH trapdoors + ERC-4337 batched UserOps | `docs/specs/totalreclaw/architecture.md` + `CLAUDE.md` §Security Notes |
+| Performance: <140ms p95 at 1M memories; recall ≥93% of true top-250 | `CLAUDE.md` §Key Constraints + `docs/specs/totalreclaw/architecture.md` |
+| Mem0 97.8% junk audit | GitHub issue `mem0ai/mem0#4573` (cited w/ direct link in post) |
+| Memory Taxonomy v1: 6 speech-act types (claim/preference/directive/commitment/episode/summary), Searle grounding | `docs/specs/totalreclaw/memory-taxonomy-v1.md` |
+| 5 clients shipping: OpenClaw plugin, Claude Desktop (via MCP), Cursor (via MCP), Hermes, ZeroClaw | `CLAUDE.md` feature compatibility matrix |
+
+**Claims flagged for pre-publish review (not yet verified or time-sensitive):**
+
+1. **"100+ indexer nodes at last count"** — from The Graph's homepage; phrased w/ "at last count" hedge so it survives minor fluctuations. Check figure is still current on publication day.
+2. **"Battle-tested infrastructure, audited contracts"** — general language. If we want to cite specific audit firms / reports, add a link before publication.
+3. **`totalreclaw.xyz/spec/memory-v1`** — URL used in post but not yet live (spec doc status is "intended publication"). Either ship the URL before publishing the blog, or swap for the GitHub raw link in `docs/specs/totalreclaw/memory-taxonomy-v1.md`.
+4. **`app.totalreclaw.xyz`** — correctly framed as "soon" / roadmap in the post. No fix needed unless the timeline slips past publication.
+5. **Import adapters** — FAQ says "partially shipped" for ChatGPT / Claude / Mem0 / MCP Memory (matches `CLAUDE.md` matrix `totalreclaw_import_from`), Gemini correctly flagged as roadmap. Verify this is still true at publication.
+6. **[BENCHMARK PLACEHOLDER]** — explicit placeholder block in the "How we compare" section. Fill in with Phase 2 500-conv numbers when the re-run completes (pagination-bug fix + re-seed pending per `totalreclaw-internal/docs/plans/2026-04-18-v1-vps-qa-plan.md`).
+
+**Tone + accuracy guardrails respected:**
+
+- No emojis (regex-verified: 0 emoji codepoints in file).
+- No competitor disparagement — contrast language only ("first-generation," "strong and tightly integrated," "valid alternative with different trust model").
+- Every feature mentioned is either shipping in v1 OR explicitly marked as roadmap.
+- Pricing disclosed up-front in the Pricing Transparency section.
+
 ---
 
 ## Social media
