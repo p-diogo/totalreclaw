@@ -174,16 +174,31 @@ export async function maybeWriteFeedbackForPin(
 // ─── Tool definitions ─────────────────────────────────────────────────────────
 
 const PIN_DESCRIPTION =
-  'Pin a memory so the auto-resolution engine will never override or supersede it. ' +
-  'Use when the user explicitly confirms a claim is still valid after you or another agent ' +
-  "tried to retract/contradict it (e.g. 'wait, I still use Vim sometimes'). " +
-  'Takes fact_id (from a prior recall result). Pinning is idempotent — pinning an already-pinned ' +
-  'claim is a no-op. Cross-device: the pin propagates via the on-chain supersession chain.';
+  'Pin a memory so nothing (not this agent, not another agent sharing the vault) will ever ' +
+  'override, supersede, or auto-retract it. A pinned memory is treated as ground truth.\n' +
+  '\nINVOKE WHEN THE USER SAYS:\n' +
+  '- "pin that" / "never forget this" / "always remember this"\n' +
+  '- "this is definitely true even though I also said X" (reconciling a contradiction)\n' +
+  '- "make sure this sticks" / "lock this in"\n' +
+  '- "that one is important — don\'t lose it"\n' +
+  '\nWHAT IT DOES: Fetches the memory by fact_id (from a prior totalreclaw_recall), writes a new ' +
+  'claim with pin status and tombstones the original. Idempotent — pinning an already-pinned ' +
+  'claim is a no-op. The pin propagates on-chain so any other agent reading the vault sees it.\n' +
+  '\nWHEN NOT TO USE:\n' +
+  '- The user hasn\'t identified a specific memory yet → run totalreclaw_recall first, show them, ask which one\n' +
+  '- The user is storing something new → use totalreclaw_remember with importance 9-10 instead';
 
 const UNPIN_DESCRIPTION =
-  'Remove the pin from a previously pinned memory, returning it to active status so the ' +
-  'auto-resolution engine can supersede or retract it again. Takes fact_id. Idempotent — ' +
-  'unpinning a non-pinned claim is a no-op.';
+  'Remove the pin from a previously pinned memory so auto-resolution can supersede or update it again.\n' +
+  '\nINVOKE WHEN THE USER SAYS:\n' +
+  '- "unpin that" / "stop pinning that memory"\n' +
+  '- "that was pinned by mistake" / "I no longer want to lock that in"\n' +
+  '- "let that one get overwritten if new info comes in"\n' +
+  '\nWHAT IT DOES: Flips pin → active via supersession. Takes fact_id. Idempotent — unpinning a ' +
+  'non-pinned claim is a no-op. The unpin propagates on-chain.\n' +
+  '\nWHEN NOT TO USE:\n' +
+  '- The user wants to DELETE the memory → use totalreclaw_forget\n' +
+  '- The user wants to UPDATE it → use totalreclaw_remember with new text (dedup handles the update)';
 
 export const pinToolDefinition = {
   name: 'totalreclaw_pin',
