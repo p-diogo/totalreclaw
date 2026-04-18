@@ -111,9 +111,23 @@ export function parseDebriefResponse(response: string): DebriefItem[] {
 export const debriefToolDefinition = {
   name: 'totalreclaw_debrief',
   description:
-    'Store a session debrief — broader context, outcomes, and conclusions that ' +
-    'individual memory storage may have missed. Call this at the END of substantive ' +
-    'conversations (not casual chat). Pass the key takeaways as facts.',
+    'Capture the broader context / outcomes / open threads of a conversation — the things turn-by-turn fact extraction misses. Stores items as v1 `summary` type with `source: derived`.\n' +
+    '\nINVOKE AT THE END OF A SUBSTANTIVE CONVERSATION:\n' +
+    '- The user says "goodbye" / "bye" / "thanks, that\'s all"\n' +
+    '- The topic has been resolved and conversation naturally winds down\n' +
+    '- A long debugging / planning / writing session has ended with a conclusion\n' +
+    '- Before you detect the conversation will hit compaction or reset\n' +
+    '\nWHEN NOT TO USE:\n' +
+    '- Casual chat, greetings, or a single-turn Q&A — debrief adds noise there\n' +
+    '- You haven\'t stored any facts via totalreclaw_remember yet — there\'s no broader context to add\n' +
+    '- You\'re unsure the conversation was meaningful — skip; debriefs should be rare\n' +
+    '\nWHAT TO INCLUDE (max 5 items, each 1-3 sentences, importance 7-8):\n' +
+    '- Overall project/topic that tied the conversation together\n' +
+    '- Outcomes / decisions / what was resolved\n' +
+    '- What was tried and how it turned out\n' +
+    '- Open threads / unfinished work\n' +
+    '- Relationships between topics discussed\n' +
+    '\nDo NOT repeat facts you already called totalreclaw_remember for. Type "summary" = conclusions, "context" = broader project context.',
   inputSchema: {
     type: 'object',
     properties: {
