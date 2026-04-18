@@ -15,12 +15,14 @@ import type {
   ExtractedEntity,
   ExtractedFact,
   MemoryType,
+  MemoryTypeV0,
   MemoryTypeV1,
   MemoryScope,
   MemorySource,
   MemoryVolatility,
 } from './extractor.js';
 import {
+  isValidMemoryType,
   isValidMemoryTypeV1,
   V0_TO_V1_TYPE,
   VALID_MEMORY_SCOPES,
@@ -61,8 +63,9 @@ export function resolveClaimFormat(): ClaimFormat {
 // Category mapping (ExtractedFact.type → compact Claim category short key)
 // ---------------------------------------------------------------------------
 
-// v0 (legacy) type → compact category mapping
-const TYPE_TO_CATEGORY_V0: Record<MemoryType, string> = {
+// Legacy v0 type → compact category mapping. Kept for reading pre-v1 vault
+// entries that stored the short-form category as the decrypted `c` key.
+const TYPE_TO_CATEGORY_V0: Record<MemoryTypeV0, string> = {
   fact: 'fact',
   preference: 'pref',
   decision: 'dec',
@@ -73,20 +76,27 @@ const TYPE_TO_CATEGORY_V0: Record<MemoryType, string> = {
   rule: 'rule',
 };
 
-// v1 type → compact category mapping. Kept parallel to v0 so canonical
-// Claim blobs continue to use short keys when v0-compatibility mode is on.
-const TYPE_TO_CATEGORY_V1: Record<MemoryTypeV1, string> = {
+// v1 type → compact category mapping for recall display. These short keys
+// remain the display-layer category tags (e.g. `[rule]`, `[fact]`) that the
+// recall tool surfaces, so the v1 types map onto the v0 category keys.
+const TYPE_TO_CATEGORY_V1: Record<MemoryType, string> = {
   claim: 'claim',
   preference: 'pref',
-  directive: 'rule',  // v1 directive maps to the v0 category name "rule"
-  commitment: 'goal', // v1 commitment maps to the v0 category name "goal"
+  directive: 'rule',  // v1 directive → v0 category "rule" for display
+  commitment: 'goal', // v1 commitment → v0 category "goal" for display
   episode: 'epi',
   summary: 'sum',
 };
 
-export function mapTypeToCategory(type: MemoryType | MemoryTypeV1): string {
-  if (type in TYPE_TO_CATEGORY_V1) return TYPE_TO_CATEGORY_V1[type as MemoryTypeV1];
-  return TYPE_TO_CATEGORY_V0[type as MemoryType] ?? 'fact';
+/**
+ * Map any memory type (v1 or legacy v0) to the compact category short key.
+ *
+ * v1 types take priority; unknown tokens fall through to the v0 table for
+ * pre-v1 vault entries; anything else returns `'fact'`.
+ */
+export function mapTypeToCategory(type: MemoryType | MemoryTypeV0): string {
+  if (type in TYPE_TO_CATEGORY_V1) return TYPE_TO_CATEGORY_V1[type as MemoryType];
+  return TYPE_TO_CATEGORY_V0[type as MemoryTypeV0] ?? 'fact';
 }
 
 // ---------------------------------------------------------------------------
@@ -96,38 +106,45 @@ export function mapTypeToCategory(type: MemoryType | MemoryTypeV1): string {
 export interface BuildClaimInput {
   fact: ExtractedFact;
   importance: number; // 1-10, may differ from fact.importance after store-time dedup supersede
+  /**
+   * Source-agent metadata string. Carried through as legacy context only —
+   * plugin v3.0.0 emits v1 JSON blobs where provenance lives in `fact.source`
+   * and this field is ignored. Kept on the input interface so existing
+   * call-site signatures continue to type-check.
+   */
   sourceAgent: string;
-  extractedAt?: string; // ISO 8601; defaults to now
+  /** Creation timestamp. Defaults to now. */
+  extractedAt?: string;
 }
 
 /**
  * Construct a canonical Claim JSON string from an ExtractedFact.
  *
- * The output is byte-identical to what the Rust/Python clients would produce
- * for the same logical claim (same field order, default omission rules, etc.).
- * Encrypt this string directly — do not re-stringify it.
+ * As of plugin v3.0.0, this unconditionally emits a Memory Taxonomy v1 JSON
+ * blob (schema_version "1.0") — forwarded to `buildCanonicalClaimV1`. The
+ * legacy v0 short-key {t, c, i, sa, ea} format is no longer produced on the
+ * write path.
+ *
+ * When `fact.source` is missing we default it to `'user-inferred'` so a
+ * misconfigured extraction hook doesn't drop the write. The outer protobuf
+ * wrapper's `version` field MUST be set to 4 when storing the returned
+ * payload (see `subgraph-store.ts::encodeFactProtobuf`).
  */
 export function buildCanonicalClaim(input: BuildClaimInput): string {
-  const { fact, importance, sourceAgent, extractedAt } = input;
+  const { fact, importance, extractedAt } = input;
 
-  const claim: Record<string, unknown> = {
-    t: fact.text,
-    c: mapTypeToCategory(fact.type),
-    cf: fact.confidence ?? 0.85,
-    i: importance,
-    sa: sourceAgent,
-    ea: extractedAt ?? new Date().toISOString(),
-  };
+  // Defensive: ensure fact.source is always populated before v1 validation.
+  // `applyProvenanceFilterLax` should have set this upstream; this is the
+  // belt-and-suspenders fallback for explicit tool paths / legacy callers.
+  const factWithSource: ExtractedFact = fact.source
+    ? fact
+    : { ...fact, source: 'user-inferred' };
 
-  if (fact.entities && fact.entities.length > 0) {
-    claim.e = fact.entities.map((e) => {
-      const entity: Record<string, unknown> = { n: e.name, tp: e.type };
-      if (e.role) entity.r = e.role;
-      return entity;
-    });
-  }
-
-  return getWasm().canonicalizeClaim(JSON.stringify(claim));
+  return buildCanonicalClaimV1({
+    fact: factWithSource,
+    importance,
+    createdAt: extractedAt,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -246,9 +263,9 @@ export function buildCanonicalClaimV1(input: BuildClaimV1Input): string {
  * Normalize any type token (v0 or v1) to a v1 type. Uses the v0→v1 mapping
  * for legacy tokens; passes through when already v1.
  */
-export function normalizeToV1Type(type: MemoryType | MemoryTypeV1): MemoryTypeV1 {
-  if (isValidMemoryTypeV1(type)) return type as MemoryTypeV1;
-  return V0_TO_V1_TYPE[type as MemoryType] ?? 'claim';
+export function normalizeToV1Type(type: string): MemoryType {
+  if (isValidMemoryType(type)) return type;
+  return V0_TO_V1_TYPE[type as MemoryTypeV0] ?? 'claim';
 }
 
 /**
@@ -364,46 +381,17 @@ export function readV1Blob(decrypted: string): V1BlobReadResult | null {
 void VALID_MEMORY_TYPES_V1;
 
 // ---------------------------------------------------------------------------
-// Router: pick v0 or v1 canonical claim builder based on taxonomy version.
+// Back-compat alias: buildCanonicalClaimRouted
 //
-// Controlled by TOTALRECLAW_TAXONOMY_VERSION env var:
-//   - "v1": emit Memory Taxonomy v1 JSON payload (schema_version "1.0").
-//           Requires fact.source to be set.
-//   - "v0" (default, unset, unknown): emit legacy short-key canonical Claim.
+// Plugin v3.0.0 removed the v0/v1 taxonomy toggle (`TOTALRECLAW_TAXONOMY_VERSION`
+// env var) — all extraction + write paths emit v1 unconditionally. This
+// alias is kept so any external caller that imports the Phase-3 rollout
+// name keeps compiling; it simply forwards to `buildCanonicalClaim`.
 //
-// This wrapper is the single entry point store paths should use going
-// forward. The existing buildCanonicalClaim remains exported for any
-// call site that explicitly wants v0 (tests, legacy imports, etc.).
+// @deprecated Use `buildCanonicalClaim` directly.
 // ---------------------------------------------------------------------------
 
-export function resolveTaxonomyVersion(): 'v0' | 'v1' {
-  const raw = (process.env.TOTALRECLAW_TAXONOMY_VERSION ?? '').trim().toLowerCase();
-  return raw === 'v1' ? 'v1' : 'v0';
-}
-
-/**
- * Build a canonical Claim blob routing on the active taxonomy version.
- *
- * v1 path: requires fact.source; falls back to v0 if unset and logs once
- * (a misconfigured hook should not lose data). v0 path: unchanged legacy
- * short-key blob.
- */
 export function buildCanonicalClaimRouted(input: BuildClaimInput): string {
-  const version = resolveTaxonomyVersion();
-  if (version === 'v1') {
-    if (input.fact.source) {
-      return buildCanonicalClaimV1({
-        fact: input.fact,
-        importance: input.importance,
-        createdAt: input.extractedAt,
-      });
-    }
-    // fact.source missing — the v0 path encodes source in sa (source-agent)
-    // metadata. For v1 to work callers must upgrade the extraction pipeline
-    // to populate fact.source. We fall through to v0 here so a misconfigured
-    // rollout doesn't drop data; a warning would ideally be logged by the
-    // caller.
-  }
   return buildCanonicalClaim(input);
 }
 

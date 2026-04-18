@@ -4,40 +4,47 @@ All notable changes to `@totalreclaw/totalreclaw` (the OpenClaw plugin) are docu
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.0] — 2026-04-17
+## [3.0.0] — 2026-04-18
 
-Major release adopting **Memory Taxonomy v1** and **Retrieval v2 Tier 1** source-weighted reranking.
+Major release adopting **Memory Taxonomy v1** and **Retrieval v2 Tier 1** source-weighted reranking — now the DEFAULT and ONLY extraction path.
 
 ### Breaking changes
 
-- **`@totalreclaw/core` bumped to 2.0.0.** The core WASM package now ships v1 schema validators (`validateMemoryClaimV1`, `parseMemoryTypeV1`, `parseMemorySource`), the Retrieval v2 Tier 1 source-weighted reranker (`rerankWithConfig`, `sourceWeight`, `legacyClaimFallbackWeight`), and strips v0-only types. Existing v0 canonical claims still decode via `parseClaimOrLegacy`.
-- **`ExtractedFact.type` is now a union of v0 and v1 type tokens.** Consumers that relied on the 8-type closed enum (`fact | preference | decision | episodic | goal | context | summary | rule`) must also accept the v1 tokens (`claim | preference | directive | commitment | episode | summary`). The new `isValidMemoryTypeV1` runtime guard covers the v1 side; `normalizeToV1Type` maps v0 tokens to their v1 equivalents for the adapter layer.
+- **Memory Taxonomy v1 is the default AND the only write path.** The `TOTALRECLAW_TAXONOMY_VERSION` opt-in env var introduced during the Phase 3 rollout has been REMOVED. Every extraction + canonical-claim write emits v1 JSON blobs unconditionally. The legacy `TOTALRECLAW_CLAIM_FORMAT=legacy` fallback was also removed — there is no longer any way to reach the v0 short-key or `{text, metadata}` write shapes from the plugin.
+- **`@totalreclaw/core` bumped to 2.0.0.** Core now ships v1 schema validators (`validateMemoryClaimV1`, `parseMemoryTypeV1`, `parseMemorySource`), the Retrieval v2 Tier 1 source-weighted reranker (`rerankWithConfig`, `sourceWeight`, `legacyClaimFallbackWeight`), and a protobuf encoder that accepts an explicit `version` field (default 3 for legacy callers, 4 for v1 taxonomy writes).
+- **`VALID_MEMORY_TYPES` is now the 6-item v1 list** (`claim | preference | directive | commitment | episode | summary`). The former 8-item v0 list is exported as `LEGACY_V0_MEMORY_TYPES` for back-compat reads of pre-v3 vault entries; do not emit these tokens on the write path. `V0_TO_V1_TYPE` maps every v0 token to its v1 equivalent.
+- **`MemoryType` is `MemoryTypeV1`.** The `MemoryTypeV1` name is kept as a back-compat alias; the `isValidMemoryTypeV1` and `VALID_MEMORY_TYPES_V1` exports are also aliases. The new `MemoryTypeV0` type covers the legacy 8-item set.
+- **`ExtractedFact` shape expanded.** Now carries `source`, `scope`, `reasoning`, and `volatility` as optional v1 fields. On the write path `source` is required — `storeExtractedFacts` supplies `'user-inferred'` as a defensive default when missing.
+- **Outer protobuf `version` field is 4 for all plugin writes.** The v3 wrapper format is retained for tombstones only. Clients that read blobs before plugin v3.0.0 will see `version == 4` on new writes; inner blobs are now v1 JSON, not v0 binary envelopes. See `totalreclaw-internal/docs/plans/2026-04-18-protobuf-v4-design.md`.
 
 ### Added
 
-- **Memory Taxonomy v1 types.** New exports from `extractor.ts`: `MemoryTypeV1`, `MemorySource`, `MemoryScope`, `MemoryVolatility`, `VALID_MEMORY_TYPES_V1`, `VALID_MEMORY_SOURCES`, `VALID_MEMORY_SCOPES`, `VALID_MEMORY_VOLATILITIES`, `isValidMemoryTypeV1`, `V0_TO_V1_TYPE`.
-- **`extractFactsV1` pipeline (G pipeline).** Opt-in via `TOTALRECLAW_TAXONOMY_VERSION=v1`. Single merged-topic LLM call that returns `{topics, facts}` for better topic anchoring, followed by `applyProvenanceFilterLax` (tag-don't-drop, caps assistant-source at 7 rather than dropping), `comparativeRescoreV1` (forces re-rank when ≥5 facts to spread importance across 1-10), and `defaultVolatility` heuristic fallback.
-- **`buildCanonicalClaimV1` canonical claim builder.** Produces a MemoryClaimV1 JSON payload matching `docs/specs/totalreclaw/memory-taxonomy-v1.md`. Validates through core's strict `validateMemoryClaimV1` then re-attaches plugin-only extras (`schema_version`, `volatility`) that core's v2.0.0 validator strips. Throws on missing/invalid `source`.
-- **`buildCanonicalClaimRouted` router.** Picks v0 or v1 builder based on `TOTALRECLAW_TAXONOMY_VERSION`. Falls back to v0 when v1 is selected but `fact.source` is unset, so a misconfigured rollout doesn't drop data.
-- **`isV1Blob` + `readV1Blob` decoders.** Detect and parse v1 payloads for the decrypt path. `readClaimFromBlob` now prefers v1 payloads when present, so mixed-version vaults round-trip cleanly.
-- **Source-weighted reranker (Retrieval v2 Tier 1).** `rerank()` gains an `applySourceWeights: boolean` parameter (default `false`). When `true`, final RRF score is multiplied by the source weight (`user=1.0`, `user-inferred=0.9`, `derived/external=0.7`, `assistant=0.55`, legacy/missing=`0.85`). `getSourceWeight` is exported for direct access. Candidates now carry an optional `source` field.
-- **New test file: `v1-taxonomy.test.ts`.** 100 TAP-style tests covering v1 type guards, v0↔v1 mapping, canonical claim build+round-trip, encryption-simulated round-trip, `readV1Blob`, `parseMergedResponseV1` (valid/malformed/empty/code-fenced/think-tag-stripped/summary-user-rejected), `applyProvenanceFilterLax`, `defaultVolatility` heuristic, `getSourceWeight` table, and reranker source-weight ordering.
+- **`buildCanonicalClaim` now unconditionally emits v1.** The legacy v0 short-key builder was deleted from the public API; callers pass the same `BuildClaimInput` shape (fact + importance + sourceAgent + extractedAt) and the helper forwards to `buildCanonicalClaimV1` internally. `sourceAgent` is retained on the interface for signature back-compat but is ignored (provenance lives in `fact.source`).
+- **`buildCanonicalClaimV1`** produces a MemoryClaimV1 JSON payload matching `docs/specs/totalreclaw/memory-taxonomy-v1.md`. Validates through core's strict `validateMemoryClaimV1`, then re-attaches plugin-only extras (`schema_version`, `volatility`).
+- **`extractFacts` is the v1 G-pipeline.** Renamed from `extractFactsV1`. Single merged-topic LLM call returning `{topics, facts}`, followed by `applyProvenanceFilterLax` (tag-don't-drop, caps assistant-source at 7), `comparativeRescoreV1` (forces re-rank when ≥5 facts), `defaultVolatility` heuristic fallback, and `computeLexicalImportanceBump` post-processing.
+- **`parseFactsResponse` accepts both bare-array and merged-object shapes.** The v0 bare JSON array format is still parsed (legacy / test fixtures), wrapped into `{ topics: [], facts: [...] }` before downstream logic. Unknown types coerce via `V0_TO_V1_TYPE`, so pre-v3 extraction-harness responses keep working.
+- **`COMPACTION_SYSTEM_PROMPT` rewritten for v1.** Emits v1 types / sources / scopes in its merged output, keeps the importance-floor-5 behavior, plus the format-agnostic / anti-skip-in-summary guidance. `parseFactsResponseForCompaction` now validates the merged v1 object (bracket-scan fallback still works on prose-wrapped JSON).
+- **Outer protobuf `version` parameter wired end-to-end.** Rust core (`rust/totalreclaw-core/src/protobuf.rs`) exposes `PROTOBUF_VERSION_V4 = 4`. WASM + PyO3 bindings accept an optional `version` field on `FactPayload` JSON. Plugin's `subgraph-store.ts` surfaces `PROTOBUF_VERSION_V4` as a named const and every call site that writes a real fact now passes `version: PROTOBUF_VERSION_V4`.
+- **`totalreclaw_remember` tool schema accepts v1 fields.** The schema now declares `type` (v1 enum + legacy v0 aliases), `source` (5 v1 values), `scope` (8 v1 values), and `reasoning` (for decision-style claims). Legacy v0 tokens pass through `normalizeToV1Type` transparently.
+- **Retrieval v2 Tier 1 is always on.** All three `rerank(...)` call sites in the plugin (main recall tool, before-agent-start auto-recall, HTTP hook auto-recall) pass `applySourceWeights: true`. Every `rerankerCandidates.push({...})` site now surfaces `source` from the decrypted blob's metadata so the RRF score is multiplied by the source weight (user=1.0, user-inferred=0.9, derived/external=0.7, assistant=0.55, legacy=0.85).
+- **Session debrief emits v1 summaries.** The `before_compaction` and `before_reset` hook handlers map debrief items to `{type: 'summary', source: 'derived'}` so the v1 schema's provenance requirement is satisfied.
+- **`parseBlobForPin` handles v1 blobs.** Pin/unpin can now round-trip a v1 payload (converts to short-key shape for the tombstone + new-fact pipeline). Required so a user can pin a v1 fact produced by the default extraction path.
 
-### Changed
+### Removed
 
-- **`TYPE_TO_CATEGORY` mapping extended.** `mapTypeToCategory` now accepts both v0 and v1 type tokens. v1 `directive` maps to the v0 category key `rule`; v1 `commitment` maps to the v0 category key `goal`, so on-chain consumers that index by category key keep working across a mixed-taxonomy vault.
-- **`readClaimFromBlob` handles v1 payloads first.** When a decrypted blob carries `schema_version` starting with `1.`, the reader pulls fields from the v1 shape (`text`, `type`, `importance`, `source`, `scope`, `volatility`, `reasoning`) and surfaces them in the `metadata` object. v0 canonical (`{t,c,i,...}`) and legacy (`{text, metadata}`) paths are unchanged.
+- **`TOTALRECLAW_TAXONOMY_VERSION` env var.** Zero runtime references — only documentation / comment strings remain explaining the removal.
+- **`TOTALRECLAW_CLAIM_FORMAT=legacy` fallback.** Legacy `{text, metadata}` doc shape is gone from the write path. `buildLegacyDoc` is no longer exported by the plugin (still present in `claims-helper.ts` for potential external use but unused by `storeExtractedFacts`).
+- **`resolveTaxonomyVersion()`** (both in `extractor.ts` and `claims-helper.ts`).
+- **v0 `EXTRACTION_SYSTEM_PROMPT`, `parseFactsResponse` legacy parser, v0 `extractFacts()` function.** The v1 versions took over these names.
+- **`logClaimFormatOnce` helper** in `index.ts`.
 
 ### Migration notes
 
-- **Backward compatibility.** Plugin v3.0.0 reads v0 vaults transparently — `parseClaimOrLegacy` (in core) + `readClaimFromBlob` fall back through v1 → v0 → legacy `{text, metadata}` → raw text.
-- **Opt-in v1 extraction.** The default extraction pipeline is still v0. Flip `TOTALRECLAW_TAXONOMY_VERSION=v1` to enable `extractFactsV1` + `buildCanonicalClaimRouted` → v1 path. This lets operators roll out v1 per-session before the global flip.
-- **Protobuf outer wrapper.** This release still writes `version = 3` in the outer protobuf wrapper; the inner blob is v1 JSON when `TOTALRECLAW_TAXONOMY_VERSION=v1`. A follow-up release will bump the outer `version` to 4 once the subgraph indexer confirms it surfaces the change without schema breakage. (The subgraph is agnostic to inner-blob format — see `totalreclaw-internal/docs/plans/2026-04-18-protobuf-v4-design.md`.)
-- **Tool-level pin/retype/set_scope.** The OpenClaw plugin does not register MCP-style tools directly (the MCP server does). These are handled by the MCP server agent; the plugin's `totalreclaw_pin` / `totalreclaw_unpin` tools remain unchanged for now. The retype + set-scope tools will ship when auto-resolution integrates v1 fields.
-- **Contradiction-sync + digest compaction.** These components continue to read v0 short-key claims via `readClaimFromBlob`. They are forward-compatible with v1 (the reader surfaces the same `{text, importance, category}` shape regardless of source format), but their WRITE paths still emit v0 canonical claims. Updating the write paths to v1 is tracked as a follow-up.
+- **Existing vaults decrypt transparently.** `readClaimFromBlob` prefers v1 → v0 short-key → plugin-legacy `{text, metadata}` → raw text, in that order. No data migration required.
+- **Client-side feature matrix updates.** All OpenClaw plugin writes are now v1 (schema_version "1.0", outer protobuf v4). Recalls apply source-weighted reranking automatically.
+- **Legacy test fixtures.** Tests that asserted v0 short-key output from `buildCanonicalClaim` have been rewritten to assert v1 long-form output. Tests that passed bare JSON arrays to `parseFactsResponse` still work — the parser wraps bare arrays into the merged-topic shape before validating.
 
-### Known gaps (deferred to follow-up)
+### Pre-existing known issues (not introduced by v3.0.0)
 
-- Auto-resolution write path still emits v0 canonical claims. Mixed-taxonomy vaults work for read but will regenerate v0 claims on supersede — not harmful, just not fully v1.
-- `totalreclaw_remember` tool handler does not yet accept v1 `source`/`scope`/`volatility` parameters. Currently it passes `type` through to the v0 extractor path.
-- Outer protobuf version field stays at 3 pending a follow-up release once v4 is indexer-verified.
+- `lsh.test.ts` fails at baseline because it uses `require()` in an ESM context — pre-existing issue unrelated to the v1 refactor.
+- `contradiction-sync.test.ts` has 2 assertions (#12 `isPinnedClaim: st=p` and #21 `resolveWithCore: vim-vs-vscode`) that were red in the commit preceding v3.0.0. These are test-fixture / core-WASM compatibility gaps tracked separately.

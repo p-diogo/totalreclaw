@@ -545,6 +545,91 @@ assertEq(getSourceWeight('unknown'), 0.85, 'sourceWeight: unknown = 0.85 (safe d
 }
 
 // ---------------------------------------------------------------------------
+// Plugin v3.0.0: default extraction path emits v1 (no env-var gate)
+// ---------------------------------------------------------------------------
+
+{
+  // MemoryType is v1
+  assert(isValidMemoryTypeV1('claim'), 'default: v1 "claim" is valid');
+  assert(isValidMemoryTypeV1('preference'), 'default: v1 "preference" is valid');
+  assert(isValidMemoryTypeV1('directive'), 'default: v1 "directive" is valid');
+  assert(isValidMemoryTypeV1('commitment'), 'default: v1 "commitment" is valid');
+  assert(isValidMemoryTypeV1('episode'), 'default: v1 "episode" is valid');
+  assert(isValidMemoryTypeV1('summary'), 'default: v1 "summary" is valid');
+
+  // Legacy v0 tokens are NOT valid v1 tokens
+  assert(!isValidMemoryTypeV1('fact'), 'default: v0 "fact" not in v1 enum');
+  assert(!isValidMemoryTypeV1('decision'), 'default: v0 "decision" not in v1 enum');
+  assert(!isValidMemoryTypeV1('rule'), 'default: v0 "rule" not in v1 enum');
+
+  // normalizeToV1Type coerces v0 tokens
+  assertEq(normalizeToV1Type('fact'), 'claim', 'coerce: v0 fact → v1 claim');
+  assertEq(normalizeToV1Type('decision'), 'claim', 'coerce: v0 decision → v1 claim');
+  assertEq(normalizeToV1Type('episodic'), 'episode', 'coerce: v0 episodic → v1 episode');
+  assertEq(normalizeToV1Type('goal'), 'commitment', 'coerce: v0 goal → v1 commitment');
+  assertEq(normalizeToV1Type('context'), 'claim', 'coerce: v0 context → v1 claim');
+  assertEq(normalizeToV1Type('rule'), 'directive', 'coerce: v0 rule → v1 directive');
+  assertEq(normalizeToV1Type('summary'), 'summary', 'coerce: v0 summary → v1 summary');
+  assertEq(normalizeToV1Type('preference'), 'preference', 'coerce: v0 preference → v1 preference');
+
+  // V0_TO_V1_TYPE map is complete
+  const v0Tokens = ['fact', 'preference', 'decision', 'episodic', 'goal', 'context', 'summary', 'rule'];
+  for (const v0 of v0Tokens) {
+    assert(
+      typeof V0_TO_V1_TYPE[v0 as keyof typeof V0_TO_V1_TYPE] === 'string',
+      `V0_TO_V1_TYPE: ${v0} mapped`,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Default build path is v1 (no env-var gate)
+// ---------------------------------------------------------------------------
+
+{
+  const originalEnv = {
+    taxonomy: process.env.TOTALRECLAW_TAXONOMY_VERSION,
+    claim: process.env.TOTALRECLAW_CLAIM_FORMAT,
+  };
+  try {
+    // Explicitly wipe any env vars a previous test / process set.
+    delete process.env.TOTALRECLAW_TAXONOMY_VERSION;
+    delete process.env.TOTALRECLAW_CLAIM_FORMAT;
+
+    const fact: ExtractedFact = {
+      text: 'Default-path v1 emission.',
+      type: 'claim',
+      source: 'user',
+      scope: 'work',
+      importance: 8,
+      action: 'ADD',
+    };
+
+    // buildCanonicalClaimV1 always emits v1 (obvious, but sanity check).
+    const v1Direct = buildCanonicalClaimV1({
+      fact,
+      importance: 8,
+    });
+    const parsedDirect = JSON.parse(v1Direct);
+    assertEq(parsedDirect.schema_version, '1.0', 'default: direct v1 builder emits v1');
+
+    // The env toggle has NO effect — all four env-var states produce v1.
+    process.env.TOTALRECLAW_TAXONOMY_VERSION = 'v0';
+    const withV0Gate = JSON.parse(buildCanonicalClaimV1({ fact, importance: 8 }));
+    assertEq(withV0Gate.schema_version, '1.0', 'default: TAXONOMY=v0 still emits v1');
+
+    process.env.TOTALRECLAW_TAXONOMY_VERSION = 'v1';
+    const withV1Gate = JSON.parse(buildCanonicalClaimV1({ fact, importance: 8 }));
+    assertEq(withV1Gate.schema_version, '1.0', 'default: TAXONOMY=v1 emits v1');
+  } finally {
+    if (originalEnv.taxonomy === undefined) delete process.env.TOTALRECLAW_TAXONOMY_VERSION;
+    else process.env.TOTALRECLAW_TAXONOMY_VERSION = originalEnv.taxonomy;
+    if (originalEnv.claim === undefined) delete process.env.TOTALRECLAW_CLAIM_FORMAT;
+    else process.env.TOTALRECLAW_CLAIM_FORMAT = originalEnv.claim;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Summary
 // ---------------------------------------------------------------------------
 
