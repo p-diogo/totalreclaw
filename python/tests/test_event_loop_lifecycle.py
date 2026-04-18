@@ -267,3 +267,226 @@ def test_sync_client_status_does_not_hit_event_loop_is_closed() -> None:
     s2 = runner.run(client.status())
     assert s1.tier == "free"
     assert s2.tier == "free"
+
+
+# ---------------------------------------------------------------------------
+# Cross-loop RelayClient regression
+# ---------------------------------------------------------------------------
+
+
+def test_relay_client_per_loop_caching() -> None:
+    """``RelayClient._get_http`` must return different clients on different loops.
+
+    This pins the core invariant behind the fix for Bug #2 and Bug #3:
+    each event loop gets its own ``httpx.AsyncClient`` so nothing is ever
+    orphaned across loop boundaries. Before this fix, a single cached
+    client on ``RelayClient._http`` was shared across loops and blew up
+    the moment a different loop tried to use it.
+    """
+    import asyncio
+    from totalreclaw.relay import RelayClient
+
+    rc = RelayClient(
+        relay_url="https://api-staging.totalreclaw.xyz",
+        auth_key_hex="00" * 32,
+        wallet_address="0x" + "ab" * 20,
+    )
+
+    async def _grab_client():
+        return await rc._get_http()
+
+    # Loop A.
+    loop_a = asyncio.new_event_loop()
+    try:
+        client_a = loop_a.run_until_complete(_grab_client())
+    finally:
+        # Drop the reference to the client bound to loop_a and don't close
+        # loop_a yet, so the test mirrors reality: the loop stays alive
+        # until something closes it, and we never touch client_a again
+        # from loop_b.
+        loop_a.close()
+
+    # Loop B. This MUST get a fresh client, not the orphaned one from A.
+    loop_b = asyncio.new_event_loop()
+    try:
+        client_b = loop_b.run_until_complete(_grab_client())
+    finally:
+        loop_b.run_until_complete(rc.close())
+        loop_b.close()
+
+    assert client_a is not client_b, (
+        "RelayClient._get_http returned the same client across two distinct "
+        "event loops — this is the Bug #2/#3 regression. Each loop must get "
+        "its own httpx.AsyncClient."
+    )
+
+
+def test_hermes_sync_hook_then_async_tool_does_not_orphan_httpx() -> None:
+    """Full QA scenario: sync hook runs first, async tool runs after.
+
+    In v2.0.1, a single httpx client got cached on the RelayClient during
+    the sync hook's short-lived loop, then Hermes reused it on its own
+    async loop when invoking the async ``totalreclaw_export`` tool —
+    which failed with ``RuntimeError: Event loop is closed``.
+
+    With the per-loop cache this no longer happens. We prove it by:
+
+    1. Running ``auto_recall`` through the sync loop runner (hook path).
+    2. Running ``client.export_all`` / ``client.status`` through an
+       independent asyncio.run call (tool path).
+
+    Both must succeed without "Event loop is closed".
+    """
+    import asyncio
+    from totalreclaw.agent.recall import auto_recall
+    from totalreclaw.hermes.state import PluginState
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        # Handle both subgraph queries (GraphQL POST) and billing (GET).
+        if request.url.path.endswith("/v1/billing/status"):
+            return httpx.Response(
+                200,
+                json={
+                    "tier": "free",
+                    "free_writes_used": 3,
+                    "free_writes_limit": 500,
+                },
+            )
+        if request.url.path.endswith("/v1/register"):
+            return httpx.Response(200, json={"user_id": "test-user"})
+        # Default: subgraph query, no facts.
+        return httpx.Response(
+            200,
+            json={"data": {"blindIndexes": [], "facts": []}},
+        )
+
+    transport = httpx.MockTransport(_handler)
+    client = _build_real_client_with_mock_transport(transport)
+
+    with patch.dict(os.environ, {}, clear=True):
+        with patch.object(Path, "exists", return_value=False):
+            state = PluginState()
+    state._client = client
+
+    # Step 1: sync hook path (auto_recall) runs on the loop runner.
+    out = auto_recall("what do i prefer?", state)
+    assert out is None  # No results, no error.
+
+    # Step 2: async tool path (status + export) runs on a fresh
+    # asyncio.run call — exactly what Hermes does when it invokes an
+    # ``is_async=True`` tool handler.
+    async def _invoke_tools():
+        s = await client.status()
+        facts = await client.export_all()
+        return s, facts
+
+    s, facts = asyncio.run(_invoke_tools())
+    assert s.tier == "free"
+    assert facts == []  # 0 on-chain in our mock, not an error state.
+
+
+def test_export_returns_decrypted_facts_after_sync_hook_ran() -> None:
+    """QA Bug #3: export returned count=0 despite 7 facts on-chain.
+
+    Root cause was the same cross-loop httpx caching that caused Bug #2 —
+    the subgraph GraphQL query in ``export_facts`` hit "Event loop is
+    closed" and the outer ``except Exception: break`` silently returned
+    an empty list.
+
+    This test simulates the full scenario:
+
+    1. Sync hook (``auto_recall``) runs on the sync loop runner — primes
+       any cached httpx client.
+    2. Hermes invokes ``totalreclaw_export`` on its own async loop, which
+       triggers a subgraph ``EXPORT_QUERY`` returning 2 mock-encrypted
+       facts (mocked so we don't need real crypto).
+    3. Decryption is mocked so we only exercise the transport + pagination
+       path. The result MUST contain 2 entries.
+    """
+    import asyncio
+    from totalreclaw.agent.recall import auto_recall
+    from totalreclaw.hermes.state import PluginState
+
+    # Route by GraphQL query shape so the auto_recall "prime" doesn't
+    # exhaust the export facts. The auto_recall path sends
+    # ``SearchByBlindIndex`` and ``BroadenedSearch`` queries; the export
+    # path sends ``ExportFacts``. Only the last returns real fact rows
+    # here.
+    import json as _json
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/v1/register"):
+            return httpx.Response(200, json={"user_id": "test-user"})
+        if request.url.path.endswith("/v1/subgraph"):
+            payload = _json.loads(request.content.decode("utf-8"))
+            query = payload.get("query", "")
+            if "ExportFacts" in query:
+                skip = payload.get("variables", {}).get("skip", 0)
+                if skip == 0:
+                    return httpx.Response(
+                        200,
+                        json={
+                            "data": {
+                                "facts": [
+                                    {
+                                        "id": "fact-1",
+                                        "encryptedBlob": "0x" + "ab" * 32,
+                                        "encryptedEmbedding": None,
+                                        "decayScore": "0.8",
+                                        "timestamp": "1713456789",
+                                        "createdAt": "1713456800",
+                                        "isActive": True,
+                                        "contentFp": "fp1",
+                                    },
+                                    {
+                                        "id": "fact-2",
+                                        "encryptedBlob": "0x" + "cd" * 32,
+                                        "encryptedEmbedding": None,
+                                        "decayScore": "0.6",
+                                        "timestamp": "1713456790",
+                                        "createdAt": "1713456801",
+                                        "isActive": True,
+                                        "contentFp": "fp2",
+                                    },
+                                ]
+                            }
+                        },
+                    )
+                return httpx.Response(200, json={"data": {"facts": []}})
+            # Any other subgraph query (search, broadened search, by id):
+            # return an empty shell so auto_recall completes cleanly.
+            if "BroadenedSearch" in query:
+                return httpx.Response(200, json={"data": {"facts": []}})
+            return httpx.Response(200, json={"data": {"blindIndexes": []}})
+        return httpx.Response(200, json={"data": {"facts": []}})
+
+    transport = httpx.MockTransport(_handler)
+    client = _build_real_client_with_mock_transport(transport)
+
+    # Prime the RelayClient via the sync hook path.
+    with patch.dict(os.environ, {}, clear=True):
+        with patch.object(Path, "exists", return_value=False):
+            state = PluginState()
+    state._client = client
+
+    # Fake decrypt + blob parser so we don't need real crypto.
+    with patch(
+        "totalreclaw.operations.decrypt",
+        side_effect=lambda b, k: '{"text":"mocked","type":"claim","schema_version":"1.0","importance":8,"source":"user","scope":"unspecified","confidence":0.9}',
+    ), patch(
+        "totalreclaw.operations.is_digest_blob",
+        return_value=False,
+    ):
+        # Step 1: sync hook (sync loop runner).
+        auto_recall("prime", state)
+
+        # Step 2: async tool path (Hermes-style) — MUST get 2 results.
+        facts = asyncio.run(client.export_all())
+
+    assert len(facts) == 2, (
+        f"export_all returned {len(facts)} facts; expected 2. Bug #3 regression — "
+        "the cross-loop httpx issue is silently returning empty."
+    )
+    assert {f["id"] for f in facts} == {"fact-1", "fact-2"}
+    # Timestamps should be formatted strings, not raw.
+    assert all(isinstance(f["timestamp"], str) for f in facts)
