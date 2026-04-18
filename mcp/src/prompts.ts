@@ -144,80 +144,92 @@ batch remembers (extraction) with source=user-inferred. Claims you attribute to 
 
 The vault handles deduplication automatically. If a similar fact exists, it will be updated rather than duplicated.`;
 
-export const RECALL_TOOL_DESCRIPTION = `Search your memory for relevant context. Returns the top 8 most relevant memories (not all — this is a targeted search, not a full dump).
+export const RECALL_TOOL_DESCRIPTION = `Search the user's encrypted memory vault for relevant context. Returns the top 8 most-relevant memories (ranked by provenance + semantic similarity + recency).
 
-Call this proactively when:
-- The user's message suggests they've told you something before ("remember when I said...", "what's my...")
-- The conversation topic likely relates to previously stored information
-- The user asks about their preferences, history, or past decisions
-- The user references something from a previous conversation
-- You need context about the user's background, projects, or work style
-- The user's question could be answered or enriched by stored memories
-
-Parameters:
-- query: Natural language search (required). Keep it concise -- 5-15 words work best.
-- k: Number of results (default 8, max 50). Use 3-5 for quick lookups, 8-12 for broad context.
-
-Present recalled memories naturally as context. Do not announce "I found these memories" unless the user asks.`;
-
-export const FORGET_TOOL_DESCRIPTION = `Delete a specific memory from your vault.
-
-WHEN TO USE:
-- User explicitly asks to forget something
-- User says information is outdated or incorrect
-- User requests to remove sensitive information
+INVOKE WHEN THE USER SAYS:
+- "what's my [phone number / address / doctor / Marriott number / team name / ...]"
+- "remember when I told you about..." / "what did I say about..."
+- "do you know my ..." / "what are my preferences for..."
+- Opens a new conversation with a topic (run recall on the first message automatically)
+- Asks a question that stored preferences, past decisions, or personal facts would answer better
 
 WHEN NOT TO USE:
-- To update information (use remember with updated fact instead)
-- Without user's explicit request
+- The user is asking about general world knowledge, not about themselves
+- The conversation is purely transactional small talk ("what time is it?")
 
-EXAMPLES:
-- User: "Forget that I work at Google, I left"
-  -> Call: totalreclaw_forget({ fact_id: "the-fact-id" })
+WHAT IT DOES: Runs a trapdoor search on blind indices, decrypts top candidates client-side, reranks with BM25 + cosine + source-provenance weighting (user-stated claims score higher than assistant-inferred ones).
 
-PARAMETERS:
-- fact_id: The ID of the fact to forget (required)
-  OR
-- query: Forget all memories matching query (optional)`;
+Parameters:
+- query: Natural language search (required). Keep it concise — 5-15 words work best.
+- k: Number of results (default 8, max 50). Use 3-5 for quick lookups, 8-12 for broad context.
 
-export const EXPORT_TOOL_DESCRIPTION = `Export all memories in plaintext for portability.
+Present recalled memories naturally as context. Do NOT announce "I found these memories" unless the user asks — just use them to answer.`;
 
-WHEN TO USE:
-- User wants to backup their memories
-- User wants to transfer memories to another system
-- User wants to see all stored information
+export const FORGET_TOOL_DESCRIPTION = `Permanently remove a memory (or set of memories) from the user's vault.
 
-OUTPUT FORMATS:
-- markdown: Human-readable format
-- json: Machine-readable format for import
+INVOKE WHEN THE USER SAYS:
+- "forget what I said about [X]" / "forget my diet last week" / "delete that fact about my cat"
+- "that's wrong / outdated — remove it"
+- "I don't want you remembering [specific topic]"
+- "remove my old job" / "erase that password I accidentally pasted"
 
-EXAMPLES:
-- User: "Export all my memories"
-  -> Call: totalreclaw_export({ format: "markdown" })
+WHEN NOT TO USE:
+- The user is CORRECTING information (store the correction via totalreclaw_remember — the vault handles dedup/supersession automatically)
+- The user is changing their mind ("actually I prefer tea now") — store the new preference, don't delete the old one
+- Without an explicit user request — never forget proactively
 
-PARAMETERS:
-- format: Output format "markdown" or "json" (default: markdown)`;
+WHAT IT DOES: When fact_id is provided, tombstones that exact memory. When query is provided, recalls up to 50 matches and tombstones all of them — use sparingly, prefer fact_id after a totalreclaw_recall lookup.
 
-export const STATUS_TOOL_DESCRIPTION = `Check your TotalReclaw subscription status and usage.
+Parameters:
+- fact_id: The ID of a specific memory to forget (from a prior totalreclaw_recall result). Prefer this.
+- query: Semantic search string — forget every matching memory up to 50. Use for bulk cleanup after the user confirms.
+- scope: (hint) Restrict query-based forgets to a specific scope (work/personal/health/family/creative/finance/misc). Not yet enforced server-side — include it so future versions filter correctly.`;
 
-Shows:
-- Current tier (free/pro)
-- Free writes used vs limit
-- Subscription expiry date
+export const EXPORT_TOOL_DESCRIPTION = `Export the entire decrypted memory vault as plaintext — the user's one-click backup.
 
-Use this when:
-- User asks about their memory quota or usage
-- Before storing many memories, to check remaining capacity
-- User asks about billing or subscription`;
+INVOKE WHEN THE USER SAYS:
+- "show me everything you know about me" / "what do you have on me?"
+- "export / back up / download my memories"
+- "can I take my memory elsewhere?" / "give me a portable copy"
+- "I want to audit what's stored" / "what's in my vault?"
 
-export const UPGRADE_TOOL_DESCRIPTION = `Upgrade to TotalReclaw Pro for unlimited encrypted memories.
+WHEN NOT TO USE:
+- User asked about one specific thing — use totalreclaw_recall instead
+- User wants to clean up — offer totalreclaw_consolidate or totalreclaw_forget
 
-Returns a Stripe checkout URL for the user to complete payment via credit/debit card.
+WHAT IT DOES: Decrypts every active memory client-side and returns them in Markdown (human-readable) or JSON (portable/machine-readable). Surfaces v1 fields: type, source, scope, reasoning when present. Large vaults may take a moment.
 
-Use this when:
-- User hits their free tier limit
-- User asks about upgrading or pricing
-- A remember call returns a quota_exceeded error`;
+Parameters:
+- format: "markdown" (default, good for humans) or "json" (good for backup/import into another tool)
+- include_metadata: true (default) to include type/source/scope/importance/timestamps`;
+
+export const STATUS_TOOL_DESCRIPTION = `Check the user's TotalReclaw subscription tier, usage counts, and remaining quota.
+
+INVOKE WHEN THE USER SAYS:
+- "what tier am I on?" / "am I on free or pro?"
+- "how many memories have I stored?" / "what's my usage?"
+- "is my subscription active?" / "when does it expire?"
+- "do I have room for more?" / "am I close to the limit?"
+
+WHAT IT DOES: Queries the relay billing endpoint. Returns tier, writes_used / writes_limit, expiry date. Also refreshes the local billing cache (used by candidate-pool sizing in recall). Call this before bulk storage ops to confirm capacity.
+
+WHEN NOT TO USE:
+- The user wants billing history or invoices — direct them to the dashboard or support
+- The user wants to upgrade — use totalreclaw_upgrade instead`;
+
+export const UPGRADE_TOOL_DESCRIPTION = `Get a Stripe checkout URL for upgrading the user's TotalReclaw account to Pro (unlimited permanent on-chain storage on Gnosis mainnet).
+
+INVOKE WHEN THE USER SAYS:
+- "how do I upgrade?" / "I want to go pro" / "take my money"
+- "how much does it cost?" — share pricing from checkout page, don't hardcode
+- After a \`quota_exceeded\` error — offer the upgrade inline
+- "can I get unlimited memory?" / "make my memories permanent"
+
+WHAT IT DOES: Calls the relay's checkout endpoint, returns a one-time Stripe URL. Share the URL with the user; they complete payment in the browser. After success, suggest totalreclaw_migrate to copy their testnet memories to mainnet.
+
+WHEN NOT TO USE:
+- The user's already on Pro (check with totalreclaw_status first if unsure)
+- The user asked something unrelated — don't volunteer upgrades`;
 
 export const MIGRATE_TOOL_DESCRIPTION = `Migrate memories from testnet (Base Sepolia) to mainnet (Gnosis) after upgrading to Pro.
 
@@ -242,72 +254,73 @@ WORKFLOW:
 3. If they confirm, call again with confirm=true
 4. Report progress as batches complete`;
 
-export const IMPORT_FROM_TOOL_DESCRIPTION = `Import memories from other AI memory tools into TotalReclaw.
+export const IMPORT_FROM_TOOL_DESCRIPTION = `Import memories into TotalReclaw from another AI memory tool (Mem0, MCP Memory, ChatGPT, Claude, Gemini, MemoClaw, generic JSON/CSV).
+
+INVOKE WHEN THE USER SAYS:
+- "I want to migrate my memory from [Mem0 / ChatGPT / Claude / ...] to TotalReclaw"
+- "can you import my ChatGPT memories?" / "here's my Mem0 export"
+- "I've pasted my Claude memory below — store it"
+- Shares a JSON/CSV file and mentions memory / facts
+
+WHAT IT DOES: Loads the right adapter, parses the source data, and (unless dry_run=true) stores via totalreclaw_remember. Content fingerprint dedup makes re-runs safe. For conversation-based sources (ChatGPT, Claude, Gemini), returns the parsed chunks as text so the host LLM extracts facts turn-by-turn.
+
+ALWAYS start with dry_run=true to preview, then confirm before the real import.
 
 Supported sources:
-- **mem0**: Import from Mem0 (mem0.ai). Provide api_key + source_user_id, or paste the export JSON.
-- **mcp-memory**: Import from MCP Memory Server (@modelcontextprotocol/server-memory). Provide the memory.jsonl content or file_path. Default path: ~/.mcp-memory/memory.jsonl.
-- **chatgpt**: Import from ChatGPT. Two formats supported: (1) Paste ChatGPT memories text (from Settings > Personalization > Memory > Manage), or (2) provide conversations.json file from ChatGPT data export (Settings > Data Controls > Export Data).
-- **claude**: Import from Claude. Paste Claude memory text (from Settings > Memory). One fact per line, date prefixes like [2026-03-15] are preserved.
-- **memoclaw**: Import from MemoClaw. Provide api_key + source_user_id, or paste the export JSON.
-- **generic-json**: Import from a generic JSON file. Expects an array of objects with "text" field.
-- **generic-csv**: Import from a CSV file. Expects a header row with "text" column.
+- mem0: api_key + source_user_id, or paste the export JSON
+- mcp-memory: memory.jsonl content or file_path (default ~/.mcp-memory/memory.jsonl)
+- chatgpt: pasted memories text OR conversations.json from Data Export
+- claude: pasted memory text from Settings > Memory
+- gemini: Google Takeout HTML
+- memoclaw: api_key + source_user_id, or pasted export JSON
+- generic-json: array of {"text": "..."} objects
+- generic-csv: CSV with a "text" column
 
-Security: API keys are used in-memory only for this import and are never stored.
-Idempotent: Running the same import twice will not create duplicates (content fingerprint dedup).
+Security: API keys pass through only for this import — never stored.`;
 
-Use dry_run=true to preview what would be imported without storing anything.`;
+export const IMPORT_TOOL_DESCRIPTION = `Restore memories from a prior totalreclaw_export backup (or a TotalReclaw-format JSON/Markdown file from another instance).
 
-export const IMPORT_TOOL_DESCRIPTION = `Import memories from an exported backup.
+INVOKE WHEN THE USER SAYS:
+- "restore my memories from this backup" / "import this JSON file"
+- "I exported from [other TotalReclaw account] — add these"
+- "here's the Markdown export — put it back"
 
-WHEN TO USE:
-- User wants to restore memories from backup
-- User wants to transfer memories from another TotalReclaw instance
-- User has a JSON or Markdown export they want to import
+WHEN NOT TO USE:
+- Importing from Mem0/ChatGPT/Claude/etc → use totalreclaw_import_from instead
+- Importing a single fact → use totalreclaw_remember
 
-MERGE STRATEGIES:
-- skip_existing: Skip facts that already exist (default)
-- overwrite: Replace existing facts with imported ones
-- merge: Use LLM-assisted conflict resolution
+WHAT IT DOES: Parses JSON or Markdown (auto-detected), iterates facts, stores via totalreclaw_remember with content-fingerprint dedup. Set validate_only=true for a dry-run.
 
-EXAMPLES:
-- User: "Import memories from this backup file"
-  -> Call: totalreclaw_import({ content: "...", format: "json" })
+Parameters:
+- content: The exported content (JSON or Markdown string) — required
+- format: "markdown" | "json" (auto-detected if omitted)
+- merge_strategy: "skip_existing" (default), "overwrite", or "merge" (LLM-assisted conflict resolution)
+- validate_only: true for a dry-run`;
 
-PARAMETERS:
-- content: The exported content (JSON or Markdown string)
-- format: Format of content "markdown" or "json" (auto-detected if not specified)
-- merge_strategy: How to handle conflicts (default: skip_existing)
-- validate_only: Parse and validate without importing (dry-run)`;
+export const SUPPORT_TOOL_DESCRIPTION = `Return support contact info, documentation links, and troubleshooting steps for common TotalReclaw issues.
 
-export const SUPPORT_TOOL_DESCRIPTION = `Get TotalReclaw support information and troubleshooting help.
+INVOKE WHEN THE USER SAYS:
+- "how do I get help?" / "who do I contact for support?"
+- "my memories aren't loading / I'm getting errors"
+- "I lost my recovery phrase" / "where's the docs?"
+- "how do I report a bug?"
+- Asks about: slow recall, quota errors, failed imports, or missing post-upgrade memories
 
-Returns:
-- Contact email (pre-filled with your wallet address)
-- Documentation and issue tracker links
-- Troubleshooting guide for common issues (lost phrase, slow recall, quota, import)
+WHAT IT DOES: Returns a static bundle (contact email with subject pre-filled, docs URL, issues URL, troubleshooting table). Works even in unconfigured mode — safe to call at any point.`;
 
-Use this when:
-- User asks for help or how to contact support
-- User encounters an issue and needs troubleshooting steps
-- User asks about documentation or where to report bugs
+export const ACCOUNT_TOOL_DESCRIPTION = `Show a one-shot overview of the user's TotalReclaw account: wallet address, tier, usage, total memories, features, and a safe recovery-phrase hint.
 
-Works even when TotalReclaw is not yet configured.`;
+INVOKE WHEN THE USER SAYS:
+- "show me my account" / "what's my profile?"
+- "how many memories do I have?" / "what's my wallet address?"
+- "do I have the right recovery phrase? show me a hint"
+- "give me a summary of my TotalReclaw setup"
 
-export const ACCOUNT_TOOL_DESCRIPTION = `View your TotalReclaw account details at a glance.
+WHAT IT DOES: Fetches billing + fact count in parallel, returns wallet, tier, writes_used/limit, total_facts_stored, feature flags, and the FIRST AND LAST words of the recovery phrase (never full phrase — safe to show in transcripts).
 
-Shows:
-- Wallet address and subscription tier
-- Write usage (used / limit / remaining)
-- Total facts stored in your vault
-- Feature flags enabled for your tier
-- Recovery phrase hint (first and last word only)
-
-Use this when:
-- User asks about their account or profile
-- User wants a comprehensive overview of their TotalReclaw setup
-- User asks "what's my wallet" or "how many memories do I have"
-- User wants to verify their recovery phrase (hint only, never the full phrase)`;
+WHEN NOT TO USE:
+- The user only wants billing info — totalreclaw_status is lighter
+- The user wants the full recovery phrase — NEVER. Direct them to their own password manager.`;
 
 // ── Layer 5: Prompt Fallback Templates ───────────────────────────────────────
 
