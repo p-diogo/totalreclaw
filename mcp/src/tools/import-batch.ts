@@ -29,9 +29,16 @@ const SECONDS_PER_BATCH = 45;
 export const importBatchToolDefinition = {
   name: 'totalreclaw_import_batch',
   description:
-    'Process one batch of a conversation import. Parses the source file, returns a slice of conversation chunks ' +
-    'for you to extract facts from. Call repeatedly with increasing offset until is_complete=true. ' +
-    'For each chunk, identify important facts and store them with totalreclaw_remember.',
+    'Internal polling tool for LARGE conversation imports (Gemini/ChatGPT/Claude exports with 50+ conversations). Parses the source file once and returns a slice of conversations per call for you to extract facts from.\n' +
+    '\nINVOKE WHEN:\n' +
+    '- A totalreclaw_import_from call returned "total_chunks > 50" and you need to work through them in batches\n' +
+    '- The user asked to import a large Takeout / ChatGPT conversations.json export and a single-turn import would time out\n' +
+    '\nPOLLING CONTRACT: Call repeatedly with offset = 0, batch_size (default 25), next call offset = offset + batch_size, until is_complete=true. For each chunk in the returned slice, identify important facts and store them with totalreclaw_remember. Content-fingerprint dedup makes re-calls safe.\n' +
+    '\nWHEN NOT TO USE:\n' +
+    '- Small imports (<50 conversations) → totalreclaw_import_from with dry_run + confirm works in one shot\n' +
+    '- Pre-structured sources (Mem0, MCP Memory) → totalreclaw_import_from directly\n' +
+    '- The user is pasting a single Claude / ChatGPT memory block → totalreclaw_import_from handles those in one call\n' +
+    '- You don\'t need to expose this tool name to the user; it\'s for your extraction loop only',
   inputSchema: {
     type: 'object',
     properties: {
