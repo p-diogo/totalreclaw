@@ -102,7 +102,11 @@ Specs are organized by product area under `docs/specs/`:
 | Spec | File | Status |
 |------|------|--------|
 | E2EE Architecture (LSH + Blind Buckets) | `architecture.md` | Implemented, validated |
+| **Memory Taxonomy v1** | `memory-taxonomy-v1.md` | **Shipped 2026-04-18 across 5 clients + core 2.0.0** |
+| **Retrieval v2 (Tier 1 source-weighted)** | `retrieval-v2.md` | **Tier 1 shipped in core 2.0.0; Tier 2-4 designed** |
+| **Tiered Retrieval (impl deep dive)** | `tiered-retrieval.md` | Shipped |
 | Server PoC v0.3.1b (Auth + Dedup) | `server.md` | Partially implemented |
+| Client Consistency | `client-consistency.md` | Canonical reference for all 5 clients |
 | OpenClaw Skill | `skill-openclaw.md` | Implemented |
 | NanoClaw Skill | `skill-nanoclaw.md` | Implemented |
 | MCP Server | `mcp-server.md` | Implemented |
@@ -111,7 +115,7 @@ Specs are organized by product area under `docs/specs/`:
 | Benchmark Harness (OMBH) | `benchmark.md` | Implemented |
 | LSH Tuning (Multi-Tenant SaaS) | `lsh-tuning.md` | Complete |
 | Conflict Resolution v0.3.2 | `conflict-resolution.md` | Design complete, not implemented |
-| Retrieval Improvements v3 | `retrieval-improvements-v3.md` | Implemented |
+| Retrieval Improvements v3 | `retrieval-improvements-v3.md` | Implemented (superseded by retrieval-v2 in v1) |
 
 ### Subgraph (Decentralized) -- `docs/specs/subgraph/`
 | Spec | File | Status |
