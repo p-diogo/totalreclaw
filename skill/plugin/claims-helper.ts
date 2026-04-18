@@ -11,7 +11,23 @@
 
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
-import type { ExtractedEntity, ExtractedFact } from './extractor.js';
+import type {
+  ExtractedEntity,
+  ExtractedFact,
+  MemoryType,
+  MemoryTypeV1,
+  MemoryScope,
+  MemorySource,
+  MemoryVolatility,
+} from './extractor.js';
+import {
+  isValidMemoryTypeV1,
+  V0_TO_V1_TYPE,
+  VALID_MEMORY_SCOPES,
+  VALID_MEMORY_SOURCES,
+  VALID_MEMORY_VOLATILITIES,
+  VALID_MEMORY_TYPES_V1,
+} from './extractor.js';
 
 // Lazy-load WASM. We use createRequire so this module loads cleanly under
 // both the OpenClaw runtime (CJS-ish tsx) and bare Node ESM (used by tests).
@@ -45,7 +61,8 @@ export function resolveClaimFormat(): ClaimFormat {
 // Category mapping (ExtractedFact.type → compact Claim category short key)
 // ---------------------------------------------------------------------------
 
-const TYPE_TO_CATEGORY: Record<ExtractedFact['type'], string> = {
+// v0 (legacy) type → compact category mapping
+const TYPE_TO_CATEGORY_V0: Record<MemoryType, string> = {
   fact: 'fact',
   preference: 'pref',
   decision: 'dec',
@@ -56,8 +73,20 @@ const TYPE_TO_CATEGORY: Record<ExtractedFact['type'], string> = {
   rule: 'rule',
 };
 
-export function mapTypeToCategory(type: ExtractedFact['type']): string {
-  return TYPE_TO_CATEGORY[type];
+// v1 type → compact category mapping. Kept parallel to v0 so canonical
+// Claim blobs continue to use short keys when v0-compatibility mode is on.
+const TYPE_TO_CATEGORY_V1: Record<MemoryTypeV1, string> = {
+  claim: 'claim',
+  preference: 'pref',
+  directive: 'rule',  // v1 directive maps to the v0 category name "rule"
+  commitment: 'goal', // v1 commitment maps to the v0 category name "goal"
+  episode: 'epi',
+  summary: 'sum',
+};
+
+export function mapTypeToCategory(type: MemoryType | MemoryTypeV1): string {
+  if (type in TYPE_TO_CATEGORY_V1) return TYPE_TO_CATEGORY_V1[type as MemoryTypeV1];
+  return TYPE_TO_CATEGORY_V0[type as MemoryType] ?? 'fact';
 }
 
 // ---------------------------------------------------------------------------
@@ -99,6 +128,283 @@ export function buildCanonicalClaim(input: BuildClaimInput): string {
   }
 
   return getWasm().canonicalizeClaim(JSON.stringify(claim));
+}
+
+// ---------------------------------------------------------------------------
+// v1 Claim payload builder (Phase 3 — plugin v3.0.0)
+//
+// Produces a MemoryClaimV1-shaped JSON payload matching
+// `docs/specs/totalreclaw/memory-taxonomy-v1.md`.
+//
+// The v1 payload uses long field names + a schema_version marker so that
+// decrypt logic can discriminate between v0 short-key claims and v1 claims
+// without any external hint. The protobuf outer wrapper sets `version = 4`
+// when writing v1 payloads — see `subgraph-store.ts`.
+// ---------------------------------------------------------------------------
+
+export const V1_SCHEMA_VERSION = '1.0' as const;
+
+export interface BuildClaimV1Input {
+  /** The extracted fact in v1 shape. Must have `type` as a MemoryTypeV1 token. */
+  fact: ExtractedFact;
+  /** Final importance after any store-time dedup adjustment. 1-10. */
+  importance: number;
+  /** Creation timestamp. Defaults to now. */
+  createdAt?: string;
+  /** Optional superseded-by chain pointer (for pin / retype / forget). */
+  supersededBy?: string;
+  /** Optional explicit expiration timestamp. */
+  expiresAt?: string;
+  /** Stable claim ID. Defaults to crypto.randomUUID() at the call site; keep the
+   *  same ID for both the blob and the on-chain fact id. */
+  id?: string;
+}
+
+/**
+ * Build a v1 MemoryClaimV1 JSON blob.
+ *
+ * Throws if the fact does not have a valid v1 `source` set — v1 requires
+ * every claim to carry provenance (the whole taxonomy depends on it).
+ *
+ * The build pipeline:
+ *   1. Build the full v1 payload object (including plugin-only extras like
+ *      `volatility` and `schema_version`).
+ *   2. Send the core-required subset through `validateMemoryClaimV1` for
+ *      schema enforcement (throws on invalid type/source/missing id).
+ *   3. Emit the FULL payload (core canonical fields + plugin extras) as the
+ *      final stored JSON so round-trip preserves client-side state.
+ *
+ * Plugin-only extras (not round-tripped by core's validator as of v2.0.0):
+ *   - `schema_version` — version marker the decrypt path reads
+ *   - `volatility` — stable | updatable | ephemeral (post-extraction rescore)
+ *
+ * The outer protobuf wrapper's `version` field must be set to 4 when storing
+ * the returned payload (see subgraph-store.ts).
+ */
+export function buildCanonicalClaimV1(input: BuildClaimV1Input): string {
+  const { fact, importance, createdAt, supersededBy, expiresAt } = input;
+  const id = input.id ?? crypto.randomUUID();
+
+  if (!fact.source) {
+    throw new Error(
+      'buildCanonicalClaimV1: fact.source is required (v1 taxonomy mandates provenance)',
+    );
+  }
+  if (!(VALID_MEMORY_SOURCES as readonly string[]).includes(fact.source)) {
+    throw new Error(`buildCanonicalClaimV1: invalid source "${fact.source}"`);
+  }
+
+  const type = normalizeToV1Type(fact.type);
+  const resolvedCreatedAt = createdAt ?? new Date().toISOString();
+  const resolvedImportance = Math.max(1, Math.min(10, Math.round(importance)));
+
+  // Core-canonical subset sent through validateMemoryClaimV1. Core strips
+  // fields it doesn't understand, so we send it the subset it accepts and
+  // re-attach client-side extras to the final payload.
+  const corePayload: Record<string, unknown> = {
+    id,
+    text: fact.text,
+    type,
+    source: fact.source,
+    created_at: resolvedCreatedAt,
+    importance: resolvedImportance,
+  };
+
+  if (fact.scope && (VALID_MEMORY_SCOPES as readonly string[]).includes(fact.scope)) {
+    corePayload.scope = fact.scope;
+  }
+  if (fact.reasoning && fact.reasoning.length > 0) {
+    corePayload.reasoning = fact.reasoning.slice(0, 256);
+  }
+  if (fact.entities && fact.entities.length > 0) {
+    corePayload.entities = fact.entities.slice(0, 8).map((e) => {
+      const entity: Record<string, unknown> = { name: e.name, type: e.type };
+      if (e.role) entity.role = e.role;
+      return entity;
+    });
+  }
+  if (typeof fact.confidence === 'number') {
+    corePayload.confidence = Math.max(0, Math.min(1, fact.confidence));
+  }
+  if (expiresAt) corePayload.expires_at = expiresAt;
+  if (supersededBy) corePayload.superseded_by = supersededBy;
+
+  // Validate through core — throws on invalid type / source / missing id.
+  const validated = getWasm().validateMemoryClaimV1(JSON.stringify(corePayload)) as string;
+  const canonical = JSON.parse(validated) as Record<string, unknown>;
+
+  // Re-attach plugin-only extras not round-tripped by core's validator.
+  canonical.schema_version = V1_SCHEMA_VERSION;
+  if (fact.volatility && (VALID_MEMORY_VOLATILITIES as readonly string[]).includes(fact.volatility)) {
+    canonical.volatility = fact.volatility;
+  }
+
+  return JSON.stringify(canonical);
+}
+
+/**
+ * Normalize any type token (v0 or v1) to a v1 type. Uses the v0→v1 mapping
+ * for legacy tokens; passes through when already v1.
+ */
+export function normalizeToV1Type(type: MemoryType | MemoryTypeV1): MemoryTypeV1 {
+  if (isValidMemoryTypeV1(type)) return type as MemoryTypeV1;
+  return V0_TO_V1_TYPE[type as MemoryType] ?? 'claim';
+}
+
+/**
+ * Heuristic: does a decrypted blob look like a v1 JSON payload?
+ *
+ * We check for the schema_version marker + the long-form `text` field.
+ * Falls back false on any parse error.
+ */
+export function isV1Blob(decrypted: string): boolean {
+  try {
+    const obj = JSON.parse(decrypted) as Record<string, unknown>;
+    return (
+      typeof obj === 'object' &&
+      obj !== null &&
+      typeof obj.text === 'string' &&
+      typeof obj.type === 'string' &&
+      typeof obj.schema_version === 'string' &&
+      obj.schema_version.startsWith('1.')
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Parse a decrypted v1 blob into a structured object. Returns null if the
+ * blob is not a v1 payload or fails validation.
+ */
+export interface V1BlobReadResult {
+  text: string;
+  type: MemoryTypeV1;
+  source: MemorySource;
+  scope: MemoryScope;
+  volatility: MemoryVolatility;
+  reasoning?: string;
+  entities?: Array<{ name: string; type: string; role?: string }>;
+  importance: number; // integer 1-10
+  confidence: number; // 0-1
+  createdAt: string;
+  expiresAt?: string;
+  supersededBy?: string;
+  id?: string;
+}
+
+export function readV1Blob(decrypted: string): V1BlobReadResult | null {
+  try {
+    const obj = JSON.parse(decrypted) as Record<string, unknown>;
+    if (typeof obj.schema_version !== 'string' || !obj.schema_version.startsWith('1.')) {
+      return null;
+    }
+
+    const text = typeof obj.text === 'string' ? obj.text : '';
+    const rawType = typeof obj.type === 'string' ? obj.type : 'claim';
+    const type: MemoryTypeV1 = isValidMemoryTypeV1(rawType) ? rawType : 'claim';
+
+    const rawSource = typeof obj.source === 'string' ? obj.source : 'user-inferred';
+    const source: MemorySource = (VALID_MEMORY_SOURCES as readonly string[]).includes(rawSource)
+      ? (rawSource as MemorySource)
+      : 'user-inferred';
+
+    const rawScope = typeof obj.scope === 'string' ? obj.scope : 'unspecified';
+    const scope: MemoryScope = (VALID_MEMORY_SCOPES as readonly string[]).includes(rawScope)
+      ? (rawScope as MemoryScope)
+      : 'unspecified';
+
+    const rawVolatility = typeof obj.volatility === 'string' ? obj.volatility : 'updatable';
+    const volatility: MemoryVolatility = (VALID_MEMORY_VOLATILITIES as readonly string[]).includes(rawVolatility)
+      ? (rawVolatility as MemoryVolatility)
+      : 'updatable';
+
+    const impRaw = typeof obj.importance === 'number' ? obj.importance : 5;
+    const importance = Math.max(1, Math.min(10, Math.round(impRaw)));
+
+    const confRaw = typeof obj.confidence === 'number' ? obj.confidence : 0.85;
+    const confidence = Math.max(0, Math.min(1, confRaw));
+
+    const result: V1BlobReadResult = {
+      text,
+      type,
+      source,
+      scope,
+      volatility,
+      importance,
+      confidence,
+      createdAt: typeof obj.created_at === 'string' ? obj.created_at : '',
+    };
+
+    if (typeof obj.reasoning === 'string' && obj.reasoning.length > 0) {
+      result.reasoning = obj.reasoning;
+    }
+    if (Array.isArray(obj.entities)) {
+      result.entities = (obj.entities as unknown[]).filter(
+        (e): e is { name: string; type: string; role?: string } =>
+          !!e &&
+          typeof e === 'object' &&
+          typeof (e as { name?: unknown }).name === 'string' &&
+          typeof (e as { type?: unknown }).type === 'string',
+      ) as Array<{ name: string; type: string; role?: string }>;
+    }
+    if (typeof obj.expires_at === 'string') result.expiresAt = obj.expires_at;
+    if (typeof obj.superseded_by === 'string') result.supersededBy = obj.superseded_by;
+    if (typeof obj.id === 'string') result.id = obj.id;
+
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+// Suppress unused-import lint warnings for VALID_MEMORY_TYPES_V1 — it is
+// exported from extractor.ts for downstream clients and kept in scope here
+// so future v1 helpers can reuse it without re-importing.
+void VALID_MEMORY_TYPES_V1;
+
+// ---------------------------------------------------------------------------
+// Router: pick v0 or v1 canonical claim builder based on taxonomy version.
+//
+// Controlled by TOTALRECLAW_TAXONOMY_VERSION env var:
+//   - "v1": emit Memory Taxonomy v1 JSON payload (schema_version "1.0").
+//           Requires fact.source to be set.
+//   - "v0" (default, unset, unknown): emit legacy short-key canonical Claim.
+//
+// This wrapper is the single entry point store paths should use going
+// forward. The existing buildCanonicalClaim remains exported for any
+// call site that explicitly wants v0 (tests, legacy imports, etc.).
+// ---------------------------------------------------------------------------
+
+export function resolveTaxonomyVersion(): 'v0' | 'v1' {
+  const raw = (process.env.TOTALRECLAW_TAXONOMY_VERSION ?? '').trim().toLowerCase();
+  return raw === 'v1' ? 'v1' : 'v0';
+}
+
+/**
+ * Build a canonical Claim blob routing on the active taxonomy version.
+ *
+ * v1 path: requires fact.source; falls back to v0 if unset and logs once
+ * (a misconfigured hook should not lose data). v0 path: unchanged legacy
+ * short-key blob.
+ */
+export function buildCanonicalClaimRouted(input: BuildClaimInput): string {
+  const version = resolveTaxonomyVersion();
+  if (version === 'v1') {
+    if (input.fact.source) {
+      return buildCanonicalClaimV1({
+        fact: input.fact,
+        importance: input.importance,
+        createdAt: input.extractedAt,
+      });
+    }
+    // fact.source missing — the v0 path encodes source in sa (source-agent)
+    // metadata. For v1 to work callers must upgrade the extraction pipeline
+    // to populate fact.source. We fall through to v0 here so a misconfigured
+    // rollout doesn't drop data; a warning would ideally be logged by the
+    // caller.
+  }
+  return buildCanonicalClaim(input);
 }
 
 // ---------------------------------------------------------------------------
@@ -216,6 +522,34 @@ export interface BlobReadResult {
 export function readClaimFromBlob(decryptedJson: string): BlobReadResult {
   try {
     const obj = JSON.parse(decryptedJson) as Record<string, unknown>;
+
+    // v1 payload: long-form fields + schema_version "1.x"
+    if (
+      typeof obj.text === 'string' &&
+      typeof obj.type === 'string' &&
+      typeof obj.schema_version === 'string' &&
+      obj.schema_version.startsWith('1.')
+    ) {
+      const importance = typeof obj.importance === 'number'
+        ? Math.max(1, Math.min(10, Math.round(obj.importance)))
+        : 5;
+      return {
+        text: obj.text,
+        importance,
+        category: mapTypeToCategory(obj.type as MemoryTypeV1),
+        metadata: {
+          type: obj.type,
+          source: typeof obj.source === 'string' ? obj.source : 'user-inferred',
+          scope: typeof obj.scope === 'string' ? obj.scope : 'unspecified',
+          volatility: typeof obj.volatility === 'string' ? obj.volatility : 'updatable',
+          reasoning: typeof obj.reasoning === 'string' ? obj.reasoning : undefined,
+          importance: importance / 10,
+          created_at: typeof obj.created_at === 'string' ? obj.created_at : '',
+          schema_version: obj.schema_version,
+        },
+      };
+    }
+
     // New canonical Claim format: short keys
     if (typeof obj.t === 'string' && typeof obj.c === 'string') {
       const importance = typeof obj.i === 'number' ? Math.max(1, Math.min(10, Math.round(obj.i))) : 5;

@@ -65,13 +65,113 @@ export function isValidMemoryType(value: unknown): value is MemoryType {
 
 export interface ExtractedFact {
   text: string;
-  type: MemoryType;
+  type: MemoryType | MemoryTypeV1;
   importance: number; // 1-10
   action: ExtractionAction;
   existingFactId?: string;
   entities?: ExtractedEntity[];
   confidence?: number; // 0.0-1.0, LLM self-assessed
+
+  // ──────────────────────────────────────────────────────────────
+  // Memory Taxonomy v1 fields (added in plugin v3.0.0)
+  //
+  // When present, the canonical Claim builder emits a v1 JSON blob
+  // (schema_version: "1.0") instead of the compact v0 short-key format.
+  // See docs/specs/totalreclaw/memory-taxonomy-v1.md.
+  // ──────────────────────────────────────────────────────────────
+  source?: MemorySource;
+  scope?: MemoryScope;
+  volatility?: MemoryVolatility;
+  reasoning?: string; // decision-style claim WHY clause
 }
+
+// ---------------------------------------------------------------------------
+// Memory Taxonomy v1 types (Phase 3 — plugin v3.0.0)
+// ---------------------------------------------------------------------------
+
+export type MemoryTypeV1 =
+  | 'claim'
+  | 'preference'
+  | 'directive'
+  | 'commitment'
+  | 'episode'
+  | 'summary';
+
+export type MemorySource =
+  | 'user'
+  | 'user-inferred'
+  | 'assistant'
+  | 'external'
+  | 'derived';
+
+export type MemoryScope =
+  | 'work'
+  | 'personal'
+  | 'health'
+  | 'family'
+  | 'creative'
+  | 'finance'
+  | 'misc'
+  | 'unspecified';
+
+export type MemoryVolatility = 'stable' | 'updatable' | 'ephemeral';
+
+export const VALID_MEMORY_TYPES_V1: readonly MemoryTypeV1[] = [
+  'claim',
+  'preference',
+  'directive',
+  'commitment',
+  'episode',
+  'summary',
+];
+
+export const VALID_MEMORY_SOURCES: readonly MemorySource[] = [
+  'user',
+  'user-inferred',
+  'assistant',
+  'external',
+  'derived',
+];
+
+export const VALID_MEMORY_SCOPES: readonly MemoryScope[] = [
+  'work',
+  'personal',
+  'health',
+  'family',
+  'creative',
+  'finance',
+  'misc',
+  'unspecified',
+];
+
+export const VALID_MEMORY_VOLATILITIES: readonly MemoryVolatility[] = [
+  'stable',
+  'updatable',
+  'ephemeral',
+];
+
+/** Runtime guard for v1 type tokens. */
+export function isValidMemoryTypeV1(value: unknown): value is MemoryTypeV1 {
+  return typeof value === 'string' && (VALID_MEMORY_TYPES_V1 as readonly string[]).includes(value);
+}
+
+/**
+ * Legacy v0 → v1 type mapping used by the adapter layer when an older
+ * component emits a v0 type but downstream code expects v1.
+ *
+ * Decisions (v0) map to v1 `claim` — the reasoning lives in the separate
+ * `reasoning` field rather than being encoded in the type.
+ */
+export const V0_TO_V1_TYPE: Record<MemoryType, MemoryTypeV1> = {
+  fact: 'claim',
+  preference: 'preference',
+  decision: 'claim',
+  episodic: 'episode',
+  goal: 'commitment',
+  context: 'claim',
+  summary: 'summary',
+  rule: 'directive',
+};
 
 const ALLOWED_ENTITY_TYPES: ReadonlySet<EntityType> = new Set([
   'person',
@@ -1087,4 +1187,492 @@ export async function extractDebrief(
   } catch {
     return [];
   }
+}
+
+// ---------------------------------------------------------------------------
+// v1 Taxonomy Extraction Pipeline (Phase 3 — plugin v3.0.0)
+//
+// Opt-in extraction pipeline that produces facts conforming to Memory
+// Taxonomy v1. Enabled via TOTALRECLAW_TAXONOMY_VERSION=v1 (see below).
+//
+// The G-pipeline uses a single merged-topic prompt that returns both the
+// 2-3 main topics the user engaged with AND the extracted facts, so topic
+// anchoring is preserved within one call. After extraction we apply:
+//
+//   1. `applyProvenanceFilterLax`  — tag-don't-drop. Assistant-sourced facts
+//      get their importance capped at 7 rather than being filtered out; the
+//      reranker later uses the source field to deprioritize them.
+//   2. `comparativeRescoreV1`      — spread importance across the 1-10 range
+//      and assign volatility. Forced when the batch has >= 5 facts.
+//   3. `defaultVolatility`         — heuristic fallback.
+//
+// This matches the winning G pipeline from the 200-conv benchmark.
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the taxonomy version from the TOTALRECLAW_TAXONOMY_VERSION env var.
+ *
+ * - `v1`: new merged-topic v1 extraction pipeline (Memory Taxonomy v1).
+ * - `v0` (default, or unset): legacy 8-type extraction.
+ *
+ * Read on every call so tests can toggle via env without module reload.
+ */
+export function resolveTaxonomyVersion(): 'v0' | 'v1' {
+  const raw = (process.env.TOTALRECLAW_TAXONOMY_VERSION ?? '').trim().toLowerCase();
+  return raw === 'v1' ? 'v1' : 'v0';
+}
+
+export const EXTRACTION_SYSTEM_PROMPT_V1_MERGED = `You are a memory extraction engine using Memory Taxonomy v1. Work in TWO explicit phases within one response:
+
+PHASE 1 — Topic identification.
+Before extracting any fact, identify the 2-3 main topics the user was engaging with. Topics should be short phrases (2-5 words each). If the conversation has no clear user-focused topic, use an empty topics array.
+
+PHASE 2 — Fact extraction anchored to those topics.
+Extract valuable memories. Prefer facts that directly relate to the identified topics (importance 7-9 range). Tangential facts may still be extracted but score lower (6-7 range).
+
+Rules:
+1. Each memory = single self-contained piece of information
+2. Focus on user-specific info useful in future conversations
+3. Skip generic knowledge, greetings, small talk, ephemeral task coordination
+4. Score importance 1-10 (6+ = worth storing)
+5. Every memory MUST attribute a source (provenance critical)
+
+Importance rubric (use FULL 1-10 range):
+- 10: Critical, core identity, never-forget content
+- 9: Affects many future decisions
+- 8: High-value preference/decision/rule
+- 7: Specific durable fact
+- 6: Borderline
+- 5 or below: NOT worth storing — drop
+
+DO NOT cluster everything at 7-8-9.
+
+═══════════════════════════════════════════════════════════════
+TYPE (6 values)
+═══════════════════════════════════════════════════════════════
+- claim: factual assertion (absorbs fact/context/decision; decisions populate reasoning field)
+- preference: likes/dislikes/tastes
+- directive: imperative rule ("always X", "never Y")
+- commitment: future intent ("will do X")
+- episode: notable event
+- summary: derived synthesis (source must be derived|assistant) — do NOT emit for turn-extraction
+
+═══════════════════════════════════════════════════════════════
+SOURCE (provenance, CRITICAL)
+═══════════════════════════════════════════════════════════════
+- user: user explicitly stated it (in [user]: turns)
+- user-inferred: extractor inferred from user signals
+- assistant: assistant authored content — DOWNGRADE unless user affirmed/quoted/used it
+- external, derived: rare
+
+IF fact substance appears ONLY in [assistant]: turns without user affirmation → source:assistant
+
+═══════════════════════════════════════════════════════════════
+SCOPE (life domain)
+═══════════════════════════════════════════════════════════════
+work | personal | health | family | creative | finance | misc | unspecified
+
+═══════════════════════════════════════════════════════════════
+ENTITIES
+═══════════════════════════════════════════════════════════════
+- type ∈ {person, project, tool, company, concept, place}
+- prefer specific names ("PostgreSQL" not "database")
+- omit umbrella categories when specific name is present
+
+═══════════════════════════════════════════════════════════════
+REASONING (only for claims that are decisions)
+═══════════════════════════════════════════════════════════════
+For type=claim where the user expressed a decision-with-reasoning, populate "reasoning" with the WHY clause.
+
+═══════════════════════════════════════════════════════════════
+OUTPUT FORMAT (no markdown, no code fences)
+═══════════════════════════════════════════════════════════════
+{
+  "topics": ["topic 1", "topic 2"],
+  "facts": [
+    {
+      "text": "...",
+      "type": "claim|preference|directive|commitment|episode",
+      "source": "user|user-inferred|assistant",
+      "scope": "work|personal|health|...",
+      "importance": N,
+      "confidence": 0.9,
+      "action": "ADD",
+      "reasoning": "...",     // optional, only for claim+decision
+      "entities": [{"name": "...", "type": "tool"}]
+    }
+  ]
+}
+
+If nothing worth extracting: {"topics": [], "facts": []}`;
+
+/**
+ * Parse a v1 merged-topic LLM response. Returns both the topic list and the
+ * validated/filtered fact list. Illegal combinations (summary+user) are
+ * dropped; importance < 6 with action != DELETE is dropped.
+ */
+export function parseMergedResponseV1(
+  response: string,
+  logger?: ExtractorLogger,
+): { topics: string[]; facts: ExtractedFact[] } {
+  const originalPreview = response.trim().slice(0, 200);
+  let cleaned = response.trim();
+  cleaned = cleaned.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '').trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+  }
+
+  const tryParse = (input: string): unknown => {
+    try { return JSON.parse(input); } catch { return undefined; }
+  };
+
+  let parsed = tryParse(cleaned);
+  if (parsed === undefined) {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) parsed = tryParse(match[0]);
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    logger?.warn?.(
+      `parseMergedResponseV1: could not parse LLM output as JSON object. Preview: ${JSON.stringify(originalPreview)}`,
+    );
+    return { topics: [], facts: [] };
+  }
+
+  const obj = parsed as Record<string, unknown>;
+
+  const rawTopics = obj.topics;
+  const topics = Array.isArray(rawTopics)
+    ? (rawTopics as unknown[])
+        .filter((t): t is string => typeof t === 'string' && t.length > 0)
+        .slice(0, 3)
+    : [];
+
+  const rawFacts = obj.facts;
+  if (!Array.isArray(rawFacts)) return { topics, facts: [] };
+
+  const validActions: ExtractionAction[] = ['ADD', 'UPDATE', 'DELETE', 'NOOP'];
+
+  const facts = (rawFacts as unknown[])
+    .filter(
+      (f): f is Record<string, unknown> =>
+        !!f &&
+        typeof f === 'object' &&
+        typeof (f as Record<string, unknown>).text === 'string' &&
+        ((f as Record<string, unknown>).text as string).length >= 5,
+    )
+    .map((f) => {
+      const rawType = String(f.type ?? 'claim').toLowerCase();
+      const type: MemoryTypeV1 = isValidMemoryTypeV1(rawType) ? rawType : 'claim';
+
+      const rawSource = String(f.source ?? 'user-inferred').toLowerCase();
+      const source: MemorySource =
+        (VALID_MEMORY_SOURCES as readonly string[]).includes(rawSource)
+          ? (rawSource as MemorySource)
+          : 'user-inferred';
+
+      const rawScope = String(f.scope ?? 'unspecified').toLowerCase();
+      const scope: MemoryScope =
+        (VALID_MEMORY_SCOPES as readonly string[]).includes(rawScope)
+          ? (rawScope as MemoryScope)
+          : 'unspecified';
+
+      const reasoning = typeof f.reasoning === 'string' ? f.reasoning.slice(0, 256) : undefined;
+
+      const action = validActions.includes(String(f.action) as ExtractionAction)
+        ? (String(f.action) as ExtractionAction)
+        : 'ADD';
+
+      let entities: ExtractedEntity[] | undefined;
+      if (Array.isArray(f.entities)) {
+        const valid = (f.entities as unknown[])
+          .map(parseEntity)
+          .filter((e): e is ExtractedEntity => e !== null);
+        if (valid.length > 0) entities = valid;
+      }
+
+      const fact: ExtractedFact = {
+        text: String(f.text).slice(0, 512),
+        type,
+        source,
+        scope,
+        reasoning,
+        importance: Math.max(1, Math.min(10, Number(f.importance) || 5)),
+        confidence: normalizeConfidence(f.confidence),
+        action,
+        existingFactId: typeof f.existingFactId === 'string' ? f.existingFactId : undefined,
+      };
+      if (entities) fact.entities = entities;
+      return fact;
+    })
+    // Reject illegal type:summary + source:user
+    .filter((f) => !(f.type === 'summary' && f.source === 'user'))
+    // Importance threshold (preserves DELETE)
+    .filter((f) => f.importance >= 6 || f.action === 'DELETE');
+
+  return { topics, facts };
+}
+
+/**
+ * Tag-don't-drop provenance filter (pipeline G / F).
+ *
+ * For each fact:
+ *   - If source is already "assistant", cap importance at 7.
+ *   - Otherwise, keyword-match the fact against user turns. If <30% of
+ *     content words (length >= 4) appear in user turns AND source != "user",
+ *     tag source as "assistant" and cap importance at 7 (keep the fact).
+ *   - Drop facts below importance 5 (unless DELETE action).
+ */
+export function applyProvenanceFilterLax(
+  facts: ExtractedFact[],
+  conversationText: string,
+): ExtractedFact[] {
+  const userTurnsLower = conversationText
+    .split(/\n\n/)
+    .filter((line) => line.startsWith('[user]:'))
+    .join(' ')
+    .toLowerCase();
+
+  return facts
+    .map((f) => {
+      if (f.source === 'assistant') {
+        return { ...f, importance: Math.min(f.importance, 7) };
+      }
+
+      const factWords = f.text
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length >= 4);
+
+      const matchedWords = factWords.filter((w) => userTurnsLower.includes(w)).length;
+      const matchRatio = factWords.length > 0 ? matchedWords / factWords.length : 0;
+
+      if (matchRatio < 0.3 && f.source !== 'user') {
+        return {
+          ...f,
+          source: 'assistant' as MemorySource,
+          importance: Math.min(f.importance, 7),
+        };
+      }
+
+      return f;
+    })
+    .filter((f) => f.importance >= 5 || f.action === 'DELETE');
+}
+
+/**
+ * Heuristic fallback volatility when the LLM doesn't assign one.
+ */
+export function defaultVolatility(f: ExtractedFact): MemoryVolatility {
+  if (f.type === 'commitment') return 'updatable';
+  if (f.type === 'episode') return 'stable';
+  if (f.type === 'directive') return 'stable';
+  if (f.scope === 'health' || f.scope === 'family') return 'stable';
+  return 'updatable';
+}
+
+const COMPARATIVE_PROMPT_V1 = `You are a memory re-ranker for the v1 taxonomy. You receive facts already extracted from one conversation, each with initial importance. Your job is twofold:
+
+1. RE-RANK importance to spread across the 1-10 range (avoid clustering at 7-8-9)
+2. ASSIGN volatility to each fact
+
+Re-ranking rules:
+- Top 1/3 of facts (most significant for this user): importance 9-10
+- Middle 1/3: importance 7-8
+- Bottom 1/3: importance 5-6 (borderline, may be dropped)
+- A fact may stay at 10 if it's clearly identity-defining (name, birthday) or marked as "never forget"
+- Never raise without justification; never lower below 5 unless clearly noise
+- You MUST produce a spread
+
+Volatility rules:
+- stable: unlikely to change for years (name, allergies, birthplace, fundamental traits)
+- updatable: changes occasionally (current job, active project, partner's name, address)
+- ephemeral: short-lived state (today's task, this week's plan, current trip itinerary)
+
+Use the FULL conversation context to judge volatility — a single claim may be ambiguous, but in context you can usually tell.
+
+Return JSON array, same order as input, ONLY with importance + volatility fields:
+[{"importance": N, "volatility": "stable|updatable|ephemeral"}, ...]
+No markdown.`;
+
+/**
+ * Comparative re-scoring pass (v1). Forces re-scoring when facts.length >= 5
+ * so the importance distribution spreads across the 1-10 range. When
+ * facts.length < 5, assigns defaultVolatility and returns.
+ */
+export async function comparativeRescoreV1(
+  facts: ExtractedFact[],
+  conversationText: string,
+  logger?: ExtractorLogger,
+): Promise<ExtractedFact[]> {
+  // G-tuned behavior: force rescore when >= 5 facts
+  if (facts.length < 2 || facts.length < 5) {
+    return facts.map((f) => ({ ...f, volatility: f.volatility ?? defaultVolatility(f) }));
+  }
+
+  const config = resolveLLMConfig();
+  if (!config) {
+    return facts.map((f) => ({ ...f, volatility: defaultVolatility(f) }));
+  }
+
+  const factsForPrompt = facts
+    .map((f, i) => `${i + 1}. [imp: ${f.importance}] [type: ${f.type}] [scope: ${f.scope ?? 'unspecified'}] ${f.text}`)
+    .join('\n');
+
+  const userPrompt = `Conversation context:\n${conversationText}\n\nExtracted facts:\n${factsForPrompt}\n\nReturn ${facts.length} JSON objects, each with "importance" + "volatility". Match input order.`;
+
+  let response: string | null | undefined;
+  try {
+    response = await chatCompletion(config, [
+      { role: 'system', content: COMPARATIVE_PROMPT_V1 },
+      { role: 'user', content: userPrompt },
+    ]);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger?.warn?.(`comparativeRescoreV1: chatCompletion threw: ${msg}`);
+    return facts.map((f) => ({ ...f, volatility: defaultVolatility(f) }));
+  }
+
+  if (!response) {
+    return facts.map((f) => ({ ...f, volatility: defaultVolatility(f) }));
+  }
+
+  let cleaned = response.trim();
+  cleaned = cleaned.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '').trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+  }
+  const match = cleaned.match(/\[[\s\S]*\]/);
+  if (match) cleaned = match[0];
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    return facts.map((f) => ({ ...f, volatility: defaultVolatility(f) }));
+  }
+  if (!Array.isArray(parsed)) {
+    return facts.map((f) => ({ ...f, volatility: defaultVolatility(f) }));
+  }
+
+  return facts.map((f, i) => {
+    const entry = parsed[i] as Record<string, unknown> | undefined;
+    const rawImp = entry && typeof entry === 'object' ? Number(entry.importance) : NaN;
+    const rawVol = entry && typeof entry === 'object' ? String(entry.volatility ?? '').toLowerCase() : '';
+
+    const newImp = Number.isFinite(rawImp)
+      ? Math.max(5, Math.min(10, Math.round(rawImp)))
+      : f.importance;
+    const newVol: MemoryVolatility =
+      (VALID_MEMORY_VOLATILITIES as readonly string[]).includes(rawVol)
+        ? (rawVol as MemoryVolatility)
+        : defaultVolatility(f);
+
+    return { ...f, importance: newImp, volatility: newVol };
+  });
+}
+
+/**
+ * Main v1 extraction entry point. Single merged-topic LLM call followed by
+ * tag-don't-drop provenance filter + comparative rescore. Mirrors
+ * `extractFacts()` in signature so the surrounding runtime (hook wiring,
+ * storeExtractedFacts, etc.) can swap between the two by checking
+ * `resolveTaxonomyVersion()`.
+ */
+export async function extractFactsV1(
+  rawMessages: unknown[],
+  mode: 'turn' | 'full',
+  existingMemories?: Array<{ id: string; text: string }>,
+  profileContext?: string,
+  logger?: ExtractorLogger,
+): Promise<ExtractedFact[]> {
+  const config = resolveLLMConfig();
+  if (!config) {
+    logger?.info?.('extractFactsV1: no LLM config resolved (skipping extraction)');
+    return [];
+  }
+
+  const parsed = rawMessages
+    .map(messageToText)
+    .filter((m): m is { role: string; content: string } => m !== null);
+
+  if (parsed.length === 0) {
+    logger?.info?.(`extractFactsV1: no parseable messages (raw count=${rawMessages.length})`);
+    return [];
+  }
+
+  const relevantMessages = mode === 'turn' ? parsed.slice(-6) : parsed;
+  const conversationText = truncateMessages(relevantMessages, 12_000);
+
+  if (conversationText.length < 20) {
+    logger?.info?.(
+      `extractFactsV1: conversation too short (${conversationText.length} chars < 20, parsed=${parsed.length}, mode=${mode})`,
+    );
+    return [];
+  }
+
+  let memoriesContext = '';
+  if (existingMemories && existingMemories.length > 0) {
+    const memoriesStr = existingMemories
+      .map((m) => `[ID: ${m.id}] ${m.text}`)
+      .join('\n');
+    memoriesContext = `\n\nExisting memories (use these for dedup — classify as UPDATE/DELETE/NOOP if they conflict or overlap):\n${memoriesStr}`;
+  }
+
+  const userPrompt =
+    mode === 'turn'
+      ? `Extract important facts from these recent conversation turns:\n\n${conversationText}${memoriesContext}`
+      : `Extract ALL valuable long-term memories from this conversation before it is lost:\n\n${conversationText}${memoriesContext}`;
+
+  const systemPrompt = profileContext || EXTRACTION_SYSTEM_PROMPT_V1_MERGED;
+
+  let response: string | null | undefined;
+  try {
+    response = await chatCompletion(config, [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ]);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger?.warn?.(`extractFactsV1: chatCompletion threw: ${msg}`);
+    return [];
+  }
+
+  if (!response) {
+    logger?.info?.('extractFactsV1: chatCompletion returned null/empty response');
+    return [];
+  }
+
+  logger?.info?.(
+    `extractFactsV1: LLM returned ${response.length} chars; parsing merged response`,
+  );
+  const { topics, facts: rawFacts } = parseMergedResponseV1(response, logger);
+  if (topics.length > 0) {
+    logger?.info?.(`extractFactsV1: topics = ${JSON.stringify(topics)}`);
+  }
+
+  // Provenance filter (tag-don't-drop)
+  let facts = applyProvenanceFilterLax(rawFacts, conversationText);
+
+  // Comparative rescore (forces re-rank when >= 5 facts)
+  facts = await comparativeRescoreV1(facts, conversationText, logger);
+
+  // Ensure every fact has a volatility (defensive: rescore may have skipped)
+  facts = facts.map((f) => ({ ...f, volatility: f.volatility ?? defaultVolatility(f) }));
+
+  // Lexical importance bumps (same as v0 pipeline)
+  for (const f of facts) {
+    const bump = computeLexicalImportanceBump(f.text, conversationText);
+    if (bump > 0) {
+      const oldImportance = f.importance;
+      const effectiveBump = f.importance >= 8 ? Math.min(bump, 1) : bump;
+      f.importance = Math.min(10, f.importance + effectiveBump);
+      logger?.info?.(
+        `extractFactsV1: lexical bump +${bump} for "${f.text.slice(0, 60)}..." (${oldImportance} → ${f.importance})`,
+      );
+    }
+  }
+
+  return facts;
 }
