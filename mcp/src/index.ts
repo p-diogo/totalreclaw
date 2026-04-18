@@ -873,13 +873,22 @@ async function handleDebriefSubgraph(
       const lshIndices = state.lshHasher.hash(embedding);
       const allIndices = [...wordIndices, ...lshIndices];
 
+      // Memory Taxonomy v1 (MCP server v3.0.0):
+      //   - Default: emit v1 inner blob with `type: 'summary'` (both tool-level
+      //     'summary' and 'context' map here — per spec §type-semantics, summary
+      //     absorbs session-level synthesis regardless of whether the tool
+      //     called it "summary" or "context"). `source: 'derived'` marks this
+      //     as a derived-from-conversation claim (spec requires summary ∈
+      //     {derived, assistant}; derived is the better fit here).
+      //   - TOTALRECLAW_CLAIM_FORMAT=legacy: legacy raw-text blob (pre-v3).
       const claimFormat = resolveClaimFormat();
       const blobPlaintext = claimFormat === 'legacy'
         ? item.text
-        : buildCanonicalClaim({
-            fact: { text: item.text, type: item.type },
+        : buildV1ClaimBlob({
+            text: item.text,
+            type: 'summary',
+            source: 'derived',
             importance: item.importance,
-            sourceAgent: 'mcp-server:debrief',
           });
       const encryptedBlob = encrypt(blobPlaintext, state.encryptionKey);
       const contentFp = generateContentFingerprint(item.text, state.dedupKey);
