@@ -125,6 +125,11 @@ class TotalReclaw:
         Pre-resolved Smart Account address.
     is_test : bool
         Send ``X-TotalReclaw-Test: true`` header.
+    session_id : str, optional
+        Session tag forwarded to the relay as ``X-TotalReclaw-Session`` for
+        Axiom log tracing. If not provided, falls back to the
+        ``TOTALRECLAW_SESSION_ID`` env var. Useful for QA runs that want
+        session-scoped relay logs.
     """
 
     def __init__(
@@ -136,6 +141,7 @@ class TotalReclaw:
         *,
         mnemonic: Optional[str] = None,
         relay_url: Optional[str] = None,
+        session_id: Optional[str] = None,
     ):
         resolved_mnemonic = recovery_phrase or mnemonic
         if not resolved_mnemonic:
@@ -171,6 +177,7 @@ class TotalReclaw:
             auth_key_hex=self._auth_key_hex,
             wallet_address=self._wallet_address,
             is_test=is_test,
+            session_id=session_id,
         )
         self._registered = False
 

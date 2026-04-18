@@ -97,12 +97,28 @@ class RelayClient:
         auth_key_hex: Optional[str] = None,
         wallet_address: Optional[str] = None,
         is_test: bool = False,
+        session_id: Optional[str] = None,
     ):
         self._relay_url = relay_url.rstrip("/")
         self._auth_key_hex = auth_key_hex
         self._wallet_address = wallet_address
         self._client_id = _detect_client_id()
         self._is_test = is_test or os.environ.get("TOTALRECLAW_TEST", "").lower() == "true"
+        # Optional session tag forwarded to the relay as ``X-TotalReclaw-Session``
+        # for Axiom log tracing. Resolves at construction in this priority:
+        #
+        #   1. Explicit ``session_id=`` constructor argument.
+        #   2. ``TOTALRECLAW_SESSION_ID`` env var.
+        #   3. None (header omitted).
+        #
+        # The v1 env cleanup accidentally removed this in v2.0.1 and broke
+        # Axiom session-scoped log queries — QA-V1CLEAN-VPS-20260418 Bug #1.
+        # Restored in v2.0.2.
+        resolved_session = session_id
+        if resolved_session is None:
+            env_session = os.environ.get("TOTALRECLAW_SESSION_ID")
+            resolved_session = env_session if env_session else None
+        self._session_id: Optional[str] = resolved_session or None
         # Cache httpx.AsyncClient per event loop. Sharing one client across
         # loops is the root cause of "Event loop is closed" in v2.0.1 — see
         # the module docstring. Keying by ``id(loop)`` means each loop gets
@@ -181,6 +197,11 @@ class RelayClient:
             headers["X-TotalReclaw-Test"] = "true"
         if self._auth_key_hex:
             headers["Authorization"] = f"Bearer {self._auth_key_hex}"
+        # Forward QA-scoped session tag for Axiom log tracing (if set).
+        # Matches the relay's expected header name and the semantic the
+        # plugin used before the v1 env cleanup.
+        if self._session_id:
+            headers["X-TotalReclaw-Session"] = self._session_id
         return headers
 
     async def register(self, auth_key_hash: str, salt_hex: str) -> str:
@@ -191,6 +212,8 @@ class RelayClient:
         }
         if self._is_test:
             headers["X-TotalReclaw-Test"] = "true"
+        if self._session_id:
+            headers["X-TotalReclaw-Session"] = self._session_id
         resp = await http.post(
             f"{self._relay_url}/v1/register",
             headers=headers,
