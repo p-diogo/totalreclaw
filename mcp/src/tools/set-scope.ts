@@ -19,17 +19,15 @@ import {
 } from './retype.js';
 
 const SET_SCOPE_DESCRIPTION =
-  'Re-tag an existing memory under a different life-domain scope (work, personal, health, family, creative, finance, misc, unspecified).\n' +
-  '\nINVOKE WHEN THE USER SAYS:\n' +
+  'Re-tag memory under different life-domain scope (work|personal|health|family|creative|finance|misc|unspecified).\n' +
+  '\nINVOKE WHEN USER SAYS:\n' +
   '- "actually that\'s work context, not personal"\n' +
-  '- "file that under health" / "move that to finance"\n' +
-  '- "wrong scope — this is about my kids, not work"\n' +
-  '- Any correction of which life-domain a memory belongs to\n' +
-  '\nWHAT IT DOES: Builds a new v1 claim with the new scope, links to the old memory via ' +
-  '`superseded_by`, tombstones the original. Idempotent. Original stays inspectable in the chain.\n' +
+  '- "file that under health" / "move to finance"\n' +
+  '- "wrong scope — about my kids, not work"\n' +
+  '\nDOES: builds v1 claim with new scope, links via superseded_by, tombstones original. Idempotent.\n' +
   '\nWHEN NOT TO USE:\n' +
-  '- The memory itself is wrong → totalreclaw_forget + totalreclaw_remember instead\n' +
-  '- The type is wrong (not the scope) → use totalreclaw_retype';
+  '- memory wrong → totalreclaw_forget + totalreclaw_remember\n' +
+  '- type wrong (not scope) → totalreclaw_retype';
 
 export const setScopeToolDefinition = {
   name: 'totalreclaw_set_scope',

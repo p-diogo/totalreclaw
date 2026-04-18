@@ -111,23 +111,17 @@ export function parseDebriefResponse(response: string): DebriefItem[] {
 export const debriefToolDefinition = {
   name: 'totalreclaw_debrief',
   description:
-    'Capture the broader context / outcomes / open threads of a conversation — the things turn-by-turn fact extraction misses. Stores items as v1 `summary` type with `source: derived`.\n' +
-    '\nINVOKE AT THE END OF A SUBSTANTIVE CONVERSATION:\n' +
-    '- The user says "goodbye" / "bye" / "thanks, that\'s all"\n' +
-    '- The topic has been resolved and conversation naturally winds down\n' +
-    '- A long debugging / planning / writing session has ended with a conclusion\n' +
-    '- Before you detect the conversation will hit compaction or reset\n' +
+    'Capture broader context/outcomes/open threads extraction missed. v1 summary, source=derived.\n' +
+    '\nINVOKE WHEN USER SAYS:\n' +
+    '- "goodbye" / "bye" / "thanks"\n' +
+    '- "that\'s all" / "I\'m done"\n' +
+    '- "wrapping up" / after long debug/plan session\n' +
+    '- before detected compaction/reset\n' +
     '\nWHEN NOT TO USE:\n' +
-    '- Casual chat, greetings, or a single-turn Q&A — debrief adds noise there\n' +
-    '- You haven\'t stored any facts via totalreclaw_remember yet — there\'s no broader context to add\n' +
-    '- You\'re unsure the conversation was meaningful — skip; debriefs should be rare\n' +
-    '\nWHAT TO INCLUDE (max 5 items, each 1-3 sentences, importance 7-8):\n' +
-    '- Overall project/topic that tied the conversation together\n' +
-    '- Outcomes / decisions / what was resolved\n' +
-    '- What was tried and how it turned out\n' +
-    '- Open threads / unfinished work\n' +
-    '- Relationships between topics discussed\n' +
-    '\nDo NOT repeat facts you already called totalreclaw_remember for. Type "summary" = conclusions, "context" = broader project context.',
+    '- casual chat / Q&A — adds noise\n' +
+    '- no prior totalreclaw_remember — no context\n' +
+    '- unsure → skip; debriefs rare\n' +
+    '\nMAX 5 (1-3 sentences, importance 7-8). type: summary|context.',
   inputSchema: {
     type: 'object',
     properties: {

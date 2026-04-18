@@ -24,19 +24,16 @@ import { buildV1ClaimBlob } from '../claims-helper.js';
 // ── Tool definition ──────────────────────────────────────────────────────────
 
 const RETYPE_DESCRIPTION =
-  'Reclassify an existing memory under a different Memory Taxonomy v1 type.\n' +
-  '\nINVOKE WHEN THE USER SAYS:\n' +
+  'Reclassify memory to different v1 type.\n' +
+  '\nINVOKE WHEN USER SAYS:\n' +
   '- "that was actually a directive, not a preference"\n' +
-  '- "that\'s more of a decision than a goal" / "retype as claim"\n' +
-  '- "file that under directives / commitments / preferences"\n' +
-  '- Any correction of how a prior memory was categorized\n' +
-  '\nWHAT IT DOES: Builds a new v1 claim with the new_type, links it to the old memory via ' +
-  '`superseded_by`, tombstones the original. Idempotent — retype to the same type is a no-op. ' +
-  'The original remains inspectable in the supersession chain.\n' +
+  '- "more of a decision than a goal" / "retype as claim"\n' +
+  '- "file that under directives/commitments"\n' +
+  '\nDOES: builds v1 claim with new_type, links via superseded_by, tombstones original. Idempotent.\n' +
   '\nWHEN NOT TO USE:\n' +
-  '- The memory text is wrong → delete with totalreclaw_forget and re-store with totalreclaw_remember\n' +
-  '- You\'re not sure which memory the user means → call totalreclaw_recall first, show options\n' +
-  '\nValid new_type values: claim, preference, directive, commitment, episode, summary.';
+  '- text wrong → totalreclaw_forget + totalreclaw_remember\n' +
+  '- unsure which memory → totalreclaw_recall first\n' +
+  '\nnew_type: claim|preference|directive|commitment|episode|summary.';
 
 export const retypeToolDefinition = {
   name: 'totalreclaw_retype',
