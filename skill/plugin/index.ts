@@ -20,10 +20,27 @@
  *   - totalreclaw_import_from  -- import memories from other tools (Mem0, MCP Memory, etc.)
  *   - totalreclaw_upgrade      -- create Stripe checkout for Pro upgrade
  *   - totalreclaw_migrate      -- migrate testnet memories to mainnet after Pro upgrade
- *   - totalreclaw_setup        -- initialize with recovery phrase (no gateway restart needed)
+ *   - totalreclaw_onboarding_start -- non-secret pointer to the CLI wizard (3.2.0)
+ *   - totalreclaw_setup        -- DEPRECATED in 3.2.0; redirects to the CLI wizard
  *
- * Also registers a `before_agent_start` hook that automatically injects
- * relevant memories into the agent's context.
+ * Also registers:
+ *   - `before_agent_start` hook that automatically injects relevant memories
+ *     into the agent's context (and a non-secret onboarding hint when the
+ *     user has not completed the CLI setup yet).
+ *   - `before_tool_call` hook that gates every memory tool until onboarding
+ *     state is `active` (3.2.0).
+ *   - `registerCli` subcommand `openclaw totalreclaw onboard` — the ONLY
+ *     surface that generates or accepts a recovery phrase. Lives entirely on
+ *     the user's terminal; the phrase never enters an LLM request or a
+ *     session transcript.
+ *   - `registerCommand` slash command `/totalreclaw {onboard,status}` — a
+ *     non-secret pointer that directs the user to the CLI wizard.
+ *
+ * Security: in 3.2.0, the recovery phrase NEVER appears in tool responses,
+ * `prependContext` blocks, slash-command replies, or any other surface that
+ * is sent to the LLM provider or persisted to the session transcript. See
+ * `docs/plans/2026-04-20-plugin-320-secure-onboarding.md` in the internal
+ * repo for the threat-model analysis and per-surface classification.
  *
  * All data is encrypted client-side with XChaCha20-Poly1305. The server never
  * sees plaintext.
@@ -115,9 +132,6 @@ import {
   deleteCredentialsFile,
   isRunningInDocker,
   deleteFileIfExists,
-  autoBootstrapCredentials,
-  markFirstRunAnnouncementShown,
-  type BootstrapOutcome,
 } from './fs-helpers.js';
 import crypto from 'node:crypto';
 
@@ -410,84 +424,44 @@ let needsSetup = false;
 let firstRunAfterInit = true;
 
 /**
- * When non-null, the before_agent_start hook emits a one-time banner
- * announcing the freshly-generated (or recovered-from-corrupt) recovery
- * phrase. Populated by `autoBootstrapCredentials` inside `initialize()`;
- * consumed + cleared by the hook, which then calls
- * `markFirstRunAnnouncementShown(CREDENTIALS_PATH)` to persist the
- * acknowledgement to disk so a process restart does not re-announce.
- */
-let pendingFirstRunAnnouncement: {
-  mnemonic: string;
-  /** 'fresh_generated' | 'recovered_from_corrupt' */
-  reason: 'fresh_generated' | 'recovered_from_corrupt';
-  /** Set when `reason === 'recovered_from_corrupt'`. */
-  backupPath?: string;
-} | null = null;
-
-/**
- * Derive keys from the recovery phrase, load or create credentials, and
- * register with the server if this is the first run.
+ * Derive keys from the recovery phrase, load credentials, and register with
+ * the server if this is the first run.
  *
- * 3.1.0 auto-setup: if no env-var mnemonic is present, call
- * `autoBootstrapCredentials` to either reuse credentials.json or mint a
- * fresh BIP-39 mnemonic. The explicit `totalreclaw_setup` tool stays
- * available for users who want to restore from an existing phrase, but
- * it is no longer required on first run.
+ * 3.2.0: this function is read-only with respect to the mnemonic. It pulls
+ * the phrase from either the env var override or an existing
+ * `credentials.json` written by the onboarding wizard. It never generates a
+ * fresh phrase — that only happens inside the CLI wizard where the phrase
+ * can be surfaced to the user on a non-LLM TTY. If no usable phrase is
+ * available here, `needsSetup` is flipped and the `before_tool_call` gate
+ * directs the caller to `openclaw totalreclaw onboard`.
  */
 async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
   const serverUrl = CONFIG.serverUrl || 'https://api.totalreclaw.xyz';
   let masterPassword = CONFIG.recoveryPhrase;
 
-  // ---- 3.1.0 auto-bootstrap ----
-  //
-  // When the env var isn't set, probe credentials.json. If it has a
-  // usable mnemonic, reuse it; otherwise generate a fresh one and
-  // persist it atomically. The user sees a one-time banner on their
-  // next agent turn revealing the phrase (see `pendingFirstRunAnnouncement`
-  // + the before_agent_start handler).
+  // 3.2.0: if the env var is unset, probe credentials.json for a
+  // pre-existing mnemonic (written either by the CLI wizard on this machine
+  // or ported in from another client). We do NOT generate a phrase here —
+  // generation is the wizard's job so the user sees the phrase on a TTY
+  // and never through the LLM.
   if (!masterPassword) {
-    try {
-      const outcome: BootstrapOutcome = autoBootstrapCredentials(CREDENTIALS_PATH, {
-        generateMnemonic: () => {
-          // Inline the scure/bip39 import so fs-helpers.ts never pulls
-          // in the crypto surface (keeps its scanner-sim footprint small).
-          const { generateMnemonic } = require('@scure/bip39');
-          const { wordlist } = require('@scure/bip39/wordlists/english.js');
-          return generateMnemonic(wordlist, 128);
-        },
-      });
-      masterPassword = outcome.mnemonic;
-      setRecoveryPhraseOverride(outcome.mnemonic);
-      if (outcome.status === 'fresh_generated') {
-        logger.info('Auto-setup: generated a fresh recovery phrase + wrote credentials.json');
-      } else if (outcome.status === 'recovered_from_corrupt') {
-        logger.warn(
-          `Auto-setup: credentials.json was unusable; renamed to ${outcome.backupPath ?? '<rename failed>'} ` +
-          `and generated a new recovery phrase. The old file is preserved in case you can recover ` +
-          `the prior mnemonic from it.`,
-        );
-      } else {
-        logger.info('Auto-setup: reusing existing credentials.json');
-      }
-      if (outcome.announcementPending) {
-        pendingFirstRunAnnouncement = {
-          mnemonic: outcome.mnemonic,
-          reason: outcome.status === 'recovered_from_corrupt' ? 'recovered_from_corrupt' : 'fresh_generated',
-          backupPath: outcome.backupPath,
-        };
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.warn(`Auto-setup failed (${msg}); falling back to "setup required" flow`);
-      needsSetup = true;
-      return;
+    const existing = loadCredentialsJson(CREDENTIALS_PATH);
+    const candidate =
+      (typeof existing?.mnemonic === 'string' && existing.mnemonic.trim()) ||
+      (typeof existing?.recovery_phrase === 'string' && existing.recovery_phrase.trim()) ||
+      '';
+    if (candidate) {
+      masterPassword = candidate;
+      setRecoveryPhraseOverride(candidate);
+      logger.info('Loaded recovery phrase from credentials.json');
     }
   }
 
   if (!masterPassword) {
     needsSetup = true;
-    logger.info('TOTALRECLAW_RECOVERY_PHRASE not set — setup required (see SKILL.md Post-Install Setup)');
+    logger.info(
+      'TotalReclaw: no recovery phrase available — run `openclaw totalreclaw onboard` in a terminal to set up',
+    );
     return;
   }
 
@@ -4184,51 +4158,23 @@ const plugin = {
 
           await ensureInitialized(api.logger);
 
-          // If setup is still needed after init, inject guided onboarding
+          // 3.2.0 onboarding pending: emit a non-secret guidance banner so
+          // the LLM knows how to respond when the user asks about setup.
+          // This contains ZERO secret material — the phrase never enters an
+          // LLM request. The CLI wizard (`openclaw totalreclaw onboard`) is
+          // the only surface that generates / reveals the recovery phrase.
           if (needsSetup) {
             return {
               prependContext:
-                '## TotalReclaw — First-Time Setup\n\n' +
-                'TotalReclaw is an end-to-end encrypted memory vault. It remembers things across conversations — preferences, decisions, project context — all encrypted so no one (not even the server) can read your memories.\n\n' +
-                '**To get started, ask the user:** "Do you have an existing TotalReclaw recovery phrase you\'d like to restore, or should I generate a new one?"\n\n' +
-                '**If new user:** Run `npx @totalreclaw/mcp-server setup` to generate a cryptographically valid recovery phrase. Do NOT generate the phrase yourself — LLMs cannot compute BIP-39 checksums. The command will output the phrase. Then call the `totalreclaw_setup` tool with the phrase. Display the phrase prominently and warn:\n' +
-                '- "This is your ONLY way to access your memories. Write it down and store it securely."\n' +
-                '- "NEVER use a recovery phrase from an existing crypto wallet — keep this separate from any wallet that holds funds."\n' +
-                '- "If you lose this phrase, your memories are gone forever — there is no recovery."\n\n' +
-                '**If returning user:** Ask them to provide their 12-word phrase, then call `totalreclaw_setup` with that phrase.\n\n' +
-                '**IMPORTANT:** Use the `totalreclaw_setup` tool to complete setup. This initializes encryption keys immediately — no gateway restart needed. The user can continue chatting right away.\n\n' +
-                '**After setup:** Explain that from now on, you will automatically remember important things from conversations and recall relevant memories at the start of each session. The user can also explicitly ask you to remember, recall, forget, or export memories.',
+                '## TotalReclaw setup pending\n\n' +
+                'TotalReclaw encrypted memory is installed but not yet set up on this machine. ' +
+                'If the user asks about memory features or wants to configure TotalReclaw, ' +
+                'call the `totalreclaw_onboarding_start` tool for instructions.\n\n' +
+                '**Do NOT** attempt to generate, display, or relay a recovery phrase in chat. ' +
+                'All phrase handling happens on the user\'s local terminal via ' +
+                '`openclaw totalreclaw onboard` — this keeps the phrase out of the LLM ' +
+                'provider\'s logs.',
             };
-          }
-
-          // 3.1.0 one-time first-run banner. When the plugin auto-generated
-          // (or recovered) the recovery phrase during initialize(), surface
-          // it to the user exactly once. Fires on the first turn after
-          // bootstrap, then flips the `firstRunAnnouncementShown` flag in
-          // credentials.json so a process restart does not re-announce.
-          let firstRunBanner = '';
-          if (pendingFirstRunAnnouncement) {
-            const ann = pendingFirstRunAnnouncement;
-            pendingFirstRunAnnouncement = null;
-            if (ann.reason === 'fresh_generated') {
-              firstRunBanner =
-                '## TotalReclaw — new encrypted memory vault\n\n' +
-                'I generated a fresh recovery phrase for you and stored it on disk — your memories are end-to-end encrypted and only this phrase can decrypt them.\n\n' +
-                `**Recovery phrase:** \`${ann.mnemonic}\`\n\n` +
-                '**Action required:** write this down somewhere safe before the conversation ends. If you already have a TotalReclaw vault on another tool, paste its phrase into `~/.totalreclaw/credentials.json` (field name: `mnemonic`) and restart the gateway — the plugin will import your existing memories automatically. If you lose this phrase, your memories are unrecoverable.\n\n' +
-                'Share the phrase + this warning with the user verbatim; do not summarize.';
-            } else {
-              firstRunBanner =
-                '## TotalReclaw — credentials.json recovered\n\n' +
-                `Your previous credentials.json could not be parsed. I renamed it to \`${ann.backupPath ?? '<see log>'}\` so the bytes are preserved in case you need to recover the old mnemonic, and generated a new recovery phrase:\n\n` +
-                `**New recovery phrase:** \`${ann.mnemonic}\`\n\n` +
-                '**Action required:** save this phrase. If you still have the prior mnemonic, overwrite `mnemonic` in `~/.totalreclaw/credentials.json` and restart the gateway to re-import your previous memories.\n\n' +
-                'Share this block + the warning with the user verbatim.';
-            }
-            // Persist acknowledgement so a process restart doesn't re-emit
-            // the banner. Best-effort; failure only means the banner might
-            // show twice, not data loss.
-            markFirstRunAnnouncementShown(CREDENTIALS_PATH);
           }
 
           // One-time welcome message (first conversation after setup or returning user)
@@ -4245,13 +4191,6 @@ const plugin = {
               ? 'You are on the **Pro** tier — unlimited memories, permanently stored on Gnosis mainnet.'
               : 'You are on the **Free** tier — memories stored on testnet. Use the totalreclaw_upgrade tool to upgrade to Pro for permanent on-chain storage.';
             welcomeBack = `\n\nTotalReclaw is active. I will automatically remember important things from our conversations and recall relevant context at the start of each session. ${tierInfo}`;
-          }
-
-          // If we generated / recovered a recovery phrase this session,
-          // prepend the one-time banner to welcomeBack so every downstream
-          // return site injects it without duplicated plumbing.
-          if (firstRunBanner) {
-            welcomeBack = `\n\n${firstRunBanner}${welcomeBack}`;
           }
 
           // Billing cache check — warn if quota is approaching limit.
