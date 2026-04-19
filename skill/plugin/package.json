@@ -40,6 +40,10 @@
     "CLAWHUB.md",
     "skill.json"
   ],
+  "scripts": {
+    "check-scanner": "node ../scripts/check-scanner.mjs",
+    "prepublishOnly": "node ../scripts/check-scanner.mjs"
+  },
   "openclaw": {
     "extensions": [
       "./index.ts"
