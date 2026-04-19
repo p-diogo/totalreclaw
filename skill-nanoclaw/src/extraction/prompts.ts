@@ -7,11 +7,37 @@
  * accepted on the read/parse side via ``V0_TO_V1_TYPE`` so pre-v1 vault
  * entries still round-trip.
  *
- * Aligned with the canonical extraction prompt from
- * ``skill/plugin/extractor.ts`` (plugin v3.0.0).
+ * As of NanoClaw 3.0.1 / core 2.2.0, the canonical `BASE_SYSTEM_PROMPT`
+ * text is hoisted to Rust core (`@totalreclaw/core`). Aligned with the
+ * OpenClaw plugin (`skill/plugin/extractor.ts`) and Hermes Python client
+ * (`python/src/totalreclaw/agent/extraction.py`) — all three clients
+ * consume byte-identical prompt text.
+ *
+ * LLM output is now ADD-only. The previously-requested `UPDATE` /
+ * `DELETE` / `NOOP` actions have been dropped: the dominant extraction
+ * path (`hooks/agent-end.ts:108`) already silently filtered them, and
+ * contradiction / duplicate lifecycle is now owned by the in-process
+ * consolidation + contradiction resolvers in core. `validateExtractionResponse`
+ * stays backwards-tolerant of the legacy tokens so any stale server
+ * response still round-trips without throwing.
  */
 
+/**
+ * Extraction-time action tokens. Canonical output is `ADD`-only as of
+ * NanoClaw 3.0.1 — the other three are retained in this union only so
+ * `validateExtractionResponse` stays tolerant of stale server responses.
+ */
 export type ExtractionAction = 'ADD' | 'UPDATE' | 'DELETE' | 'NOOP';
+
+// ---------------------------------------------------------------------------
+// Load canonical extraction prompt from `@totalreclaw/core` (2.2.0+).
+// NanoClaw compiles to CommonJS (see package.json / tsconfig: no
+// "type": "module"), so a plain `require` is the right idiom. The same
+// binding is consumed by the plugin (via `createRequire(import.meta.url)`
+// — ESM) and by Python (via PyO3), giving us a single source of truth.
+// ---------------------------------------------------------------------------
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const core = require('@totalreclaw/core') as typeof import('@totalreclaw/core');
 
 // ---------------------------------------------------------------------------
 // Memory Taxonomy v1 — 6 canonical memory types. Single source of truth.
@@ -142,90 +168,15 @@ export interface ExtractedFact {
 }
 
 // ---------------------------------------------------------------------------
-// v1 merged-topic extraction prompt
+// v1 merged-topic extraction prompt (hoisted to `@totalreclaw/core`)
 // ---------------------------------------------------------------------------
 
-const BASE_SYSTEM_PROMPT = `You are a memory extraction engine using Memory Taxonomy v1. Work in TWO explicit phases within one response:
-
-PHASE 1 — Topic identification.
-Before extracting any fact, identify the 2-3 main topics the user was engaging with. Topics should be short phrases (2-5 words each). If the conversation has no clear user-focused topic, use an empty topics array.
-
-PHASE 2 — Fact extraction anchored to those topics.
-Extract valuable memories. Prefer facts that directly relate to the identified topics (importance 7-9 range). Tangential facts may still be extracted but score lower (6-7 range).
-
-Rules:
-1. Each memory = single self-contained piece of information
-2. Focus on user-specific info useful in future conversations
-3. Skip generic knowledge, greetings, small talk, ephemeral task coordination
-4. Score importance 1-10 (6+ = worth storing)
-5. Every memory MUST attribute a source (provenance critical)
-
-Importance rubric (use FULL 1-10 range):
-- 10: Critical, core identity, never-forget content
-- 9: Affects many future decisions
-- 8: High-value preference/decision/rule
-- 7: Specific durable fact
-- 6: Borderline
-- 5 or below: NOT worth storing — drop
-
-DO NOT cluster everything at 7-8-9.
-
-═══════════════════════════════════════════════════════════════
-TYPE (6 values)
-═══════════════════════════════════════════════════════════════
-- claim: factual assertion (absorbs fact/context/decision; decisions populate reasoning field)
-- preference: likes/dislikes/tastes
-- directive: imperative rule ("always X", "never Y")
-- commitment: future intent ("will do X")
-- episode: notable event
-- summary: derived synthesis (source must be derived|assistant) — do NOT emit for turn-extraction
-
-═══════════════════════════════════════════════════════════════
-SOURCE (provenance, CRITICAL)
-═══════════════════════════════════════════════════════════════
-- user: user explicitly stated it (in [user]: turns)
-- user-inferred: extractor inferred from user signals
-- assistant: assistant authored content — DOWNGRADE unless user affirmed/quoted/used it
-- external, derived: rare
-
-IF fact substance appears ONLY in [assistant]: turns without user affirmation → source:assistant
-
-═══════════════════════════════════════════════════════════════
-SCOPE (life domain)
-═══════════════════════════════════════════════════════════════
-work | personal | health | family | creative | finance | misc | unspecified
-
-═══════════════════════════════════════════════════════════════
-REASONING (only for claims that are decisions)
-═══════════════════════════════════════════════════════════════
-For type=claim where the user expressed a decision-with-reasoning, populate "reasoning" with the WHY clause.
-
-Actions (compare against existing memories if provided):
-- ADD: New memory, no conflict with existing
-- UPDATE: Refines or corrects an existing memory (provide existingFactId)
-- DELETE: Contradicts an existing memory — the old one is now wrong (provide existingFactId)
-- NOOP: Already captured or not worth storing
-
-═══════════════════════════════════════════════════════════════
-OUTPUT FORMAT (no markdown, no code fences)
-═══════════════════════════════════════════════════════════════
-{
-  "topics": ["topic 1", "topic 2"],
-  "facts": [
-    {
-      "text": "...",
-      "type": "claim|preference|directive|commitment|episode|summary",
-      "source": "user|user-inferred|assistant",
-      "scope": "work|personal|health|...",
-      "importance": N,
-      "action": "ADD|UPDATE|DELETE|NOOP",
-      "reasoning": "...",      // optional, only for claim+decision
-      "existingFactId": "..."  // only for UPDATE/DELETE
-    }
-  ]
-}
-
-If nothing worth extracting: {"topics": [], "facts": []}`;
+/**
+ * Canonical extraction system prompt — resolved from `@totalreclaw/core`
+ * so every client (plugin, Hermes, NanoClaw) consumes byte-identical
+ * text. See `rust/totalreclaw-core/src/prompts/extraction.md`.
+ */
+const BASE_SYSTEM_PROMPT: string = core.getExtractionSystemPrompt();
 
 export const PRE_COMPACTION_PROMPT = {
   system: BASE_SYSTEM_PROMPT,
@@ -240,7 +191,7 @@ export const PRE_COMPACTION_PROMPT = {
     existingMemories: string;
   }): { system: string; user: string } {
     const memoriesSection = context.existingMemories && context.existingMemories !== '(No existing memories)'
-      ? `\n\nExisting memories (use these for dedup — classify as UPDATE/DELETE/NOOP if they conflict or overlap):\n${context.existingMemories}`
+      ? `\n\nExisting memories (use for dedup — already stored, do NOT re-extract; extract only genuinely new memories):\n${context.existingMemories}`
       : '';
     return {
       system: this.system,
@@ -264,7 +215,7 @@ export const POST_TURN_PROMPT = {
     existingMemories: string;
   }): { system: string; user: string } {
     const memoriesSection = context.existingMemories && context.existingMemories !== '(No existing memories)'
-      ? `\n\nExisting memories (use these for dedup — classify as UPDATE/DELETE/NOOP if they conflict or overlap):\n${context.existingMemories}`
+      ? `\n\nExisting memories (use for dedup — already stored, do NOT re-extract; extract only genuinely new memories):\n${context.existingMemories}`
       : '';
     return {
       system: this.system,

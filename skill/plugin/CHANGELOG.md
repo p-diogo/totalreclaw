@@ -4,6 +4,32 @@ All notable changes to `@totalreclaw/totalreclaw` (the OpenClaw plugin) are docu
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.7] — 2026-04-19
+
+### Changed
+
+- **Internal refactor — extraction prompts now delegate to
+  `@totalreclaw/core` WASM.** `EXTRACTION_SYSTEM_PROMPT` and
+  `COMPACTION_SYSTEM_PROMPT` in `extractor.ts` previously held the
+  prompt text as multi-kilobyte TypeScript template literals and had
+  drifted from the Python copy (the meta-request filter rule from PR
+  #34 was never ported, so OpenClaw was emitting spurious "set up
+  TotalReclaw" preferences). They now lazy-load from
+  `@totalreclaw/core@2.2.0`'s `getExtractionSystemPrompt()` /
+  `getCompactionSystemPrompt()` — the same single source of truth
+  consumed by the Python client and NanoClaw skill.
+- **Rule 6 meta-request filter** now applies to OpenClaw extraction.
+  The hoisted canonical text includes the rule that prevents "install
+  the memory plugin" / "configure the vault" utterances from being
+  stored as spurious user preferences. No API change for callers —
+  `EXTRACTION_SYSTEM_PROMPT` / `COMPACTION_SYSTEM_PROMPT` / the
+  deprecated `EXTRACTION_SYSTEM_PROMPT_V1_MERGED` alias all continue to
+  export as runtime `string` constants.
+
+### Internal
+
+- `@totalreclaw/core` dep bumped to `^2.2.0`.
+
 ## [3.0.6] — 2026-04-19
 
 ### Changed

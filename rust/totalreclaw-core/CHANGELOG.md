@@ -5,6 +5,62 @@ All notable changes to `@totalreclaw/core` / `totalreclaw-core` are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-04-19
+
+### Added
+
+- **Canonical extraction + compaction system prompts** hoisted into core.
+  New module [`prompts`](./src/prompts.rs) exports the two LLM system
+  prompts that drive every client's auto-extraction pipeline:
+  - `EXTRACTION_SYSTEM_PROMPT` (`&'static str`) — post-turn extraction
+    prompt (importance floor 6).
+  - `COMPACTION_SYSTEM_PROMPT` (`&'static str`) — compaction prompt
+    (importance floor 5, last-chance wording, format-agnostic parsing
+    section).
+  - `get_extraction_system_prompt()` + `get_compaction_system_prompt()`
+    accessors (symmetric surface to the WASM/PyO3 bindings).
+  - Prompt bodies live in sibling `.md` files pulled in with
+    `include_str!` so the text is readable in review and baked into the
+    compiled artifact with zero runtime I/O.
+- **WASM bindings** (feature `wasm`): `getExtractionSystemPrompt`,
+  `getCompactionSystemPrompt`.
+- **PyO3 bindings** (feature `python`): `get_extraction_system_prompt`,
+  `get_compaction_system_prompt`.
+
+### Changed
+
+- **Canonical prompt shape is ADD-only.** The previously-optional
+  `UPDATE` / `DELETE` / `NOOP` actions are no longer in the emitted
+  schema. Contradiction and duplicate lifecycle are now owned by the
+  in-process consolidation + contradiction resolvers
+  (`consolidation::*`, `contradiction::*`) post-extraction. NanoClaw's
+  `BASE_SYSTEM_PROMPT` was the only client still asking the LLM for
+  these tokens, and its dominant extraction path at
+  `skill-nanoclaw/src/agent-end.ts:108` already silently dropped them,
+  so the change is behavior-preserving for OpenClaw / Hermes and
+  removes dead surface for NanoClaw.
+- **Rule 6 meta-request filter is canonical.** The rule that prevents
+  "set up TotalReclaw" / "install the memory plugin" utterances from
+  being stored as spurious preferences landed in the Python client only
+  (PR #34, `ed289aa`) and never crossed to TypeScript. The canonical
+  prompt includes it so every downstream client picks up the fix on
+  rebase.
+
+### Notes / Compatibility
+
+- Minor-version bump. The new accessor surface is additive, but
+  downstream TypeScript / Python consumers that were importing their
+  own `EXTRACTION_SYSTEM_PROMPT` / `COMPACTION_SYSTEM_PROMPT` constants
+  should switch to the core-exported versions during this release so
+  the Rule 6 fix propagates. A follow-up PR will remove the duplicate
+  constants from client packages once 2.2.0 is on the registry.
+
+### References
+
+- Backlog: [Tier 2 item #7](../../docs/plans/core-hoist-backlog.md)
+- Audit: `docs/notes/ROADMAP-AUDIT-20260419.md` (internal) §7.1 Agent B
+- Origin of Rule 6: PR #34 (`ed289aa`) — spurious-extract fix
+
 ## [2.1.0] - 2026-04-19
 
 ### Added

@@ -1,5 +1,50 @@
 # Changelog — @totalreclaw/skill-nanoclaw
 
+## 3.0.1 — 2026-04-19
+
+### Changed
+
+- **Extraction prompt hoisted to `@totalreclaw/core`.**
+  `BASE_SYSTEM_PROMPT` in `src/extraction/prompts.ts` previously carried
+  ~80 lines of inline template literal that had drifted from the plugin
+  and Python copies. It now lazy-loads from
+  `@totalreclaw/core@2.2.0`'s `getExtractionSystemPrompt()` — the same
+  single source of truth consumed by the OpenClaw plugin (3.0.7) and
+  Hermes Python client (2.3.0). All three clients now consume
+  byte-identical prompt text.
+- **Canonical output is ADD-only.** The hoisted prompt no longer asks
+  the LLM for `UPDATE` / `DELETE` / `NOOP` actions. NanoClaw's
+  dominant extraction path (`hooks/agent-end.ts:108`) already silently
+  dropped non-ADD tokens, so this closes an unused-surface gap. The
+  secondary path in `hooks/pre-compact.ts` previously did attempt a
+  forget-then-remember dance for UPDATE/DELETE — that wiring is
+  removed (it had structural bugs around LLM-supplied `existingFactId`
+  round-tripping, and contradiction / duplicate lifecycle is now owned
+  by the server-side consolidation + contradiction resolvers).
+- **Rule 6 meta-request filter** now applies to NanoClaw extraction
+  via the hoist. Prevents "set up TotalReclaw" / "install the memory
+  plugin" utterances from being stored as spurious preferences.
+
+### Internal
+
+- `@totalreclaw/core` dep: `^2.0.0` → `^2.2.0`.
+- `validateExtractionResponse` remains backwards-tolerant of legacy
+  `UPDATE` / `DELETE` / `NOOP` tokens so any stale server response
+  still round-trips cleanly.
+- Existing pre-compact tests for UPDATE / DELETE paths updated to
+  assert the new no-op behavior.
+
+### Migration
+
+- Deployed installations pick up the fix automatically on the next
+  `npm install` of `@totalreclaw/skill-nanoclaw@3.0.1` (or on any
+  refresh that pulls `@totalreclaw/core@2.2.0`).
+- **Follow-up**: the contradiction resolver port into NanoClaw's
+  pre-compact path is tracked as a separate task. Today NanoClaw
+  delegates contradiction handling to the MCP server via stored-fact
+  round-trips; bringing the in-client consolidation path back online
+  is a future-work item.
+
 ## 3.0.0 — 2026-04-18
 
 Memory Taxonomy v1 is now the default (and only) extraction path. The legacy

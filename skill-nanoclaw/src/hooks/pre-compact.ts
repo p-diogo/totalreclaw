@@ -89,38 +89,26 @@ export async function preCompact(
         tags: buildV1Tags(fact, input.groupFolder),
       };
 
-      switch (fact.action) {
-        case 'ADD':
-          try {
-            await client.remember(fact.text, metadata);
-            factsStored++;
-          } catch (err: unknown) {
-            if (handleQuotaError(err)) {
-              quotaExceeded = true;
-            }
-          }
-          break;
-
-        case 'UPDATE':
-        case 'DELETE':
-          if (fact.existingFactId) {
-            try {
-              await client.forget(fact.existingFactId);
-              if (fact.action === 'UPDATE') {
-                await client.remember(fact.text, metadata);
-                factsStored++;
-              }
-            } catch (err: unknown) {
-              if (handleQuotaError(err)) {
-                quotaExceeded = true;
-              }
-              // Skip if delete/update fails for other reasons
-            }
-          }
-          break;
-
-        case 'NOOP':
-          break;
+      // NanoClaw 3.0.1 is ADD-only — the canonical extraction prompt
+      // hoisted into `@totalreclaw/core@2.2.0` no longer asks the LLM
+      // for `UPDATE` / `DELETE` / `NOOP`. Contradiction + duplicate
+      // lifecycle is owned by the server-side consolidation and
+      // contradiction resolvers. `validateExtractionResponse` still
+      // tolerates the legacy tokens for back-compat with stale server
+      // responses; we fold non-ADD actions into a no-op here so any
+      // stale payload silently drops rather than firing the old
+      // forget-then-remember path (which had structural bugs around
+      // LLM-supplied `existingFactId` round-tripping).
+      if (fact.action !== 'ADD') {
+        continue;
+      }
+      try {
+        await client.remember(fact.text, metadata);
+        factsStored++;
+      } catch (err: unknown) {
+        if (handleQuotaError(err)) {
+          quotaExceeded = true;
+        }
       }
     }
 
@@ -128,8 +116,11 @@ export async function preCompact(
     let debriefStored = 0;
     if (llmClient && validation.facts && validation.facts.length > 0) {
       try {
+        // NanoClaw 3.0.1 is ADD-only (see switch above). The
+        // UPDATE-branch filter that used to live here is gone; the
+        // legacy tokens are now treated as no-ops upstream.
         const storedTexts = validation.facts
-          .filter(f => f.action === 'ADD' || f.action === 'UPDATE')
+          .filter(f => f.action === 'ADD')
           .map(f => f.text);
         const alreadyStored = storedTexts.length > 0
           ? storedTexts.map(t => `- ${t}`).join('\n')

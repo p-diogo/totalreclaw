@@ -6,6 +6,36 @@ Hermes Agent plugin are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-04-19
+
+Canonical extraction prompts hoisted to Rust core. The meta-request
+filter (Rule 6) that was exclusive to Python now propagates to every
+client through the shared binding — no more drift.
+
+### Changed
+
+- **`EXTRACTION_SYSTEM_PROMPT` and `COMPACTION_SYSTEM_PROMPT` now come
+  from `totalreclaw_core`.** Previously the 4-5 KB prompt text was
+  inline triple-quoted strings in `agent/extraction.py`. It now resolves
+  once at import via
+  `totalreclaw_core.get_extraction_system_prompt()` /
+  `get_compaction_system_prompt()` — same binding consumed by the
+  OpenClaw plugin (3.0.7) and NanoClaw skill. Guarantees byte-identical
+  text across every TotalReclaw client. No public API change: the two
+  constants keep their names, their type (`str`), and the
+  `totalreclaw.agent` re-export path.
+- **LLM output schema is `ADD`-only.** Matches the canonical shape from
+  core — see the core 2.2.0 entry for rationale. Python was already
+  `ADD`-only in practice (the in-process consolidation + contradiction
+  resolvers own lifecycle post-extraction), so this is a prompt-text
+  reconciliation rather than a behavior change for the Python client.
+
+### Internal
+
+- `totalreclaw-core` dep: `>=2.0.0,<3.0.0` → `>=2.2.0,<3.0.0`.
+- Removed ~200 lines of duplicated prompt text from
+  `python/src/totalreclaw/agent/extraction.py`.
+
 ## [2.2.0] - 2026-04-19
 
 Hermes parity Gap 3: client-side batching. Drops 15-fact extraction
