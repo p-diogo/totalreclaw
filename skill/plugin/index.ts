@@ -2474,7 +2474,14 @@ const plugin = {
             },
             type: {
               type: 'string',
-              enum: [...VALID_MEMORY_TYPES, ...LEGACY_V0_MEMORY_TYPES],
+              // Dedup the merged enum. `preference` and `summary` appear in
+              // BOTH v1 (VALID_MEMORY_TYPES) and legacy v0 (LEGACY_V0_MEMORY_TYPES),
+              // so the naive spread produces duplicate items at ## 5 and 12
+              // (QA failure on 3.0.7-rc.1: ajv rejects schema with "items ##
+              // 5 and 12 are identical"). `new Set(...)` drops dupes while
+              // preserving insertion order so v1 tokens appear first in the
+              // enum — agents default to picking one of those.
+              enum: Array.from(new Set([...VALID_MEMORY_TYPES, ...LEGACY_V0_MEMORY_TYPES])),
               description:
                 'Memory Taxonomy v1 type: claim, preference, directive, commitment, episode, summary. ' +
                 'Use "claim" for factual assertions and decisions (populate `reasoning` with the why clause). ' +
