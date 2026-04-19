@@ -1586,6 +1586,9 @@ fn totalreclaw_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Memory Taxonomy v1 constants + guard
     crate::memory_types::register_python_functions(m)?;
 
+    // Canonical extraction + compaction system prompts
+    crate::prompts::register_python_functions(m)?;
+
     Ok(())
 }
 
