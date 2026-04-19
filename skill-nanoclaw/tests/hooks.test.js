@@ -197,7 +197,13 @@ describe('preCompact', () => {
     expect(result.factsStored).toBe(1);
   });
 
-  it('should handle UPDATE action', async () => {
+  // NanoClaw 3.0.1 aligned the extraction pipeline to ADD-only (see
+  // CHANGELOG + `extraction/prompts.ts` hoist). pre-compact now silently
+  // skips legacy UPDATE / DELETE / NOOP actions instead of firing a
+  // forget-then-remember path that had structural bugs around
+  // LLM-supplied `existingFactId` round-tripping. Contradiction +
+  // duplicate lifecycle is owned by the server-side resolvers.
+  it('pre-compact should silently skip legacy UPDATE action (ADD-only alignment)', async () => {
     const mockClient = createMockClient();
     const mockLLMClient = {
       generate: jest.fn().mockResolvedValue(JSON.stringify({
@@ -220,8 +226,10 @@ describe('preCompact', () => {
       groupFolder: 'main',
     });
 
-    expect(mockClient.forget).toHaveBeenCalledWith('old-fact-id');
-    expect(result.factsStored).toBe(1);
+    // UPDATE is now a no-op — no forget, no remember, nothing stored.
+    expect(mockClient.forget).not.toHaveBeenCalled();
+    expect(mockClient.remember).not.toHaveBeenCalled();
+    expect(result.factsStored).toBe(0);
   });
 });
 
@@ -505,7 +513,9 @@ describe('agentEnd extended', () => {
 });
 
 describe('preCompact extended', () => {
-  it('should handle DELETE action', async () => {
+  // NanoClaw 3.0.1 aligned the extraction pipeline to ADD-only. Legacy
+  // DELETE is now a no-op at pre-compact time — see UPDATE test above.
+  it('pre-compact should silently skip legacy DELETE action (ADD-only alignment)', async () => {
     const mockClient = createMockClient();
     const mockLLMClient = {
       generate: jest.fn().mockResolvedValue(JSON.stringify({
@@ -528,7 +538,9 @@ describe('preCompact extended', () => {
       groupFolder: 'main',
     });
 
-    expect(mockClient.forget).toHaveBeenCalledWith('old-fact-123');
+    // DELETE is now a no-op — no forget fires, no fact stored.
+    expect(mockClient.forget).not.toHaveBeenCalled();
+    expect(mockClient.remember).not.toHaveBeenCalled();
     expect(result.factsStored).toBe(0);
   });
 
@@ -1022,7 +1034,13 @@ describe('agentEnd dedup interaction', () => {
  * - Both rely on MCP store-time dedup for near-duplicate detection on ADDs
  */
 describe('preCompact vs agentEnd: complementary dedup', () => {
-  it('preCompact handles UPDATE (forget old + remember new) — agentEnd does not', async () => {
+  // NanoClaw 3.0.1 aligned both hooks to ADD-only. agentEnd and
+  // preCompact now behave identically with respect to non-ADD actions:
+  // both silently drop them. Contradiction + duplicate lifecycle is
+  // owned by the server-side resolvers, so the LLM is no longer asked
+  // to emit UPDATE / DELETE / NOOP. Keep these tests — they now
+  // document that the legacy client-side CRUD is gone on both paths.
+  it('preCompact silently drops legacy UPDATE (ADD-only alignment) — matches agentEnd', async () => {
     const updateFacts = JSON.stringify({
       facts: [{
         factText: 'User now prefers Rust over TypeScript',
@@ -1036,7 +1054,7 @@ describe('preCompact vs agentEnd: complementary dedup', () => {
       }],
     });
 
-    // Test agentEnd — should NOT process UPDATE
+    // agentEnd — drops UPDATE (unchanged behavior).
     const agentEndClient = createMockClient();
     const agentEndLLM = { generate: jest.fn().mockResolvedValue(updateFacts) };
     const { agentEnd } = require('../dist/hooks/agent-end.js');
@@ -1050,7 +1068,10 @@ describe('preCompact vs agentEnd: complementary dedup', () => {
     expect(agentEndClient.forget).not.toHaveBeenCalled();
     expect(agentEndClient.remember).not.toHaveBeenCalled();
 
-    // Test preCompact — SHOULD process UPDATE (forget old + remember new)
+    // preCompact — now ALSO drops UPDATE (3.0.1 alignment). The old
+    // forget-then-remember path had structural bugs around LLM-supplied
+    // `existingFactId` round-tripping; contradiction / duplicate
+    // lifecycle is owned by the server-side resolvers.
     const preCompactClient = createMockClient();
     const preCompactLLM = { generate: jest.fn().mockResolvedValue(updateFacts) };
     const { preCompact } = require('../dist/hooks/pre-compact.js');
@@ -1059,15 +1080,12 @@ describe('preCompact vs agentEnd: complementary dedup', () => {
       groupFolder: 'main',
     });
 
-    expect(preCompactResult.factsStored).toBe(1);
-    expect(preCompactClient.forget).toHaveBeenCalledWith('old-ts-fact');
-    expect(preCompactClient.remember).toHaveBeenCalledWith(
-      'User now prefers Rust over TypeScript',
-      expect.objectContaining({ source: 'pre_compaction' })
-    );
+    expect(preCompactResult.factsStored).toBe(0);
+    expect(preCompactClient.forget).not.toHaveBeenCalled();
+    expect(preCompactClient.remember).not.toHaveBeenCalled();
   });
 
-  it('preCompact handles DELETE (forget old, no store) — agentEnd does not', async () => {
+  it('preCompact silently drops legacy DELETE (ADD-only alignment) — matches agentEnd', async () => {
     const deleteFacts = JSON.stringify({
       facts: [{
         factText: 'User no longer uses Python',
@@ -1081,7 +1099,7 @@ describe('preCompact vs agentEnd: complementary dedup', () => {
       }],
     });
 
-    // Test agentEnd — should NOT process DELETE
+    // agentEnd — drops DELETE (unchanged behavior).
     const agentEndClient = createMockClient();
     const agentEndLLM = { generate: jest.fn().mockResolvedValue(deleteFacts) };
     const { agentEnd } = require('../dist/hooks/agent-end.js');
@@ -1094,7 +1112,7 @@ describe('preCompact vs agentEnd: complementary dedup', () => {
     expect(agentEndResult.factsStored).toBe(0);
     expect(agentEndClient.forget).not.toHaveBeenCalled();
 
-    // Test preCompact — SHOULD process DELETE (forget old, no store)
+    // preCompact — now ALSO drops DELETE (3.0.1 alignment).
     const preCompactClient = createMockClient();
     const preCompactLLM = { generate: jest.fn().mockResolvedValue(deleteFacts) };
     const { preCompact } = require('../dist/hooks/pre-compact.js');
@@ -1104,7 +1122,7 @@ describe('preCompact vs agentEnd: complementary dedup', () => {
     });
 
     expect(preCompactResult.factsStored).toBe(0);
-    expect(preCompactClient.forget).toHaveBeenCalledWith('python-fact-id');
+    expect(preCompactClient.forget).not.toHaveBeenCalled();
     expect(preCompactClient.remember).not.toHaveBeenCalled();
   });
 
@@ -1149,7 +1167,7 @@ describe('preCompact vs agentEnd: complementary dedup', () => {
     expect(preCompactClient.remember).toHaveBeenCalled();
   });
 
-  it('preCompact handles full CRUD in a single extraction', async () => {
+  it('preCompact handles mixed legacy batch — ADD-only, ignores UPDATE/DELETE/NOOP', async () => {
     const fullCrudFacts = JSON.stringify({
       facts: [
         {
@@ -1201,29 +1219,24 @@ describe('preCompact vs agentEnd: complementary dedup', () => {
       groupFolder: 'main',
     });
 
-    // All 4 extracted
+    // All 4 still extracted (validateExtractionResponse stays
+    // backwards-tolerant of legacy tokens for back-compat with stale
+    // server payloads).
     expect(result.factsExtracted).toBe(4);
-    // ADD + UPDATE stored (2), DELETE and NOOP not stored
-    expect(result.factsStored).toBe(2);
+    // ADD-only: just the ADD action is stored. UPDATE / DELETE / NOOP
+    // are silently dropped under the 3.0.1 ADD-only alignment.
+    expect(result.factsStored).toBe(1);
 
-    // ADD: remember called for new fact
+    // ADD: remember called for the new fact.
     expect(mockClient.remember).toHaveBeenCalledWith(
       'User started learning Go',
       expect.objectContaining({ source: 'pre_compaction' })
     );
 
-    // UPDATE: forget old + remember new
-    expect(mockClient.forget).toHaveBeenCalledWith('light-mode-fact');
-    expect(mockClient.remember).toHaveBeenCalledWith(
-      'User now prefers dark mode',
-      expect.objectContaining({ source: 'pre_compaction' })
-    );
+    // Legacy UPDATE + DELETE never fire forget any more.
+    expect(mockClient.forget).not.toHaveBeenCalled();
 
-    // DELETE: forget old only
-    expect(mockClient.forget).toHaveBeenCalledWith('vim-fact');
-
-    // Total: 2 remember calls (ADD + UPDATE), 2 forget calls (UPDATE + DELETE)
-    expect(mockClient.remember).toHaveBeenCalledTimes(2);
-    expect(mockClient.forget).toHaveBeenCalledTimes(2);
+    // Exactly one remember call (the ADD).
+    expect(mockClient.remember).toHaveBeenCalledTimes(1);
   });
 });
