@@ -379,22 +379,79 @@ class TestBug8PinEmitsV4Pinned:
         return relay
 
     @staticmethod
-    def _extract_protobuf_version(payload: bytes) -> int:
-        """Extract the outer protobuf ``version`` field (field #11, wire type 0).
+    def _scan_protobuf_field(
+        payload: bytes, target_field: int, target_wire: int,
+    ):
+        """Walk a protobuf payload once and return the value of ``target_field``.
 
-        Mirrors the helper in ``test_pin_unpin.py`` but scanning for the
-        specific field we care about. Returns 0 if the field is absent.
+        ``target_wire`` determines the shape of the returned value:
+          * 0 (varint)            → int
+          * 2 (length-delimited)  → bytes
+
+        Returns ``None`` when the field is absent. Used by the Wave 2a pin
+        tests to inspect both the outer version varint (field 8, wire 0)
+        and the encrypted-blob bytes field (field 4, wire 2) without
+        standing up a full protobuf decoder.
         """
-        from totalreclaw import protobuf
-        # Rather than re-implement a parser, re-use the Python decoder.
-        decoded = protobuf.decode_fact_protobuf(payload)
-        return int(decoded.version or 0)
+        i = 0
+        n = len(payload)
+        while i < n:
+            tag = 0
+            shift = 0
+            while True:
+                b = payload[i]
+                i += 1
+                tag |= (b & 0x7F) << shift
+                if not (b & 0x80):
+                    break
+                shift += 7
+            fn = tag >> 3
+            wt = tag & 0x07
 
-    @staticmethod
-    def _extract_encrypted_blob(payload: bytes) -> bytes:
-        from totalreclaw import protobuf
-        decoded = protobuf.decode_fact_protobuf(payload)
-        return decoded.encrypted_blob
+            if wt == 0:  # varint
+                value = 0
+                shift = 0
+                while True:
+                    b = payload[i]
+                    i += 1
+                    value |= (b & 0x7F) << shift
+                    if not (b & 0x80):
+                        break
+                    shift += 7
+                if fn == target_field and wt == target_wire:
+                    return value
+            elif wt == 1:  # fixed64
+                i += 8
+            elif wt == 2:  # length-delimited
+                length = 0
+                shift = 0
+                while True:
+                    b = payload[i]
+                    i += 1
+                    length |= (b & 0x7F) << shift
+                    if not (b & 0x80):
+                        break
+                    shift += 7
+                value_bytes = payload[i : i + length]
+                i += length
+                if fn == target_field and wt == target_wire:
+                    return value_bytes
+            elif wt == 5:  # fixed32
+                i += 4
+            else:
+                raise ValueError(f"unsupported wire type {wt}")
+        return None
+
+    def _extract_protobuf_version(self, payload: bytes) -> int:
+        """Field 8 = ``version`` varint on the outer ``FactPayload`` protobuf."""
+        value = self._scan_protobuf_field(payload, target_field=8, target_wire=0)
+        return int(value) if value is not None else 0
+
+    def _extract_encrypted_blob(self, payload: bytes) -> bytes:
+        """Field 4 = ``encrypted_blob`` bytes on the outer ``FactPayload`` protobuf."""
+        value = self._scan_protobuf_field(payload, target_field=4, target_wire=2)
+        assert value is not None, "payload missing encrypted_blob field"
+        return value
 
     @pytest.mark.asyncio
     @patch("totalreclaw.operations.build_and_send_userop", new_callable=AsyncMock)
