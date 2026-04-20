@@ -135,6 +135,7 @@ import {
   resolveOnboardingState,
   type OnboardingState,
 } from './fs-helpers.js';
+import { decideToolGate, isGatedToolName } from './tool-gating.js';
 import crypto from 'node:crypto';
 
 // ---------------------------------------------------------------------------
@@ -4258,6 +4259,105 @@ const plugin = {
         },
       },
       { name: 'totalreclaw_setup' },
+    );
+
+    // ---------------------------------------------------------------
+    // Tool: totalreclaw_onboarding_start (3.2.0 pointer-only tool)
+    // ---------------------------------------------------------------
+    //
+    // When the user asks the LLM to set up TotalReclaw, this tool directs
+    // them to the CLI wizard. The response body is a non-secret pointer —
+    // it NEVER contains a recovery phrase — so it can safely flow through
+    // the LLM provider and the transcript.
+    api.registerTool(
+      {
+        name: 'totalreclaw_onboarding_start',
+        label: 'TotalReclaw — start onboarding',
+        description:
+          'Call this when the user wants to set up TotalReclaw memory or asks about ' +
+          'enabling memory features. This tool does NOT generate, display, or accept ' +
+          'a recovery phrase — it returns a short pointer that tells the user to run ' +
+          'the onboarding wizard in their local terminal. All phrase handling happens ' +
+          'outside the LLM. If TotalReclaw is already active, the tool returns a ' +
+          'confirmation.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          additionalProperties: false,
+        },
+        async execute() {
+          const state = resolveOnboardingState(CREDENTIALS_PATH, CONFIG.onboardingStatePath);
+          if (state.onboardingState === 'active') {
+            return {
+              content: [{
+                type: 'text',
+                text:
+                  'TotalReclaw is already set up on this machine. Your encryption keys are ' +
+                  'ready — `totalreclaw_remember`, `totalreclaw_recall`, and the other memory ' +
+                  'tools are unblocked. Run `openclaw totalreclaw status` in a terminal for ' +
+                  'more detail.',
+              }],
+            };
+          }
+          return {
+            content: [{
+              type: 'text',
+              text:
+                'TotalReclaw onboarding requires a local terminal so your recovery phrase ' +
+                'never touches the LLM provider. On the same machine as your OpenClaw ' +
+                'gateway, open a terminal and run:\n\n' +
+                '    openclaw totalreclaw onboard\n\n' +
+                'The wizard will ask whether you want to generate a new phrase or import an ' +
+                'existing TotalReclaw phrase. Both paths display/accept the phrase only on ' +
+                'your terminal — nothing crosses the network. After the wizard completes, ' +
+                'come back here and I\'ll be able to use `totalreclaw_remember` and ' +
+                '`totalreclaw_recall`.',
+            }],
+          };
+        },
+      },
+      { name: 'totalreclaw_onboarding_start' },
+    );
+
+    // ---------------------------------------------------------------
+    // Hook: before_tool_call (3.2.0 memory-tool gate)
+    // ---------------------------------------------------------------
+    //
+    // Blocks every memory tool until onboarding state is `active`. The
+    // `blockReason` string is LLM-visible but carries no secret — it's a
+    // pointer to the CLI wizard.
+    //
+    // Non-gated tools: totalreclaw_upgrade, totalreclaw_migrate,
+    // totalreclaw_onboarding_start, totalreclaw_setup (deprecated).
+    // Billing tools work pre-onboarding because they help the user reach a
+    // Pro tier before they have memories to store; setup-adjacent tools
+    // return their own routing messages.
+    //
+    // Decision logic lives in `tool-gating.ts` so it's unit-testable
+    // without a full plugin host.
+    api.on(
+      'before_tool_call',
+      async (event: unknown) => {
+        const evt = event as { toolName?: string } | undefined;
+        const toolName = evt?.toolName;
+        if (!toolName || !isGatedToolName(toolName)) {
+          return undefined;
+        }
+        let state: OnboardingState | null = null;
+        try {
+          state = resolveOnboardingState(CREDENTIALS_PATH, CONFIG.onboardingStatePath);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          api.logger.warn(`before_tool_call: state resolution failed: ${msg}`);
+          return undefined; // Fail-open: if we can't read state, let the tool run and surface its own error.
+        }
+        const decision = decideToolGate(toolName, state);
+        if (decision.block) {
+          return { block: true, blockReason: decision.blockReason };
+        }
+        return undefined;
+      },
+      { priority: 5 },
     );
 
     // ---------------------------------------------------------------
