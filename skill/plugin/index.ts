@@ -4141,121 +4141,100 @@ const plugin = {
     );
 
     // ---------------------------------------------------------------
-    // Tool: totalreclaw_setup
+    // Tool: totalreclaw_setup (DEPRECATED in 3.2.0)
     // ---------------------------------------------------------------
-
+    //
+    // Pre-3.2.0 behaviour: auto-generate a mnemonic + return it in the tool
+    // response body so the LLM surfaces it to the user. That path shipped
+    // the recovery phrase to the LLM provider's logs — incompatible with
+    // TotalReclaw's "server cannot read your memories" pitch. 3.2.0
+    // replaces it with a pointer-only stub.
+    //
+    // Kept registered (rather than deleted) for back-compat — LLMs that
+    // learned the old tool name from training data won't silently succeed
+    // if the user asks them to set up memory. They'll call this tool,
+    // receive a pointer to `openclaw totalreclaw onboard`, and the flow
+    // continues on the user's TTY.
+    //
+    // The `recovery_phrase` param is kept in the schema so existing tool
+    // calls parse — but ANY phrase the caller passes is rejected, and the
+    // tool NEVER writes credentials.json. All real setup happens in the
+    // CLI wizard.
     api.registerTool(
       {
         name: 'totalreclaw_setup',
-        label: 'Setup TotalReclaw',
+        label: 'TotalReclaw setup (deprecated — redirect to CLI)',
         description:
-          'Initialize TotalReclaw with a recovery phrase. Derives encryption keys and registers with the server. ' +
-          'Use this during first-time setup instead of setting environment variables — no gateway restart needed.',
+          'DEPRECATED in 3.2.0. This tool no longer accepts recovery phrases or performs ' +
+          'setup. It returns a pointer to `openclaw totalreclaw onboard` — the secure CLI ' +
+          'wizard that runs on the user\'s terminal so the phrase never touches the LLM ' +
+          'provider. Prefer calling `totalreclaw_onboarding_start` for the same pointer.',
         parameters: {
           type: 'object',
           properties: {
             recovery_phrase: {
               type: 'string',
-              description: 'Optional 12-word BIP-39 recovery phrase. If not provided, generates a new one automatically. For returning users, pass their existing phrase.',
+              description:
+                'Legacy parameter — IGNORED in 3.2.0. If provided, the tool returns a ' +
+                'security warning explaining that phrases must never be pasted through ' +
+                'chat. Use the `openclaw totalreclaw onboard` CLI wizard to import an ' +
+                'existing phrase safely.',
             },
           },
           additionalProperties: false,
         },
         async execute(_toolCallId: string, params: { recovery_phrase?: string }) {
-          try {
-            const providedPhrase = params.recovery_phrase?.trim() || '';
-
-            // 3.1.0 idempotency: if the plugin is already fully set up AND
-            // the caller provides either no phrase or a matching one, return
-            // a no-op confirmation instead of a forced re-init (which
-            // triggers a stale-credentials delete + fresh register round
-            // trip). Prior versions always rebuilt everything.
-            if (!needsSetup) {
-              const currentCreds = loadCredentialsJson(CREDENTIALS_PATH);
-              const currentMnemonic = typeof currentCreds?.mnemonic === 'string' ? currentCreds.mnemonic.trim() : '';
-              if (!providedPhrase || (currentMnemonic && currentMnemonic === providedPhrase)) {
-                return {
-                  content: [{
-                    type: 'text',
-                    text: 'TotalReclaw is already set up. Your existing recovery phrase is kept — no changes made.\n\n' +
-                          'If you want to rotate wallets or switch to a different phrase, first delete ~/.totalreclaw/credentials.json, then call this tool with the new phrase.',
-                  }],
-                };
-              }
-            }
-
-            let mnemonic = providedPhrase;
-
-            // Auto-generate if not provided
-            if (!mnemonic) {
-              const { generateMnemonic } = await import('@scure/bip39');
-              const { wordlist } = await import('@scure/bip39/wordlists/english');
-              mnemonic = generateMnemonic(wordlist, 128);
-              api.logger.info('totalreclaw_setup: generated new BIP-39 mnemonic');
-            }
-
-            // Guard: refuse to overwrite existing credentials with a DIFFERENT phrase
-            // (prevents data loss when background sessions_spawn workers call setup).
-            // Allow re-init with the SAME phrase (handles agent exec → setup flow).
-            // loadCredentialsJson returns null for missing/corrupt files — we proceed
-            // with setup in both cases, matching the prior try/catch semantics.
-            const existingCreds = loadCredentialsJson(CREDENTIALS_PATH);
-            if (existingCreds && existingCreds.mnemonic && existingCreds.userId && existingCreds.mnemonic !== mnemonic) {
-              api.logger.info('totalreclaw_setup: credentials exist with different mnemonic, refusing to overwrite');
-              return {
-                content: [{
-                  type: 'text',
-                  text: 'TotalReclaw is already set up with an existing recovery phrase. Your encrypted memories are tied to that phrase.\n\n' +
-                        'If you intentionally want to start fresh with a NEW phrase (this will make existing memories inaccessible), ' +
-                        'delete ~/.totalreclaw/credentials.json first, then call this tool again.',
-                }],
-              };
-            }
-
-            // Basic validation: must be 12 words
-            const words = mnemonic.split(/\s+/);
-            if (words.length !== 12) {
-              return {
-                content: [{
-                  type: 'text',
-                  text: `Error: Recovery phrase must be exactly 12 words (got ${words.length}). Use \`npx @totalreclaw/mcp-server setup\` to generate a valid BIP-39 mnemonic.`,
-                }],
-              };
-            }
-
-            api.logger.info('totalreclaw_setup: initializing with provided recovery phrase');
-
-            // Force re-initialization with the new mnemonic.
-            // This derives keys, registers with the server, saves credentials,
-            // and sets up LSH/auth — all without a gateway restart.
-            await forceReinitialization(mnemonic, api.logger);
-
-            if (needsSetup) {
-              return {
-                content: [{
-                  type: 'text',
-                  text: 'Setup failed — could not initialize with the provided recovery phrase. Check the logs for details.',
-                }],
-              };
-            }
-
-            const wasGenerated = !params.recovery_phrase?.trim();
+          // Phrase-passing is a security boundary violation in 3.2.0. Reject
+          // with a message that explains WHY — the LLM might try again with
+          // a different shape otherwise.
+          if (typeof params?.recovery_phrase === 'string' && params.recovery_phrase.trim().length > 0) {
+            api.logger.warn(
+              'totalreclaw_setup: rejected phrase-passing call (3.2.0 deprecation).',
+            );
             return {
               content: [{
                 type: 'text',
-                text: 'TotalReclaw setup complete! Encryption keys derived, server registration confirmed. ' +
-                      'You can now use totalreclaw_remember, totalreclaw_recall, and all other tools immediately — no restart needed.\n\n' +
-                      (wasGenerated ? `Recovery phrase: ${mnemonic}\n\n` : '') +
-                      'From now on, I will automatically remember important things from our conversations and recall relevant context at the start of each session.',
+                text:
+                  'For security, TotalReclaw no longer accepts a recovery phrase through ' +
+                  'chat. Pasting a phrase into this tool would ship it to the LLM provider, ' +
+                  'which defeats the whole point of end-to-end encryption.\n\n' +
+                  'Ask the user to open a terminal on their machine and run:\n\n' +
+                  '    openclaw totalreclaw onboard\n\n' +
+                  'The wizard imports an existing phrase via a hidden stdin prompt that ' +
+                  'never touches the LLM, the transcript, or the network.',
               }],
             };
-          } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            api.logger.error(`totalreclaw_setup failed: ${message}`);
+          }
+
+          // No-arg call against an already-active state: confirm + move on.
+          const state = resolveOnboardingState(CREDENTIALS_PATH, CONFIG.onboardingStatePath);
+          if (state.onboardingState === 'active') {
             return {
-              content: [{ type: 'text', text: `Setup failed: ${humanizeError(message)}` }],
+              content: [{
+                type: 'text',
+                text:
+                  'TotalReclaw is already set up and active on this machine. Memory tools ' +
+                  'are unblocked — you can call `totalreclaw_remember` and `totalreclaw_recall` ' +
+                  'directly. If the user wants to rotate phrases, have them delete ' +
+                  '`~/.totalreclaw/credentials.json` and run `openclaw totalreclaw onboard` again.',
+              }],
             };
           }
+
+          // Fresh state, no phrase: redirect to the CLI wizard.
+          return {
+            content: [{
+              type: 'text',
+              text:
+                'TotalReclaw setup must run on the user\'s local terminal so the recovery ' +
+                'phrase never touches the LLM. Ask the user to open a terminal and run:\n\n' +
+                '    openclaw totalreclaw onboard\n\n' +
+                'The wizard walks through generate-new-phrase or import-existing-phrase. ' +
+                'After it completes, memory tools become available automatically. See the ' +
+                '`totalreclaw_onboarding_start` tool for the same pointer in a more ' +
+                'discoverable shape.',
+            }],
+          };
         },
       },
       { name: 'totalreclaw_setup' },
