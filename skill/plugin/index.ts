@@ -132,6 +132,8 @@ import {
   deleteCredentialsFile,
   isRunningInDocker,
   deleteFileIfExists,
+  resolveOnboardingState,
+  type OnboardingState,
 } from './fs-helpers.js';
 import crypto from 'node:crypto';
 
@@ -169,6 +171,38 @@ interface OpenClawPluginApi {
   registerTool(tool: unknown, opts?: { name?: string; names?: string[] }): void;
   registerService(service: { id: string; start(): void; stop?(): void }): void;
   on(hookName: string, handler: (...args: unknown[]) => unknown, opts?: { priority?: number }): void;
+  /**
+   * 3.2.0 — register a top-level `openclaw <cmd>` subcommand. The handler
+   * receives a commander `Command` to attach subcommands to. Output goes
+   * straight to the user's TTY; nothing touches the LLM or the transcript.
+   * We deliberately type `program` as `unknown` at this boundary because
+   * we don't import the SDK's full types; the runtime shape is commander's
+   * `Command` which we cast at the call site.
+   */
+  registerCli?(
+    registrar: (ctx: { program: unknown; config?: unknown; workspaceDir?: string; logger?: unknown }) => void | Promise<void>,
+    opts?: { commands?: string[] },
+  ): void;
+  /**
+   * 3.2.0 — register a slash command (e.g. `/totalreclaw`). The handler
+   * runs before the agent; its reply is delivered via the channel adapter.
+   * Reply text IS appended to the session transcript (see gateway-cli
+   * L9300-9312), so we only emit non-secret pointers.
+   */
+  registerCommand?(command: {
+    name: string;
+    description: string;
+    acceptsArgs?: boolean;
+    requireAuth?: boolean;
+    handler: (ctx: {
+      senderId?: string;
+      channel?: string;
+      args?: string;
+      commandBody?: string;
+      isAuthorizedSender?: boolean;
+      config?: unknown;
+    }) => { text: string } | Promise<{ text: string }>;
+  }): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -2499,6 +2533,94 @@ const plugin = {
         api.logger.info('TotalReclaw plugin stopped');
       },
     });
+
+    // ---------------------------------------------------------------
+    // 3.2.0 — CLI wizard registration (leak-free onboarding surface)
+    // ---------------------------------------------------------------
+    //
+    // `api.registerCli` attaches a top-level `openclaw totalreclaw ...`
+    // subcommand chain. The wizard runs entirely on the user's TTY —
+    // stdout/stdin — and NEVER routes any of its I/O through the LLM
+    // provider or the session transcript. This is the ONLY surface in
+    // 3.2.0 where a recovery phrase is generated or accepted.
+    //
+    // The dynamic import keeps the @scure/bip39 + readline/promises
+    // surface out of the `register()` hot path — only pulled in when the
+    // CLI subcommand actually fires.
+    if (typeof api.registerCli === 'function') {
+      api.registerCli(
+        async ({ program }) => {
+          const { registerOnboardingCli } = await import('./onboarding-cli.js');
+          registerOnboardingCli(program as import('commander').Command, {
+            credentialsPath: CREDENTIALS_PATH,
+            statePath: CONFIG.onboardingStatePath,
+            logger: api.logger,
+          });
+        },
+        { commands: ['totalreclaw'] },
+      );
+    } else {
+      api.logger.warn(
+        'api.registerCli is unavailable on this OpenClaw version — `openclaw totalreclaw onboard` will not work. ' +
+          'Users can still set TOTALRECLAW_RECOVERY_PHRASE manually.',
+      );
+    }
+
+    // ---------------------------------------------------------------
+    // 3.2.0 — slash command `/totalreclaw {onboard,status}` (in-chat bridge)
+    // ---------------------------------------------------------------
+    //
+    // `api.registerCommand` replies bypass the LLM for the current turn BUT
+    // are appended to the session transcript, so the LLM sees the reply on
+    // the NEXT turn. That is fine here because every reply is a non-secret
+    // pointer — it directs the user to the CLI wizard and explicitly
+    // explains why the phrase cannot appear in chat.
+    if (typeof api.registerCommand === 'function') {
+      api.registerCommand({
+        name: 'totalreclaw',
+        description: 'TotalReclaw onboarding + status (non-secret pointer to the terminal wizard)',
+        acceptsArgs: true,
+        requireAuth: false,
+        handler: async (ctx) => {
+          const sub = (ctx.args || '').trim().split(/\s+/)[0]?.toLowerCase() || 'help';
+          if (sub === 'onboard' || sub === 'setup' || sub === 'init') {
+            return {
+              text:
+                'To set up TotalReclaw, open a terminal on this machine and run:\n\n' +
+                '    openclaw totalreclaw onboard\n\n' +
+                'Why a terminal? Your recovery phrase must never pass through the ' +
+                'LLM provider. This chat message is visible to the LLM, so we do ' +
+                'not show the phrase here. The wizard runs entirely on your local ' +
+                'machine — the phrase is generated, displayed, and stored on disk ' +
+                '(mode 0600) without ever touching the network.',
+            };
+          }
+          if (sub === 'status') {
+            // Non-secret summary — never shows the mnemonic.
+            let stateLabel: string;
+            try {
+              const state = resolveOnboardingState(CREDENTIALS_PATH, CONFIG.onboardingStatePath);
+              stateLabel = state.onboardingState;
+            } catch {
+              stateLabel = 'unknown';
+            }
+            return {
+              text:
+                `TotalReclaw onboarding state: ${stateLabel}.\n` +
+                (stateLabel === 'active'
+                  ? 'Memory tools are active on this machine.'
+                  : 'Memory tools are gated. Run `openclaw totalreclaw onboard` in a terminal to complete setup.'),
+            };
+          }
+          return {
+            text:
+              'TotalReclaw slash commands:\n' +
+              '  /totalreclaw onboard — how to set up TotalReclaw securely\n' +
+              '  /totalreclaw status  — current onboarding state',
+          };
+        },
+      });
+    }
 
     // ---------------------------------------------------------------
     // Tool: totalreclaw_remember
