@@ -74,13 +74,27 @@ const BIP39_WORDLIST_JS_ARRAY = buildBip39Literal();
 
 /**
  * Escape a string for safe embedding between `<script>` tags.
- * Prevents `</script>` / `<!--` / `-->` injection AND normalizes
- * non-ASCII characters to JS escapes. Our only inputs (sid, apiBase,
- * mode) are internally-controlled, but defense-in-depth keeps the
- * surface minimal.
+ *
+ * `JSON.stringify` produces a valid JS string literal but does NOT
+ * escape `<`, `>`, `&`, or U+2028/U+2029. All four are dangerous when
+ * the resulting string lands inside a `<script>` block:
+ *   - `</script>` in the payload would close the script element and
+ *     let subsequent bytes parse as HTML (XSS).
+ *   - `<!--` / `-->` can start an HTML comment that would hide code
+ *     from the browser under some parser modes.
+ *   - U+2028 / U+2029 are line terminators in JS even though JSON
+ *     permits them, which can break tooling.
+ *
+ * Our inputs (sid, apiBase, mode) are internally-controlled today, but
+ * defense-in-depth is cheap and matches OWASP's recommended pattern.
  */
 function escForJsString(s: string): string {
-  return JSON.stringify(s);
+  return JSON.stringify(s)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }
 
 /**
@@ -615,7 +629,7 @@ button.secondary:hover:not(:disabled) { border-color: var(--border-accent); colo
       '<h2>With this key you can:</h2>' +
       '<ul>' +
       '<li>Restore your TotalReclaw account on any new device</li>' +
-      '<li>Import your memories into Hermes, the MCP client, or any other TotalReclaw-enabled agent</li>' +
+      '<li>Import your memories into Hermes, OpenClaw, the MCP client, or any other TotalReclaw-enabled agent</li>' +
       '<li>Reset your gateway without losing a single memory</li>' +
       '</ul>' +
       '<div class="callout danger"><strong>Without it:</strong> you permanently lose access to all memories across all agents. TotalReclaw cannot recover it for you.</div>' +
