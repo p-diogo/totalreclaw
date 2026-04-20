@@ -277,18 +277,23 @@ def build_canonical_claim_v1(
     if not isinstance(canonical, dict):
         raise RuntimeError("validate_memory_claim_v1 did not return an object")
 
+    # Bug #8 (Wave 2a): the installed ``totalreclaw_core==2.1.0`` PyPI
+    # wheel doesn't round-trip the v1.1 ``pin_status`` field through
+    # ``validate_memory_claim_v1`` even though the Rust struct has it.
+    # Re-attach it IMMEDIATELY after validation (before schema_version +
+    # volatility). Order matters for byte-identical cross-impl parity
+    # with the plugin — core 2.1.1 on npm preserves the field in this
+    # position naturally, so inserting it here produces the same JSON
+    # key order as the plugin's output.
+    # Once core 2.1.1 (with the serde round-trip fix) lands on PyPI,
+    # this reattach becomes a no-op but remains safe.
+    if pin_status is not None and "pin_status" not in canonical:
+        canonical["pin_status"] = pin_status
+
     # Re-attach plugin-only extras not round-tripped by core's validator.
     canonical["schema_version"] = V1_SCHEMA_VERSION
     if volatility and volatility in VALID_MEMORY_VOLATILITIES:
         canonical["volatility"] = volatility
-    # Bug #8 (Wave 2a): the installed ``totalreclaw_core==2.1.0`` PyPI
-    # wheel doesn't round-trip the v1.1 ``pin_status`` field through
-    # ``validate_memory_claim_v1`` even though the Rust struct has it.
-    # Re-attach it here so the pin/unpin write path emits a readable
-    # pinned claim on-chain. Once core 2.1.1 (with the serde round-trip
-    # fix) is on PyPI, this becomes a no-op but remains safe.
-    if pin_status is not None:
-        canonical["pin_status"] = pin_status
 
     return json.dumps(canonical, ensure_ascii=False, separators=(",", ":"))
 

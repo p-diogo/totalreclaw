@@ -648,3 +648,97 @@ class TestBug7CrossClientParity:
             "Python write path MUST emit canonical 'mnemonic' key "
             "for plugin compat (Bug #7)"
         )
+
+
+# ----------------------------------------------------------------------------
+# Bug #8 — cross-impl byte parity for v1.1 pin blobs
+# ----------------------------------------------------------------------------
+
+
+class TestBug8CrossImplBlobParity:
+    """The task constraint from ``plans/2026-04-20-wave2a-hermes-fixes.md``:
+    "Python + Plugin + MCP must all emit byte-identical pin v1.1 blobs for
+    identical inputs". This locks the field ordering of
+    ``build_canonical_claim_v1`` against a fixed-input regression so any
+    future change that shifts key order surfaces immediately.
+
+    The golden string below is the output of the plugin's
+    ``buildCanonicalClaimV1`` (plugin 3.2.1 + @totalreclaw/core 2.1.1)
+    for the same input. Re-capture via::
+
+        cd skill/plugin && npx tsx /tmp/compare-pin-blob.mjs
+
+    See ``python/tests/test_wave2a_hermes_fixes.py`` for the compare script.
+    """
+
+    EXPECTED_PLUGIN_BLOB = (
+        '{"id":"test-pin-uuid-00000000-0000-0000-0000-000000000001",'
+        '"text":"Pedro prefers dark mode","type":"preference",'
+        '"source":"user","created_at":"2026-04-20T00:00:00.000Z",'
+        '"scope":"personal","importance":8,"confidence":0.9,'
+        '"superseded_by":"original-fact-uuid","pin_status":"pinned",'
+        '"schema_version":"1.0","volatility":"stable"}'
+    )
+
+    def test_python_pin_blob_matches_plugin_byte_for_byte(self):
+        from totalreclaw.claims_helper import build_canonical_claim_v1
+
+        class _F:
+            pass
+
+        f = _F()
+        f.text = "Pedro prefers dark mode"
+        f.type = "preference"
+        f.source = "user"
+        f.scope = "personal"
+        f.volatility = "stable"
+        f.confidence = 0.9
+        f.entities = None
+        f.reasoning = None
+
+        python_blob = build_canonical_claim_v1(
+            f,
+            importance=8,
+            created_at="2026-04-20T00:00:00.000Z",
+            superseded_by="original-fact-uuid",
+            claim_id="test-pin-uuid-00000000-0000-0000-0000-000000000001",
+            pin_status="pinned",
+        )
+
+        assert python_blob == self.EXPECTED_PLUGIN_BLOB, (
+            "Python + Plugin v1.1 pin blobs must be BYTE-IDENTICAL for the "
+            "same input — cross-impl parity is the pin-integrity guarantee.\n"
+            f"Python: {python_blob!r}\n"
+            f"Plugin: {self.EXPECTED_PLUGIN_BLOB!r}"
+        )
+
+    def test_python_pin_blob_is_valid_v1_claim(self):
+        """Sanity: the byte-identical output still parses as a v1 claim."""
+        from totalreclaw.claims_helper import build_canonical_claim_v1
+
+        class _F:
+            pass
+
+        f = _F()
+        f.text = "Pedro prefers dark mode"
+        f.type = "preference"
+        f.source = "user"
+        f.scope = "personal"
+        f.volatility = "stable"
+        f.confidence = 0.9
+        f.entities = None
+        f.reasoning = None
+
+        blob = build_canonical_claim_v1(
+            f,
+            importance=8,
+            created_at="2026-04-20T00:00:00.000Z",
+            superseded_by="original-fact-uuid",
+            claim_id="test-pin-uuid-00000000-0000-0000-0000-000000000001",
+            pin_status="pinned",
+        )
+        parsed = json.loads(blob)
+        assert parsed["schema_version"] == "1.0"
+        assert parsed["type"] == "preference"
+        assert parsed["pin_status"] == "pinned"
+        assert parsed["superseded_by"] == "original-fact-uuid"
