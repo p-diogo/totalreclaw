@@ -12,6 +12,14 @@ rc.10 relay-brokered pair flow — default `totalreclaw_pair` now routes through
 
 Paired with plugin `3.3.1-rc.10`, relay changes in `totalreclaw-relay` (see sibling PR), and the auto-bootstrap PR in `p-diogo/totalreclaw-hermes`.
 
+### Generate-mode parity with import (extended in-PR 2026-04-22)
+
+The relay-served pair page now supports **`mode=generate`** natively — the full BIP-39 English wordlist (2048 canonical words, SHA-256 `2f5eed53…3b24dbda`) is inlined into the HTML and the browser runs the standard 128-bit-entropy → SHA-256-checksum → 12-word derivation via WebCrypto. Docker / managed-host / phone users can create a fresh recovery phrase without dropping to `TOTALRECLAW_PAIR_MODE=local`.
+
+- **`totalreclaw_pair` mode default is now `"either"`** — pair page shows a tab switcher so the user picks `Generate new` or `Import existing`. Callers can still pin `"generate"` or `"import"` to render only one panel.
+- **`open_remote_pair_session(mode=...)`** — the gateway forwards the requested mode in the open frame; the relay stores it on the session and renders the matching HTML.
+- **Audit log includes mode** — gateway logs `mode=generate|import|unspecified` on session completion. No phrase material ever enters the log — mode is derived from the unencrypted wire header, not the decrypted payload.
+
 ### Added
 
 - **`totalreclaw.pair.remote_client`** — new module. Async WebSocket client for the relay-brokered pair flow:

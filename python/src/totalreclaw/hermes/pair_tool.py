@@ -54,11 +54,14 @@ PAIR_SCHEMA: Dict[str, Any] = {
         "properties": {
             "mode": {
                 "type": "string",
-                "enum": ["generate", "import"],
+                "enum": ["generate", "import", "either"],
                 "description": (
-                    '"generate" = the browser will create a NEW 12-word '
-                    'recovery phrase. "import" = the user pastes an '
-                    "EXISTING phrase in the browser (never in this chat)."
+                    '"generate" = browser creates a NEW 12-word recovery '
+                    'phrase (pair page hides the import option). "import" = '
+                    'user pastes an EXISTING phrase (pair page hides the '
+                    'generate option). "either" = pair page shows both with '
+                    'a tab switcher so the user picks (default — safest when '
+                    "you don't know whether the user is new or returning)."
                 ),
             },
         },
@@ -231,14 +234,27 @@ async def pair(args: dict, state: "PluginState", **kwargs) -> str:
     Mode selection:
       - ``TOTALRECLAW_PAIR_MODE=local`` → rc.4–rc.9 loopback HTTP server.
       - unset / any other value → rc.10 relay-brokered WebSocket flow.
+
+    UI-mode selection (passed to the pair page):
+      - ``"generate"`` / ``"import"`` — pin the pair page to one panel.
+      - ``"either"`` (default) — let the user pick on the page. This is
+        the safest default for agents that don't know whether the user
+        has an existing phrase or is creating one fresh.
     """
-    raw_mode = args.get("mode", "generate")
-    mode = "import" if raw_mode == "import" else "generate"
+    raw_mode = args.get("mode")
+    if raw_mode in ("generate", "import", "either"):
+        mode = raw_mode
+    else:
+        mode = "either"
     pair_mode = _pair_mode()
 
     try:
         if pair_mode == "local":
-            url, pin, expires_iso, session = await _pair_local(state, mode)
+            # Local mode's pair_page.py predates "either" — map it to
+            # the first-run default (generate) since that's what a new
+            # user on a fresh local install is most likely doing.
+            local_mode = mode if mode in ("generate", "import") else "generate"
+            url, pin, expires_iso, session = await _pair_local(state, local_mode)
         else:
             url, pin, expires_iso = await _pair_relay(state, mode)
 
@@ -260,6 +276,24 @@ async def pair(args: dict, state: "PluginState", **kwargs) -> str:
             len(qr_unicode),
         )
 
+        if mode == "generate":
+            step3 = (
+                "The browser generates a new 12-word recovery phrase. "
+                "Write it down BEFORE confirming — the phrase is "
+                "unrecoverable if lost.\n"
+            )
+        elif mode == "import":
+            step3 = (
+                "Paste your existing 12 or 24-word recovery phrase in the "
+                "browser (never in this chat).\n"
+            )
+        else:
+            step3 = (
+                "On the pair page, pick 'Generate new' if you don't have a "
+                "TotalReclaw recovery phrase yet, or 'Import existing' if "
+                "you do. The phrase stays in the browser — never in chat.\n"
+            )
+
         return json.dumps(
             {
                 "url": url,
@@ -272,15 +306,7 @@ async def pair(args: dict, state: "PluginState", **kwargs) -> str:
                     f"Relay these to the user verbatim:\n"
                     f"1. Open {url} in your browser.\n"
                     f"2. Enter PIN {pin} when asked.\n"
-                    f"3. "
-                    + (
-                        "The browser generates a new 12-word recovery phrase. "
-                        "Write it down BEFORE confirming — the phrase is "
-                        "unrecoverable if lost.\n"
-                        if mode == "generate"
-                        else "Paste your existing 12 or 24-word recovery phrase "
-                        "in the browser (never in this chat).\n"
-                    )
+                    f"3. " + step3
                     + f"4. The encrypted phrase uploads to this gateway; it never crosses "
                     f"this chat.\n"
                     f"5. Come back to chat once the browser says 'Paired'. "
@@ -327,22 +353,20 @@ async def _pair_local(state: "PluginState", mode: str):
 async def _pair_relay(state: "PluginState", mode: str):
     """rc.10 relay-brokered WebSocket path.
 
-    Note on ``mode``: the relay-served HTML page supports 'import' only
-    (the generate flow requires the BIP-39 wordlist bundled with the local
-    server). Users who want 'generate' should drop to ``TOTALRECLAW_PAIR_MODE=
-    local`` for now. rc.11 can add a lightweight wordlist to the relay page.
+    The relay's pair HTML page bundles the full BIP-39 English wordlist
+    (2048 words) and supports all three modes natively via ``crypto.subtle``:
+
+      - ``"generate"`` — browser creates a fresh 12-word phrase. The
+        wordlist is inlined in the page; no external fetch.
+      - ``"import"``   — user pastes an existing phrase.
+      - ``"either"``   — pair page shows both with a tab switcher.
+
+    The ``mode`` is passed to the relay via the ``open`` frame so the
+    server-rendered HTML only shows the panel(s) the caller asked for.
     """
     from ..pair.remote_client import open_remote_pair_session
 
-    if mode == "generate":
-        logger.warning(
-            "totalreclaw_pair(relay): mode=generate requested but relay page "
-            "supports import-only. Falling back to import mode. Use "
-            "TOTALRECLAW_PAIR_MODE=local if you need a browser-side phrase "
-            "generator."
-        )
-
-    session = await open_remote_pair_session()
+    session = await open_remote_pair_session(mode=mode)
     _spawn_relay_completion_task(session, state)
 
     return session.url, session.pin, session.expires_at

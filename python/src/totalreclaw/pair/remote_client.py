@@ -103,8 +103,15 @@ async def open_remote_pair_session(
     relay_base_url: Optional[str] = None,
     pin: Optional[str] = None,
     client_id: Optional[str] = None,
+    mode: Optional[str] = None,
 ) -> RemotePairSession:
     """Open a pair session on the relay. Returns handle with URL + PIN.
+
+    ``mode`` — optional UI hint forwarded to the relay. One of:
+      - ``"generate"`` — pair page shows only the "generate new phrase" panel.
+      - ``"import"``   — pair page shows only the "paste existing phrase" panel.
+      - ``"either"``   — pair page shows both with a tab switcher (user picks).
+      - ``None``       — omit from the open frame; relay defaults to ``either``.
 
     The caller is expected to:
       - Relay ``session.url`` + ``session.pin`` to the user via chat.
@@ -121,16 +128,15 @@ async def open_remote_pair_session(
 
     ws = await websockets.connect(ws_url, open_timeout=10, close_timeout=5)
     try:
-        await ws.send(
-            json.dumps(
-                {
-                    "type": "open",
-                    "gateway_pubkey": keypair.pk_b64,
-                    "pin": actual_pin,
-                    "client_id": actual_client_id,
-                }
-            )
-        )
+        open_frame: dict[str, Any] = {
+            "type": "open",
+            "gateway_pubkey": keypair.pk_b64,
+            "pin": actual_pin,
+            "client_id": actual_client_id,
+        }
+        if mode in ("generate", "import", "either"):
+            open_frame["mode"] = mode
+        await ws.send(json.dumps(open_frame))
         raw = await asyncio.wait_for(ws.recv(), timeout=10)
         msg = json.loads(raw if isinstance(raw, str) else raw.decode("utf-8"))
     except Exception:
@@ -238,6 +244,14 @@ async def await_phrase_upload(
     client_pubkey = msg.get("client_pubkey")
     nonce = msg.get("nonce")
     ciphertext = msg.get("ciphertext")
+    # Optional audit-only field. Carries "generate" | "import" so the
+    # gateway can log WHICH UI path the browser used, without branching
+    # on it — decrypt + completion are mode-agnostic. Anything else is
+    # ignored (not rejected; the relay validates enum membership upstream).
+    forward_mode = msg.get("mode")
+    if forward_mode not in ("generate", "import"):
+        forward_mode = None
+
     if not isinstance(client_pubkey, str) or not isinstance(nonce, str) or not isinstance(
         ciphertext, str
     ):
@@ -331,8 +345,9 @@ async def await_phrase_upload(
             pass
 
     logger.info(
-        "pair.remote_client: session completed token=%s…",
+        "pair.remote_client: session completed token=%s… mode=%s",
         session.token[:8],
+        forward_mode or "unspecified",
     )
     return result
 
