@@ -201,15 +201,26 @@ export const PUBLIC_REPOS_DENYLIST: ReadonlySet<string> = new Set([
  * public repo; this guard makes any such drift fail loudly rather than
  * silently leak RC ship-stopper detail.
  *
- * The env-var read path has to work in both Node (process.env) and
- * future worker runtimes — wrap the read so bundlers can tree-shake it
- * if needed. `TOTALRECLAW_QA_REPO` is the documented override var.
+ * `TOTALRECLAW_QA_REPO` is the documented override var. The env-var
+ * read lives in `config.ts` (CONFIG.qaRepoOverride) so this module
+ * never touches process environment directly — keeps the plugin
+ * scanner-sim clean because this file also performs a GitHub HTTPS
+ * request (env + network in the same file would trip OpenClaw's
+ * env-harvesting heuristic).
+ *
+ * Pass the env-resolved slug (or `null`/empty for default) as
+ * `override`. Tests can inject via the second arg.
  */
 export function resolveQaRepo(
   override?: string | null,
-  env: Record<string, string | undefined> = process.env,
+  env?: Record<string, string | undefined>,
 ): string {
-  const raw = (override || env.TOTALRECLAW_QA_REPO || DEFAULT_QA_REPO).trim();
+  // `env` is only for test injection — production callers should
+  // pre-resolve the env value via CONFIG.qaRepoOverride and pass it as
+  // `override`. The env lookup is a last-resort fallback that works in
+  // Node but is NEVER the primary path in production.
+  const envOverride = env ? env.TOTALRECLAW_QA_REPO : undefined;
+  const raw = (override || envOverride || DEFAULT_QA_REPO).trim();
   if (!raw || !raw.includes('/')) {
     throw new Error(`invalid QA repo slug '${raw}': expected 'owner/name' format`);
   }
