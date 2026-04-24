@@ -217,7 +217,7 @@ def on_session_end(state: "PluginState", **kwargs) -> None:
     true session end. Session-end flush + debrief + message-buffer clear
     have moved to ``on_session_finalize``.
 
-    Before 2.3.1rc15 this handler ran the flush + debrief and wiped
+    Before 2.3.1rc16 this handler ran the flush + debrief and wiped
     ``state._messages`` in its ``finally`` block. Because the hook fires
     per-turn, the clear ran after every turn and ``totalreclaw_debrief``
     always saw <8 messages even in 10+ turn sessions (issue #101, parent
