@@ -1,3 +1,4 @@
+// scanner-sim: allow — CI-only smoke test, child_process used to spawn clean Node and verify dist ESM-loads. Not part of plugin runtime.
 /**
  * dist-esm-smoke.test.ts — regression guard for issue #124.
  *
