@@ -46,7 +46,7 @@ type ConfirmIndexedCore = typeof import('@totalreclaw/core') & {
 const requireWasm = createRequire(import.meta.url);
 let _wasm: ConfirmIndexedCore | null = null;
 function getWasm(): ConfirmIndexedCore {
-  if (!_wasm) _wasm = requireWasm('@totalreclaw/core') as ConfirmIndexedCore;
+  if (!_wasm) _wasm = requireWasm('@totalreclaw/core') as unknown as ConfirmIndexedCore;
   return _wasm!;
 }
 
@@ -108,14 +108,29 @@ export async function confirmIndexed(
   factId: string,
   options: ConfirmIndexedOptions = {},
 ): Promise<ConfirmIndexedResult> {
-  const wasm = getWasm();
-  // Fall back to the WASM-exposed defaults so the Rust core remains the
-  // single source of truth for the polling cadence.
-  const pollIntervalMs = options.pollIntervalMs ?? Number(wasm.wasmConfirmIndexedDefaultPollMs?.() ?? 1000);
-  const timeoutMs = options.timeoutMs ?? Number(wasm.wasmConfirmIndexedDefaultTimeoutMs?.() ?? 30000);
+  // WASM bindings may be unavailable (e.g. core@<2.3.0 not yet published).
+  // In that case the chain write has still succeeded — confirm step is
+  // observational only. Return `indexed: false` so callers surface
+  // `partial: true` rather than fail the whole tool invocation.
+  let wasm: ConfirmIndexedCore;
+  let query: string;
+  let pollIntervalMs: number;
+  let timeoutMs: number;
+  try {
+    wasm = getWasm();
+    pollIntervalMs = options.pollIntervalMs ?? Number(wasm.wasmConfirmIndexedDefaultPollMs?.() ?? 1000);
+    timeoutMs = options.timeoutMs ?? Number(wasm.wasmConfirmIndexedDefaultTimeoutMs?.() ?? 30000);
+    query = wasm.wasmConfirmIndexedQuery();
+  } catch (err) {
+    return {
+      indexed: false,
+      attempts: 0,
+      elapsedMs: 0,
+      lastError: `confirm-indexed wasm bindings unavailable: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
   const subgraphUrl =
     options.subgraphUrl ?? `${getSubgraphConfig().relayUrl}/v1/subgraph`;
-  const query = wasm.wasmConfirmIndexedQuery();
 
   const overrides: Record<string, string> = {
     'Content-Type': 'application/json',

@@ -361,10 +361,18 @@ async function rewriteWithMutation(
       };
     }
     // Read-after-write: poll the subgraph until the new fact id is indexed
-    // and active, OR the timeout (default 30s) elapses. On timeout, surface
+    // and active, OR the timeout (default 30s) elapses. On timeout (or if
+    // the WASM bindings are unavailable / subgraph unreachable), surface
     // `partial: true` so the caller knows the chain write succeeded but the
-    // indexer has not yet caught up.
-    const confirm = await confirmIndexed(newFactId, confirmOpts);
+    // indexer has not yet caught up. The confirm step is observational —
+    // never fail the whole operation just because confirm step couldn't run.
+    let indexed = false;
+    try {
+      const confirm = await confirmIndexed(newFactId, confirmOpts);
+      indexed = confirm.indexed;
+    } catch {
+      indexed = false;
+    }
     return {
       success: true,
       fact_id: factId,
@@ -374,7 +382,7 @@ async function rewriteWithMutation(
       previous_scope: current.scope,
       new_scope: next.scope,
       tx_hash: txHash,
-      ...(confirm.indexed ? {} : { partial: true }),
+      ...(indexed ? {} : { partial: true }),
     };
   } catch (err) {
     return {

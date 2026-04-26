@@ -31,7 +31,7 @@ type ConfirmIndexedCore = typeof import('@totalreclaw/core') & {
 let _wasm: ConfirmIndexedCore | null = null;
 async function getWasm(): Promise<ConfirmIndexedCore> {
   if (!_wasm) {
-    _wasm = (await import('@totalreclaw/core')) as ConfirmIndexedCore;
+    _wasm = (await import('@totalreclaw/core')) as unknown as ConfirmIndexedCore;
   }
   return _wasm!;
 }
@@ -63,12 +63,28 @@ export async function confirmIndexed(
   factId: string,
   options: ConfirmIndexedOptions,
 ): Promise<ConfirmIndexedResult> {
-  const wasm = await getWasm();
-  const pollIntervalMs =
-    options.pollIntervalMs ?? Number(wasm.wasmConfirmIndexedDefaultPollMs?.() ?? 1000);
-  const timeoutMs =
-    options.timeoutMs ?? Number(wasm.wasmConfirmIndexedDefaultTimeoutMs?.() ?? 30000);
-  const query = wasm.wasmConfirmIndexedQuery();
+  // WASM bindings may be unavailable (core@<2.3.0 not yet published).
+  // Confirm step is observational; chain write has already succeeded.
+  // Return `indexed: false` so callers surface partial=true rather than fail.
+  let wasm: ConfirmIndexedCore;
+  let query: string;
+  let pollIntervalMs: number;
+  let timeoutMs: number;
+  try {
+    wasm = await getWasm();
+    pollIntervalMs =
+      options.pollIntervalMs ?? Number(wasm.wasmConfirmIndexedDefaultPollMs?.() ?? 1000);
+    timeoutMs =
+      options.timeoutMs ?? Number(wasm.wasmConfirmIndexedDefaultTimeoutMs?.() ?? 30000);
+    query = wasm.wasmConfirmIndexedQuery();
+  } catch (err) {
+    return {
+      indexed: false,
+      attempts: 0,
+      elapsedMs: 0,
+      lastError: `confirm-indexed wasm bindings unavailable: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
