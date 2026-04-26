@@ -49,6 +49,7 @@ import type {
 } from './extractor.js';
 import { PROTOBUF_VERSION_V4 } from './subgraph-store.js';
 import type { SubgraphSearchFact } from './subgraph-search.js';
+import { confirmIndexed, type ConfirmIndexedOptions } from './confirm-indexed.js';
 
 // Lazy-load WASM core — mirrors pin.ts pattern.
 const requireWasm = createRequire(import.meta.url);
@@ -117,6 +118,15 @@ export interface RetypeSetScopeResult {
   new_scope?: MemoryScope;
   tx_hash?: string;
   error?: string;
+  /**
+   * Set to `true` when the on-chain batch was submitted successfully but the
+   * subgraph indexer did not confirm the new fact id within the timeout
+   * window (default 30s). The mutation IS on-chain — clients can rely on
+   * `tx_hash` for observability — but a follow-up `recall`/`export` may
+   * surface stale state for another few seconds. Resolves once the indexer
+   * catches up. See `confirm-indexed.ts` for the polling implementation.
+   */
+  partial?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -229,6 +239,7 @@ async function rewriteWithMutation(
   factId: string,
   deps: RetypeSetScopeDeps,
   mutate: (existing: NormalizedFact) => NormalizedFact,
+  confirmOpts?: ConfirmIndexedOptions,
 ): Promise<RetypeSetScopeResult> {
   const existing = await deps.fetchFactById(factId);
   if (!existing) {
@@ -349,6 +360,11 @@ async function rewriteWithMutation(
         tx_hash: txHash,
       };
     }
+    // Read-after-write: poll the subgraph until the new fact id is indexed
+    // and active, OR the timeout (default 30s) elapses. On timeout, surface
+    // `partial: true` so the caller knows the chain write succeeded but the
+    // indexer has not yet caught up.
+    const confirm = await confirmIndexed(newFactId, confirmOpts);
     return {
       success: true,
       fact_id: factId,
@@ -358,6 +374,7 @@ async function rewriteWithMutation(
       previous_scope: current.scope,
       new_scope: next.scope,
       tx_hash: txHash,
+      ...(confirm.indexed ? {} : { partial: true }),
     };
   } catch (err) {
     return {
@@ -381,6 +398,7 @@ export async function executeRetype(
   factId: string,
   newType: MemoryType,
   deps: RetypeSetScopeDeps,
+  confirmOpts?: ConfirmIndexedOptions,
 ): Promise<RetypeSetScopeResult> {
   if (!isValidMemoryType(newType)) {
     return {
@@ -389,10 +407,15 @@ export async function executeRetype(
       error: `Invalid new type "${newType}". Must be one of: claim, preference, directive, commitment, episode, summary.`,
     };
   }
-  return rewriteWithMutation(factId, deps, (current) => ({
-    ...current,
-    type: newType,
-  }));
+  return rewriteWithMutation(
+    factId,
+    deps,
+    (current) => ({
+      ...current,
+      type: newType,
+    }),
+    confirmOpts,
+  );
 }
 
 /**
@@ -403,6 +426,7 @@ export async function executeSetScope(
   factId: string,
   newScope: MemoryScope,
   deps: RetypeSetScopeDeps,
+  confirmOpts?: ConfirmIndexedOptions,
 ): Promise<RetypeSetScopeResult> {
   if (!(VALID_MEMORY_SCOPES as readonly string[]).includes(newScope)) {
     return {
@@ -411,10 +435,15 @@ export async function executeSetScope(
       error: `Invalid new scope "${newScope}". Must be one of: ${VALID_MEMORY_SCOPES.join(', ')}.`,
     };
   }
-  return rewriteWithMutation(factId, deps, (current) => ({
-    ...current,
-    scope: newScope,
-  }));
+  return rewriteWithMutation(
+    factId,
+    deps,
+    (current) => ({
+      ...current,
+      scope: newScope,
+    }),
+    confirmOpts,
+  );
 }
 
 // ---------------------------------------------------------------------------
