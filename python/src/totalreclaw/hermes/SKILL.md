@@ -19,12 +19,18 @@ homepage: https://totalreclaw.xyz
 
 Speak only these lines, in order. Substitute the bracketed placeholders.
 
-1. `Installing TotalReclaw…`
-2. (after Step 1 succeeds) `✓ Installed (totalreclaw <version>)`
-3. (Step 2 — restart prompt) `Please restart your Hermes gateway: <restart-command>. Reply \`done\` once it's back up.`
-4. (Step 3 — only if `hermes tools disable memory` succeeded) `Disabled Hermes' built-in memory tool so TotalReclaw is your primary memory. Re-enable any time with \`hermes tools enable memory\` (not recommended while TotalReclaw is installed).`
-5. (Step 6 — account setup) `Open <url> in your browser. Generate a new 12-word recovery phrase there or paste an existing one. Confirm PIN <pin>. Reply \`done\` once the page says it's sealed.`
-6. (Step 7 — done) `✓ Your TotalReclaw account is set up. Ask me to remember or recall anything.`
+1. (Step 1 — start)
+   > Installing TotalReclaw…
+2. (Step 1 — after install + verify pass)
+   > ✓ Installed (totalreclaw &lt;version&gt;)
+3. (Step 2 — restart prompt)
+   > Please restart your Hermes gateway: &lt;restart-command&gt;. Reply `done` once it's back up.
+4. (Step 3 — only if `hermes tools disable memory` succeeded)
+   > I've disabled Hermes' built-in `memory` tool — TotalReclaw is now your primary memory. Re-enable any time with `hermes tools enable memory` (NOT recommended while TotalReclaw is installed). Wipe orphaned MEMORY.md / USER.md files with `hermes memory reset`.
+5. (Step 6 — account setup)
+   > Open &lt;url&gt; in your browser. Generate a new 12-word recovery phrase there or paste an existing one. Confirm PIN &lt;pin&gt;. Reply `done` once the page says it's sealed.
+6. (Step 7 — done)
+   > ✓ Your TotalReclaw account is set up. Ask me to remember or recall anything.
 
 If `totalreclaw_*` tools are already bound (skip-install branch), the only lines emitted are 4-then-stop (`✓ TotalReclaw is already set up.` from Step 5) OR lines 5+6 (skip-to-account-setup branch).
 
@@ -66,7 +72,7 @@ If `totalreclaw_*` tools are already bound to your toolset, SKIP install and jum
 
    Do NOT run the restart yourself — your shell is inside the gateway you'd be restarting. Wait for the user's `done`.
 
-3. **Disable Hermes built-in memory tool (CRITICAL — silent unless the disable command succeeds, then emit user-visible line 4).** Hermes ships with its own built-in `memory` tool that competes with TotalReclaw for "remember X" / "recall X" intents. Running both creates a silent bug where conversation context goes to MEMORY.md instead of TotalReclaw's encrypted vault. TotalReclaw and Hermes built-in memory solve the same problem — running both is an anti-pattern.
+3. **Disable Hermes built-in memory tool (CRITICAL).** (Silent unless the disable command succeeds; emit user-visible line 4 only on success.) Hermes ships with its own built-in `memory` tool that competes with TotalReclaw for "remember X" / "recall X" intents. Running both creates a silent bug where conversation context goes to MEMORY.md instead of TotalReclaw's encrypted vault. TotalReclaw and Hermes built-in memory solve the same problem — running both is an anti-pattern.
 
    Run silently via your shell tool:
    ```bash

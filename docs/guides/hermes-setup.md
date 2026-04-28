@@ -20,12 +20,18 @@ You have been asked to install TotalReclaw. **Run all the steps below silently**
 
 Speak only these lines, in order. Do not narrate around them. Do not announce intent ("Let me…", "I'll now…", "In parallel…"). Do not describe internals (interpreter detection, environment probes, package managers, retry attempts). Substitute the bracketed placeholders with the real values.
 
-1. `Installing TotalReclaw…`
-2. (after Step 1 succeeds) `✓ Installed (totalreclaw <version>)`
-3. (Step 2 — restart prompt) `Please restart your Hermes gateway: <restart-command>. Reply \`done\` once it's back up.`
-4. (Step 3 — built-in-memory disable, only if the disable command succeeds) `Disabled Hermes' built-in memory tool so TotalReclaw is your primary memory. Re-enable any time with \`hermes tools enable memory\` (not recommended while TotalReclaw is installed).`
-5. (Step 5 — account setup) `Open <url> in your browser. Generate a new 12-word recovery phrase there or paste an existing one. Confirm PIN <pin>. Reply \`done\` once the page says it's sealed.`
-6. (Step 6 — done) `✓ Your TotalReclaw account is set up. Ask me to remember or recall anything.`
+1. (Step 1 — start)
+   > Installing TotalReclaw…
+2. (Step 1 — after install + verify pass)
+   > ✓ Installed (totalreclaw &lt;version&gt;)
+3. (Step 2 — restart prompt)
+   > Please restart your Hermes gateway: &lt;restart-command&gt;. Reply `done` once it's back up.
+4. (Step 3 — built-in-memory disable, only if the disable command succeeds)
+   > I've disabled Hermes' built-in `memory` tool — TotalReclaw is now your primary memory. Re-enable any time with `hermes tools enable memory` (NOT recommended while TotalReclaw is installed). Wipe orphaned MEMORY.md / USER.md files with `hermes memory reset`.
+5. (Step 5 — account setup)
+   > Open &lt;url&gt; in your browser. Generate a new 12-word recovery phrase there or paste an existing one. Confirm PIN &lt;pin&gt;. Reply `done` once the page says it's sealed.
+6. (Step 6 — done)
+   > ✓ Your TotalReclaw account is set up. Ask me to remember or recall anything.
 
 That is the complete user-facing transcript for a healthy install. Expected line count for a fresh install + setup is **5–7 lines** (line 3 collapses to a one-line confirmation if the gateway already auto-reloaded; line 4 is skipped silently when the disable command isn't available; line 5 may repeat once if the PIN expires).
 
@@ -132,7 +138,7 @@ If the command succeeds, emit user-visible line 4 (the built-in-memory disable c
 
 Run `test -s ~/.totalreclaw/credentials.json`. If it exists and is non-empty, emit `✓ TotalReclaw is already set up.` and stop. Otherwise continue silently.
 
-### Step 5 — Account setup (browser flow, NEVER ask the user to type their phrase in chat) (emit user-visible line 5)
+### Step 5 — Pair (account setup — browser flow, NEVER ask the user to type their phrase in chat) (emit user-visible line 5)
 
 > *(Heading retains "Pair" for backward compatibility with the QA harness; the user-facing terminology is "set up your TotalReclaw account". The tool registered as `totalreclaw_pair` is the account-setup tool.)*
 
