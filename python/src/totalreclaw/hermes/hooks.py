@@ -16,8 +16,12 @@ from totalreclaw.agent.lifecycle import (
     session_debrief as _session_debrief,
     _is_near_duplicate,
     _fetch_recent_memories,
+    _owner_address,
+    _owner_addresses,
     STORE_DEDUP_THRESHOLD,
 )
+from totalreclaw.agent.loop_runner import run_sync
+from totalreclaw.agent.pending_drain import drain_pending, has_pending
 from totalreclaw.agent.recall import auto_recall
 from totalreclaw.agent.extraction import extract_facts_llm, extract_facts_heuristic
 
@@ -36,6 +40,25 @@ _SETUP_NUDGE = (
     "BIP-39 recovery phrase and enable the vault. After that, use "
     "`totalreclaw_remember` / `totalreclaw_recall` — they outrank any "
     "built-in 'memory' tool for durability + encryption."
+)
+
+#: F4 (issue #167): for configured users, schema-level "prefer this tool"
+#: language in the REMEMBER/RECALL descriptions is not strong enough — the
+#: rc.24 chat-flow QA showed every memory-intent turn routing to Hermes's
+#: built-in ``memory`` tool. We inject this nudge on every memory-intent
+#: turn (not just first) so context-window summarization can't drop it on
+#: the turn it matters. Cost is small (~80 tokens) and only paid when
+#: ``_looks_like_memory_intent`` matches.
+_TOOL_PRIORITY_NUDGE = (
+    "## TotalReclaw tool priority\n"
+    "For any user fact, preference, decision-with-reasoning, directive "
+    "('always X' / 'never Y'), commitment, or notable episode the user "
+    "shares — ALWAYS call `totalreclaw_remember` instead of any built-in "
+    "`memory` tool. TotalReclaw stores memories end-to-end encrypted, "
+    "on-chain (Base/Gnosis), and portable across every AI tool the user "
+    "runs; the built-in `memory` tool is plain-text, session-scoped, and "
+    "not cross-agent. For lookups, prefer `totalreclaw_recall` over any "
+    "built-in equivalent for the same reason."
 )
 
 #: Keywords that trigger the setup nudge when the user isn't configured.
@@ -71,15 +94,185 @@ def _get_hermes_llm_config():
         return None
 
 
+def _maybe_reconfigure_from_disk(state: "PluginState") -> bool:
+    """Re-read ``~/.totalreclaw/credentials.json`` and reconfigure ``state``
+    if creds appeared after the plugin was loaded (issue #191 root cause).
+
+    DAEMON-MODE flow that this fixes
+    ---------------------------------
+    The Hermes gateway is a single long-lived process. The TotalReclaw
+    plugin is loaded ONCE at gateway startup, which constructs a single
+    ``PluginState`` instance via ``register()``. That ctor calls
+    ``_try_auto_configure()`` which reads ``credentials.json`` if it
+    already exists. If the user pairs AFTER the gateway has booted, the
+    pair flow's completion path (sidecar subprocess in rc.24+) writes
+    the creds file but the gateway's in-memory ``state`` is never
+    notified. ``state.is_configured()`` stays False, so every
+    ``post_llm_call`` returns at the early check on line ~273 and NO
+    auto-extraction ever fires for the rest of the gateway's lifetime
+    — the user has to restart the gateway to pick up creds, which is
+    what ``totalreclaw_pair``'s instructions tell them to do.
+
+    Stable 2.3.1 user QA on 2026-04-27 hit exactly this: paired via
+    the chat-driven setup flow, did not restart the gateway, then had
+    a multi-turn natural conversation with NO extractions firing —
+    matching the symptom in QA-bug #191.
+
+    The lazy reconfigure here removes that restart requirement. Called
+    on every ``on_session_start`` (cheap — file-stat) and as a safety
+    net at the head of ``pre_llm_call`` / ``post_llm_call`` if the
+    state is still unconfigured. Idempotent: short-circuits when
+    ``state.is_configured()`` is already True.
+
+    Returns ``True`` if a reconfigure happened (state was unconfigured
+    and is now configured), ``False`` otherwise.
+    """
+    if state.is_configured():
+        return False
+    try:
+        # ``_try_auto_configure`` re-reads env + creds.json and calls
+        # ``state.configure()`` if it finds a usable mnemonic. Idempotent
+        # on the disk side — same canonical creds file shape stays put.
+        state._try_auto_configure()
+    except Exception as exc:  # pragma: no cover — best-effort
+        logger.debug("TotalReclaw: lazy reconfigure failed: %s", exc)
+        return False
+    if state.is_configured():
+        logger.info(
+            "TotalReclaw: lazy reconfigure picked up credentials.json "
+            "written after plugin load (daemon-mode pair flow). "
+            "Auto-extraction is now active."
+        )
+        return True
+    return False
+
+
+def _eager_account_register(state: "PluginState") -> None:
+    """Issue a one-shot ``client.status()`` so the relay creates the
+    account record eagerly — fix for QA-bug #192.
+
+    Why
+    ---
+    Pair-completion writes credentials.json + builds a TotalReclaw
+    client object, but the relay only LEARNS about the smart-account
+    address when it sees an authenticated request keyed on it. Before
+    this hook ran, the first such request was whichever tool the LLM
+    happened to call next (often ``totalreclaw_status`` AFTER the user
+    explicitly asked "what's my quota?", per the QA report). On a
+    fresh setup that means the staging relay had no account record
+    until the user manually probed.
+
+    Auto-extraction (fix for #191 above) is also a relay-write path,
+    so without this eager probe the FIRST extraction batch would race
+    the implicit account creation; the relay handles that race fine
+    today (account is created on first wallet-keyed request) but the
+    user sees no observable account until they probe — and any
+    relay-side billing logic that gates on account-existing would
+    silently no-op the first batch.
+
+    What this does
+    --------------
+    Calls ``state.get_client().status()`` once per state-configure
+    event via ``run_sync``. ``client.status()`` resolves the SA
+    address (``_ensure_address``), registers the auth key
+    (``_ensure_registered``), and hits ``GET /v1/billing/status?
+    wallet_address=<sa>`` — all of which together are what the relay
+    treats as "first contact" for an account. Best-effort: any
+    exception is logged at DEBUG and swallowed so the gateway never
+    crashes on a relay outage.
+
+    Idempotent across the gateway lifetime: the per-state ``_eager_
+    account_registered`` attribute (ad-hoc, mirrors the existing
+    ``_totalreclaw_*`` attribute pattern in this module) suppresses
+    repeat calls. Cleared whenever ``state.configure()`` re-runs,
+    via the explicit reset in :func:`_maybe_reconfigure_from_disk`.
+    """
+    if not state.is_configured():
+        return
+    if getattr(state, "_eager_account_registered", False):
+        return
+    client = state.get_client()
+    if client is None:
+        return
+    try:
+        # ``client.status`` runs the full first-contact handshake:
+        # SA derivation → auth-key register → /v1/billing/status. A
+        # 200 from the billing endpoint with the SA on it is exactly
+        # what triggers the relay-side account record.
+        run_sync(client.status())
+        state._eager_account_registered = True
+        logger.info(
+            "TotalReclaw: eager account register completed (relay "
+            "now has account record for SA before any extraction)."
+        )
+    except Exception as exc:
+        # Don't latch the flag — let the next session_start retry.
+        logger.debug(
+            "TotalReclaw: eager account register failed (will retry "
+            "next session_start): %s",
+            exc,
+        )
+
+
 def on_session_start(state: "PluginState", **kwargs) -> None:
-    """Initialize client and check billing on session start."""
+    """Initialize client, drain any pending extraction queue, and check billing.
+
+    The drain step recovers messages whose extraction was lost in a
+    previous CLI one-shot turn — see issue #148 + ``pending_drain``. The
+    interpreter is healthy at session start, so the persistent sync-loop
+    runner can drive httpx normally.
+
+    DAEMON-MODE FIXES (2.3.2-rc.1):
+      * Lazy reconfigure (#191): if creds.json appeared on disk after
+        the gateway loaded the plugin (the user paired mid-conversation
+        and the sidecar wrote creds without restart), pick them up here
+        instead of forcing a gateway restart.
+      * Eager account register (#192): once configured, call
+        ``client.status()`` once so the relay creates the account
+        record before the user explicitly queries it.
+    """
     session_id = kwargs.get("session_id", "")
     logger.debug("TotalReclaw on_session_start: %s", session_id)
 
     state.reset_turn_counter()
 
+    # Fix #191 — pick up creds written after plugin load. Cheap (one
+    # file-stat) when the state is already configured.
+    _maybe_reconfigure_from_disk(state)
+
     if not state.is_configured():
         return
+
+    # Fix #192 — register account with relay eagerly so the first
+    # extraction (or any future write) doesn't race silent account-
+    # creation server-side.
+    _eager_account_register(state)
+
+    # Drain any messages that a prior interpreter-shutdown race deferred.
+    # This must run before billing-cache logic so a drain-induced
+    # quota_warning isn't overwritten.
+    #
+    # We pass ALL known owner addresses (EOA + SA) so the drain matches
+    # entries written under either side. Issue #169: ``_owner_address``
+    # at write time picks SA when set / EOA otherwise; lifecycle ordering
+    # in ``hermes chat -q`` can put the next-session ``on_session_start``
+    # on the OTHER side of that split, silently missing queued batches.
+    try:
+        owners = _owner_addresses(state)
+        if owners and has_pending(owners):
+            batches = drain_pending(owners)
+            recovered_count = _drain_into_state(state, batches)
+            if recovered_count > 0:
+                logger.info(
+                    "TotalReclaw: drained %d message(s) from prior interpreter-shutdown race.",
+                    recovered_count,
+                )
+                state.set_quota_warning(
+                    f"TotalReclaw: caught up on auto-extraction for {recovered_count} "
+                    f"message(s) deferred from a prior CLI session."
+                )
+    except Exception as exc:
+        logger.warning("TotalReclaw: pending-drain failed at session start: %s", exc)
 
     # Check billing cache and update server-driven config
     try:
@@ -101,18 +294,73 @@ def on_session_start(state: "PluginState", **kwargs) -> None:
         pass
 
 
+def _drain_into_state(state: "PluginState", batches: list[list[dict]]) -> int:
+    """Replay drained message batches into the agent state and run a
+    full-mode auto-extract to land the facts.
+
+    Returns the total number of messages recovered. Errors during the
+    extraction call are logged and swallowed — drain is best-effort.
+    Whether the drain landed facts or not, the messages are consumed
+    from the queue (already done by ``drain_pending``) so we don't
+    re-attempt indefinitely on a persistent failure.
+    """
+    if not batches:
+        return 0
+
+    total = 0
+    # Snapshot the original buffer so the active session's own messages
+    # stay intact after the drain. We process drained batches in a
+    # separate state-buffer slice via ``add_message`` + final
+    # ``mark_messages_processed`` so the user-visible session message
+    # buffer keeps the drained content for context.
+    for batch in batches:
+        for msg in batch:
+            role = msg.get("role") if isinstance(msg, dict) else None
+            content = msg.get("content") if isinstance(msg, dict) else None
+            if role and content:
+                state.add_message(role, content)
+                total += 1
+
+    if total == 0:
+        return 0
+
+    try:
+        _auto_extract(state, mode="full", llm_config=_get_hermes_llm_config())
+    except Exception as exc:
+        logger.warning("TotalReclaw: drain-side auto_extract failed: %s", exc)
+
+    return total
+
+
 def pre_llm_call(state: "PluginState", **kwargs) -> Optional[dict]:
-    """Auto-recall on first turn, inject memories, quota warnings, and the
-    unconfigured-user setup nudge (Bug #6) into context.
+    """Auto-recall on first turn, inject memories, quota warnings, the
+    unconfigured-user setup nudge (Bug #6), and the configured-user
+    tool-priority nudge (F4 / issue #167) into context.
 
     When the plugin is installed but the user hasn't run
     ``totalreclaw_setup`` yet, a one-time nudge is injected on the first
     turn that references any memory intent. The nudge tells the Hermes
     agent to offer setup — preventing silent routing to Hermes's
     built-in ``memory`` tool.
+
+    For configured users, a parallel tool-priority nudge fires on every
+    memory-intent turn (cheap and reliably present in active LLM context)
+    so the LLM picks ``totalreclaw_remember`` instead of Hermes's
+    built-in ``memory`` for fact/preference/directive/commitment/episode
+    intents.
     """
     user_message = kwargs.get("user_message", "")
     is_first_turn = kwargs.get("is_first_turn", False)
+
+    # Fix #191 safety net — if the user paired AFTER on_session_start
+    # already ran (e.g. they paired mid-session inside the same daemon
+    # session id), pick up creds.json before we decide whether to inject
+    # the unconfigured-user nudge or the configured-user tool-priority
+    # nudge. Cheap when the state is already configured (early return).
+    if _maybe_reconfigure_from_disk(state):
+        # Reconfigure just landed — also kick off the eager account
+        # register so #192 stays fixed for the mid-session pair path.
+        _eager_account_register(state)
 
     # Bug #6 — unconfigured: one-time setup nudge, fires only when the
     # user message looks like a memory intent. We never return None here
@@ -128,6 +376,13 @@ def pre_llm_call(state: "PluginState", **kwargs) -> Optional[dict]:
         return None
 
     context_parts: list[str] = []
+
+    # F4 (issue #167) — configured: bias LLM toward totalreclaw_remember
+    # over Hermes's built-in ``memory`` for memory-intent turns. Fires
+    # every matching turn (not gated to first) so sliding context windows
+    # can't drop it on the turn the user actually expresses an intent.
+    if user_message and _looks_like_memory_intent(user_message):
+        context_parts.append(_TOOL_PRIORITY_NUDGE)
 
     # Inject quota warning (once per session)
     quota_warning = state.get_quota_warning()
@@ -163,6 +418,12 @@ def post_llm_call(state: "PluginState", **kwargs) -> None:
     state.increment_turn()
     state.add_message("user", kwargs.get("user_message", ""))
     state.add_message("assistant", kwargs.get("assistant_response", ""))
+
+    # Fix #191 safety net — same rationale as in pre_llm_call. If the
+    # user paired between on_session_start and now, this picks up the
+    # creds without a gateway restart. Idempotent + cheap.
+    if _maybe_reconfigure_from_disk(state):
+        _eager_account_register(state)
 
     if not state.is_configured():
         return
@@ -212,27 +473,54 @@ def post_llm_call(state: "PluginState", **kwargs) -> None:
 
 
 def on_session_end(state: "PluginState", **kwargs) -> None:
-    """Comprehensive flush of unprocessed messages + session debrief."""
-    if not state.is_configured():
-        return
+    """No-op. ``on_session_end`` is dispatched by hermes_cli at the end of
+    every ``run_conversation()`` call — i.e. once per user turn, NOT at
+    true session end. Session-end flush + debrief + message-buffer clear
+    have moved to ``on_session_finalize``.
 
-    if not state.has_unprocessed_messages():
+    Before 2.3.1rc16 this handler ran the flush + debrief and wiped
+    ``state._messages`` in its ``finally`` block. Because the hook fires
+    per-turn, the clear ran after every turn and ``totalreclaw_debrief``
+    always saw <8 messages even in 10+ turn sessions (issue #101, parent
+    #85 bug 5).
+    """
+    return None
+
+
+def on_session_finalize(state: "PluginState", **kwargs) -> None:
+    """Comprehensive flush of unprocessed messages + session debrief.
+
+    Fires at true session boundaries (hermes_cli atexit, gateway session
+    finalize). Per-turn auto-extraction runs from ``post_llm_call``; this
+    handler catches residual unprocessed messages and runs the session
+    debrief while the full conversation buffer is still intact.
+    """
+    if not state.is_configured():
         return
 
     try:
         stored_fact_texts: list[str] = []
-        try:
-            stored_fact_texts = _auto_extract(state, mode="full", llm_config=_get_hermes_llm_config())
-        except Exception as e:
-            logger.warning("TotalReclaw on_session_end flush failed: %s", e)
+        if state.has_unprocessed_messages():
+            try:
+                stored_fact_texts = _auto_extract(state, mode="full", llm_config=_get_hermes_llm_config())
+            except Exception as e:
+                logger.warning("TotalReclaw on_session_finalize flush failed: %s", e)
 
-        # Session debrief (after regular extraction)
         try:
             _session_debrief(state, stored_fact_texts=stored_fact_texts)
         except Exception as e:
-            logger.warning("TotalReclaw on_session_end debrief failed: %s", e)
+            logger.warning("TotalReclaw on_session_finalize debrief failed: %s", e)
     finally:
         state.clear_messages()
+
+
+def on_session_reset(state: "PluginState", **kwargs) -> None:
+    """User-initiated reset (``/reset``). Clean slate without the expensive
+    debrief — a finalize would have fired first if the conversation was
+    meant to be persisted.
+    """
+    state.clear_messages()
+    state.reset_turn_counter()
 
 
 # Backward-compatible alias used by tests

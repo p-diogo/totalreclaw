@@ -62,6 +62,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: 'v0.14.0'  # pinned to stop `latest`-tag flake; v0.9.1 lacks --features
 
       - name: Build WASM
         run: cd rust/totalreclaw-core && wasm-pack build --target nodejs --out-dir pkg --features wasm
@@ -197,6 +199,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: 'v0.14.0'  # pinned to stop `latest`-tag flake; v0.9.1 lacks --features
 
       # NOTE: `mcp/package.json` used to depend on `@totalreclaw/core` via a
       # `file:` dep, which required building the WASM pkg locally. It now
@@ -332,7 +336,7 @@ jobs:
     name: Publish @totalreclaw/totalreclaw (OpenClaw plugin)
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write  # `write` so the post-publish step can `git push origin v<VERSION>` (rc.21 finding #8)
       id-token: write  # OIDC trusted publishing
     steps:
       - uses: actions/checkout@v4
@@ -354,12 +358,54 @@ jobs:
       - name: Scanner-sim (env-harvesting false-positive check)
         run: cd skill/plugin && npm run check-scanner
 
-      # Tests intentionally skipped at this step: this plugin publishes
-      # `.ts` source (no build step), and `skill/plugin/package.json` has
-      # no `test` script defined. Per-file `*.test.ts` suites are run in
-      # other workflows; gating publish on them here would require wiring
-      # a runner that isn't currently present. Mirrors the nanoclaw
-      # rationale above.
+      # Issue #110 fix 1 (rc.18 manual QA): plugin used to ship raw `.ts`
+      # source — `index.ts` did `import './crypto.js'` but only `crypto.ts`
+      # existed. Gateway TS-loader masked this, but CLI subcommand paths
+      # that resolved literal `./crypto.js` failed. Build + verify gates
+      # below ensure every `.js` import target ships as a real file.
+      - name: Build plugin (.ts -> dist/.js)
+        run: cd skill/plugin && npm run build
+
+      - name: Run plugin tests (asserts manifest, phrase-safety registry, import-time budget)
+        run: cd skill/plugin && npm test
+
+      - name: Verify tarball ships built `.js` artifacts (issue #110)
+        run: cd skill/plugin && npm run verify-tarball
+
+      # Issue #124 (rc.20 ship-stopper): the published `dist/index.js` had
+      # three runtime `require()` calls under `"type":"module"`. The
+      # tarball-smoke step below imports the entry, but `require()`s on
+      # lazy paths (extractor, hot-cache, plugin-version reader) don't
+      # fire on import alone. This grep+exec gate scans every dist/*.js
+      # for bare `require(` outside comments AND executes the dist in a
+      # clean ESM process. Fail-fast at publish, never reach the registry.
+      - name: ESM-shape smoke (issue #124 — bare require regression)
+        run: cd skill/plugin && npm run smoke:dist
+
+      - name: Smoke-import the plugin module from a clean Node env
+        run: |
+          cd skill/plugin
+          # Pack and install to /tmp to verify the published shape works
+          # the way an end-user `openclaw plugins install` would see it.
+          TARBALL=$(npm pack 2>/dev/null | tail -1)
+          mkdir -p /tmp/plugin-smoke && cd /tmp/plugin-smoke
+          npm init -y >/dev/null
+          npm install "${GITHUB_WORKSPACE}/skill/plugin/${TARBALL}" --no-save --legacy-peer-deps
+          # Import the entry — must complete in <5s and not require network.
+          timeout 10 node --input-type=module -e "
+            const start = Date.now();
+            const mod = await import('@totalreclaw/totalreclaw');
+            const elapsed = Date.now() - start;
+            if (typeof mod.default !== 'object' || mod.default?.id !== 'totalreclaw') {
+              console.error('Expected default export with id=totalreclaw, got:', mod.default);
+              process.exit(1);
+            }
+            if (elapsed > 5000) {
+              console.error('Plugin import took', elapsed, 'ms (>5000ms budget) — possible eager ONNX regression (issue #110 fix 2)');
+              process.exit(1);
+            }
+            console.log('OK: plugin imports cleanly from clean Node env in', elapsed, 'ms');
+          " || { echo 'ERROR: plugin tarball failed clean-Node smoke import'; exit 1; }
 
       - name: Apply RC version suffix (rc mode only)
         if: inputs.release-type == 'rc'
@@ -373,6 +419,18 @@ jobs:
           fs.writeFileSync('./package.json', JSON.stringify(p, null, 2) + '\n');
           console.log('RC version:', p.version);
           "
+
+      # Propagate the (possibly RC-mutated) package.json::version into
+      # SKILL.md frontmatter and skill.json, then GATE the publish on
+      # those three sites being aligned. Catches the rc.21 drift class
+      # (package.json says rc.21, SKILL.md says rc.11, skill.json says
+      # 1.6.2) BEFORE we publish a confused tarball. See
+      # skill/scripts/sync-version.mjs + check-version-drift.mjs.
+      - name: Sync bundled-tarball version sites + drift gate
+        run: |
+          cd skill/plugin
+          node ../scripts/sync-version.mjs
+          node ../scripts/check-version-drift.mjs
 
       - name: Publish
         if: inputs.dry-run == false
@@ -395,5 +453,129 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Report version
+        id: report
         run: |
+          VERSION=$(node -e "console.log(require('./skill/plugin/package.json').version)")
+          echo "Published: @totalreclaw/totalreclaw@${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      # Tag the source SHA the workflow published from. Idempotent: if the
+      # tag already exists on the remote (re-run, manual backfill), skip.
+      # Uses the RESOLVED version (e.g. 3.3.1-rc.22), so RCs and stables
+      # both get a tag. Closes the rc.21 finding #8 gap (no `v3.3.1-rc.*`
+      # tags in the public repo, only stables up to v3.0.4).
+      - name: Tag git commit with published version
+        if: inputs.dry-run == false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.report.outputs.version }}"
+          TAG="v${VERSION}"
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q "${TAG}$"; then
+            echo "Tag ${TAG} already exists on origin, skipping"
+            exit 0
+          fi
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git tag "${TAG}"
+          git push origin "${TAG}"
+          echo "Tagged: ${TAG}"
           node -e "const p = require('./skill/plugin/package.json'); console.log('Published:', p.name + '@' + p.version)"
+
+  # ---------------------------------------------------------------------------
+  # Lazy-embedder bundle (3.3.1-rc.22+)
+  # ---------------------------------------------------------------------------
+  #
+  # rc.21 NO-GO: `openclaw plugins install @totalreclaw/totalreclaw` OOM-killed
+  # the OpenClaw gateway on a 3.7 GB Hetzner VPS — the plugin's runtime
+  # dependencies (`@huggingface/transformers` + `onnxruntime-node`) required
+  # ~700 MB peak install RAM and tipped the host over.
+  #
+  # rc.22 fix: those heavy deps are no longer in the plugin's `dependencies`.
+  # On first call to `embed()` the plugin downloads `embedder-v1.tar.gz`
+  # from this GitHub Release, verifies the SHA-256 against the manifest, and
+  # extracts to `~/.totalreclaw/embedder/v1/`. This job builds the bundle and
+  # uploads it to the release tagged `v<plugin-version>` so the plugin's
+  # static URL template resolves it correctly.
+  #
+  # The bundle is identical for stable + RC publishes — same code, same model,
+  # same vector space. The release tag is what differs (`v3.3.1-rc.22` vs
+  # `v3.3.2`).
+  publish-embedder-bundle:
+    needs: [publish-plugin]
+    if: |
+      always() &&
+      (inputs.package == 'plugin' || inputs.package == 'all') &&
+      (needs.publish-plugin.result == 'success') &&
+      (inputs.dry-run == false)
+    name: Build + upload embedder-v1 bundle to GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required by gh release upload
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Compute release tag
+        id: tag
+        run: |
+          PLUGIN_VERSION=$(node -e "console.log(require('./skill/plugin/package.json').version)")
+          if [ "${{ inputs.release-type }}" = "rc" ]; then
+            BASE=${PLUGIN_VERSION%-*}
+            TAG="v${BASE}-rc.${{ inputs.rc-number }}"
+          else
+            TAG="v${PLUGIN_VERSION}"
+          fi
+          echo "Release tag: $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Build embedder bundle
+        run: |
+          mkdir -p dist/embedder
+          node scripts/build-embedder-bundle.mjs --out-dir dist/embedder
+          ls -la dist/embedder/
+
+      - name: Ensure GitHub Release exists for the tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          # `gh release view` exits non-zero if the release doesn't exist.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Creating GitHub Release for tag $TAG"
+            FLAGS=""
+            if [ "${{ inputs.release-type }}" = "rc" ]; then
+              FLAGS="--prerelease"
+            fi
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --notes "Auto-generated release for embedder bundle attachment. See CHANGELOG-public.md for details." \
+              $FLAGS \
+              --target "${GITHUB_SHA}"
+          else
+            echo "Release $TAG already exists; will upload bundle assets to it."
+          fi
+
+      - name: Upload embedder bundle + manifest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          # `gh release upload --clobber` replaces existing assets with the
+          # same name so re-runs of this job do not error out. The bundle is
+          # deterministic for a given commit; clobbering is safe.
+          gh release upload "$TAG" \
+            dist/embedder/embedder-v1.tar.gz \
+            dist/embedder/embedder-v1.manifest.json \
+            --clobber
+
+      - name: Report bundle URLs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          echo "Embedder bundle: https://github.com/${{ github.repository }}/releases/download/${TAG}/embedder-v1.tar.gz"
+          echo "Manifest:       https://github.com/${{ github.repository }}/releases/download/${TAG}/embedder-v1.manifest.json"

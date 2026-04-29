@@ -38,6 +38,7 @@ from .claims_helper import (
     build_canonical_claim_v1,
     compute_entity_trapdoors,
     is_digest_blob,
+    is_stub_blob_hex,
     read_blob_unified,
     read_claim_from_blob,
 )
@@ -591,9 +592,22 @@ async def search_facts(
 
     # Decrypt candidates and build reranker input
     candidates: list[RerankerCandidate] = []
+    skipped_stub_ids: list[str] = []
     for fact_id, fact in all_facts.items():
         try:
             encrypted_blob_hex = fact.get("encryptedBlob", "")
+            # Stub / tombstone blobs (encryptedBlob == "0x00" or all-zero
+            # hex) are supersede markers the relay writes when a fact is
+            # auto-resolved.  Decrypting them always fails with
+            # "Encrypted data too short" and pollutes recall logs with a
+            # WARN per stale ID per recall — observed on legacy QA vault
+            # with ~9 stubs from rc-era pin/supersede flows.  Filter
+            # pre-decrypt; emit a single aggregate INFO at the end.
+            #
+            # Mirrors ``isStubBlob`` in ``skill/plugin/digest-sync.ts``.
+            if is_stub_blob_hex(encrypted_blob_hex):
+                skipped_stub_ids.append(fact_id)
+                continue
             # Subgraph returns 0x-prefixed hex
             if encrypted_blob_hex.startswith("0x"):
                 encrypted_blob_hex = encrypted_blob_hex[2:]
@@ -655,6 +669,18 @@ async def search_facts(
             logger.warning("Failed to decrypt candidate %s: %s", fact_id, e)
             continue
 
+    if skipped_stub_ids:
+        # Aggregate INFO instead of per-fact WARN spam.  Truncate to keep
+        # log lines reasonable when a vault has many tombstones.
+        sample = ", ".join(skipped_stub_ids[:5])
+        suffix = f" (+{len(skipped_stub_ids) - 5} more)" if len(skipped_stub_ids) > 5 else ""
+        logger.info(
+            "Skipped %d stub/tombstone blob(s) during recall: %s%s",
+            len(skipped_stub_ids),
+            sample,
+            suffix,
+        )
+
     if not candidates:
         return []
 
@@ -706,6 +732,25 @@ async def forget_fact(
             client_id=relay._client_id,
             session_id=getattr(relay, "_session_id", None),
         )
+        # Read-after-write: wait until the subgraph has flipped the fact's
+        # isActive bit. Forget keeps its bool return contract — a False here
+        # would mean the chain write itself failed, which is NOT what a
+        # confirm-indexed timeout signals. We log the timeout for
+        # observability but still return True (chain write succeeded).
+        from .confirm_indexed import confirm_indexed as _confirm_indexed
+        try:
+            indexed = await _confirm_indexed(fact_id, relay, expect="inactive")
+            if not indexed:
+                import logging as _logging
+                _logging.getLogger(__name__).info(
+                    "forget_fact: chain write succeeded for %s but subgraph "
+                    "indexer did not confirm tombstone within timeout; "
+                    "follow-up recall/export may briefly show stale state",
+                    fact_id,
+                )
+        except Exception:
+            # Confirm helper failures must NEVER mask a successful chain write.
+            pass
         return True
     except Exception:
         return False
@@ -1232,13 +1277,25 @@ async def _change_claim_status(
         session_id=getattr(relay, "_session_id", None),
     )
 
-    return {
+    # Read-after-write: poll the subgraph until the new (pinned/unpinned)
+    # fact id is indexed and active. On timeout we still report success
+    # — the chain write IS acknowledged — but flag ``partial=True`` so a
+    # follow-up ``client.export()`` / ``client.recall()`` doesn't surprise
+    # the caller with stale state.
+    from .confirm_indexed import confirm_indexed as _confirm_indexed
+
+    indexed = await _confirm_indexed(new_fact_id, relay, expect="active")
+
+    result = {
         "success": True,
         "fact_id": fact_id,
         "new_fact_id": new_fact_id,
         "previous_status": current_long,
         "new_status": target_long,
     }
+    if not indexed:
+        result["partial"] = True
+    return result
 
 
 async def pin_fact(

@@ -73,7 +73,15 @@ import {
   type MemorySource,
   type MemoryScope,
 } from './extractor.js';
-import { initLLMClient, resolveLLMConfig, chatCompletion, generateEmbedding, getEmbeddingDims } from './llm-client.js';
+import {
+  initLLMClient,
+  resolveLLMConfig,
+  chatCompletion,
+  generateEmbedding,
+  getEmbeddingDims,
+  getEmbeddingModelId,
+  configureEmbedder,
+} from './llm-client.js';
 import {
   defaultAuthProfilesRoot,
   readAllProfileKeys,
@@ -92,6 +100,7 @@ import {
   type DecryptedCandidate,
 } from './consolidation.js';
 import { isSubgraphMode, getSubgraphConfig, encodeFactProtobuf, submitFactOnChain, submitFactBatchOnChain, deriveSmartAccountAddress, PROTOBUF_VERSION_V4, type FactPayload } from './subgraph-store.js';
+import { confirmIndexed } from './confirm-indexed.js';
 import {
   DIGEST_TRAPDOOR,
   buildCanonicalClaim,
@@ -135,6 +144,7 @@ import {
 } from './onboarding-cli.js';
 import { PluginHotCache, type HotFact } from './hot-cache-wrapper.js';
 import { CONFIG, setRecoveryPhraseOverride } from './config.js';
+import { buildRelayHeaders } from './relay-headers.js';
 import {
   readBillingCache,
   writeBillingCache,
@@ -151,6 +161,11 @@ import {
   resolveOnboardingState,
   writeOnboardingState,
   readPluginVersion,
+  cleanupInstallStagingDirs,
+  detectPartialInstall,
+  clearPartialInstallMarker,
+  writePluginManifest,
+  writePluginError,
   type OnboardingState,
 } from './fs-helpers.js';
 import { isRcBuild } from './qa-bug-report.js';
@@ -161,6 +176,19 @@ import { detectGatewayHost } from './gateway-url.js';
 import { validateMnemonic } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english.js';
 import crypto from 'node:crypto';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import * as nodePath from 'node:path';
+
+// CJS-style require for the @totalreclaw/core WASM module. We keep this
+// load path lazy (only inside getSmartImportWasm() below) so a partial
+// install of the dependency tree doesn't crash module init. Bare
+// `require()` is a CommonJS global and is undefined under bare Node ESM —
+// the shipped `dist/index.js` declares `"type":"module"`, so calling the
+// global directly emits "require is not defined" at runtime (issue #124).
+// createRequire bridges the gap. Same shape as crypto.ts / lsh.ts /
+// subgraph-store.ts / claims-helper.ts.
+const __cjsRequire = createRequire(import.meta.url);
 
 // ---------------------------------------------------------------------------
 // OpenClaw Plugin API type (defined locally to avoid SDK dependency)
@@ -341,8 +369,17 @@ function buildPairingUrl(
   // Layers 4 + 5 — auto-detect via gateway-url helper (Tailscale CGNAT, then LAN)
   else {
     let detected: ReturnType<typeof detectGatewayHost> = null;
+    // issue #110 fix 4 — pass `isDocker` so LAN detection skips
+    // 172.16/12 bridge IPs that no external browser can reach.
+    let isDocker = false;
     try {
-      detected = detectGatewayHost();
+      isDocker = isRunningInDocker();
+    } catch {
+      // Defensive: never block URL building on Docker sniff errors.
+      isDocker = false;
+    }
+    try {
+      detected = detectGatewayHost({ isDocker });
     } catch (err) {
       api.logger.warn(
         `TotalReclaw: host autodetect crashed: ${err instanceof Error ? err.message : String(err)} — falling back to localhost`,
@@ -368,9 +405,27 @@ function buildPairingUrl(
           `Set plugins.entries.totalreclaw.config.publicUrl for remote access.`,
       );
     } else {
-      // Layer 6 — localhost fallback
+      // Layer 6 — localhost fallback (or Docker-aware relay-pointer warning)
       const bind = cfg?.gateway?.bind;
-      if (bind === 'lan' || bind === 'tailnet') {
+      if (isDocker) {
+        // issue #110 fix 4: inside Docker the LAN IP is container-internal
+        // and useless. Loopback localhost only works for `docker exec`
+        // tests. The CORRECT pair URL for Docker is the relay-brokered
+        // path served by the `totalreclaw_pair` agent tool (CONFIG.pairMode
+        // === 'relay' since rc.11). The CLI-only path here cannot mint a
+        // relay session synchronously (the relay handshake needs a WS
+        // round-trip), so we emit the loopback URL with a LOUD warning
+        // pointing the operator at the agent tool / publicUrl override.
+        api.logger.warn(
+          `TotalReclaw: Docker container detected — pairing URL falling back to ` +
+            `http://localhost:${port}, which is unreachable from the host browser. ` +
+            `Use the totalreclaw_pair AGENT TOOL (relay-brokered, universally reachable) ` +
+            `instead of the CLI fallback, OR set plugins.entries.totalreclaw.config.publicUrl ` +
+            `to your gateway's host-reachable URL (e.g. http://<host-ip>:${port} when the ` +
+            `Docker port is published). Setting TOTALRECLAW_PAIR_MODE=relay is the default; ` +
+            `air-gapped operators on TOTALRECLAW_PAIR_MODE=local must publish a port + set publicUrl.`,
+        );
+      } else if (bind === 'lan' || bind === 'tailnet') {
         api.logger.warn(
           `TotalReclaw: pairing URL falling back to localhost because gateway.bind=${bind} could not be autodetected. ` +
             'Set plugins.entries.totalreclaw.config.publicUrl to override.',
@@ -849,11 +904,10 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
         const billingUrl = CONFIG.serverUrl;
         const resp = await fetch(`${billingUrl}/v1/billing/status?wallet_address=${encodeURIComponent(walletAddr)}`, {
           method: 'GET',
-          headers: {
+          headers: buildRelayHeaders({
             'Authorization': `Bearer ${authKeyHex}`,
             'Accept': 'application/json',
-            'X-TotalReclaw-Client': 'openclaw-plugin',
-          },
+          }),
         });
         if (resp.ok) {
           const billingData = await resp.json() as Record<string, unknown>;
@@ -1426,11 +1480,11 @@ async function migrationGqlQuery<T>(
   authKey?: string,
 ): Promise<T | null> {
   try {
-    const headers: Record<string, string> = {
+    const overrides: Record<string, string> = {
       'Content-Type': 'application/json',
-      'X-TotalReclaw-Client': 'openclaw-plugin',
     };
-    if (authKey) headers['Authorization'] = `Bearer ${authKey}`;
+    if (authKey) overrides['Authorization'] = `Bearer ${authKey}`;
+    const headers = buildRelayHeaders(overrides);
     const response = await fetch(endpoint, {
       method: 'POST',
       headers,
@@ -1905,6 +1959,11 @@ async function storeExtractedFacts(
         fact: factForBlob,
         importance: effectiveImportance,
         sourceAgent: factSource,
+        // 3.3.1-rc.22 — tag every new claim with the active embedder id
+        // so future distillation can rescore selectively. Plugin-only
+        // field; survives the core validator strip via re-attach in
+        // `buildCanonicalClaimV1`.
+        embeddingModelId: getEmbeddingModelId(),
       });
 
       const factId = crypto.randomUUID();
@@ -2271,10 +2330,13 @@ async function handlePluginImportFrom(
 // Smart Import — Two-Pass Pipeline (Profile + Triage)
 // ---------------------------------------------------------------------------
 
-// Lazy-load WASM for smart import functions (same pattern as crypto.ts / subgraph-store.ts).
+// Lazy-load WASM for smart import functions (same pattern as crypto.ts /
+// subgraph-store.ts). Goes through __cjsRequire (createRequire(import.meta.url))
+// declared at the top of the file — bare `require()` is undefined under
+// pure-ESM Node, see issue #124.
 let _smartImportWasm: typeof import('@totalreclaw/core') | null = null;
 function getSmartImportWasm() {
-  if (!_smartImportWasm) _smartImportWasm = require('@totalreclaw/core');
+  if (!_smartImportWasm) _smartImportWasm = __cjsRequire('@totalreclaw/core');
   return _smartImportWasm;
 }
 
@@ -2797,6 +2859,50 @@ const plugin = {
 
   register(api: OpenClawPluginApi) {
     // ---------------------------------------------------------------
+    // 3.3.2-rc.1 (issue #186) — load manifest instrumentation
+    // ---------------------------------------------------------------
+    //
+    // Capture every `api.registerTool({name, ...})` call so we can write
+    // a `.loaded.json` manifest at the end of register(). Wrap the body
+    // in try/catch so a register-time throw produces `.error.json` for
+    // agent-side filesystem verification (the CLI hangs in some Docker
+    // setups — issue #182 — so the manifest is the canonical "did the
+    // plugin load?" probe).
+    //
+    // Implementation: we intercept the api.registerTool method by
+    // wrapping it on the api object passed in. The wrapper inspects the
+    // `name` field (every TR registerTool call sets it) and forwards
+    // verbatim. NO behavior change to the SDK call — the original method
+    // is invoked with original args and `this` binding.
+    //
+    // Synchronous writes ONLY (see writePluginManifest doc): the SDK
+    // freezes plugin registries the moment register() returns; an async
+    // write would race that freeze.
+    const _registeredToolNames: string[] = [];
+    const _originalRegisterTool = api.registerTool.bind(api);
+    api.registerTool = (tool: unknown, opts?: { name?: string; names?: string[] }) => {
+      try {
+        const t = tool as { name?: unknown } | null | undefined;
+        if (t && typeof t === 'object' && typeof t.name === 'string' && t.name.length > 0) {
+          _registeredToolNames.push(t.name);
+        }
+      } catch {
+        // Manifest is diagnostic; never let bookkeeping break tool registration.
+      }
+      _originalRegisterTool(tool, opts);
+    };
+
+    // Lazily resolved inside the try below — needed by both the manifest
+    // write and the error path. `dist/` after build, package root in tests.
+    let _pluginDirForManifest: string | null = null;
+
+    // NOTE: the body of register() below is intentionally NOT re-indented
+    // under this `try` block — re-indenting would touch every line in a
+    // 3,500-line function and obscure the actual hotfix diff. The closing
+    // `} catch (registerErr: unknown) { ... }` is at the very end of
+    // register() (search for "register() threw").
+    try {
+    // ---------------------------------------------------------------
     // RC-build detection (3.3.1-rc.3)
     // ---------------------------------------------------------------
     //
@@ -2805,17 +2911,88 @@ const plugin = {
     // function — stable builds never see it. The version is resolved via
     // `readPluginVersion` from fs-helpers.ts (scanner-safe, pure-fs).
     let rcMode = false;
+    // Plugin version resolved from package.json once at register time. Reused
+    // by writeOnboardingState callsites below so the `version` field in
+    // state.json tracks the actual shipped plugin version (avoids drift —
+    // e.g. rc.18 finding F4 where a hardcoded `'3.3.1-rc.11'` stayed put
+    // through 7 RC bumps). Fallback `'3.3.0'` matches the prior literal at
+    // the loopback callsite if package.json read fails.
+    let pluginVersion: string | null = null;
     try {
-      // `import.meta.url` is ESM-only; fallback to `__dirname` for the CJS
-      // build path. `require` comes from Node core and is available in both
-      // module formats. `fileURLToPath` / `path.dirname` are pure-sync.
-      const url = require('node:url') as typeof import('node:url');
-      const nodePath = require('node:path') as typeof import('node:path');
-      const pluginDir = nodePath.dirname(url.fileURLToPath(import.meta.url));
-      const version = readPluginVersion(pluginDir);
-      rcMode = isRcBuild(version);
+      // Resolve our own dist/ directory so `readPluginVersion` can locate
+      // package.json. We use `import.meta.url` + ESM-static stdlib imports
+      // (`fileURLToPath` from `node:url`, `nodePath.dirname` from `node:path`,
+      // both imported at the top of this file). Earlier shape used inline
+      // `require('node:url')` — undefined under bare-ESM Node, broke the
+      // before_agent_start hook in the published rc.20 bundle (issue #124).
+      const pluginDir = nodePath.dirname(fileURLToPath(import.meta.url));
+      _pluginDirForManifest = pluginDir; // captured for #186 .loaded.json/.error.json
+      pluginVersion = readPluginVersion(pluginDir);
+      rcMode = isRcBuild(pluginVersion);
       if (rcMode) {
-        api.logger.info(`TotalReclaw: RC build detected (version=${version}). RC-gated tools will be registered.`);
+        api.logger.info(`TotalReclaw: RC build detected (version=${pluginVersion}). RC-gated tools will be registered.`);
+      }
+
+      // 3.3.1-rc.21 (issue #126 — rc.20 finding F3): clean up
+      // `.openclaw-install-stage-*` siblings left behind by an interrupted
+      // `openclaw plugins install` run. Without cleanup, OpenClaw's plugin
+      // loader auto-discovers the orphan directory on the next gateway
+      // start and registers a duplicate `totalreclaw` plugin (duplicate
+      // hooks, duplicate tools, "duplicate-plugin-id" warning every cycle).
+      // Best-effort — never throws on permission / race failures.
+      try {
+        const removed = cleanupInstallStagingDirs(pluginDir);
+        if (removed.length > 0) {
+          api.logger.info(
+            `TotalReclaw: removed ${removed.length} stale install-staging dir(s) from prior interrupted install: ${removed.join(', ')}`,
+          );
+        }
+      } catch {
+        // Best-effort — already swallowed inside the helper, but keep this
+        // outer try as belt-and-braces against future helper changes.
+      }
+
+      // 3.3.1-rc.22 — wire the lazy-embedder runtime config so the first
+      // `generateEmbedding()` call knows where to cache the bundle and
+      // which RC's GitHub Release to fetch from. `pluginVersion` may be
+      // `null` if package.json is unreadable; the embedder defaults to
+      // a "0.0.0-dev" tag in that case.
+      try {
+        configureEmbedder({
+          cacheRoot: CONFIG.embedderCachePath,
+          rcTag: pluginVersion ?? '0.0.0-dev',
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        api.logger.warn(`TotalReclaw: configureEmbedder failed (will use defaults): ${msg}`);
+      }
+
+      // 3.3.1-rc.22 (rc.21 finding #5): self-heal partial-install marker.
+      // The `preinstall` npm script writes `.tr-partial-install`; the
+      // `postinstall` script removes it on a successful install. If we
+      // have gotten this far the loader did register us — meaning the
+      // install succeeded enough to be useful — so any lingering marker
+      // (e.g. npm ran preinstall but postinstall misfired) is stale.
+      // Clear it so the next retry's detector does not see a false positive.
+      //
+      // 3.3.1-rc.22 (rc.21 finding #6) — gateway/reload upstream caveat:
+      // OpenClaw's config-watcher fires `gateway/reload` when
+      // `plugins.entries.totalreclaw` mutates (e.g. mid-install). In-flight
+      // CLI clients see `1006 abnormal closure` and start a 600-second wait.
+      // Proper fix is upstream OpenClaw FR. Plugin-side mitigation = these
+      // helper calls MUST be idempotent under repeated register() calls
+      // triggered by reload chatter. Asserted by
+      // `install-reload-idempotency.test.ts`.
+      try {
+        const pluginRoot = nodePath.resolve(pluginDir, '..');
+        const cleared = clearPartialInstallMarker(pluginRoot);
+        if (cleared) {
+          api.logger.info(
+            `TotalReclaw: cleared stale .tr-partial-install marker (rc.22 finding #5)`,
+          );
+        }
+      } catch {
+        // Best-effort. Helper logs internally and never throws.
       }
     } catch {
       rcMode = false;
@@ -2902,6 +3079,12 @@ const plugin = {
             credentialsPath: CREDENTIALS_PATH,
             statePath: CONFIG.onboardingStatePath,
             logger: api.logger,
+            // 3.3.1-rc.18 — wire the pair flow into onboard so the
+            // `--pair-only` flag (issue #95) can delegate to it without
+            // duplicating session-store / URL-builder logic. Same deps
+            // as the standalone `pair` subcommand.
+            pairSessionsPath: CONFIG.pairSessionsPath,
+            renderPairingUrl: (session) => buildPairingUrl(api, session),
             // 3.3.1 — supplied to the non-interactive --json onboard path
             // so the emitted payload includes the derived Smart Account
             // (scope) address. Uses the chain-id default; Pro-tier
@@ -2974,8 +3157,30 @@ const plugin = {
           // Write credentials.json + flip state to 'active' via
           // fs-helpers. This centralizes disk I/O off the
           // pair-http surface (scanner isolation).
+          //
+          // 3.3.1 (internal#130) — derive + persist the Smart Account
+          // address right here so the user can see their scope address
+          // immediately after pair, without waiting for a first chain
+          // write. SA derivation runs locally (WASM deriveEoa + factory
+          // getAddress eth_call); the mnemonic NEVER crosses any new
+          // boundary — it's already on disk in credentials.json and is
+          // consumed by the same `deriveSmartAccountAddress` call the
+          // store/search paths use. Only the derived public address is
+          // persisted to credentials.json (`scope_address`).
+          let scopeAddress: string | undefined;
+          try {
+            scopeAddress = await deriveSmartAccountAddress(mnemonic, CONFIG.chainId);
+          } catch (err) {
+            // Best-effort. If chain RPC is unreachable at pair time, the
+            // status tool re-tries derivation lazily on next call —
+            // fall through and write credentials.json without it.
+            api.logger.warn(
+              `pair: scope_address derivation failed (will retry lazily): ${err instanceof Error ? err.message : String(err)}`,
+            );
+          }
           const creds = loadCredentialsJson(CREDENTIALS_PATH) ?? {};
-          const next = { ...creds, mnemonic };
+          const next: typeof creds = { ...creds, mnemonic };
+          if (scopeAddress) next.scope_address = scopeAddress;
           if (!writeCredentialsJson(CREDENTIALS_PATH, next)) {
             return { state: 'error', error: 'credentials_write_failed' };
           }
@@ -2988,7 +3193,7 @@ const plugin = {
             onboardingState: 'active',
             createdBy: 'generate',
             credentialsCreatedAt: new Date().toISOString(),
-            version: '3.3.0',
+            version: pluginVersion ?? '3.3.0',
           });
           return { state: 'active' };
         },
@@ -3523,20 +3728,10 @@ const plugin = {
               };
             }
 
-            // 6b. Cosine similarity threshold gate — skip results when the
-            //     best match is below the minimum relevance threshold.
-            const maxCosine = Math.max(
-              ...reranked.map((r) => r.cosineSimilarity ?? 0),
-            );
-            if (maxCosine < COSINE_THRESHOLD) {
-              api.logger.info(
-                `Recall: cosine threshold gate filtered results (max=${maxCosine.toFixed(3)}, threshold=${COSINE_THRESHOLD})`,
-              );
-              return {
-                content: [{ type: 'text', text: 'No relevant memories found for this query.' }],
-                details: { count: 0, memories: [] },
-              };
-            }
+            // 6b. Relevance gate removed in rc.22 -- core's intent-weighted
+            //     RRF + Tier 1 source weighting handles short queries via the
+            //     BM25 component, making the rc.18 cosine + lexical-override
+            //     band-aid (issue #116) redundant.
 
             // 7. Format results.
             const lines = reranked.map((m, i) => {
@@ -3675,14 +3870,29 @@ const plugin = {
                 throw new Error(`On-chain tombstone failed (tx=${result.txHash?.slice(0, 10) || 'none'}…)`);
               }
               api.logger.info(`Tombstone written for ${factId}: tx=${result.txHash}`);
+              // Read-after-write: poll the subgraph until the original fact id
+              // is no longer active (forget flips isActive=false). On timeout
+              // surface `partial: true` so the agent can explain the chain
+              // write succeeded but the subgraph is still propagating.
+              const confirm = await confirmIndexed(factId, {
+                expect: 'inactive',
+                authKeyHex: authKeyHex!,
+              });
               return {
                 content: [{
                   type: 'text',
-                  text:
-                    `Memory ${factId} deleted on-chain (tx: ${result.txHash}). ` +
-                    'The subgraph will reflect isActive=false within ~30 seconds.',
+                  text: confirm.indexed
+                    ? `Memory ${factId} deleted on-chain and confirmed by the subgraph (tx: ${result.txHash}).`
+                    : `Memory ${factId} deleted on-chain (tx: ${result.txHash}). ` +
+                      'The subgraph indexer is still propagating the change — ' +
+                      'recall/export may briefly show the memory as still active.',
                 }],
-                details: { deleted: true, txHash: result.txHash, factId },
+                details: {
+                  deleted: true,
+                  txHash: result.txHash,
+                  factId,
+                  ...(confirm.indexed ? {} : { partial: true }),
+                },
               };
             } else {
               await apiClient!.deleteFact(factId, authKeyHex!);
@@ -3758,11 +3968,10 @@ const plugin = {
 
                 const res = await fetch(`${relayUrl}/v1/subgraph`, {
                   method: 'POST',
-                  headers: {
+                  headers: buildRelayHeaders({
                     'Content-Type': 'application/json',
-                    'X-TotalReclaw-Client': 'openclaw-plugin',
                     ...(authKeyHex ? { Authorization: `Bearer ${authKeyHex}` } : {}),
-                  },
+                  }),
                   body: JSON.stringify({ query, variables }),
                 });
 
@@ -3898,11 +4107,10 @@ const plugin = {
             const walletAddr = subgraphOwner || userId || '';
             const response = await fetch(`${serverUrl}/v1/billing/status?wallet_address=${encodeURIComponent(walletAddr)}`, {
               method: 'GET',
-              headers: {
+              headers: buildRelayHeaders({
                 'Authorization': `Bearer ${authKeyHex}`,
                 'Accept': 'application/json',
-                'X-TotalReclaw-Client': 'openclaw-plugin',
-              },
+              }),
             });
 
             if (!response.ok) {
@@ -3927,6 +4135,37 @@ const plugin = {
               checked_at: Date.now(),
             });
 
+            // 3.3.1 (internal#130) — surface the Smart Account / scope
+            // address so the user can do subgraph queries, BaseScan
+            // lookups, and cross-client portability checks BEFORE any
+            // chain write completes. Resolution priority:
+            //   1. In-memory `subgraphOwner` (already derived earlier).
+            //   2. credentials.json `scope_address` (persisted at pair).
+            //   3. Lazy derive now from the loaded mnemonic + cache it
+            //      back to credentials.json so the next call is free.
+            let scopeAddress: string | undefined =
+              subgraphOwner ?? undefined;
+            if (!scopeAddress) {
+              try {
+                const credsCache = loadCredentialsJson(CREDENTIALS_PATH);
+                if (credsCache?.scope_address && typeof credsCache.scope_address === 'string') {
+                  scopeAddress = credsCache.scope_address;
+                } else if (credsCache?.mnemonic && typeof credsCache.mnemonic === 'string') {
+                  scopeAddress = await deriveSmartAccountAddress(
+                    credsCache.mnemonic,
+                    CONFIG.chainId,
+                  );
+                  if (scopeAddress) {
+                    writeCredentialsJson(CREDENTIALS_PATH, { ...credsCache, scope_address: scopeAddress });
+                  }
+                }
+              } catch (deriveErr) {
+                api.logger.warn(
+                  `totalreclaw_status: scope_address lookup failed: ${deriveErr instanceof Error ? deriveErr.message : String(deriveErr)}`,
+                );
+              }
+            }
+
             const tierLabel = tier === 'pro' ? 'Pro' : 'Free';
             const lines: string[] = [
               `Tier: ${tierLabel}`,
@@ -3935,13 +4174,21 @@ const plugin = {
             if (freeWritesResetAt) {
               lines.push(`Resets: ${new Date(freeWritesResetAt).toLocaleDateString()}`);
             }
+            if (scopeAddress) {
+              lines.push(`Smart Account: ${scopeAddress}`);
+            }
             if (tier !== 'pro') {
               lines.push(`Pricing: https://totalreclaw.xyz/pricing`);
             }
 
             return {
               content: [{ type: 'text', text: lines.join('\n') }],
-              details: { tier, free_writes_used: freeWritesUsed, free_writes_limit: freeWritesLimit },
+              details: {
+                tier,
+                free_writes_used: freeWritesUsed,
+                free_writes_limit: freeWritesLimit,
+                scope_address: scopeAddress,
+              },
             };
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
@@ -4664,11 +4911,10 @@ const plugin = {
 
             const response = await fetch(`${serverUrl}/v1/billing/checkout`, {
               method: 'POST',
-              headers: {
+              headers: buildRelayHeaders({
                 'Authorization': `Bearer ${authKeyHex}`,
                 'Content-Type': 'application/json',
-                'X-TotalReclaw-Client': 'openclaw-plugin',
-              },
+              }),
               body: JSON.stringify({
                 wallet_address: walletAddr,
                 tier: 'pro',
@@ -4752,11 +4998,10 @@ const plugin = {
               `${serverUrl}/v1/billing/status?wallet_address=${encodeURIComponent(subgraphOwner)}`,
               {
                 method: 'GET',
-                headers: {
+                headers: buildRelayHeaders({
                   'Authorization': `Bearer ${authKeyHex}`,
                   'Content-Type': 'application/json',
-                  'X-TotalReclaw-Client': 'openclaw-plugin',
-                },
+                }),
               },
             );
             if (!billingResp.ok) {
@@ -4891,162 +5136,36 @@ const plugin = {
     );
 
     // ---------------------------------------------------------------
-    // Tool: totalreclaw_setup (DEPRECATED in 3.2.0)
+    // Tools: totalreclaw_setup + totalreclaw_onboarding_start —
+    //   REMOVED in 3.3.1-rc.5 (phrase-safety carve-out closure).
     // ---------------------------------------------------------------
     //
-    // Pre-3.2.0 behaviour: auto-generate a mnemonic + return it in the tool
-    // response body so the LLM surfaces it to the user. That path shipped
-    // the recovery phrase to the LLM provider's logs — incompatible with
-    // TotalReclaw's "server cannot read your memories" pitch. 3.2.0
-    // replaces it with a pointer-only stub.
+    // rc.4 left these two registrations in place as *neutered* stubs —
+    // ``totalreclaw_setup`` rejected any ``recovery_phrase`` argument
+    // and returned a CLI-pointer message; ``totalreclaw_onboarding_start``
+    // was already pointer-only. Neither path could leak a phrase in
+    // rc.4, but the rc.4 auto-QA (2026-04-22) flagged them as future-
+    // regression surface: any future patch that re-enables phrase
+    // acceptance (e.g. a flag-driven "power-user" path) would silently
+    // re-open the leak, and their mere presence in the tool registry
+    // keeps signalling to agents that "phrase handling happens here".
     //
-    // Kept registered (rather than deleted) for back-compat — LLMs that
-    // learned the old tool name from training data won't silently succeed
-    // if the user asks them to set up memory. They'll call this tool,
-    // receive a pointer to `openclaw totalreclaw onboard`, and the flow
-    // continues on the user's TTY.
+    // Per ``project_phrase_safety_rule.md`` the ONLY approved agent-
+    // facilitated setup surface is ``totalreclaw_pair`` (browser-side
+    // crypto keeps the phrase out of the LLM round-trip by construction).
+    // rc.5 deletes both registrations outright. The underlying CLI
+    // wizard (``openclaw totalreclaw onboard``) is unchanged — users
+    // run it in their own terminal, outside any agent shell.
     //
-    // The `recovery_phrase` param is kept in the schema so existing tool
-    // calls parse — but ANY phrase the caller passes is rejected, and the
-    // tool NEVER writes credentials.json. All real setup happens in the
-    // CLI wizard.
-    api.registerTool(
-      {
-        name: 'totalreclaw_setup',
-        label: 'TotalReclaw setup (deprecated — redirect to CLI)',
-        description:
-          'DEPRECATED in 3.2.0. This tool no longer accepts recovery phrases or performs ' +
-          'setup. It returns a pointer to `openclaw totalreclaw onboard` — the secure CLI ' +
-          'wizard that runs on the user\'s terminal so the phrase never touches the LLM ' +
-          'provider. Prefer calling `totalreclaw_onboarding_start` for the same pointer.',
-        parameters: {
-          type: 'object',
-          properties: {
-            recovery_phrase: {
-              type: 'string',
-              description:
-                'Legacy parameter — IGNORED in 3.2.0. If provided, the tool returns a ' +
-                'security warning explaining that phrases must never be pasted through ' +
-                'chat. Use the `openclaw totalreclaw onboard` CLI wizard to import an ' +
-                'existing phrase safely.',
-            },
-          },
-          additionalProperties: false,
-        },
-        async execute(_toolCallId: string, params: { recovery_phrase?: string }) {
-          // Phrase-passing is a security boundary violation in 3.2.0. Reject
-          // with a message that explains WHY — the LLM might try again with
-          // a different shape otherwise.
-          if (typeof params?.recovery_phrase === 'string' && params.recovery_phrase.trim().length > 0) {
-            api.logger.warn(
-              'totalreclaw_setup: rejected phrase-passing call (3.2.0 deprecation).',
-            );
-            return {
-              content: [{
-                type: 'text',
-                text:
-                  'For security, TotalReclaw no longer accepts a recovery phrase through ' +
-                  'chat. Pasting a phrase into this tool would ship it to the LLM provider, ' +
-                  'which defeats the whole point of end-to-end encryption.\n\n' +
-                  'Ask the user to open a terminal on their machine and run:\n\n' +
-                  '    openclaw totalreclaw onboard\n\n' +
-                  'The wizard imports an existing phrase via a hidden stdin prompt that ' +
-                  'never touches the LLM, the transcript, or the network.',
-              }],
-            };
-          }
-
-          // No-arg call against an already-active state: confirm + move on.
-          const state = resolveOnboardingState(CREDENTIALS_PATH, CONFIG.onboardingStatePath);
-          if (state.onboardingState === 'active') {
-            return {
-              content: [{
-                type: 'text',
-                text:
-                  'TotalReclaw is already set up and active on this machine. Memory tools ' +
-                  'are unblocked — you can call `totalreclaw_remember` and `totalreclaw_recall` ' +
-                  'directly. If the user wants to rotate phrases, have them delete ' +
-                  '`~/.totalreclaw/credentials.json` and run `openclaw totalreclaw onboard` again.',
-              }],
-            };
-          }
-
-          // Fresh state, no phrase: redirect to the CLI wizard.
-          return {
-            content: [{
-              type: 'text',
-              text:
-                'TotalReclaw setup must run on the user\'s local terminal so the recovery ' +
-                'phrase never touches the LLM. Ask the user to open a terminal and run:\n\n' +
-                '    openclaw totalreclaw onboard\n\n' +
-                'The wizard walks through generate-new-phrase or import-existing-phrase. ' +
-                'After it completes, memory tools become available automatically. See the ' +
-                '`totalreclaw_onboarding_start` tool for the same pointer in a more ' +
-                'discoverable shape.',
-            }],
-          };
-        },
-      },
-      { name: 'totalreclaw_setup' },
-    );
-
-    // ---------------------------------------------------------------
-    // Tool: totalreclaw_onboarding_start (3.2.0 pointer-only tool)
-    // ---------------------------------------------------------------
+    // Audit assertion: ``phrase-safety-registry.test.ts`` asserts
+    // neither name is present in the ``api.registerTool`` call list.
+    // Re-adding either fails CI.
     //
-    // When the user asks the LLM to set up TotalReclaw, this tool directs
-    // them to the CLI wizard. The response body is a non-secret pointer —
-    // it NEVER contains a recovery phrase — so it can safely flow through
-    // the LLM provider and the transcript.
-    api.registerTool(
-      {
-        name: 'totalreclaw_onboarding_start',
-        label: 'TotalReclaw — start onboarding',
-        description:
-          'Call this when the user wants to set up TotalReclaw memory or asks about ' +
-          'enabling memory features. This tool does NOT generate, display, or accept ' +
-          'a recovery phrase — it returns a short pointer that tells the user to run ' +
-          'the onboarding wizard in their local terminal. All phrase handling happens ' +
-          'outside the LLM. If TotalReclaw is already active, the tool returns a ' +
-          'confirmation.',
-        parameters: {
-          type: 'object',
-          properties: {},
-          additionalProperties: false,
-        },
-        async execute() {
-          const state = resolveOnboardingState(CREDENTIALS_PATH, CONFIG.onboardingStatePath);
-          if (state.onboardingState === 'active') {
-            return {
-              content: [{
-                type: 'text',
-                text:
-                  'TotalReclaw is already set up on this machine. Your encryption keys are ' +
-                  'ready — `totalreclaw_remember`, `totalreclaw_recall`, and the other memory ' +
-                  'tools are unblocked. Run `openclaw totalreclaw status` in a terminal for ' +
-                  'more detail.',
-              }],
-            };
-          }
-          return {
-            content: [{
-              type: 'text',
-              text:
-                'TotalReclaw onboarding requires a local terminal so your recovery phrase ' +
-                'never touches the LLM provider. On the same machine as your OpenClaw ' +
-                'gateway, open a terminal and run:\n\n' +
-                '    openclaw totalreclaw onboard\n\n' +
-                'The wizard will ask whether you want to generate a new phrase or import an ' +
-                'existing TotalReclaw phrase. Both paths display/accept the phrase only on ' +
-                'your terminal — nothing crosses the network. After the wizard completes, ' +
-                'come back here and I\'ll be able to use `totalreclaw_remember` and ' +
-                '`totalreclaw_recall`.',
-            }],
-          };
-        },
-      },
-      { name: 'totalreclaw_onboarding_start' },
-    );
+    // Historical tombstone (so LLM-assisted contributors don't re-add
+    // the former shape from training-data memory): rc.4 registered two
+    // tools by the names "totalreclaw_setup" and
+    // "totalreclaw_onboarding_start" as pointer-only stubs. Both were
+    // deleted in rc.5. Do not re-introduce.
 
     // ---------------------------------------------------------------
     // Tool: totalreclaw_onboard — REMOVED in 3.3.1-rc.4 (phrase-safety).
@@ -5090,19 +5209,24 @@ const plugin = {
     api.registerTool(
       {
         name: 'totalreclaw_pair',
-        label: 'QR pair — start remote pairing session',
+        label: 'Set up the user\'s TotalReclaw account (encrypted, browser-side)',
         description:
-          'Start a remote pairing session so the user can create or import a TotalReclaw ' +
-          'recovery phrase from their phone or another browser. Returns a pairing URL, a ' +
-          '6-digit PIN, and an ASCII QR code that the agent relays to the user. The recovery ' +
-          'phrase itself is generated/entered in the BROWSER and uploaded end-to-end encrypted ' +
-          'to this gateway — it NEVER touches the LLM provider or the chat transcript.\n\n' +
-          'This is the CANONICAL agent-facilitated setup surface — use it whenever the user ' +
-          'asks you to set up TotalReclaw, regardless of whether they have terminal access. ' +
-          'Browser-side crypto keeps the recovery phrase out of the LLM context entirely. ' +
-          'If a user explicitly prefers local-terminal setup with no browser, point them at ' +
-          '`totalreclaw_onboarding_start` (a pointer to the CLI wizard they run on their own ' +
-          'terminal, NOT through your shell tool).',
+          'Set up the user\'s TotalReclaw account (encrypted, browser-side recovery-phrase ' +
+          'generation or import). Starts a brief remote session so the user can create or ' +
+          'import a TotalReclaw recovery phrase from their phone or another browser. ' +
+          'Returns an account-setup URL, a 6-digit PIN, and an ASCII QR code that the agent ' +
+          'relays to the user. The recovery phrase itself is generated/entered in the ' +
+          'BROWSER and uploaded end-to-end encrypted to this gateway — it NEVER touches ' +
+          'the LLM provider or the chat transcript.\n\n' +
+          'This is the CANONICAL agent-facilitated account-setup surface — use it whenever ' +
+          'the user asks you to set up TotalReclaw, regardless of whether they have ' +
+          'terminal access. Narrate it to the user as "setting up your TotalReclaw ' +
+          'account". Browser-side crypto keeps the recovery phrase out of the LLM context ' +
+          'entirely. If a user explicitly prefers local-terminal account setup with no ' +
+          'browser, point them at `totalreclaw_onboarding_start` (a pointer to the CLI ' +
+          'wizard they run on their own terminal, NOT through your shell tool).\n\n' +
+          'Tool name `totalreclaw_pair` is kept for backward compatibility — function-wise ' +
+          'this is the account-setup tool.',
         parameters: {
           type: 'object',
           properties: {
@@ -5122,18 +5246,117 @@ const plugin = {
           const rawMode = params?.mode;
           const mode: 'generate' | 'import' =
             rawMode === 'import' ? 'import' : 'generate';
+          const pairMode = CONFIG.pairMode;
           try {
-            const { createPairSession } = await import('./pair-session-store.js');
-            const { generateGatewayKeypair } = await import('./pair-crypto.js');
+            // 3.3.1-rc.11 — relay-brokered pair by default (universal reachability).
+            // `TOTALRECLAW_PAIR_MODE=local` preserves the rc.4–rc.10 loopback flow
+            // for air-gapped / self-hosted setups. Both paths return the same
+            // tool payload (`{url, pin, expires_at_ms, qr_*, mode, instructions}`);
+            // only the URL origin differs.
+            let url: string;
+            let pin: string;
+            let sidOrToken: string;
+            let expiresAtMs: number;
+            let localSession: import('./pair-session-store.js').PairSession | undefined;
+
+            if (pairMode === 'relay') {
+              const { openRemotePairSession, awaitPhraseUpload } = await import(
+                './pair-remote-client.js'
+              );
+              const remoteSession = await openRemotePairSession({
+                relayBaseUrl: CONFIG.pairRelayUrl,
+                mode: mode === 'generate' ? 'generate' : 'import',
+              });
+              url = remoteSession.url;
+              pin = remoteSession.pin;
+              sidOrToken = remoteSession.token;
+              // Relay sends ISO-8601; convert to ms for tool payload parity.
+              const parsed = Date.parse(remoteSession.expiresAt);
+              expiresAtMs = Number.isFinite(parsed)
+                ? parsed
+                : Date.now() + 5 * 60_000;
+              // Background task — writes credentials.json + flips state when
+              // the browser completes the flow. Tool handler returns
+              // immediately so the agent can tell the user the URL + PIN.
+              void (async () => {
+                try {
+                  await awaitPhraseUpload(remoteSession, {
+                    phraseValidator: (p: string) =>
+                      validateMnemonic(p, wordlist),
+                    completePairing: async ({ mnemonic }) => {
+                      try {
+                        // 3.3.1 (internal#130) — derive + persist the
+                        // Smart Account address now so the user can see
+                        // it immediately after pair, before any chain
+                        // write. Mnemonic stays in this scope (already
+                        // on disk in credentials.json); only the
+                        // derived public scope_address is added.
+                        let scopeAddress: string | undefined;
+                        try {
+                          scopeAddress = await deriveSmartAccountAddress(
+                            mnemonic,
+                            CONFIG.chainId,
+                          );
+                        } catch (deriveErr) {
+                          api.logger.warn(
+                            `totalreclaw_pair(relay): scope_address derivation failed (will retry lazily): ${deriveErr instanceof Error ? deriveErr.message : String(deriveErr)}`,
+                          );
+                        }
+                        const creds =
+                          loadCredentialsJson(CREDENTIALS_PATH) ?? {};
+                        const next: typeof creds = { ...creds, mnemonic };
+                        if (scopeAddress) next.scope_address = scopeAddress;
+                        if (!writeCredentialsJson(CREDENTIALS_PATH, next)) {
+                          return { state: 'error', error: 'credentials_write_failed' };
+                        }
+                        setRecoveryPhraseOverride(mnemonic);
+                        writeOnboardingState(CONFIG.onboardingStatePath, {
+                          onboardingState: 'active',
+                          createdBy: mode === 'generate' ? 'generate' : 'import',
+                          credentialsCreatedAt: new Date().toISOString(),
+                          version: pluginVersion ?? '3.3.0',
+                        });
+                        api.logger.info(
+                          `totalreclaw_pair(relay): session ${remoteSession.token.slice(0, 8)}… completed; credentials written${scopeAddress ? ` (scope_address=${scopeAddress})` : ''}`,
+                        );
+                        return { state: 'active' };
+                      } catch (err: unknown) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        api.logger.error(
+                          `totalreclaw_pair(relay): completePairing failed: ${msg}`,
+                        );
+                        return { state: 'error', error: msg };
+                      }
+                    },
+                  });
+                } catch (bgErr: unknown) {
+                  // Expected on TTL expiry / user-aborts — log at warn, not error.
+                  const bgMsg = bgErr instanceof Error ? bgErr.message : String(bgErr);
+                  api.logger.warn(
+                    `totalreclaw_pair(relay): background task ended for token=${remoteSession.token.slice(0, 8)}…: ${bgMsg}`,
+                  );
+                }
+              })();
+            } else {
+              // Local loopback path (rc.10 behaviour).
+              const { createPairSession } = await import('./pair-session-store.js');
+              const { generateGatewayKeypair } = await import('./pair-crypto.js');
+              const kp = generateGatewayKeypair();
+              const session = await createPairSession(CONFIG.pairSessionsPath, {
+                mode,
+                operatorContext: { channel: 'agent' },
+                rngPrivateKey: () => Buffer.from(kp.skB64, 'base64url'),
+                rngPublicKey: () => Buffer.from(kp.pkB64, 'base64url'),
+              });
+              url = buildPairingUrl(api, session);
+              pin = session.secondaryCode;
+              sidOrToken = session.sid;
+              expiresAtMs = session.expiresAtMs;
+              localSession = session;
+            }
+
+            // QR renderers — same for both modes; input is the URL string.
             const { defaultRenderQr } = await import('./pair-cli.js');
-            const kp = generateGatewayKeypair();
-            const session = await createPairSession(CONFIG.pairSessionsPath, {
-              mode,
-              operatorContext: { channel: 'agent' },
-              rngPrivateKey: () => Buffer.from(kp.skB64, 'base64url'),
-              rngPublicKey: () => Buffer.from(kp.pkB64, 'base64url'),
-            });
-            const url = buildPairingUrl(api, session);
             const qrAscii = await new Promise<string>((resolve) => {
               let settled = false;
               const t = setTimeout(() => {
@@ -5156,16 +5379,40 @@ const plugin = {
                 resolve('');
               }
             });
+
+            // 3.3.1-rc.5 — PNG + Unicode QR for multi-transport rendering.
+            let qrPngB64 = '';
+            let qrUnicode = '';
+            try {
+              const { encodePng, encodeUnicode } = await import('./pair-qr.js');
+              const [pngBuf, uni] = await Promise.all([
+                encodePng(url),
+                encodeUnicode(url),
+              ]);
+              qrPngB64 = pngBuf.toString('base64');
+              qrUnicode = uni;
+            } catch (qrErr: unknown) {
+              api.logger.warn(
+                `totalreclaw_pair: QR encode failed (non-fatal): ${
+                  qrErr instanceof Error ? qrErr.message : String(qrErr)
+                }`,
+              );
+            }
+
             api.logger.info(
-              `totalreclaw_pair: session ${session.sid.slice(0, 8)}… mode=${mode} url=${url}`,
+              `totalreclaw_pair: session ${sidOrToken.slice(0, 8)}… mode=${mode} transport=${pairMode} url=${url} qr_png=${qrPngB64.length} qr_unicode=${qrUnicode.length}`,
             );
+            // Voidly reference localSession so TS does not flag the unused
+            // local-branch binding. Future rc.12 diagnostics can expose
+            // `session.mode` / `session.status` separately.
+            void localSession;
             return {
               content: [{
                 type: 'text',
                 text:
                   `Pairing session started.\n\n` +
                   `URL: ${url}\n\n` +
-                  `PIN (type this into the browser): ${session.secondaryCode}\n\n` +
+                  `PIN (type this into the browser): ${pin}\n\n` +
                   (qrAscii ? `QR code:\n\n${qrAscii}\n\n` : '') +
                   `Instructions for the user:\n` +
                   `1. Open the URL above on their phone or another browser (scan the QR or copy-paste).\n` +
@@ -5179,12 +5426,18 @@ const plugin = {
                   `This session expires in ~5 minutes. Run this tool again if you need a fresh URL.`,
               }],
               details: {
-                sid: session.sid,
+                sid: sidOrToken,
                 url,
-                pin: session.secondaryCode,
+                pin,
                 mode,
-                expires_at_ms: session.expiresAtMs,
+                expires_at_ms: expiresAtMs,
                 qr_ascii: qrAscii,
+                qr_png_b64: qrPngB64,
+                qr_unicode: qrUnicode,
+                // rc.11 — surface the transport so downstream tooling (QA
+                // harness asserters, telemetry) can confirm which path
+                // served the URL. Either 'relay' or 'local'.
+                transport: pairMode,
               },
             };
           } catch (err: unknown) {
@@ -5199,6 +5452,25 @@ const plugin = {
       },
       { name: 'totalreclaw_pair' },
     );
+    // 3.3.1-rc.20 (issue #110): explicit post-registration breadcrumb so
+    // ops/QA can grep gateway logs for definitive proof the tool was
+    // declared. If the agent then reports the tool is missing from its
+    // tool list, the gap is upstream OpenClaw tool propagation, not our
+    // plugin — see issue #110 fix 3 + PR #102 (CLI fallback).
+    //
+    // 3.3.1-rc.21 (issue #128): the breadcrumb is debug-grade — it was
+    // bleeding into `openclaw agent --json` stdout, breaking programmatic
+    // parsers that expect the JSON-RPC body to be the only thing on the
+    // wire. Gated behind `TOTALRECLAW_VERBOSE_REGISTER` (or the general
+    // `TOTALRECLAW_DEBUG` toggle) so ops can opt back in when chasing
+    // a tool-injection regression. Default OFF — clean stdout for users.
+    if (CONFIG.verboseRegister) {
+      api.logger.info(
+        'TotalReclaw: registerTool(totalreclaw_pair) returned. If the agent does not see it in its tool list ' +
+          'after gateway restart, the issue is upstream tool injection (containerized agents) — fall back to ' +
+          '`openclaw totalreclaw pair generate --url-pin-only` (PR #102) or `openclaw totalreclaw onboard --pair-only`.',
+      );
+    }
 
     // ---------------------------------------------------------------
     // Tool: totalreclaw_report_qa_bug (3.3.1-rc.3 — RC-gated)
@@ -5295,10 +5567,16 @@ const plugin = {
                   details: { error: 'missing_github_token' },
                 };
               }
+              // rc.14 — `repo` is resolved inside `postQaBugIssue` via
+              // `resolveQaRepo(...)`, which reads `TOTALRECLAW_QA_REPO` and
+              // refuses any slug that isn't a `-internal` fork. Pass the
+              // config-surfaced override so env reads stay in config.ts.
+              const repoOverride = CONFIG.qaRepoOverride || undefined;
               const result = await postQaBugIssue(
                 params as unknown as import('./qa-bug-report.js').QaBugArgs,
                 {
                   githubToken: token,
+                  repo: repoOverride,
                   logger: api.logger,
                 },
               );
@@ -5324,9 +5602,15 @@ const plugin = {
         },
         { name: 'totalreclaw_report_qa_bug' },
       );
-      api.logger.info(
-        'totalreclaw_report_qa_bug registered (RC build — this tool is hidden in stable releases).',
-      );
+      // 3.3.1-rc.21 (issue #128): demote the registration-confirmation
+      // breadcrumb to verbose-only. Same `--json` stdout pollution risk
+      // as the totalreclaw_pair breadcrumb above; ops can opt back in
+      // via TOTALRECLAW_VERBOSE_REGISTER / TOTALRECLAW_DEBUG.
+      if (CONFIG.verboseRegister) {
+        api.logger.info(
+          'totalreclaw_report_qa_bug registered (RC build — this tool is hidden in stable releases).',
+        );
+      }
     }
 
     // ---------------------------------------------------------------
@@ -5421,11 +5705,18 @@ const plugin = {
                 '## TotalReclaw setup pending\n\n' +
                 'TotalReclaw encrypted memory is installed but not yet set up on this machine. ' +
                 'If the user asks about memory features or wants to configure TotalReclaw, ' +
-                'call the `totalreclaw_onboarding_start` tool for instructions.\n\n' +
+                'call the `totalreclaw_pair` tool — it returns a pairing URL + 6-digit PIN ' +
+                'the user opens in a browser (phrase is generated and encrypted in-browser, ' +
+                'never leaves their device in plaintext). If `totalreclaw_pair` is not in ' +
+                'your tool list (container-based agents sometimes miss it), shell out to ' +
+                '`openclaw totalreclaw pair generate --url-pin-only` on the gateway host — ' +
+                'it emits a single JSON line `{v,url,pin,expires_at_ms}` with no phrase ' +
+                'material; hand the user the `url` and `pin`.\n\n' +
                 '**Do NOT** attempt to generate, display, or relay a recovery phrase in chat. ' +
-                'All phrase handling happens on the user\'s local terminal via ' +
-                '`openclaw totalreclaw onboard` — this keeps the phrase out of the LLM ' +
-                'provider\'s logs.',
+                '**Do NOT** run `openclaw totalreclaw onboard` — that CLI emits the recovery ' +
+                'phrase on stdout and would leak it into the LLM transcript. Use `pair` ' +
+                '(tool or `--url-pin-only` CLI) instead; `onboard` is reserved for users ' +
+                'running it directly in their own local terminal.',
             };
           }
 
@@ -5455,7 +5746,7 @@ const plugin = {
               const walletParam = encodeURIComponent(subgraphOwner || userId || '');
               const billingResp = await fetch(`${billingUrl}/v1/billing/status?wallet_address=${walletParam}`, {
                 method: 'GET',
-                headers: { 'Authorization': `Bearer ${authKeyHex}`, 'Accept': 'application/json', 'X-TotalReclaw-Client': 'openclaw-plugin' },
+                headers: buildRelayHeaders({ 'Authorization': `Bearer ${authKeyHex}`, 'Accept': 'application/json' }),
               });
               if (billingResp.ok) {
                 const billingData = await billingResp.json() as Record<string, unknown>;
@@ -5692,17 +5983,7 @@ const plugin = {
 
             if (reranked.length === 0) return undefined;
 
-            // 6b. Cosine similarity threshold gate — skip injection when the
-            //     best match is below the minimum relevance threshold.
-            const hookMaxCosine = Math.max(
-              ...reranked.map((r) => r.cosineSimilarity ?? 0),
-            );
-            if (hookMaxCosine < COSINE_THRESHOLD) {
-              api.logger.info(
-                `Hook: cosine threshold gate filtered results (max=${hookMaxCosine.toFixed(3)}, threshold=${COSINE_THRESHOLD})`,
-              );
-              return undefined;
-            }
+            // Relevance gate removed in rc.22 (see recall tool comment).
 
             // 7. Build context string.
             const lines = reranked.map((m, i) => {
@@ -5807,17 +6088,7 @@ const plugin = {
 
           if (reranked.length === 0) return undefined;
 
-          // Cosine similarity threshold gate — skip injection when the
-          // best match is below the minimum relevance threshold.
-          const srvMaxCosine = Math.max(
-            ...reranked.map((r) => r.cosineSimilarity ?? 0),
-          );
-          if (srvMaxCosine < COSINE_THRESHOLD) {
-            api.logger.info(
-              `Hook: cosine threshold gate filtered results (max=${srvMaxCosine.toFixed(3)}, threshold=${COSINE_THRESHOLD})`,
-            );
-            return undefined;
-          }
+          // Relevance gate removed in rc.22 (see recall tool comment).
 
           // 7. Build context string.
           const lines = reranked.map((m, i) => {
@@ -6072,6 +6343,60 @@ const plugin = {
       },
       { priority: 5 },
     );
+
+    // ---------------------------------------------------------------
+    // 3.3.2-rc.1 (issue #186) — write `.loaded.json` manifest
+    // ---------------------------------------------------------------
+    //
+    // Final step of register(): drop the success manifest so the agent
+    // can `cat ~/.openclaw/extensions/totalreclaw/.loaded.json` to
+    // verify which tools bound. Synchronous (see writePluginManifest doc).
+    // Never throws — diagnostic loss only on I/O failure.
+    if (_pluginDirForManifest) {
+      try {
+        const ok = writePluginManifest(_pluginDirForManifest, {
+          loadedAt: Date.now(),
+          tools: _registeredToolNames.slice(),
+          version: pluginVersion ?? 'unknown',
+        });
+        if (ok) {
+          api.logger.info(
+            `TotalReclaw: wrote .loaded.json manifest (${_registeredToolNames.length} tools, version=${pluginVersion ?? 'unknown'})`,
+          );
+        }
+      } catch {
+        // Best-effort; helper swallows internally too.
+      }
+    }
+    } catch (registerErr: unknown) {
+      // ---------------------------------------------------------------
+      // 3.3.2-rc.1 (issue #186) — write `.error.json` on register() throw
+      // ---------------------------------------------------------------
+      //
+      // Some surface threw out of register(). Drop a structured error
+      // marker the agent can grep. Best-effort logging then re-throw so
+      // the SDK sees the original failure.
+      const errMsg = registerErr instanceof Error ? registerErr.message : String(registerErr);
+      const errStack = registerErr instanceof Error ? registerErr.stack : undefined;
+      try {
+        api.logger.error(`TotalReclaw: register() threw: ${errMsg}`);
+      } catch {
+        // Logger may be unavailable (very early failure path).
+      }
+      if (_pluginDirForManifest) {
+        try {
+          writePluginError(_pluginDirForManifest, {
+            loadedAt: Date.now(),
+            error: errMsg,
+            stack: errStack,
+            version: 'unknown',
+          });
+        } catch {
+          // Best-effort.
+        }
+      }
+      throw registerErr;
+    }
   },
 };
 

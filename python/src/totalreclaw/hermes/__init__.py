@@ -134,6 +134,28 @@ def register(ctx):
         is_async=True,
         description=schemas.UNPIN["description"],
     )
+    # 2.3.1rc23 — Hermes Python parity for retype + set_scope (issue #150).
+    # Mirrors ``skill/plugin/retype-setscope.ts`` (TS plugin 3.3.1-rc.2+).
+    # Cross-client KG parity: a plugin write + Hermes retype on the same
+    # fact id surface the new type/scope to either side after subgraph
+    # confirmation. ``pin_status`` is preserved across the rewrite (issue
+    # #117 / TS PR #114).
+    ctx.register_tool(
+        name="totalreclaw_retype",
+        toolset="totalreclaw",
+        schema=schemas.RETYPE,
+        handler=lambda args, **kw: tools.retype(args, state, **kw),
+        is_async=True,
+        description=schemas.RETYPE["description"],
+    )
+    ctx.register_tool(
+        name="totalreclaw_set_scope",
+        toolset="totalreclaw",
+        schema=schemas.SET_SCOPE,
+        handler=lambda args, **kw: tools.set_scope(args, state, **kw),
+        is_async=True,
+        description=schemas.SET_SCOPE["description"],
+    )
     ctx.register_tool(
         name="totalreclaw_import_from",
         toolset="totalreclaw",
@@ -191,10 +213,101 @@ def register(ctx):
     except Exception:  # pragma: no cover — registration must not crash plugin load
         logger.debug("QA bug-report tool registration skipped", exc_info=True)
 
-    # Register hooks
+    # Register hooks.
+    #
+    # ``on_session_end`` is registered as a no-op handler: hermes_cli
+    # dispatches it at the end of every ``run_conversation()`` (per user
+    # turn), not at true session end, so anything heavy belongs in
+    # ``on_session_finalize``. See ``hooks.on_session_end`` docstring +
+    # issue #101 for the failure mode this avoids.
     ctx.register_hook("on_session_start", lambda **kw: hooks.on_session_start(state, **kw))
     ctx.register_hook("pre_llm_call", lambda **kw: hooks.pre_llm_call(state, **kw))
     ctx.register_hook("post_llm_call", lambda **kw: hooks.post_llm_call(state, **kw))
     ctx.register_hook("on_session_end", lambda **kw: hooks.on_session_end(state, **kw))
+    ctx.register_hook("on_session_finalize", lambda **kw: hooks.on_session_finalize(state, **kw))
+    ctx.register_hook("on_session_reset", lambda **kw: hooks.on_session_reset(state, **kw))
 
-    logger.info("TotalReclaw plugin registered (12+ tools, 4 hooks)")
+    # Fix for internal#97: validate LLM-config resolution once at plugin
+    # load and emit a single loud WARNING if it fails, so Hermes 0.10.0
+    # schema drift surfaces immediately instead of accumulating one
+    # silent DEBUG line per turn.
+    try:
+        from totalreclaw.agent.llm_client import validate_llm_config_at_load
+        _config, reason = validate_llm_config_at_load(context="hermes-plugin-load")
+        state._totalreclaw_llm_load_reason = reason
+    except Exception:  # pragma: no cover — validation must not crash plugin load
+        logger.debug("LLM-config load-time validation skipped", exc_info=True)
+
+    # rc.26 (issue #167 path A): defensive WARN if the user re-enabled
+    # Hermes' built-in `memory` tool after install. The SKILL.md install
+    # flow auto-disables it (`hermes tools disable memory`), but this
+    # belt-and-suspenders check runs on every plugin load to surface the
+    # anti-pattern in logs if someone manually re-enabled the built-in.
+    # Best-effort — never crashes plugin load. Shells out to the `hermes`
+    # CLI; absence of the CLI is silently tolerated.
+    try:
+        _warn_if_built_in_memory_enabled()
+    except Exception:  # pragma: no cover — defensive check must not crash
+        logger.debug("built-in memory enablement check skipped", exc_info=True)
+
+    logger.info("TotalReclaw plugin registered (14+ tools, 6 hooks)")
+
+
+def _warn_if_built_in_memory_enabled() -> None:
+    """Check whether Hermes' built-in `memory` tool is currently enabled.
+
+    Emits a single WARN line if it is. No-op (DEBUG only) if the
+    `hermes` CLI is not on PATH or if `hermes tools list` doesn't
+    expose a parseable enabled-set — we don't want this defensive
+    check to spam logs in environments where it can't be answered
+    cleanly.
+
+    rc.26 fix for the rc.24 NO-GO finding (issue #167): TotalReclaw
+    and Hermes built-in `memory` solve the same problem and compete
+    for "remember X" / "recall X" intents during natural conversation.
+    The install flow disables the built-in via SKILL.md step 3, but
+    this WARN catches users who re-enabled it manually.
+    """
+    import shutil
+    import subprocess
+
+    if shutil.which("hermes") is None:
+        logger.debug("hermes CLI not found on PATH; skipping built-in memory check")
+        return
+
+    try:
+        proc = subprocess.run(
+            ["hermes", "tools", "list"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError):
+        logger.debug("hermes tools list failed; skipping built-in memory check", exc_info=True)
+        return
+
+    if proc.returncode != 0:
+        logger.debug(
+            "hermes tools list exited with code %d; skipping built-in memory check",
+            proc.returncode,
+        )
+        return
+
+    output = proc.stdout or ""
+    # Parse heuristically — match `memory` token followed by an
+    # enabled marker. Tolerant of whitespace + alternative formats
+    # (`memory: enabled`, `memory  enabled`, table-style, JSON-style).
+    lower = output.lower()
+    if "memory" in lower and "enabled" in lower:
+        # Tighten the match: only WARN if `memory` and `enabled` co-occur
+        # on the same line.
+        for line in output.splitlines():
+            ll = line.lower()
+            if "memory" in ll and "enabled" in ll and "disabled" not in ll:
+                logger.warning(
+                    "Hermes built-in 'memory' tool is enabled. TotalReclaw "
+                    "recommends disabling it to avoid intent-stealing. "
+                    "Run: hermes tools disable memory"
+                )
+                return

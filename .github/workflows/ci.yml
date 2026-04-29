@@ -9,6 +9,47 @@ on:
       - main
 
 jobs:
+  phrase-safety:
+    # Static guard against accidental "display the recovery phrase" copy
+    # leaking into a SKILL.md / README / docs page. Caught regressing
+    # twice (rc.20 doc rewrite + an earlier slip); fast-fails the PR if
+    # any human-facing artifact contains a phrase-display pattern that
+    # isn't paired with a safety qualifier ("NEVER display", "do not
+    # show", etc) on the same line.
+    #
+    # The dist scan (added 2026-04-26 with the @totalreclaw/mcp-server@3.2.1
+    # SECURITY hotfix) is the source-code companion: it scans the COMPILED
+    # JavaScript shipped to npm for any tool-response payload that emits
+    # `recovery_phrase` or `mnemonic` as an object key. The deleted
+    # `totalreclaw_setup` MCP tool used to do exactly that.
+    #
+    # See: scripts/check-phrase-safety.sh + scripts/check-phrase-safety-dist.sh
+    # + tests/phrase-safety/.
+    name: Phrase Safety
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: 'v0.14.0'
+      - name: Build @totalreclaw/core (WASM) [transitional]
+        run: |
+          cd rust/totalreclaw-core
+          wasm-pack build --target nodejs --out-dir pkg --features wasm
+          node -e "const p=require('./pkg/package.json'); p.name='@totalreclaw/core'; require('fs').writeFileSync('./pkg/package.json', JSON.stringify(p,null,2)+'\n')"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run phrase-safety guard (markdown / SKILL.md)
+        run: bash scripts/check-phrase-safety.sh
+      - name: Run phrase-safety regression suite
+        run: bash tests/phrase-safety/run-regression.sh
+      - name: Build mcp/dist (required for dist scan)
+        run: cd mcp && rm -f package-lock.json && npm install --legacy-peer-deps && npm run build
+      - name: Run phrase-safety dist scan (compiled JS payloads)
+        run: bash scripts/check-phrase-safety-dist.sh
+
   client-tests:
     name: Client Tests (TypeScript)
     runs-on: ubuntu-latest
@@ -54,8 +95,31 @@ jobs:
       # openclaw.plugin.json does NOT have "kind":"memory" (startup registry fix)
       # AND that index.ts still declares kind:'memory' as const (memory-slot
       # matching preserved). Uses npx tsx — available without a devDependency.
-      - name: Plugin manifest shape tests
+      # Includes import-time-smoke.test.ts (issue #110 fix 2) which asserts
+      # plugin module load completes in <5s with no eager network I/O.
+      - name: Plugin manifest shape + smoke tests
         run: cd skill/plugin && npm test
+
+      # Issue #110 fix 1: build the plugin's TS to dist/.js, and verify the
+      # tarball would ship a complete set of `.js` artifacts. PR-time check
+      # so a broken build (e.g. missing import target, syntax error) doesn't
+      # reach the publish workflow.
+      - name: Build plugin (.ts -> dist/.js)
+        run: cd skill/plugin && npm run build
+
+      - name: Verify tarball ships built `.js` artifacts (issue #110)
+        run: cd skill/plugin && npm run verify-tarball
+
+      # Issue #124 (rc.20 ship-stopper): the published `dist/index.js` is
+      # ESM-only (`"type":"module"`) but had three runtime `require()` calls
+      # left over from an unfinished migration — every plugin entry point
+      # died with `require is not defined`. The pre-publish gate above only
+      # runs `node --check` (syntax-only) and missed it. This step actually
+      # imports the built dist in a clean Node ESM process AND grep-guards
+      # the dist files for any bare `require(` outside comments. Catches
+      # the regression at PR time, never publish-time.
+      - name: ESM-shape smoke (issue #124 — bare require regression)
+        run: cd skill/plugin && npm run smoke:dist
 
   mcp-tests:
     name: MCP Server Tests
@@ -73,6 +137,8 @@ jobs:
       # `Build @totalreclaw/core (WASM)` steps can be removed in a cleanup PR.
       - uses: dtolnay/rust-toolchain@stable
       - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: 'v0.14.0'  # pinned to stop `latest`-tag flake; v0.9.1 lacks --features
       - name: Build @totalreclaw/core (WASM) [transitional — safe to drop once core@2.x is on npm]
         run: |
           cd rust/totalreclaw-core

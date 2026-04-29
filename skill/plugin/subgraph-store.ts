@@ -10,13 +10,18 @@
  * and chain RPCs. No viem, no permissionless.
  */
 
-// Lazy-load WASM to avoid crash when npm install hasn't finished yet.
+// Lazy-load WASM via createRequire — the shipped bundle is ESM-only and
+// the bare `require` global is undefined there (issue #124). Same pattern
+// as crypto / lsh / claims-helper / consolidation / digest-sync.
+import { createRequire } from 'node:module';
+const requireWasm = createRequire(import.meta.url);
 let _wasm: typeof import('@totalreclaw/core') | null = null;
 function getWasm() {
-  if (!_wasm) _wasm = require('@totalreclaw/core');
+  if (!_wasm) _wasm = requireWasm('@totalreclaw/core');
   return _wasm;
 }
 import { CONFIG } from './config.js';
+import { buildRelayHeaders } from './relay-headers.js';
 
 // ---------------------------------------------------------------------------
 // Pimlico 429 retry helper
@@ -383,12 +388,12 @@ async function submitFactOnChainLocked(
   sender: string,
 ): Promise<{ txHash: string; userOpHash: string; success: boolean }> {
   const bundlerUrl = `${config.relayUrl}/v1/bundler`;
-  const headers: Record<string, string> = {
+  const overrides: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-TotalReclaw-Client': 'openclaw-plugin',
   };
-  if (config.authKeyHex) headers['Authorization'] = `Bearer ${config.authKeyHex}`;
-  if (config.walletAddress) headers['X-Wallet-Address'] = config.walletAddress;
+  if (config.authKeyHex) overrides['Authorization'] = `Bearer ${config.authKeyHex}`;
+  if (config.walletAddress) overrides['X-Wallet-Address'] = config.walletAddress;
+  const headers = buildRelayHeaders(overrides);
 
   // Helper for JSON-RPC calls to relay bundler (with 429 retry)
   async function rpc(method: string, params: unknown[]): Promise<any> {
@@ -600,12 +605,12 @@ async function submitFactBatchOnChainLocked(
   sender: string,
 ): Promise<{ txHash: string; userOpHash: string; success: boolean; batchSize: number }> {
   const bundlerUrl = `${config.relayUrl}/v1/bundler`;
-  const headers: Record<string, string> = {
+  const overrides: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-TotalReclaw-Client': 'openclaw-plugin',
   };
-  if (config.authKeyHex) headers['Authorization'] = `Bearer ${config.authKeyHex}`;
-  if (config.walletAddress) headers['X-Wallet-Address'] = config.walletAddress;
+  if (config.authKeyHex) overrides['Authorization'] = `Bearer ${config.authKeyHex}`;
+  if (config.walletAddress) overrides['X-Wallet-Address'] = config.walletAddress;
+  const headers = buildRelayHeaders(overrides);
 
   // Helper for JSON-RPC calls to relay bundler (with 429 retry)
   async function rpc(method: string, params: unknown[]): Promise<any> {

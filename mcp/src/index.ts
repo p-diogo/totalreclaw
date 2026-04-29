@@ -96,6 +96,7 @@ import {
   type SubgraphStoreConfig,
 } from './subgraph/store.js';
 import { searchSubgraph, searchSubgraphBroadened, getOwnerFactCount, fetchFactById } from './subgraph/search.js';
+import { confirmIndexed } from './subgraph/confirm-indexed.js';
 import {
   detectAndResolveContradictions,
   type ResolutionDecision,
@@ -161,28 +162,57 @@ const MASTER_PASSWORD = process.env.TOTALRECLAW_RECOVERY_PHRASE;
 
 // v1 env var cleanup — warn once if any removed env var is still set.
 // See docs/guides/env-vars-reference.md for the canonical list.
+//
+// NOTE: TOTALRECLAW_SESSION_ID was previously in this list and silently
+// rejected with a warning, breaking Axiom traceability for QA runs that rely
+// on the X-TotalReclaw-Session header for log filtering. Restored as
+// SUPPORTED — see `./session-id.ts` + internal#127. Do NOT add it back.
 (() => {
   const removed = [
     'TOTALRECLAW_CHAIN_ID',
     'TOTALRECLAW_EMBEDDING_MODEL',
     'TOTALRECLAW_STORE_DEDUP',
     'TOTALRECLAW_LLM_MODEL',
-    'TOTALRECLAW_SESSION_ID',
     'TOTALRECLAW_TAXONOMY_VERSION',
     'TOTALRECLAW_CLAIM_FORMAT',
     'TOTALRECLAW_DIGEST_MODE',
   ].filter((name) => process.env[name] !== undefined);
   if (removed.length > 0) {
+    // rc.22 finding #4 — full URL beats relative repo path on stderr.
     console.error(
       `TotalReclaw MCP: ignoring removed env var(s): ${removed.join(', ')}. ` +
-        `See docs/guides/env-vars-reference.md for the v1 env var surface.`,
+        `Migration guide: https://github.com/p-diogo/totalreclaw/blob/main/docs/guides/env-vars-reference.md`,
     );
   }
 })();
 
+// QA / observability session-tag reader. See `./session-id.ts`.
+// Re-exported so the existing wide imports of `mcp/src/index.ts` keep working.
+import { getSessionId } from './session-id.js';
+export { getSessionId };
+
 // ── Client identification ──────────────────────────────────────────────────
 import { setClientId, getClientId } from './client-id.js';
 let clientIdentifierResolved = false;
+
+/**
+ * Build outbound relay headers including the optional session tag.
+ * Uses the late-resolved client identifier — falls back to the raw
+ * `getClientId()` value if `getClientIdentifier()` hasn't run yet (which
+ * can happen for fetches kicked off before the MCP `initialize` handshake
+ * completes, e.g. proactive billing fetch).
+ */
+function buildRelayHeaders(
+  overrides: Record<string, string> = {},
+): Record<string, string> {
+  const clientId = clientIdentifierResolved ? getClientIdentifier() : getClientId();
+  const headers: Record<string, string> = {
+    'X-TotalReclaw-Client': clientId,
+  };
+  const sid = getSessionId();
+  if (sid) headers['X-TotalReclaw-Session'] = sid;
+  return { ...headers, ...overrides };
+}
 
 function resolveMnemonic(): string | undefined {
   // Priority 1: env var
@@ -237,10 +267,9 @@ function proactiveBillingFetch(state: SubgraphState): void {
   const url = `${state.serverUrl.replace(/\/+$/, '')}/v1/billing/status?wallet_address=${encodeURIComponent(state.smartAccountAddress)}`;
   fetch(url, {
     method: 'GET',
-    headers: {
+    headers: buildRelayHeaders({
       'Authorization': `Bearer ${authKeyHex}`,
-      'X-TotalReclaw-Client': getClientIdentifier(),
-    },
+    }),
   })
     .then(async (resp) => {
       if (resp.ok) {
@@ -359,10 +388,9 @@ async function initSubgraphState(mnemonic: string): Promise<SubgraphState> {
       const billingUrl = `${SERVER_URL.replace(/\/+$/, '')}/v1/billing/status?wallet_address=${encodeURIComponent(smartAccountAddress)}`;
       const resp = await fetch(billingUrl, {
         method: 'GET',
-        headers: {
+        headers: buildRelayHeaders({
           'Authorization': `Bearer ${authKeyHex}`,
-          'X-TotalReclaw-Client': getClientIdentifier(),
-        },
+        }),
         signal: AbortSignal.timeout(5000),
       });
       if (resp.ok) {
@@ -1213,36 +1241,29 @@ async function handleRecallSubgraph(
     const intent = detectQueryIntent(query.trim());
     const weights = INTENT_WEIGHTS[intent];
 
-    // 7. Rerank with BM25 + cosine + importance + recency via weighted RRF
-    //    (+ MMR diversity). Then apply Retrieval v2 Tier 1 source weights via
-    //    core's `rerankWithConfig` using only the bm25/cosine components (the
-    //    MCP-side recency + MMR + intent weighting remain in TS for now).
-    //    Strategy: run the TS reranker to produce the top-K ordering; use
-    //    core's source-weight helper to nudge the final score so assistant-
-    //    authored claims drop behind user-authored ones with comparable text.
-    const reranked = rerank(query.trim(), queryEmbedding, decryptedCandidates, k, weights);
-    const core = require('@totalreclaw/core') as typeof import('@totalreclaw/core');
-    const weighted = reranked
-      .map((r) => {
-        const s = sourceMap.get(r.id);
-        const w = s
-          ? core.sourceWeight(s)
-          : core.legacyClaimFallbackWeight();
-        return { r, weightedScore: r.rrfScore * w, sourceWeight: w };
-      })
-      .sort((a, b) => b.weightedScore - a.weightedScore)
-      .slice(0, k);
+    // 7. Rerank via core's `rerankWithConfig` (BM25 + cosine + intent-weighted
+    //    RRF + Tier 1 source weighting in one shot). The legacy `weights`
+    //    argument is accepted for API stability but ignored -- core handles
+    //    intent-weighting internally based on per-candidate cosine scores.
+    const reranked = rerank(
+      query.trim(),
+      queryEmbedding,
+      decryptedCandidates,
+      k,
+      weights,
+      /* applySourceWeights (Retrieval v2 Tier 1) */ true,
+    );
 
     // 8. Format results
-    const memories = weighted.map(({ r, weightedScore, sourceWeight }) => ({
+    const memories = reranked.map((r) => ({
       fact_id: r.id,
       fact_text: r.text,
       type: categoryMap.get(r.id) ?? 'fact',
       source: sourceMap.get(r.id),
       scope: scopeMap.get(r.id),
-      score: weightedScore,
+      score: r.rrfScore,
       rrf_score: r.rrfScore,
-      source_weight: sourceWeight,
+      source_weight: r.sourceWeight ?? 1.0,
       cosine_similarity: r.cosineSimilarity ?? 0,
       importance: Math.round((r.importance ?? 0.5) * 10),
       age_days: r.createdAt
@@ -1332,6 +1353,25 @@ async function handleForgetSubgraph(
 
     const { txHash, success } = await submitFactOnChain(protobuf, config);
 
+    // Read-after-write: poll the subgraph until the fact is no longer
+    // active (forget flips isActive=false). On timeout we still report
+    // deleted_count: 1 — the chain write IS acknowledged — but flag
+    // `partial: true` so callers know the indexer is still propagating.
+    let indexed = true;
+    if (success) {
+      const subgraphUrl = process.env.TOTALRECLAW_SUBGRAPH_URL || `${state.serverUrl}/v1/subgraph`;
+      try {
+        const r = await confirmIndexed(factId, {
+          subgraphUrl,
+          authKeyHex: Buffer.from(state.authKey).toString('hex'),
+          expect: 'inactive',
+        });
+        indexed = r.indexed;
+      } catch {
+        indexed = false;
+      }
+    }
+
     return {
       content: [{
         type: 'text',
@@ -1340,6 +1380,7 @@ async function handleForgetSubgraph(
           fact_ids: success ? [factId] : [],
           tx_hash: txHash,
           mode: 'subgraph',
+          ...(success && !indexed ? { partial: true } : {}),
         }),
       }],
     };
@@ -1406,6 +1447,15 @@ function buildPinDepsFromState(state: SubgraphState): PinOpDeps {
         encryptedEmbedding,
       };
     },
+    confirmIndexed: async (factId: string, expect?: 'active' | 'inactive') => {
+      const subgraphUrl = process.env.TOTALRECLAW_SUBGRAPH_URL || `${state.serverUrl}/v1/subgraph`;
+      const result = await confirmIndexed(factId, {
+        subgraphUrl,
+        authKeyHex: Buffer.from(state.authKey).toString('hex'),
+        expect,
+      });
+      return result.indexed;
+    },
   };
 }
 
@@ -1423,6 +1473,7 @@ function buildMetadataOpDepsFromState(state: SubgraphState): MetadataOpDeps {
     encryptBlob: pinDeps.encryptBlob,
     submitBatch: pinDeps.submitBatch,
     generateIndices: pinDeps.generateIndices,
+    confirmIndexed: pinDeps.confirmIndexed,
   };
 }
 
@@ -1763,147 +1814,16 @@ function quotaExceededResponse(): { content: Array<{ type: string; text: string 
   };
 }
 
-// ── Setup tool (unconfigured mode) ──────────────────────────────────────────
-
-const setupToolDefinition = {
-  name: 'totalreclaw_setup',
-  description: 'Set up TotalReclaw for first-time use. Generate a new recovery phrase or import an existing one.',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      action: {
-        type: 'string',
-        enum: ['generate', 'import'],
-        description: 'Whether to generate a new recovery phrase or import an existing one',
-      },
-      recovery_phrase: {
-        type: 'string',
-        description: 'Your existing 12-word BIP-39 recovery phrase (only for action="import")',
-      },
-    },
-    required: ['action'],
-  },
-};
-
-async function handleSetup(
-  args: unknown,
-): Promise<{ content: Array<{ type: string; text: string }> }> {
-  const input = args as Record<string, unknown>;
-  const action = input?.action as string;
-
-  if (action !== 'generate' && action !== 'import') {
-    return {
-      content: [{ type: 'text', text: JSON.stringify({
-        success: false,
-        error: 'Invalid action. Use "generate" for a new identity or "import" to restore an existing one.',
-      })}],
-    };
-  }
-
-  let mnemonic: string;
-
-  if (action === 'import') {
-    const phrase = (input?.recovery_phrase as string || '').trim();
-    const words = phrase.split(/\s+/);
-    const allWordsValid = words.length === 12 && words.every(w => wordlist.includes(w));
-    if (!phrase || (!validateMnemonic(phrase, wordlist) && !allWordsValid)) {
-      return {
-        content: [{ type: 'text', text: JSON.stringify({
-          success: false,
-          error: 'Invalid recovery phrase. Must be 12 words from the BIP-39 English wordlist.',
-        })}],
-      };
-    }
-    if (!validateMnemonic(phrase, wordlist)) {
-      console.error('Warning: recovery phrase has valid words but invalid BIP-39 checksum. Accepting anyway.');
-    }
-    mnemonic = phrase;
-  } else {
-    mnemonic = generateMnemonic(wordlist, 128);
-  }
-
-  // Derive keys
-  const { authKeyHex, saltHex } = deriveAuthKey(mnemonic);
-  const authKeyHash = computeSetupAuthKeyHash(authKeyHex);
-
-  // Register with relay
-  const serverUrl = SERVER_URL;
-  let userId: string;
-  try {
-    userId = await registerWithServer(serverUrl, authKeyHash, saltHex);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      content: [{ type: 'text', text: JSON.stringify({
-        success: false,
-        error: `Registration failed: ${message}. Check your internet connection.`,
-      })}],
-    };
-  }
-
-  // Save credentials (including mnemonic)
-  const credDir = path.dirname(CREDENTIALS_PATH);
-  fs.mkdirSync(credDir, { recursive: true });
-  const credentials: SavedCredentials = {
-    userId,
-    salt: saltHex,
-    serverUrl,
-    mnemonic,
-  };
-  fs.writeFileSync(CREDENTIALS_PATH, JSON.stringify(credentials, null, 2), {
-    encoding: 'utf-8',
-    mode: 0o600,
-  });
-
-  // Pre-download embedding model
-  console.error('Downloading embedding model (one-time, ~600MB)...');
-  try {
-    await generateEmbedding('warmup');
-    console.error('Embedding model ready.');
-  } catch (err) {
-    console.error(`Warning: Could not pre-download embedding model: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // Hot-reload server state
-  try {
-    subgraphState = await initSubgraphState(mnemonic);
-    currentMode = 'subgraph';
-    console.error(`TotalReclaw configured (managed service, owner: ${subgraphState.smartAccountAddress})`);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      content: [{ type: 'text', text: JSON.stringify({
-        success: true,
-        warning: `Setup saved but initialization failed: ${message}. Restart the MCP server.`,
-        recovery_phrase: action === 'generate' ? mnemonic : undefined,
-        user_id: userId,
-      })}],
-    };
-  }
-
-  const result: Record<string, unknown> = {
-    success: true,
-    user_id: userId,
-    mode: 'managed_service',
-    smart_account: subgraphState.smartAccountAddress,
-    tier: 'free',
-    tier_info: 'Free tier: unlimited memories and reads (test network — memories may be reset). Upgrade to Pro for permanent on-chain storage. Pricing: https://totalreclaw.xyz/pricing — upgrade anytime via totalreclaw_upgrade.',
-  };
-
-  if (action === 'generate') {
-    result.recovery_phrase = mnemonic;
-    result.recovery_phrase_warning =
-      'CRITICAL: Write down this recovery phrase and store it securely. ' +
-      'It is your ONLY identity in TotalReclaw. If you lose it, ALL your memories are lost forever. ' +
-      'There is NO password reset, NO recovery, NO support that can help.';
-  } else {
-    result.message = 'Identity restored. Your existing memories are now accessible.';
-  }
-
-  return {
-    content: [{ type: 'text', text: JSON.stringify(result) }],
-  };
-}
+// ── Setup tool — REMOVED in 3.2.1 (security: phrase-safety) ─────────────────
+// The `totalreclaw_setup` MCP tool was removed because its response payload
+// returned the BIP-39 mnemonic via the `recovery_phrase` field, which crossed
+// the LLM's context window every time an agent invoked the tool. That violated
+// the phrase-safety invariant ("the recovery phrase MUST NEVER cross the LLM
+// context"). MCP onboarding now follows the URL-driven flow documented at
+// `docs/guides/claude-code-setup.md` — agents direct users to source their
+// phrase from the OpenClaw / Hermes browser pair flow (or an offline BIP-39
+// generator) and paste it into the MCP host config themselves. No tool path
+// exists for the agent to ever see the phrase.
 
 // ── Layer 1: Server with instructions ────────────────────────────────────────
 
@@ -1947,7 +1867,6 @@ function getClientIdentifier(): string {
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
-    setupToolDefinition,
     rememberToolDefinition,
     recallToolDefinition,
     forgetToolDefinition,
@@ -1972,9 +1891,28 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
-  // Handle setup tool (available in all modes)
+  // `totalreclaw_setup` was removed in 3.2.1 (security: phrase-safety).
+  // Onboarding now follows the URL-driven flow at
+  // `docs/guides/claude-code-setup.md`. If a stale agent / host catalog
+  // still calls the old tool name, return a structured error pointing at
+  // the canonical install guide — without surfacing any phrase in payload.
   if (name === 'totalreclaw_setup') {
-    return await handleSetup(args);
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          error: 'tool_removed',
+          message:
+            'The totalreclaw_setup tool was removed in @totalreclaw/mcp-server@3.2.1 ' +
+            'for phrase-safety. Follow the URL-driven install flow at ' +
+            'https://github.com/p-diogo/totalreclaw/blob/main/docs/guides/claude-code-setup.md. ' +
+            'The user sources their recovery phrase out-of-band (OpenClaw or Hermes ' +
+            'browser pair flow, or an offline BIP-39 generator) and pastes it directly ' +
+            'into TOTALRECLAW_RECOVERY_PHRASE in the MCP host config — never into chat.',
+        }),
+      }],
+      isError: true,
+    };
   }
 
   // Handle support tool (available in all modes, including unconfigured)
@@ -1983,14 +1921,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return handleSupport(walletAddress);
   }
 
-  // In unconfigured mode, all other tools return setup guidance
+  // In unconfigured mode, all other tools return setup guidance pointing at
+  // the URL-driven install flow (NOT the deleted totalreclaw_setup tool).
   if (currentMode === 'unconfigured') {
     return {
       content: [{
         type: 'text',
         text: JSON.stringify({
           error: 'not_configured',
-          message: 'TotalReclaw is not configured yet. Ask the user if they have an existing recovery phrase or want to generate a new one, then use the totalreclaw_setup tool.',
+          message:
+            'TotalReclaw is not configured yet. Follow the URL-driven install flow ' +
+            'at https://github.com/p-diogo/totalreclaw/blob/main/docs/guides/claude-code-setup.md — ' +
+            'the user pastes their recovery phrase directly into the MCP host config (TOTALRECLAW_RECOVERY_PHRASE), ' +
+            'never into chat.',
         }),
       }],
       isError: true,
@@ -2439,7 +2382,7 @@ async function main(): Promise<void> {
   } else if (currentMode === 'http') {
     console.error('TotalReclaw MCP server started (self-hosted mode)');
   } else {
-    console.error('TotalReclaw MCP server started (unconfigured — use totalreclaw_setup tool)');
+    console.error('TotalReclaw MCP server started (unconfigured — set TOTALRECLAW_RECOVERY_PHRASE in the MCP host config; see docs/guides/claude-code-setup.md)');
   }
 
   const transport = new StdioServerTransport();

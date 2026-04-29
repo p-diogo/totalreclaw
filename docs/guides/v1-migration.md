@@ -87,7 +87,7 @@ Full detail in [`docs/specs/totalreclaw/tiered-retrieval.md`](../specs/totalrecl
 
 The on-chain wire format bumps from v3 to v4 to signal that the encrypted blob now contains v1 JSON (not v0 binary). Subgraph schema is unchanged — no re-indexing required.
 
-Details: [`totalreclaw-internal/docs/plans/2026-04-18-protobuf-v4-design.md`](https://github.com/p-diogo/totalreclaw-internal/) (internal).
+Details: see the protobuf claim definitions in `python/src/totalreclaw/proto/` (Python) and `rust/totalreclaw-core/src/proto/` (Rust) for the canonical wire schema.
 
 ### 6. Environment variables removed
 
@@ -97,7 +97,6 @@ Six env vars that were internal/experimental knobs are gone. If you had them set
 - `TOTALRECLAW_EMBEDDING_MODEL` — Harrier 640d is the default, no alternatives shipped.
 - `TOTALRECLAW_STORE_DEDUP` — always on (best-match near-duplicate detection at core).
 - `TOTALRECLAW_LLM_MODEL` — LLM picked automatically from your provider's default.
-- `TOTALRECLAW_SESSION_ID` — computed internally.
 - `TOTALRECLAW_TAXONOMY_VERSION` — v1 is the only format.
 - `TOTALRECLAW_CLAIM_FORMAT` — same reason.
 - `TOTALRECLAW_DIGEST_MODE` / `TOTALRECLAW_AUTO_RESOLVE_MODE` — internal behaviour no longer user-configurable.

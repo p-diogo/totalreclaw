@@ -56,6 +56,15 @@ export interface CredentialsFile {
   mnemonic?: string;
   /** Alias for `mnemonic`, accepted on read only. */
   recovery_phrase?: string;
+  /**
+   * Smart Account (scope) address derived from the mnemonic. Persisted at
+   * pair-finish so users + tools (`totalreclaw_status`) can read it before
+   * any on-chain write. Internal#130 — lazy SA derivation previously left
+   * the user blind to their scope address until first-write.
+   *
+   * Format: lowercase 0x-prefixed 40-hex-char address. Public, non-secret.
+   */
+  scope_address?: string;
   firstRunAnnouncementShown?: boolean;
   [extra: string]: unknown;
 }
@@ -249,6 +258,398 @@ export function deleteFileIfExists(filePath: string): void {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   } catch {
     // Best-effort — don't block on invalidation failure.
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Install-staging cleanup (issue #126 — rc.20 finding F3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Clean up `.openclaw-install-stage-*` sibling directories left behind by
+ * an interrupted `openclaw plugins install` run.
+ *
+ * Background
+ * ----------
+ * `openclaw plugins install @totalreclaw/totalreclaw` extracts the npm
+ * tarball into a staging directory named
+ * `<extensionsDir>/.openclaw-install-stage-XXXXXX/` and then renames it
+ * to `<extensionsDir>/totalreclaw/` on success. If the install is
+ * interrupted partway through (e.g. an auto-gateway-restart triggered by
+ * the same install kills the process — see rc.20 QA finding F3), the
+ * staging dir survives. On the next gateway start, OpenClaw's plugin
+ * loader auto-discovers BOTH directories — the real `totalreclaw/` and
+ * the orphaned `.openclaw-install-stage-XXXXXX/` — and registers two
+ * copies of the plugin. Hooks fire twice, the user sees a duplicate
+ * `totalreclaw` row in `openclaw plugins list`, and the gateway log
+ * spams a duplicate-plugin-id warning every cycle.
+ *
+ * Fix scope: best-effort cleanup driven by the plugin itself at register
+ * time. We resolve the extensions dir as the parent of the loaded
+ * plugin's own directory, scan for `.openclaw-install-stage-*` siblings,
+ * and recursively remove each one. If anything fails (permission,
+ * race with a concurrent install), we swallow the error — the existing
+ * loader-warning behavior is no worse than before.
+ *
+ * Returns the list of staging-dir paths that were successfully removed.
+ * Callers may log this for ops visibility. Empty list on a clean install.
+ *
+ * Parameters
+ * ----------
+ * @param pluginDir  Absolute path to the loaded plugin's directory
+ *                   (typically `<extensionsDir>/totalreclaw/dist`). The
+ *                   helper walks up to the parent that holds sibling
+ *                   plugin directories (the `extensions/` root).
+ * @param _now       Optional clock injector for testing — defaults to
+ *                   Date.now().
+ */
+export function cleanupInstallStagingDirs(
+  pluginDir: string,
+  _now: () => number = Date.now,
+): string[] {
+  const removed: string[] = [];
+  try {
+    // pluginDir is `<extensionsDir>/totalreclaw/dist` after build, so the
+    // siblings live two levels up. Resolve both candidates so the helper
+    // works regardless of whether the caller passes the package root or
+    // its `dist/` subdir.
+    const candidates = [
+      path.resolve(pluginDir, '..'),       // <extensionsDir>/totalreclaw → siblings dir if pluginDir is `dist`
+      path.resolve(pluginDir, '..', '..'), // <extensionsDir>/             → siblings dir if pluginDir is package root
+    ];
+
+    for (const extensionsDir of candidates) {
+      let entries: string[];
+      try {
+        entries = fs.readdirSync(extensionsDir);
+      } catch {
+        continue;
+      }
+      for (const name of entries) {
+        if (!name.startsWith('.openclaw-install-stage-')) continue;
+        const target = path.join(extensionsDir, name);
+        try {
+          const st = fs.lstatSync(target);
+          if (!st.isDirectory()) continue;
+          fs.rmSync(target, { recursive: true, force: true });
+          removed.push(target);
+        } catch {
+          // Best-effort — skip unreadable / racy entries.
+        }
+      }
+    }
+  } catch {
+    // Best-effort — never crash plugin init on cleanup failure.
+  }
+  return removed;
+}
+
+// ---------------------------------------------------------------------------
+// Partial-install detection (rc.22 finding #5)
+// ---------------------------------------------------------------------------
+
+/**
+ * Marker filename written into the plugin directory at register-time. Its
+ * presence means a prior install was interrupted before the plugin successfully
+ * loaded — a confirmed-broken half-state that the next `openclaw plugins
+ * install` retry can detect and clean.
+ *
+ * Conceptually the marker is dropped BEFORE npm install completes (the
+ * complementary npm script removes it on success) and additionally
+ * re-asserted at register-time as a second-line check. If you see this file
+ * in `<extensionsDir>/totalreclaw/`, the install never reached register()
+ * AND the marker drop wasn't undone.
+ *
+ * Constants are exported so the npm preinstall/cleanup scripts in
+ * `package.json` use the same name as the runtime detector.
+ */
+export const PARTIAL_INSTALL_MARKER = '.tr-partial-install';
+
+/** Package name we own — used to confirm a directory is OUR plugin, not a stray. */
+export const PLUGIN_PACKAGE_NAME = '@totalreclaw/totalreclaw';
+
+/**
+ * Outcome of `detectPartialInstall`.
+ *  - `'clean'`  — the dir is a fully-installed plugin (package.json claims our
+ *                 name AND `dist/index.js` exists AND no marker present).
+ *  - `'partial'` — the dir is OUR plugin but in a corrupt half-state. Caller
+ *                  should wipe + retry. Returned reasons include:
+ *                    * marker file present (preinstall fired, postinstall did not)
+ *                    * dist/index.js missing (build never finished)
+ *  - `'foreign'` — package.json missing or claims a different name. Helper
+ *                  refuses to act so we never delete an unrelated plugin.
+ *  - `'absent'`  — dir does not exist at all.
+ */
+export type PartialInstallStatus = 'clean' | 'partial' | 'foreign' | 'absent';
+
+export interface PartialInstallResult {
+  status: PartialInstallStatus;
+  /** Why the caller decided this is partial — surfaces in error messages. */
+  reasons: string[];
+}
+
+/**
+ * Inspect a plugin install directory to decide whether it is fully installed,
+ * a corrupted half-state from an interrupted install, or someone else's
+ * plugin. Pure filesystem inspection; never deletes anything.
+ *
+ * Background — rc.22 finding #5
+ * ------------------------------
+ * After a partial `openclaw plugins install @totalreclaw/totalreclaw` (e.g.
+ * the auto-gateway-restart kills npm mid-build), `extensions/totalreclaw/`
+ * survives with a populated package.json but a missing or empty `dist/`. The
+ * agent's recovery retry then fires another install; OpenClaw's plugin
+ * loader scans `extensions/` and tries to register the half-state as a "hook
+ * pack", failing with the cryptic "package.json missing openclaw.hooks". The
+ * fix: detect the partial state up-front so the retry can wipe + reinstall
+ * instead of cargo-culting a confused error.
+ *
+ * Decision rules
+ * --------------
+ *   1. `pluginRootDir` does not exist → `'absent'`.
+ *   2. package.json missing or unparsable → `'foreign'` (don't touch).
+ *   3. package.json `name !== '@totalreclaw/totalreclaw'` → `'foreign'`.
+ *   4. `<root>/.tr-partial-install` exists → `'partial'` (the canonical signal).
+ *   5. `<root>/dist/index.js` missing → `'partial'` (build never finished).
+ *   6. otherwise → `'clean'`.
+ *
+ * The function is intentionally conservative: it returns `'foreign'` on any
+ * ambiguous read. Callers should NEVER auto-wipe a `'foreign'` directory.
+ *
+ * @param pluginRootDir Absolute path to the suspect plugin dir, e.g.
+ *                      `~/.openclaw/extensions/totalreclaw`.
+ */
+export function detectPartialInstall(pluginRootDir: string): PartialInstallResult {
+  const reasons: string[] = [];
+
+  // Rule 1 — absent dir.
+  let rootStat: fs.Stats;
+  try {
+    rootStat = fs.statSync(pluginRootDir);
+  } catch {
+    return { status: 'absent', reasons: ['directory does not exist'] };
+  }
+  if (!rootStat.isDirectory()) {
+    return { status: 'foreign', reasons: ['path exists but is not a directory'] };
+  }
+
+  // Rules 2-3 — package.json must claim our name.
+  const pkgJsonPath = path.join(pluginRootDir, 'package.json');
+  let pkgRaw: string;
+  try {
+    pkgRaw = fs.readFileSync(pkgJsonPath, 'utf-8');
+  } catch {
+    return { status: 'foreign', reasons: ['package.json missing or unreadable'] };
+  }
+  let parsed: { name?: unknown };
+  try {
+    parsed = JSON.parse(pkgRaw) as { name?: unknown };
+  } catch {
+    return { status: 'foreign', reasons: ['package.json is not valid JSON'] };
+  }
+  if (parsed.name !== PLUGIN_PACKAGE_NAME) {
+    return {
+      status: 'foreign',
+      reasons: [`package.json declares "${String(parsed.name)}" not "${PLUGIN_PACKAGE_NAME}"`],
+    };
+  }
+
+  // Rule 4 — explicit partial marker wins.
+  const markerPath = path.join(pluginRootDir, PARTIAL_INSTALL_MARKER);
+  if (fs.existsSync(markerPath)) {
+    reasons.push(`${PARTIAL_INSTALL_MARKER} marker present (preinstall fired, postinstall did not)`);
+  }
+
+  // Rule 5 — dist/index.js must exist for the loader to register.
+  const distIndex = path.join(pluginRootDir, 'dist', 'index.js');
+  if (!fs.existsSync(distIndex)) {
+    reasons.push('dist/index.js missing (build artifact absent)');
+  }
+
+  if (reasons.length > 0) {
+    return { status: 'partial', reasons };
+  }
+  return { status: 'clean', reasons: [] };
+}
+
+/**
+ * Wipe a partial-install directory so the next `openclaw plugins install`
+ * starts from a blank slate. Only acts when `detectPartialInstall(...)`
+ * returns `'partial'` — `'foreign'` and `'clean'` are no-ops by design.
+ *
+ * Returns `true` if the directory was wiped, `false` otherwise.
+ *
+ * SAFETY: this helper is the only place that recursively deletes a plugin
+ * dir. It refuses to act on `'foreign'` and `'clean'` results so a
+ * misconfigured caller can never wipe a healthy install or someone else's
+ * plugin.
+ */
+export function wipePartialInstall(pluginRootDir: string): boolean {
+  const detection = detectPartialInstall(pluginRootDir);
+  if (detection.status !== 'partial') return false;
+  try {
+    fs.rmSync(pluginRootDir, { recursive: true, force: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Plugin load manifest (.loaded.json / .error.json) — 3.3.2-rc.1 #186
+// ---------------------------------------------------------------------------
+
+/**
+ * Filenames written into the plugin root dir at the end of register() and
+ * (on failure) from the surrounding try/catch. The presence of `.loaded.json`
+ * is the canonical filesystem signal that the plugin's register() body ran
+ * to completion AND the SDK tool/route/hook registries received calls.
+ *
+ * Acceptance criteria (issue #186):
+ *   - `cat ~/.openclaw/extensions/totalreclaw/.loaded.json` shows
+ *     `{loadedAt, tools, version}` after every successful gateway start.
+ *   - `cat ~/.openclaw/extensions/totalreclaw/.error.json` shows
+ *     `{loadedAt, error, stack}` if register() threw.
+ *   - Both are overwritten on each register() call so the agent can rely
+ *     on the timestamp matching the most recent gateway start.
+ *
+ * Why these MUST be synchronous writes (same constraint as
+ * `registerHttpRoute` per the comment in index.ts around the route
+ * registration site): the SDK loader treats register() returning as the
+ * signal to freeze the registries. An async `fs.promises.writeFile` would
+ * settle one microtask AFTER the loader has moved on, so the manifest
+ * could miss tools that registered late OR drop entirely if the gateway
+ * exits before the microtask runs. `writeFileSync` is the only safe choice.
+ */
+export const PLUGIN_LOADED_MANIFEST = '.loaded.json';
+export const PLUGIN_ERROR_MANIFEST = '.error.json';
+
+/** Schema written to `.loaded.json` — see PLUGIN_LOADED_MANIFEST. */
+export interface PluginLoadManifest {
+  /** Unix epoch milliseconds when register() finished. */
+  loadedAt: number;
+  /** Tool names passed to api.registerTool() during register(). */
+  tools: string[];
+  /** Plugin version string from package.json (or "unknown"). */
+  version: string;
+}
+
+/** Schema written to `.error.json` when register() throws. */
+export interface PluginLoadError {
+  loadedAt: number;
+  error: string;
+  stack?: string;
+  version?: string;
+}
+
+/**
+ * Resolve the plugin root dir from the loaded module's directory. The plugin
+ * is shipped with `dist/index.js` as the entry, so `import.meta.url` resolves
+ * to `<root>/dist/`. We walk up one level to put the manifests next to
+ * `package.json`. Defensive: if the caller already passed the root (no
+ * trailing `dist`), we still return a sensible path.
+ */
+function resolvePluginRootForManifest(pluginDir: string): string {
+  const base = path.basename(pluginDir);
+  return base === 'dist' ? path.resolve(pluginDir, '..') : pluginDir;
+}
+
+/**
+ * Write the success manifest. SYNCHRONOUS — the SDK freezes the plugin
+ * registries the moment register() returns; `fs.promises.writeFile` would
+ * race that freeze and the manifest could miss late tool registrations or
+ * never land at all if the process exits before the microtask runs.
+ *
+ * Best-effort: returns `true` on success, `false` on any I/O error. Never
+ * throws — failing to write the manifest is a diagnostic loss, not a
+ * correctness loss, so we don't propagate.
+ *
+ * The manifest is written at mode 0644 (world-readable). It contains no
+ * secrets — only a timestamp, the (publicly known) tool names, and the
+ * plugin version. Cleared first so a stale `.error.json` from a previous
+ * failed boot doesn't survive a successful boot.
+ */
+export function writePluginManifest(
+  pluginDir: string,
+  manifest: PluginLoadManifest,
+): boolean {
+  try {
+    const root = resolvePluginRootForManifest(pluginDir);
+    if (!fs.existsSync(root)) return false;
+    const loadedPath = path.join(root, PLUGIN_LOADED_MANIFEST);
+    const errorPath = path.join(root, PLUGIN_ERROR_MANIFEST);
+    // Best-effort error-file cleanup — a successful boot supersedes any
+    // prior failure marker. If the unlink fails (e.g. permission), the
+    // .loaded.json timestamp still tells the agent which is current.
+    try {
+      if (fs.existsSync(errorPath)) fs.unlinkSync(errorPath);
+    } catch {
+      // Swallow — best-effort.
+    }
+    fs.writeFileSync(loadedPath, JSON.stringify(manifest, null, 2));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Write the error manifest. SYNCHRONOUS for the same reason as
+ * `writePluginManifest`. Called from the try/catch surrounding the
+ * register() body so the agent has a filesystem signal that the plugin
+ * registered AT LEAST attempted to load and failed in a specific way.
+ *
+ * Does NOT clear `.loaded.json` from a prior successful boot — keeping
+ * the older success marker around lets the agent see "last good boot was
+ * X, current boot failed at Y" without spelunking logs. The newer
+ * `.error.json` timestamp wins as "current state".
+ */
+export function writePluginError(
+  pluginDir: string,
+  error: PluginLoadError,
+): boolean {
+  try {
+    const root = resolvePluginRootForManifest(pluginDir);
+    if (!fs.existsSync(root)) return false;
+    const errorPath = path.join(root, PLUGIN_ERROR_MANIFEST);
+    fs.writeFileSync(errorPath, JSON.stringify(error, null, 2));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Drop the `.tr-partial-install` marker into `pluginRootDir`. Idempotent
+ * (overwrites any existing marker) and best-effort — returns `true` on
+ * success, `false` if the dir doesn't exist or write fails. Used by the
+ * `preinstall` npm script and (defensively) by the runtime if the npm
+ * preinstall/cleanup script pair did not fire.
+ */
+export function writePartialInstallMarker(pluginRootDir: string): boolean {
+  try {
+    if (!fs.existsSync(pluginRootDir)) return false;
+    fs.writeFileSync(path.join(pluginRootDir, PARTIAL_INSTALL_MARKER), '');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Remove the partial-install marker. Called by the `postinstall` script and
+ * (defensively) at register-time once we've confirmed the load succeeded.
+ * Returns `true` if a marker was removed, `false` if there was nothing to
+ * remove.
+ */
+export function clearPartialInstallMarker(pluginRootDir: string): boolean {
+  try {
+    const markerPath = path.join(pluginRootDir, PARTIAL_INSTALL_MARKER);
+    if (!fs.existsSync(markerPath)) return false;
+    fs.unlinkSync(markerPath);
+    return true;
+  } catch {
+    return false;
   }
 }
 

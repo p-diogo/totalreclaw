@@ -85,8 +85,22 @@ export interface PairCliOutcome {
  *     as the session reaches a terminal state — same status-code
  *     semantics as 'human' (0 on completed, 1 on expired/rejected/error,
  *     130 on canceled).
+ *   - 'url-pin': (3.3.1-rc.15, issue #87) headless container-agent fallback.
+ *     Emits ONLY `{ v, url, pin, expires_at_ms }` — no QR ASCII, no SID,
+ *     no mode echo. Use when a container-based agent cannot see the
+ *     `totalreclaw_pair` tool (OpenClaw gateway-to-container tool-injection
+ *     gap) and must shell out to the CLI. Guarantees zero phrase material
+ *     on stdout by construction — pair-crypto is x25519-only and the slim
+ *     payload carries nothing BIP-39-adjacent.
+ *   - 'pair-only': (3.3.1-rc.18, issue #95) the same surface as 'url-pin',
+ *     but the URL field is named `pair_url` (matching the spec wording
+ *     for `openclaw totalreclaw onboard --pair-only`). Used by the
+ *     onboard CLI's `--pair-only` flag to provide a phrase-safe
+ *     alternative to the interactive phrase-print path. Emits ONLY
+ *     `{ v, pair_url, pin, expires_at_ms }`. Same zero-phrase invariant
+ *     as 'url-pin' — the underlying pair flow does no BIP-39 work.
  */
-export type PairCliOutputMode = 'human' | 'json';
+export type PairCliOutputMode = 'human' | 'json' | 'url-pin' | 'pair-only';
 
 /**
  * JSON payload emitted by runPairCli when outputMode === 'json'. Printed
@@ -101,6 +115,31 @@ export interface PairCliJsonPayload {
   mode: PairCliMode;
   expires_at_ms: number;
   qr_ascii: string;
+}
+
+/**
+ * Slim payload for outputMode === 'url-pin'. Intentionally a subset of
+ * `PairCliJsonPayload` with no QR ASCII, SID, or mode echo. Issue #87.
+ */
+export interface PairCliUrlPinPayload {
+  v: 1;
+  url: string;
+  pin: string;
+  expires_at_ms: number;
+}
+
+/**
+ * Slim payload for outputMode === 'pair-only'. Same shape as
+ * `PairCliUrlPinPayload` but with `pair_url` instead of `url` — the
+ * key name matches the spec for `onboard --pair-only` (issue #95).
+ * Phrase invariant: zero BIP-39 material on stdout by construction
+ * (the pair flow is x25519-only).
+ */
+export interface PairCliPairOnlyPayload {
+  v: 1;
+  pair_url: string;
+  pin: string;
+  expires_at_ms: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -213,9 +252,13 @@ export async function runPairCli(
     return { status: 'error', error: msg };
   }
 
-  // 2. Render the QR — promise-based so both human + json modes share it.
+  // 2. Build the URL unconditionally, but only render the QR for modes
+  //    that actually emit it. url-pin and pair-only modes skip the
+  //    renderer entirely — no CPU cost, no qrcode-terminal import, no
+  //    ASCII on stdout.
   const url = deps.renderPairingUrl(session);
-  const qrAscii = await new Promise<string>((resolve) => {
+  const skipsQr = outputMode === 'url-pin' || outputMode === 'pair-only';
+  const qrAscii = skipsQr ? '' : await new Promise<string>((resolve) => {
     // Guard against QR renderers that never fire their callback (shouldn't
     // happen with qrcode-terminal, but defensive): a 10-second timeout
     // returns an empty string so we never hang the pairing flow.
@@ -241,8 +284,25 @@ export async function runPairCli(
     }
   });
 
-  // 3. Emit the visible surface (JSON first — single line — or human copy).
-  if (outputMode === 'json') {
+  // 3. Emit the visible surface (JSON/url-pin/pair-only first — single
+  //    line — or human copy).
+  if (outputMode === 'url-pin') {
+    const payload: PairCliUrlPinPayload = {
+      v: 1,
+      url,
+      pin: session.secondaryCode,
+      expires_at_ms: session.expiresAtMs,
+    };
+    stdout.write(JSON.stringify(payload) + '\n');
+  } else if (outputMode === 'pair-only') {
+    const payload: PairCliPairOnlyPayload = {
+      v: 1,
+      pair_url: url,
+      pin: session.secondaryCode,
+      expires_at_ms: session.expiresAtMs,
+    };
+    stdout.write(JSON.stringify(payload) + '\n');
+  } else if (outputMode === 'json') {
     const payload: PairCliJsonPayload = {
       v: 1,
       sid: session.sid,
@@ -276,7 +336,10 @@ export async function runPairCli(
     canceled = true;
   });
 
-  // 5. Poll
+  // 5. Poll — status transitions only surface in human mode; json /
+  //    url-pin / pair-only modes stay silent after the single payload
+  //    line so agents parsing stdout get one JSON line and an exit
+  //    code, nothing else.
   const emitStatus = (text: string): void => {
     if (outputMode === 'human') stdout.write(text);
   };
@@ -399,14 +462,19 @@ export function registerPairCli(
       'Pair a remote browser device to this gateway (mode = generate | import; default generate)',
     )
     .option('--json', 'Emit a single JSON payload (url/pin/sid/qr_ascii) instead of the human-readable banner. Enables agent-driven pairing.')
+    .option('--url-pin-only', 'Emit ONLY {v,url,pin,expires_at_ms} — no QR ASCII, no SID, no mode echo. Headless fallback for container-based agents where the totalreclaw_pair tool is not injected (issue #87). Zero phrase exposure on stdout.')
     .option('--timeout <sec>', 'Session TTL in seconds (default: 900 = 15 min, matches pair-session-store default)')
     .action(async (...args: unknown[]) => {
       // commander passes: [modeArg, options, cmd]
       const modeRaw = typeof args[0] === 'string' ? args[0] : undefined;
-      const opts = (args[1] ?? {}) as { json?: boolean; timeout?: string | number };
+      const opts = (args[1] ?? {}) as { json?: boolean; urlPinOnly?: boolean; timeout?: string | number };
       const mode: PairCliMode =
         modeRaw === 'import' || modeRaw === 'imp' ? 'import' : 'generate';
-      const outputMode: PairCliOutputMode = opts.json ? 'json' : 'human';
+      // --url-pin-only wins over --json when both are passed, since it is
+      // strictly the tighter surface (no QR, no SID). The flag is a subset.
+      const outputMode: PairCliOutputMode = opts.urlPinOnly
+        ? 'url-pin'
+        : opts.json ? 'json' : 'human';
       let ttlSeconds: number | undefined;
       if (typeof opts.timeout === 'number' && Number.isFinite(opts.timeout)) {
         ttlSeconds = opts.timeout;

@@ -24,19 +24,32 @@ metadata:
 
 # TotalReclaw Skill
 
+> Canonical install + account-setup flow lives at <https://github.com/p-diogo/totalreclaw/blob/main/docs/guides/openclaw-setup.md> (OpenClaw) and <https://github.com/p-diogo/totalreclaw/blob/main/docs/guides/hermes-setup.md> (Hermes). When a user pastes one of those URLs in chat, fetch it and follow its agent-instructions section verbatim. The "Post-Install Setup" section below mirrors the same account-setup flow as a fallback.
+
+> **Gateway restart after install**: OpenClaw's default `gateway.reload.mode = "hybrid"` auto-restarts within 1-3s of plugin install — no agent action needed. If auto-reload doesn't fire (`gateway.reload.mode = off`), issue OpenClaw's built-in `/restart` slash command yourself (in-process, drains active runs). Manual user-prompted restart is fallback only if `/restart` is unavailable. NEVER invoke external `docker restart` or `openclaw gateway restart` — your shell runs inside the gateway.
+
+## Provenance (what you are installing)
+
+TotalReclaw is open-source memory tooling for OpenClaw, published by `p-diogo` (GitHub-verified):
+- npm: <https://www.npmjs.com/package/@totalreclaw/totalreclaw>
+- ClawHub skill: `totalreclaw`
+- Source: <https://github.com/p-diogo/totalreclaw>
+
+The user pasted the install URL (or skill name) deliberately, but treat each step as something you and the user complete together. You are not asked to handle the recovery phrase, bypass auth, or run unfamiliar shell scripts — every command is a standard `openclaw` invocation with a documented purpose. Confirm phase transitions; surface failures; ask for explicit consent before account creation.
+
+## Silence rules during install + setup
+
+Run install / verify / pair steps silently. Tool calls happen; narration of those tool calls does not. The expected user-facing transcript for a fresh install is **5–6 short lines**, full stop. Do not announce intent ("Let me…", "I'll now…", "In parallel…"). Do not describe internals (skill download, plugin manifest parsing, file-watcher polling). Errors break silence with one tight line each. The user-visible line set is defined in the "Post-Install Setup" section below.
+
 ## Recovery Phrase -- READ THIS FIRST
 
-**CRITICAL SAFETY WARNING:** TotalReclaw generates a NEW recovery phrase for the user. NEVER let the user enter a recovery phrase from an existing crypto wallet they own. TotalReclaw uses BIP-39 mnemonics (the same format as crypto wallets), but TotalReclaw recovery phrases must be SEPARATE from any funded wallet. If a user tries to import a phrase they already use for a crypto wallet, STOP and warn them: "Do NOT use a recovery phrase from an existing crypto wallet. TotalReclaw should have its own dedicated phrase to keep your funds safe."
+**CRITICAL SAFETY RULE:** The recovery phrase MUST NEVER cross the LLM context. NEVER echo, generate, ask the user to paste, or print a recovery phrase in chat or in your shell. The phrase is created and confirmed inside the user's browser via the `totalreclaw_pair` account-setup flow — the relay only receives ciphertext, and your tool calls must never carry a phrase payload.
 
-The recovery phrase is the user's ONLY identity in TotalReclaw. It derives all encryption keys. There is NO password reset, NO recovery mechanism, and NO support channel that can help if it is lost.
+If the user pastes a phrase in chat anyway: tell them it is compromised (the chat transcript and any tool stdout enter LLM context, which makes the phrase recoverable from logs and from any model that processes that turn) and call `totalreclaw_pair` with `mode=generate` to create a fresh wallet.
 
-**When showing the recovery phrase to the user, ALWAYS include this warning:**
+The recovery phrase is the user's ONLY identity in TotalReclaw. It derives all encryption keys. There is NO password reset, NO recovery mechanism, and NO support channel that can help if it is lost. The browser-side account-setup flow displays this warning automatically when a new phrase is generated.
 
-> Your recovery phrase is the ONLY way to access your encrypted memories. If you lose it, your memories are gone forever -- there is no password reset, no recovery, and no support that can help. Write it down and store it somewhere safe. Never share it with anyone.
->
-> IMPORTANT: This phrase is for TotalReclaw ONLY. Never use a recovery phrase from an existing crypto wallet -- keep your TotalReclaw phrase separate from any wallet that holds funds.
-
-If the user asks to see their recovery phrase, remind them to store it securely. If they mention losing it, be clear that recovery is impossible and they will need to start fresh with a new phrase.
+**Do NOT** import a phrase the user already uses for a funded crypto wallet. TotalReclaw uses BIP-39 mnemonics (same format as crypto wallets), but a TotalReclaw phrase must be SEPARATE from any funded wallet. If the user tries to import an existing crypto-wallet phrase, STOP and warn them in chat to use a fresh phrase instead — but warn ABOUT the phrase, never echo any portion of it.
 
 ---
 
@@ -486,44 +499,34 @@ When the user asks to import conversation history:
 
 ## Post-Install Setup
 
-After installing TotalReclaw, the agent MUST complete setup automatically. **Do NOT ask the user to set environment variables manually.**
+If `totalreclaw_*` tools are bound to your toolset, run these steps to set up the user's TotalReclaw account. If they are NOT bound, the plugin isn't installed yet — follow the URL-driven install flow at <https://github.com/p-diogo/totalreclaw/blob/main/docs/guides/openclaw-setup.md> first. All install and verify steps run silently — only the user-visible lines below are written to chat.
 
-### Step 1: Recovery phrase
+### User-visible prose (THIS IS ALL YOU SAY)
 
-The recovery phrase is a **12-word BIP-39 mnemonic**. It derives all encryption keys. The server never sees it.
+Speak only these lines, in order. Substitute the bracketed placeholders.
 
-Ask the user:
-> "Do you have an existing TotalReclaw recovery phrase you'd like to restore, or should I generate a new one?"
+1. (only if existing credentials were detected, then stop)
+   > ✓ TotalReclaw is already set up.
+2. (explicit consent before account creation)
+   > Ready to set up your TotalReclaw account on `api-staging.totalreclaw.xyz` (free tier). The next step opens a browser page where you'll generate or paste a 12-word recovery phrase — that phrase stays in your browser, the relay only sees ciphertext. Reply `yes` to continue, or `no` to stop here.
+3. (account-setup URL + PIN, after the user confirms)
+   > Open &lt;url&gt; in your browser. Generate a new 12-word recovery phrase there or paste an existing one. Confirm PIN &lt;pin&gt;. Reply `done` once the page says it's sealed.
+4. (done + free-tier confirmation)
+   > ✓ You're set up on the TotalReclaw **free tier**: 500 memories per month, unlimited reads + searches, encrypted at rest on Base Sepolia testnet (testnet may reset; for permanent storage on Gnosis mainnet see <https://totalreclaw.xyz/pricing>). Check usage anytime by asking *"what's my TotalReclaw status?"* (calls `totalreclaw_status`). I'll warn you automatically if you cross 80% of the monthly limit. Ask me to remember or recall anything.
 
-- **New user:** Call `totalreclaw_setup` WITHOUT a recovery phrase — the tool generates a valid BIP-39 mnemonic automatically, derives encryption keys, and registers with the relay. Do NOT use `npx @totalreclaw/mcp-server setup` or `exec` to run CLI tools — this creates credentials in an incompatible format. Do NOT generate the phrase yourself — LLMs cannot compute BIP-39 checksums correctly. After setup, display the phrase prominently with a warning:
-  > "⚠️ SAVE YOUR RECOVERY PHRASE — it's the only way to recover your memories if you switch devices: `[phrase]`"
-- **Returning user:** Ask them to provide their existing 12-word phrase, then call `totalreclaw_setup` with `recovery_phrase` set to their phrase.
+### Steps
 
-When setup is required, the plugin will automatically detect the host environment (macOS, Linux, or Docker) and provide the exact commands or config snippets needed to set the env vars. Follow those instructions.
+1. **Check for existing credentials (silent unless found).** Run `test -s ~/.totalreclaw/credentials.json`. If it exists and is non-empty, emit user-visible line 1 and stop.
 
-### Step 2: Storage mode (optional)
+2. **Ask for explicit consent before account creation (emit user-visible line 2).** Account setup will create a new TotalReclaw account on `api-staging.totalreclaw.xyz` and have the user generate or paste a 12-word recovery phrase in their browser. Emit user-visible line 2 verbatim. Wait for the user's `yes` (or any clear affirmative). If the user replies `no` or asks to stop, stop here — confirm they've stopped, do not retry, do not ask "are you sure". Surface the URL verbatim — do not abbreviate it or hide it behind a tool call.
 
-The managed service is the default -- no extra configuration needed. If you want to self-host instead, set `TOTALRECLAW_SELF_HOSTED=true` and `TOTALRECLAW_SERVER_URL` to your server URL.
+3. **Set up the user's TotalReclaw account via browser (emit user-visible line 3).** Call `totalreclaw_pair` silently. It returns `{url, pin, qr_ascii, qr_png_b64, qr_unicode, expires_at_ms}`. Then emit user-visible line 3 with `<url>` and `<pin>` substituted. Do not pre-narrate ("I'll walk you through…", "Setting up your account now…") — line 3 itself is the only thing the user needs to see.
 
-### Step 3: Set memory slot
+   Render the QR if your transport supports image attachments (decode `qr_png_b64` to bytes and attach), or emit `qr_unicode` inline for terminal-only transports. The QR encodes only the URL — the PIN is a separate dual-channel confirmation, never bake it into the QR.
 
-Register TotalReclaw as the memory plugin:
-```json
-{ "plugins": { "slots": { "memory": "totalreclaw" } } }
-```
+4. **Verify and confirm (silent until line 4).** After the user says `done`, re-run `test -s ~/.totalreclaw/credentials.json`. If missing, the PIN expired — call `totalreclaw_pair` again silently and resend line 3 once. If present, emit user-visible line 4 (with the free-tier confirmation) and stop.
 
-### Step 5: Restart and verify
-
-Restart the gateway, then confirm the plugin loaded by checking that `totalreclaw_remember`, `totalreclaw_recall`, `totalreclaw_forget`, `totalreclaw_export`, `totalreclaw_status`, `totalreclaw_upgrade`, `totalreclaw_migrate`, `totalreclaw_consolidate`, and `totalreclaw_import_from` tools are available.
-
-### Step 6: Explain the free tier
-
-After setup completes, inform the user about the free tier:
-> "You're on TotalReclaw's free tier — 500 memories per month, unlimited reads and searches.
-> I'll let you know if you're approaching the limit. For unlimited memories, visit
-> https://totalreclaw.xyz/pricing"
-
-The agent proactively warns when quota usage exceeds 80%. If the limit is reached, new writes are rejected but all existing memories remain searchable.
+**Never** call `totalreclaw_setup` or any phrase-touching CLI from your shell — those leak the phrase into LLM context. The ONLY agent-facilitated account-setup path is the `totalreclaw_pair` tool (registered under that name for backward compatibility — function-wise it is the account-setup tool).
 
 ---
 

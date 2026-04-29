@@ -26,6 +26,7 @@ import { isValidMemoryType, V0_TO_V1_TYPE } from './extractor.js';
 import type { MemoryType, MemorySource, MemoryScope, MemoryVolatility } from './extractor.js';
 import { PROTOBUF_VERSION_V4 } from './subgraph-store.js';
 import type { SubgraphSearchFact } from './subgraph-search.js';
+import { confirmIndexed, type ConfirmIndexedOptions } from './confirm-indexed.js';
 
 // Lazy-load WASM core (mirrors claims-helper.ts pattern — plays nicely under
 // both the OpenClaw runtime (CJS-ish tsx) and bare Node ESM used by tests).
@@ -114,6 +115,12 @@ export interface V1PinBlob {
   id?: string;
   /** Previously-stored pin_status on the blob (v1.1). */
   pinStatus?: PinStatus;
+  /**
+   * 3.3.1-rc.22 — preserved when round-tripping a v1 blob through pin
+   * mutation. We keep the SOURCE blob's tag so distillation backfill
+   * never loses track of which embedder produced the original vector.
+   */
+  embeddingModelId?: string;
 }
 
 /** Shape of a v0 (short-key) blob or a legacy {text, metadata} blob. */
@@ -186,6 +193,7 @@ export function parseBlobForPin(decrypted: string): ParsedBlob {
           expiresAt: v1.expiresAt,
           id: v1.id,
           pinStatus: v1.pinStatus,
+          embeddingModelId: v1.embeddingModelId,
         },
         claim: shortProjection,
         currentStatus: human,
@@ -314,6 +322,8 @@ interface V1Projection {
   entities?: Array<{ name: string; type: string; role?: string }>;
   importance: number;
   confidence: number;
+  /** 3.3.1-rc.22 — carried through pin/retype rewrites for forward-compat. */
+  embeddingModelId?: string;
 }
 
 /**
@@ -336,6 +346,7 @@ function projectToV1(src: V1PinBlob | V0PinBlob, defaultSourceAgent: string): V1
       entities: src.entities,
       importance: src.importance,
       confidence: src.confidence,
+      embeddingModelId: src.embeddingModelId,
     };
   }
 
@@ -445,6 +456,14 @@ export interface PinOpResult {
   tx_hash?: string;
   reason?: string;
   error?: string;
+  /**
+   * On-chain batch submitted but subgraph indexer did not confirm the new
+   * fact id within the timeout window (default 30s). The pin/unpin IS
+   * on-chain — `tx_hash` is observable on the explorer — but a follow-up
+   * `recall`/`export` may briefly surface stale state. Resolves once the
+   * indexer catches up. See `confirm-indexed.ts`.
+   */
+  partial?: boolean;
 }
 
 /**
@@ -461,6 +480,7 @@ export async function executePinOperation(
   targetStatus: 'pinned' | 'active',
   deps: PinOpDeps,
   reason?: string,
+  confirmOpts?: ConfirmIndexedOptions,
 ): Promise<PinOpResult> {
   // 1. Fetch the existing fact
   const existing = await deps.fetchFactById(factId);
@@ -570,6 +590,11 @@ export async function executePinOperation(
       createdAt: new Date().toISOString(),
       supersededBy: factId,
       pinStatus,
+      // 3.3.1-rc.22 — preserve the source claim's embedder tag through
+      // pin mutation. The new fact reuses the same encrypted embedding
+      // as the original (re-indexed via deps.regenerateBlindIndices),
+      // so the embedder identity must round-trip too.
+      embeddingModelId: v1View.embeddingModelId,
     });
   } catch (err) {
     return {
@@ -672,6 +697,11 @@ export async function executePinOperation(
         tx_hash: txHash,
       };
     }
+    // Read-after-write: poll the subgraph until the new (pinned/unpinned)
+    // fact id is indexed and active. On timeout, surface `partial: true`
+    // so a follow-up recall/export that races against indexer lag can
+    // surface a clear "still propagating" hint rather than apparent staleness.
+    const confirm = await confirmIndexed(newFactId, confirmOpts);
     return {
       success: true,
       fact_id: factId,
@@ -680,6 +710,7 @@ export async function executePinOperation(
       new_status: targetStatus,
       tx_hash: txHash,
       reason,
+      ...(confirm.indexed ? {} : { partial: true }),
     };
   } catch (err) {
     return {

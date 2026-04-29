@@ -9,8 +9,15 @@
  *
  * v1 env var cleanup — see `docs/guides/env-vars-reference.md`.
  * Removed user-facing vars: TOTALRECLAW_CHAIN_ID, TOTALRECLAW_EMBEDDING_MODEL,
- * TOTALRECLAW_STORE_DEDUP, TOTALRECLAW_LLM_MODEL, TOTALRECLAW_SESSION_ID,
- * TOTALRECLAW_TAXONOMY_VERSION.
+ * TOTALRECLAW_STORE_DEDUP, TOTALRECLAW_LLM_MODEL, TOTALRECLAW_TAXONOMY_VERSION.
+ *
+ * NOTE: ``TOTALRECLAW_SESSION_ID`` was in the removed list during the v1
+ * cleanup and silently rejected with a warning. That broke Axiom log tracing
+ * for QA — the qa-totalreclaw skill prescribes setting the var so relay logs
+ * are searchable by ``X-TotalReclaw-Session``. Restored as a SUPPORTED
+ * variable: read here, forwarded as the ``X-TotalReclaw-Session`` header on
+ * every outbound relay call. Mirrors the Python-side fix
+ * (`python/src/totalreclaw/agent/state.py`, v2.0.2). See internal#127.
  * Removed legacy gates: TOTALRECLAW_CLAIM_FORMAT, TOTALRECLAW_DIGEST_MODE,
  * TOTALRECLAW_AUTO_RESOLVE_MODE (the last one moved to an internal debug
  * module; see `contradiction-sync.ts`).
@@ -33,18 +40,27 @@ const REMOVED_ENV_VARS = [
   'TOTALRECLAW_EMBEDDING_MODEL',
   'TOTALRECLAW_STORE_DEDUP',
   'TOTALRECLAW_LLM_MODEL',
-  'TOTALRECLAW_SESSION_ID',
+  // NOTE: TOTALRECLAW_SESSION_ID was here before; restored as SUPPORTED
+  // (forwarded as X-TotalReclaw-Session header). Do NOT add it back to this
+  // list — see file header + internal#127.
   'TOTALRECLAW_TAXONOMY_VERSION',
   'TOTALRECLAW_CLAIM_FORMAT',
   'TOTALRECLAW_DIGEST_MODE',
 ] as const;
+
+// Migration guide URL — kept as a constant so the regression test can assert
+// the exact link text in the warning. Pointing at GitHub raw-blob is more
+// useful than the relative repo path: operators copying the warning out of
+// stderr usually do not have the repo cloned. rc.22 finding #4.
+export const ENV_VARS_REFERENCE_URL =
+  'https://github.com/p-diogo/totalreclaw/blob/main/docs/guides/env-vars-reference.md';
 
 function warnRemovedEnvVars(warn: (msg: string) => void = console.warn): void {
   const set = REMOVED_ENV_VARS.filter((name) => process.env[name] !== undefined);
   if (set.length === 0) return;
   warn(
     `TotalReclaw: ignoring removed env var(s): ${set.join(', ')}. ` +
-      `See docs/guides/env-vars-reference.md for the v1 env var surface.`,
+      `Migration guide: ${ENV_VARS_REFERENCE_URL}`,
   );
 }
 
@@ -61,6 +77,27 @@ export function setRecoveryPhraseOverride(phrase: string): void {
 
 export function getRecoveryPhrase(): string {
   return _recoveryPhraseOverride ?? process.env.TOTALRECLAW_RECOVERY_PHRASE ?? '';
+}
+
+/**
+ * Read the QA / observability session tag from the environment.
+ *
+ * When set, every outbound relay call adds the ``X-TotalReclaw-Session``
+ * header so relay logs (and Axiom queries) can be filtered by this tag —
+ * this is what the qa-totalreclaw skill relies on to scope log searches per
+ * QA run. When unset, returns ``null`` and the header is omitted.
+ *
+ * Read via getter (not snapshotted) so operators / test harnesses can flip
+ * the var between calls without reloading the module.
+ *
+ * Mirrors the Python-side ``RelayClient._session_id`` resolution priority.
+ * See internal#127 / `docs/guides/env-vars-reference.md`.
+ */
+export function getSessionId(): string | null {
+  const raw = process.env.TOTALRECLAW_SESSION_ID;
+  if (raw === undefined) return null;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 /**
@@ -92,6 +129,15 @@ export const CONFIG = {
   get recoveryPhrase(): string {
     return getRecoveryPhrase();
   },
+  /**
+   * Optional QA / observability session tag forwarded to the relay as
+   * ``X-TotalReclaw-Session``. See `getSessionId()` above. Getter form so
+   * tests + harnesses can flip the env between calls. ``null`` when unset
+   * (header omitted).
+   */
+  get sessionId(): string | null {
+    return getSessionId();
+  },
   serverUrl: (process.env.TOTALRECLAW_SERVER_URL || 'https://api.totalreclaw.xyz').replace(/\/+$/, ''),
   selfHosted: process.env.TOTALRECLAW_SELF_HOSTED === 'true',
   credentialsPath: process.env.TOTALRECLAW_CREDENTIALS_PATH || path.join(home, '.totalreclaw', 'credentials.json'),
@@ -104,6 +150,21 @@ export const CONFIG = {
   // (keeps scanner surface isolated). Contains ephemeral x25519 secret keys
   // for 15-min TTL windows; 0600 mode.
   pairSessionsPath: process.env.TOTALRECLAW_PAIR_SESSIONS_PATH || path.join(home, '.totalreclaw', 'pair-sessions.json'),
+
+  // 3.3.1-rc.11 — pair-flow transport selector. Mirrors the Python-side
+  // `TOTALRECLAW_PAIR_MODE` env (rc.10). `'relay'` (default) routes
+  // `totalreclaw_pair` through the universal-reachability WebSocket relay at
+  // `TOTALRECLAW_PAIR_RELAY_URL`. `'local'` preserves the rc.4–rc.10 loopback
+  // HTTP flow (the plugin serves `/plugin/totalreclaw/pair/*` via
+  // `pair-http.ts`). Air-gapped / self-hosted users can pin `'local'` here.
+  pairMode: (() => {
+    const v = (process.env.TOTALRECLAW_PAIR_MODE ?? '').trim().toLowerCase();
+    return v === 'local' ? 'local' : 'relay';
+  })() as 'relay' | 'local',
+  // 3.3.1-rc.11 — relay base URL for the WebSocket-brokered pair flow.
+  // `wss://` preferred; `https://` is rewritten in the remote-client.
+  pairRelayUrl: (process.env.TOTALRECLAW_PAIR_RELAY_URL
+    || 'wss://api-staging.totalreclaw.xyz').replace(/\/+$/, ''),
 
   // Chain — chainId is no longer user-configurable. It is auto-detected from
   // the relay billing response (free = Base Sepolia / 84532, Pro = Gnosis /
@@ -188,11 +249,54 @@ export const CONFIG = {
     return process.env.TOTALRECLAW_QA_GITHUB_TOKEN || process.env.GITHUB_TOKEN || '';
   },
 
+  // 3.3.1-rc.14: optional target-repo override for the RC-gated QA
+  // bug-report tool. The `qa-bug-report` module enforces a
+  // "slug ends in `-internal`" rule on whatever is resolved here, so
+  // this override is only useful for forks / mirrors of the internal
+  // tracker. Leaving unset uses the production default
+  // (`p-diogo/totalreclaw-internal`). Read via getter so operators can
+  // flip the var at runtime.
+  get qaRepoOverride(): string {
+    return process.env.TOTALRECLAW_QA_REPO || '';
+  },
+
+  // 3.3.1-rc.21 (issue #128): verbose-register flag. When enabled, the
+  // plugin emits opt-in `info`-level breadcrumbs after sensitive
+  // registerTool calls (currently `totalreclaw_pair`) to help ops/QA
+  // grep gateway logs for definitive proof the tool was declared.
+  // Default OFF — the breadcrumb is debug-grade and was bleeding into
+  // `openclaw agent --json` stdout, breaking programmatic parsers.
+  // Enable with either:
+  //   TOTALRECLAW_VERBOSE_REGISTER=1   (specific opt-in)
+  //   TOTALRECLAW_DEBUG=1              (general debug toggle)
+  // Read via getter so flipping the env at runtime takes effect on the
+  // next gateway start without a rebuild.
+  get verboseRegister(): boolean {
+    const specific = (process.env.TOTALRECLAW_VERBOSE_REGISTER ?? '').trim().toLowerCase();
+    if (specific === '1' || specific === 'true' || specific === 'yes') return true;
+    const general = (process.env.TOTALRECLAW_DEBUG ?? '').trim().toLowerCase();
+    return general === '1' || general === 'true' || general === 'yes';
+  },
+
   // Paths
   home,
   billingCachePath: path.join(home, '.totalreclaw', 'billing-cache.json'),
   cachePath: process.env.TOTALRECLAW_CACHE_PATH || path.join(home, '.totalreclaw', 'cache.enc'),
   openclawWorkspace: path.join(home, '.openclaw', 'workspace'),
+
+  // 3.3.1-rc.22 — lazy embedder bundle cache. The embedder
+  // (`@huggingface/transformers` + `onnxruntime-node` + the q4 ONNX
+  // model) is no longer shipped inside the plugin tarball; it is fetched
+  // on first `embed()` call from a versioned GitHub Release and cached
+  // here. Separate path from `cachePath` (encrypted vault cache) so the
+  // two never collide. See `embedder-loader.ts`.
+  embedderCachePath: process.env.TOTALRECLAW_EMBEDDER_CACHE_PATH || path.join(home, '.totalreclaw', 'embedder'),
+
+  // 3.3.1-rc.22 — override the GitHub-Releases URL templates. Only useful
+  // for air-gapped / mirror deployments and self-hosted CI. Empty string
+  // falls back to the static defaults baked into the embedder code path.
+  embedderBundleUrlTemplate: process.env.TOTALRECLAW_EMBEDDER_BUNDLE_URL || '',
+  embedderManifestUrlTemplate: process.env.TOTALRECLAW_EMBEDDER_MANIFEST_URL || '',
 } as const;
 
 // ---------------------------------------------------------------------------

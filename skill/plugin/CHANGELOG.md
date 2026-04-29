@@ -4,6 +4,329 @@ All notable changes to `@totalreclaw/totalreclaw` (the OpenClaw plugin) are docu
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.2-rc.1] — 2026-04-27
+
+Hotfix bundle for the inside-gateway agent-flow ship-stoppers caught by the
+2026-04-27 user QA against stable 3.3.1 (umbrella issue #182). The four fixes
+combined unblock the agent-driven canonical install path.
+
+### Added — filesystem load manifest (issue #186)
+
+The plugin now writes `.loaded.json` and `.error.json` into its own
+extension directory at register-time. The agent has no working CLI inside
+the gateway (issue #182 finding F1 — `openclaw plugins list` hangs in
+some Docker setups), so the manifests are the canonical filesystem signal
+that register() ran to completion AND which tools the SDK saw.
+
+- `~/.openclaw/extensions/totalreclaw/.loaded.json` —
+  `{loadedAt: <ms>, tools: [<name>...], version: <semver>}`. Written
+  synchronously at the end of `register(api)`. Captures every tool name
+  passed to `api.registerTool` during the call.
+- `~/.openclaw/extensions/totalreclaw/.error.json` —
+  `{loadedAt, error, stack?, version?}`. Written from the try/catch
+  surrounding the register() body when register() throws. Successful
+  boots clear any stale `.error.json`; failed boots preserve any prior
+  `.loaded.json` so the agent can compare timestamps.
+
+Synchronous writes only (same constraint as `registerHttpRoute` — the SDK
+freezes plugin registries the moment register() returns; an async write
+would race that freeze and the manifest could miss late tool
+registrations).
+
+Regression: `load-manifest.test.ts` (22 assertions).
+
+### Added — `totalreclaw_pair` declared in skill manifest (issue #185)
+
+The `totalreclaw_pair` tool is now advertised in `skill.json` alongside
+`totalreclaw_remember`/`recall`/`forget`/`export`/`status`/`consolidate`/
+`upgrade`/`import_from`. Previously plugin-only — if the plugin runtime
+load failed silently (e.g. dep race in #188), the tool never appeared
+in the agent's toolset and the canonical setup flow was unreachable.
+
+The skill-side declaration ensures the tool name is visible in the
+skill registry advertisement even when plugin runtime issues prevent
+binding. The implementation remains in the plugin (browser-side
+e2e-encrypted recovery-phrase flow); only the declaration moves up.
+
+### Added — atomic dependency validation in postinstall (issue #188)
+
+`postinstall.mjs` is now a real lifecycle script (replacing the inline
+`node -e` shim). After `npm install`, it require()s every critical dep
+(`@scure/bip39`, `@scure/bip39/wordlists/english.js`, `@totalreclaw/core`,
+`@totalreclaw/client`, `qrcode`, `ws`). On first-attempt failure: clears
+`node_modules`, re-runs `npm install --ignore-scripts` once, re-validates.
+If retry also fails, exits non-zero so the install surfaces the failure
+instead of writing `enabled: true` over a broken half-state.
+
+The retry loop can be skipped with `TOTALRECLAW_SKIP_POSTINSTALL_RETRY=1`
+for sandboxed CI / restricted-network environments.
+
+Phrase-safety: the script does NOT touch credentials.json, mnemonics,
+or any phrase code path. Only validates module loading and cleans
+staging directories.
+
+### Added — install-stage cleanup at install-time (issue #190)
+
+`postinstall.mjs` extends the rc.21 staging-cleanup behavior (which ran
+at register-time) to ALSO sweep `<extensions>/.openclaw-install-stage-*`
+siblings during the post-install step itself. Goal: a re-install starts
+from a clean parent dir, eliminating the
+"duplicate plugin id detected; global plugin will be overridden by global
+plugin" warning during the install. Safety: skipped when the plugin's
+parent dir is not an `extensions/` directory (dev checkouts) so no random
+siblings are deleted.
+
+Regression: `postinstall-validation.test.ts` (17 assertions) covers
+happy path, marker clearing, staging sweep, idempotent re-runs,
+unrelated-dotfile preservation, and dev-checkout safety.
+
+
+
+### Install / runtime hygiene (issues #126, #128)
+
+Two narrow fixes from the rc.20 user-QA findings — both around install /
+boot-time output cleanliness, no behavior change to the steady-state plugin.
+
+- **#126 — clean up `.openclaw-install-stage-*` siblings.** When
+  `openclaw plugins install @totalreclaw/totalreclaw` is interrupted mid-
+  extract (e.g. by an auto-gateway-restart triggered by the same install),
+  the npm staging directory `<extensionsDir>/.openclaw-install-stage-XXXXXX/`
+  survives. On the next gateway start, OpenClaw's plugin loader auto-
+  discovers BOTH `.../totalreclaw/` AND the orphan staging dir, registers
+  duplicate plugins, fires hooks twice, and prints a "duplicate-plugin-id"
+  warning every cycle. A user running `openclaw plugins list` sees two
+  `totalreclaw` rows.
+
+  Fix: `cleanupInstallStagingDirs(pluginDir)` runs at plugin register time
+  (one tick after the loader resolves our entrypoint). It scans the
+  extensions directory for `.openclaw-install-stage-*` siblings and
+  recursively removes each one. Best-effort — never crashes plugin init
+  on permission / race failures.
+
+  Regression: `install-staging-cleanup.test.ts` (16 assertions) covers
+  fresh install, idempotent re-run, package-root vs `dist/` invocation,
+  unrelated-dotfile preservation (`.git`, `.openclaw-cache`), and stray-
+  file (non-directory) skipping.
+
+- **#128 — registerTool breadcrumbs no longer bleed into `--json` stdout.**
+  The rc.20 breadcrumb logs (`registerTool(totalreclaw_pair) returned. ...`
+  and the RC-only `totalreclaw_report_qa_bug registered ...`) were emitted
+  via `api.logger.info`, which OpenClaw routes to stdout decorated with
+  `[plugins] `. When a user invoked `openclaw agent --message "..." --json`
+  for programmatic parsing, the breadcrumb appeared on stdout alongside
+  the JSON-RPC body, breaking any naive `JSON.parse(stdout)`.
+
+  Fix: gate both breadcrumbs behind `CONFIG.verboseRegister`, OFF by
+  default. Ops can opt back in with `TOTALRECLAW_VERBOSE_REGISTER=1` (or
+  the general `TOTALRECLAW_DEBUG=1` toggle) when chasing a tool-injection
+  regression. Default-off keeps `openclaw agent --json` stdout clean.
+
+  Regression: `json-stdout-cleanliness.test.ts` (11 assertions) confirms
+  both breadcrumbs are wrapped in `if (CONFIG.verboseRegister)` blocks,
+  simulates the gated `--json` stdout path and `JSON.parse`s the result,
+  and exercises the env-var resolution (`TOTALRECLAW_VERBOSE_REGISTER`
+  -> `TOTALRECLAW_DEBUG` -> default false).
+
+## [3.3.1-rc.16] — 2026-04-24
+
+Fixes #92 — slow-host install times out during ONNX-runtime / embedding-model
+download. ONNX stays mandatory (no opt-in flag); first-call download is now
+wrapped with timeout, progress, and retry UX so slow connections succeed
+instead of silently hanging until OpenClaw SIGTERMs.
+
+### Embedding-model download UX
+
+- New `download-ux.ts` module — pure stdlib, no third-party imports — exposes
+  `downloadWithUX(label, fn, opts)`. Wraps a download promise with:
+  - **Per-attempt timeout**, default 600s (covers ~290 KB/s for the 344 MB
+    Harrier model). Configurable via env `TOTALRECLAW_ONNX_INSTALL_TIMEOUT`
+    (in seconds). Per-attempt timeout grows 1x/2x/4x across retries.
+  - **60s keep-alive log** during long downloads so users on slow networks
+    see "still downloading… (Ns elapsed)" rather than a frozen prompt.
+  - **3-attempt exponential-backoff retry** (5s/10s backoff between attempts)
+    to absorb transient network blips.
+  - **Loud actionable error** on exhaustion: names the env var to extend the
+    timeout and the exact `openclaw plugins install totalreclaw` command to
+    rerun.
+- `embedding.ts` now wraps `AutoTokenizer.from_pretrained`,
+  `AutoModel.from_pretrained`, and the `pipeline()` call with
+  `downloadWithUX`. Prints a user-visible "Downloading embedding model
+  (~344MB) — this may take a few minutes on slower connections. Please wait."
+  message before the first download starts.
+- ONNX remains a mandatory hard `dependency` (no `[embedding]`-style opt-in
+  extra). Recall accuracy is unchanged.
+- Regression: `test_issue_92_onnx_download_ux.test.ts` exercises happy path,
+  transient failure → retry, full exhaustion, per-attempt timeout, and
+  keep-alive cadence. Wired into the plugin `npm test` chain.
+
+## [3.3.1-rc.14] — 2026-04-24
+
+Coordinated version bump with Python `2.3.1rc14`. Two narrow bug fixes
+found during rc.13 user QA on 2026-04-24:
+
+### RC-gated QA bug tool — target-repo hardening
+
+`totalreclaw_report_qa_bug` now refuses to file to any repo that isn't
+internal. rc.13 user QA surfaced agent-filed bug reports leaking to the
+public `p-diogo/totalreclaw` tracker despite the tool's default target
+being `p-diogo/totalreclaw-internal`.
+
+- New env var: `TOTALRECLAW_QA_REPO` lets operators point the tool at a
+  private fork. The default stays `p-diogo/totalreclaw-internal`.
+- New `resolveQaRepo(...)` guard: rejects any slug that is on the
+  public-repo denylist (includes `p-diogo/totalreclaw`,
+  `...-website`, `...-relay`, `...-plugin`, `...-hermes`) OR does not
+  end in `-internal`. The check runs before the HTTP POST is
+  constructed, so rejection never leaves the client.
+- `CONFIG.qaRepoOverride` surfaces the env var through `config.ts`
+  (keeps scanner-sensitive `process.env` reads centralized).
+- Regression test in `qa-bug-report.test.ts` mocks the public slug
+  and asserts `fetch` is NEVER called.
+
+Labels on filing unchanged — still emits `qa-bug`, `pending-triage`,
+`severity:<...>`, `component:<...>`, `rc:<...>`.
+
+### Relay pair page — PIN paste button UX
+
+The paste button on the step-1 PIN screen was silently failing under
+certain browser states. rc.14 rewrites the handler with a proper
+error taxonomy:
+
+- Capability probe up front — `navigator.clipboard.readText` missing →
+  clear "Paste unavailable on this browser" toast.
+- `NotAllowedError` → "Clipboard access denied — type the 6 digits
+  manually" (covers iOS Safari permission denial).
+- Empty clipboard → "Clipboard is empty — copy the PIN from your chat
+  first".
+- Non-digit content → "Clipboard has no digits — copy the 6-digit PIN
+  first".
+- Every failure path focuses the first PIN cell so the user can fall
+  through to manual typing without another click.
+- Errors log to `console.warn` with name + message so future failures
+  are diagnosable from browser devtools.
+
+The mockup at `docs/mockups/rc13-pair-wizard/wizard.js` gets the same
+rewrite for parity — the relay's `scripts/sync-pair-preview.mjs`
+regenerates `/pair-preview/` from this source.
+
+Fix also applies to the "Paste all 12 words" import-grid button on the
+relay production page (same taxonomy, same focus-fallback).
+
+## [3.3.1-rc.13] — 2026-04-24
+
+Coordinated version bump with Python `2.3.1rc13`. No substantive
+changes to the plugin's own TypeScript — the rc.13 fix lands on the
+Hermes-side (`python/src/totalreclaw/hermes/pair_tool.py`) where the
+asyncio lifecycle regression lived. We keep plugin + Python RC
+numbers in lockstep so the release-pipeline tracker and
+`qa-totalreclaw` skill carry both artifacts through QA as one
+bundle.
+
+See the corresponding entry in `python/CHANGELOG.md` for the full
+design: the relay-pair WebSocket is now owned by a dedicated worker
+thread (with its own event loop) so it survives the Hermes
+tool-invocation loop teardown that destroyed the rc.10–rc.12 waiter
+mid-recv and caused every pair attempt to 502.
+
+The relay-served production pair page is also replaced with the
+rc.13 wizard UX — a typeform-style 3-step flow (PIN → phrase → done)
+mirroring the `docs/mockups/rc13-pair-wizard/` design. This lands in
+the `totalreclaw-relay` repo PR, not here, but surfaces to every
+OpenClaw user via the default relay pair flow.
+
+### Plugin local-mode pair page
+
+`skill/plugin/pair-page.ts` (the local-mode fallback served when a
+user sets `TOTALRECLAW_PAIR_MODE=local`) retains its rc.10–rc.12 UX
+shape. The wizard UX port for this file is deferred to rc.14 pending
+a design decision on whether to share a single CSS+JS asset across
+all three pair pages (relay / Python local / plugin local) or keep
+them independently inlined. Local-mode is rarely exercised — the
+plugin defaults to the relay flow via the Hermes Python sidecar and
+only falls back here for air-gapped setups.
+
+## [3.3.1-rc.12] — 2026-04-23
+
+**Ship-stopper fix for rc.11.** The relay-served pair page's submit
+button threw `NotSupportedError: Failed to execute 'importKey' on
+'SubtleCrypto': Algorithm: Unrecognized name` when the user clicked
+"Seal key and finish". Root cause: `ChaCha20-Poly1305` is NOT
+implemented in the Web Crypto API of Chrome / Safari / Edge — the
+spec exposes `AES-GCM` as the only AEAD. rc.10/rc.11 never worked
+end-to-end for any user; every pair attempt failed silently and the
+token expired without logging a failure — GH issue #79.
+
+rc.12 swaps the cipher suite from ChaCha20-Poly1305 to AES-256-GCM on
+both sides (browser + gateway). Wire shape unchanged — still 12-byte
+nonce, 16-byte tag, sid-bound AAD, base64url encoding. HKDF info bumped
+from `totalreclaw-pair-v1` to `totalreclaw-pair-v2` so rc.11 ciphertexts
+cannot collide with rc.12 keys (fail-closed on any version skew).
+
+### Changed
+- `skill/plugin/pair-crypto.ts`: `aeadDecrypt` / `aeadEncryptWithSessionKey`
+  switched from `chacha20-poly1305` to `aes-256-gcm`. `HKDF_INFO` bumped
+  to `totalreclaw-pair-v2`.
+- `skill/plugin/pair-page.ts` (local-mode pair page): WebCrypto
+  `ChaCha20-Poly1305` calls swapped to `AES-GCM`. Capability probe
+  function renamed `chaChaSupported` → `aesGcmSupported`.
+
+### Observability
+- The relay's `pair-html.ts` (user-facing page) now reports phase-labelled
+  error messages so a network / encrypt / submit failure no longer masks
+  as a silent "stuck on acknowledge screen". Relay PR (fix/pair-aes-gcm-rc12)
+  is the canonical fix for the issue reported in #79.
+
+## [3.3.1-rc.11] — 2026-04-23
+
+OpenClaw-side universal pair reachability — the plugin's `totalreclaw_pair` tool now routes through the relay WebSocket by default, mirroring the Python `2.3.1rc10` pivot on the Hermes side. The URL returned to the user is `https://api-staging.totalreclaw.xyz/pair/p/<token>#pk=<gateway_pubkey>` instead of the previous `http://<gateway-host>:<port>/plugin/totalreclaw/pair/finish?sid=<sid>#pk=…`. Managed hosts, Docker-in-cloud setups, phone-scan-QR flows, and split-network operators can now complete pairing without the browser needing loopback or LAN access to the gateway.
+
+Paired with Hermes Python `2.3.1rc11` — both clients now reach for the relay by default, and `TOTALRECLAW_PAIR_MODE=local` on either side restores the rc.4–rc.10 loopback flow for air-gapped / self-hosted deployments.
+
+### Added
+
+- **`skill/plugin/pair-remote-client.ts`** — new. TypeScript mirror of `python/src/totalreclaw/pair/remote_client.py` (rc.10 Hermes):
+  - `openRemotePairSession({ relayBaseUrl?, pin?, clientId?, mode? })` — generates an ephemeral x25519 keypair via the existing `pair-crypto.ts` module, opens a WebSocket to `/pair/session/open`, sends `{type:"open", gateway_pubkey, pin, client_id, mode}`, and returns a `RemotePairSession` handle containing the user-facing URL (with `#pk=` fragment), PIN, token, expiry, and the live WebSocket.
+  - `awaitPhraseUpload(session, { completePairing, phraseValidator?, timeoutMs? })` — blocks on the kept-open WebSocket until the relay pushes `{type:"forward", client_pubkey, nonce, ciphertext}`. Decrypts locally via `decryptPairingPayload` using the gateway's private key (same ECDH + HKDF + ChaCha20-Poly1305 primitives as rc.10's loopback flow — byte-compatible with Python's `pair.crypto`). Runs the caller-supplied `completePairing` handler and sends `{type:"ack"}` back on success or `{type:"nack", error}` on validator / decrypt / completion failure.
+  - `pairViaRelay(...)` — one-shot convenience wrapper for tests and simple callers.
+- **`ws` runtime dep** (`^8.18.3`) + **`@types/ws`** — pure-JS WebSocket client. Transitive already via `@totalreclaw/core`; rc.11 promotes it to a direct dep so the plugin's own import graph is explicit.
+- **`TOTALRECLAW_PAIR_MODE`** env (plugin side) — mirrors the Python env. Unset or any non-`local` value routes through the relay; `local` preserves the rc.4–rc.10 loopback HTTP server served by `pair-http.ts` (`/plugin/totalreclaw/pair/{finish,start,respond,status}`).
+- **`TOTALRECLAW_PAIR_RELAY_URL`** env (plugin side) — self-hosters can point at their own relay. Defaults to `wss://api-staging.totalreclaw.xyz`.
+- **`skill/plugin/pair-remote-client.test.ts`** — 20 assertions across 5 scenarios: happy-path round-trip, invalid-phrase nack, relay open error, decrypt failure, https-to-wss scheme conversion. Runs against a local `ws` server stub — no network dependency.
+
+### Changed
+
+- **`totalreclaw_pair` tool** now branches on `CONFIG.pairMode`. In relay mode it returns the URL + PIN immediately and schedules a background task that blocks on the WebSocket until the browser completes (or the TTL lapses). Credentials-write happens in that background task via the same `loadCredentialsJson` / `writeCredentialsJson` / `setRecoveryPhraseOverride` / `writeOnboardingState` side-effect chain that the loopback `pair-http.respond` handler uses — so the onboarding-state flip remains identical. Tool payload shape unchanged (`{url, pin, expires_at_ms, qr_ascii, qr_png_b64, qr_unicode, mode}`) except for a new `transport: 'relay' | 'local'` field that tooling (QA harness, telemetry) can use to confirm which path served a given URL.
+
+### Phrase-safety invariants (preserved)
+
+- Relay is blind: the gateway's ephemeral x25519 private key never leaves the plugin host. The relay forwards opaque ciphertext; it cannot derive the symmetric key.
+- PIN is out-of-band: the user reads the PIN from agent chat and types it into the browser. The relay stores the PIN in memory only; logs carry no PIN, no ciphertext, no pubkey, no phrase.
+- Session state is in-memory on the relay with a 5-minute TTL. Redis deferred to Phase 2 per the design blueprint.
+- Backwards-compat: `TOTALRECLAW_PAIR_MODE=local` preserves every bit of the rc.4–rc.10 flow — same loopback HTTP server, same session store, same browser page, same decrypt handler.
+
+### Mechanism / byte-compat
+
+The crypto is a literal TypeScript binding against the same `pair-crypto.ts` module `pair-http.ts` already imports. No new cipher suite, no new wire format — only the transport (WebSocket to relay + relay-served HTML page) differs from the loopback path. A ciphertext produced by the relay-served `pair-html.ts` page decrypts under the same gateway private key using the same `decryptPairingPayload(...)` call path. This is deliberate: `pair-crypto.ts` is the byte-compat anchor shared with Python's `pair.crypto`, and rc.11 extends that anchor to the relay wire.
+
+## [3.3.1-rc.10] — 2026-04-23
+
+Coordinated version bump with Hermes Python `2.3.1rc10`. rc.10 ships the relay-brokered pair flow — see `python/CHANGELOG.md` (the `2.3.1rc10` entry) for the full design. The `totalreclaw_pair` pair URL on the OpenClaw plugin side still uses the gateway-loopback HTTP server (the OpenClaw plugin runs in-process alongside a browser on the same host for most deployments, so the loopback URL actually reaches the user). The relay-brokered path is currently Hermes-side only — the OpenClaw plugin can pick it up in a later RC if the same universal-reachability problem starts biting OpenClaw users.
+
+Bundled into rc.10: the previously-parked rc.5 QR display layer from PR #76 (`pair-qr.ts` + `pair-qr.test.ts`, tool-payload `qr_png_b64` + `qr_unicode` fields, `totalreclaw_setup` / `totalreclaw_onboarding_start` stub removal). All rebased onto main via the chore/rc.10-qr-rebase-pr76 branch.
+
+### Added (rebased from PR #76)
+
+- **`skill/plugin/pair-qr.ts`** — new. QR encoder module wrapping `qrcode` (PNG) + `qrcode-terminal` (Unicode block). Same contract as the Python side (`totalreclaw.pair.qr`).
+- **`totalreclaw_pair` tool payload** — the `details` block now carries `qr_png_b64` (base64 PNG for image transports) and `qr_unicode` (terminal block-char string) alongside the existing `qr_ascii`. URL + PIN unchanged.
+- **SKILL.md "Rendering the QR on your transport" section** — per-transport agent rendering guidance (Telegram attachment, terminal inline, web chat `<img>` embed).
+- **`qrcode` + `@types/qrcode`** runtime deps.
+
+### Removed (rc.5 phrase-safety carve-out closure, rebased)
+
+- **`totalreclaw_setup` + `totalreclaw_onboarding_start`** agent tools — both were neutered pointer stubs in rc.4; rc.5 auto-QA flagged them as future-regression surface and their mere presence signalled to agents that "phrase handling happens here". Deleted outright in rc.5, preserved through rc.10. `skill/plugin/phrase-safety-registry.test.ts` now asserts neither name is registered.
+
+Version bump reason: rc cadence keeps Python + plugin aligned so the release-pipeline tracker carries them through QA as one artifact set.
+
 ## [3.3.1-rc.9] — 2026-04-23
 
 Coordinated version bump with Hermes Python `2.3.1rc9`. Plugin code itself is unchanged from `3.3.1-rc.6` (the first-run banner fix lives entirely on the Python side — `totalreclaw.onboarding.maybe_emit_welcome`). The rc.9 bundle ships the Hermes-side banner suppression and keeps plugin + Python versions aligned so the release-pipeline tracker can carry them through QA as one artifact set.
@@ -246,7 +569,8 @@ See: `plans/2026-04-22-plugin-3.3.1-provider-agnostic-llm.md` (internal).
     - `--json` — emits a structured payload (requires `--non-interactive`).
     - `--mode <generate|restore>` — skip the menu prompt.
     - `--phrase <12-or-24>` — required for `--mode restore`; `-` reads stdin.
-    - `--emit-phrase` — opt-in path that includes the plaintext phrase in the
+    - `--emit-phrase` — historic opt-in flag (do not invoke via agent shell:
+      forbidden by the phrase-safety rule); included plaintext phrase in the
       JSON payload. Default omits the phrase; the agent should direct the
       user to read `~/.totalreclaw/credentials.json` in their terminal.
 

@@ -6,6 +6,231 @@ Hermes Agent plugin are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1rc14] — 2026-04-24
+
+Coordinated version bump with plugin `3.3.1-rc.14`. Two narrow bug
+fixes found during rc.13 user QA on 2026-04-24.
+
+### RC-gated QA bug tool — target-repo hardening
+
+`totalreclaw_report_qa_bug` now refuses to file to any repo that isn't
+an internal fork. rc.13 user QA surfaced agent-filed bug reports
+leaking to the public `p-diogo/totalreclaw` tracker despite the tool's
+default target being `p-diogo/totalreclaw-internal`. Private QA
+ship-stopper detail must not reach public.
+
+- New env var: `TOTALRECLAW_QA_REPO` lets operators point the tool at
+  a private fork. Default stays `p-diogo/totalreclaw-internal`.
+- New `resolve_qa_repo(...)` guard: rejects any slug that is on the
+  public-repo denylist (includes `p-diogo/totalreclaw`,
+  `...-website`, `...-relay`, `...-plugin`, `...-hermes`) OR does not
+  end in `-internal`. Rejection happens before the `httpx.post(...)`
+  call is constructed; the HTTPS POST never reaches the network.
+- Regression test in `test_qa_bug_report_rc3.py` mocks the public
+  slug and asserts `mock_client.post` is NEVER called.
+
+Labels on filing unchanged — still emits `qa-bug`, `pending-triage`,
+`severity:<...>`, `component:<...>`, `rc:<...>`.
+
+### Relay pair page — PIN paste button UX
+
+Lives in the `totalreclaw-relay` repo
+(`src/routes/pair-html.ts`), not in this package — documented here
+because the plugin + Python + relay all ship together as one RC
+bundle. See the relay repo PR for details. The mockup at
+`docs/mockups/rc13-pair-wizard/wizard.js` gets the same rewrite so the
+relay sync script regenerates `/pair-preview/` from a consistent
+source.
+
+## [2.3.1rc13] — 2026-04-24
+
+**Ship-stopper fix for rc.12.** Calling `totalreclaw_pair` from the
+Hermes chat agent returned `{url, pin}` successfully, but the follow-up
+browser submit hit a 502 every time. Gateway container logs surfaced
+the root cause:
+
+```
+ERROR asyncio: Task was destroyed but it is pending!
+task: <Task pending name='Task-56' coro=<_spawn_relay_completion_task
+       .<locals>._runner() running at
+       totalreclaw/hermes/pair_tool.py:209>>
+Exception ignored in: <coroutine object
+       WebSocketCommonProtocol.close_connection>
+RuntimeError: no running event loop
+```
+
+The rc.10–rc.12 implementation opened the relay WebSocket on Hermes's
+tool-invocation event loop, then used `loop.create_task(...)` to keep
+awaiting on it after the tool returned. Hermes tears that loop down
+as soon as the tool returns, so the background task was destroyed
+mid-`ws.recv()`. The relay received no ack, timed out after 15s, and
+the browser got a 502.
+
+### Fix
+
+The full relay pair session (WebSocket open + opened + forward +
+decrypt + credentials write + ack + close) now runs on a dedicated OS
+thread that owns its own `asyncio.new_event_loop()`. The WebSocket is
+created **inside** the thread loop, so it is never bound to a loop
+that closes. The tool body blocks only on the fast
+`session/open` handshake — the browser-flow wait that follows (user
+types PIN + paste phrase, ~30s median) runs fully inside the worker
+thread with no dependency on the Hermes tool-call loop.
+
+Design note: threading was chosen over "block the tool for up to the
+5-minute TTL" (Option 1, unusable UX — user's chat would stall) and
+over "register a persistent-task hook on plugin startup" (Option 3,
+requires hermes-agent core changes, out of rc.13 scope).
+
+### Observability
+
+Four new structured log events trace the background thread's
+lifecycle for debuggability in `docker compose logs`:
+
+- `pair.relay_completion_started` — waiter thread spawned.
+- `pair.relay_opened` — relay answered `session/open`.
+- `pair.relay_decrypt_ok` / `pair.relay_decrypt_failed` — decrypt +
+  `state.configure(phrase)` outcome.
+- `pair.relay_ack_sent` / `pair.relay_ack_failed` — ack frame written
+  to the WS.
+- `pair.relay_completion_done` — thread exit, carries terminal outcome.
+
+### Pair page UX
+
+The pair HTML page served at `/pair/<token>` is replaced with the
+rc.13 wizard UX: a typeform-style 3-step flow (PIN → phrase → done)
+with 2/3/4-column responsive phrase grids, step dots, countdown, and
+the preview-mode split (`/pair-preview/` stays a mockup). Local-mode
+(`TOTALRECLAW_PAIR_MODE=local`) also adopts the wizard UX so a user
+who hops between relay and local sees identical UX.
+
+Four user-ratified design decisions baked in:
+
+1. 6-cell PIN input (not a single text field) — better affordance +
+   iOS `autocomplete="one-time-code"` on cell 1.
+2. Returning-user tab label is "Log in" (not "Import existing").
+3. Step-1 subheading is agent-generic: "Enter the 6-digit code from
+   your chat to continue." — no "your agent" / "Claude" reference.
+4. Paste into PIN auto-advances + auto-submits Continue when all 6
+   digits are present.
+
+Each is controlled by a single constant at the top of the wizard
+script so a later UX review can flip them without hunting.
+
+### Changed
+- `totalreclaw.hermes.pair_tool`: `_spawn_relay_completion_task`
+  (asyncio-task) replaced by `_run_relay_pair_on_thread`
+  (thread + dedicated event loop). Tool body now uses
+  `asyncio.to_thread(...)` to await the session-open handshake while
+  keeping the completion phase off the caller loop.
+- `totalreclaw.pair.remote_client`: ack emit logs structured
+  `pair.relay_ack_sent` / `_failed` events alongside the existing
+  session-completed log for grep-ability.
+- `totalreclaw.pair.pair_page`: full rewrite on the wizard UX with
+  parity to the relay-served page. Same crypto path (x25519 + HKDF
+  + AES-GCM + `HKDF_INFO = "totalreclaw-pair-v2"`).
+
+### Tests
+
+- New `tests/test_pair_tool_asyncio_lifecycle.py` — regression shield
+  for the rc.10–rc.12 lifecycle bug. Drives `_run_relay_pair_on_thread`
+  against a delayed relay stub + asserts the ack arrives even after
+  the caller-side handshake has returned. 3 test cases.
+- `tests/test_pair_generate_mode.py` — rewired to mock
+  `_run_relay_pair_on_thread` rather than the removed
+  `_spawn_relay_completion_task`.
+- `tests/test_pair_http.py` — page-title assertion updated to
+  match the wizard UX ("Set up TotalReclaw" vs. the rc.12
+  "TotalReclaw pairing").
+
+## [2.3.1rc12] — 2026-04-23
+
+**Ship-stopper fix for rc.11.** The relay-served pair page's submit
+button threw `NotSupportedError: Failed to execute 'importKey' on
+'SubtleCrypto': Algorithm: Unrecognized name` when the user clicked
+"Seal key and finish". Root cause: `ChaCha20-Poly1305` is NOT implemented
+in the Web Crypto API of Chrome / Safari / Edge (AES-GCM is the only
+AEAD the spec currently exposes). rc.10/rc.11 never worked end-to-end
+for any user; every pair attempt failed silently and the token expired
+without logging a failure — GH issue #79.
+
+rc.12 swaps the cipher suite from ChaCha20-Poly1305 to AES-256-GCM on
+both sides (browser + gateway). Wire shape unchanged — still 12-byte
+nonce, 16-byte tag, sid-bound AAD, base64url encoding. HKDF info bumped
+from `totalreclaw-pair-v1` to `totalreclaw-pair-v2` so rc.11 ciphertexts
+cannot collide with rc.12 keys.
+
+### Changed
+- `totalreclaw.pair.crypto`: AEAD cipher swapped from `ChaCha20Poly1305`
+  to `AESGCM` (same `cryptography` package). HKDF info constant bumped.
+- `totalreclaw.pair.pair_page`: browser-side AEAD call and capability
+  probe updated to AES-GCM; HKDF info bumped.
+
+### Observability
+- Pair page emits phase-labelled error messages ("Key derivation failed",
+  "Encryption failed", "Submit failed", "Network error", "Gateway could
+  not finish pairing") instead of a single generic "Encryption failed"
+  that masked the browser crypto unsupported error.
+- Capability gate on page load now probes X25519 + AES-GCM + HKDF
+  end-to-end (rc.10/rc.11 only probed X25519, which passed in browsers
+  that still couldn't do AEAD).
+
+## [2.3.1rc11] — 2026-04-23
+
+Version-bump-only on the Python side — the substantive rc.11 change is in the OpenClaw plugin, which ports the universal-reachability relay-brokered pair flow from Python rc.10 to TypeScript. See `skill/plugin/CHANGELOG.md` (the `3.3.1-rc.11` entry) for the full design. The Python client's own relay client (`totalreclaw.pair.remote_client`) is unchanged from rc.10 and continues to back the Hermes `totalreclaw_pair` tool.
+
+We coordinate the Python + plugin version bumps so the release-pipeline tracker carries both artifacts through QA as one RC bundle.
+
+### Why a Python bump when only plugin changed
+
+Our RC cadence publishes both registries from the same bundle. Out-of-sync version tags cause downstream confusion (the `qa-totalreclaw` skill and the release-pipeline tracker both key on a single RC-number per wave). Skipping the Python bump would leave rc.11 documented on the plugin side only; a later Hermes regression would then have to skip to rc.12 to catch up. Much simpler to bump both in lockstep.
+
+## [2.3.1rc10] — 2026-04-23
+
+rc.10 relay-brokered pair flow — default `totalreclaw_pair` now routes through `wss://api-staging.totalreclaw.xyz/pair/*` instead of a gateway-loopback HTTP server. Universal pair reachability: users can complete the pair flow from any browser on any device (phone, laptop, split-network setups) — no more `127.0.0.1` URL that only works when the browser shares a loopback with the gateway.
+
+Paired with plugin `3.3.1-rc.10`, relay changes in `totalreclaw-relay` (see sibling PR), and the auto-bootstrap PR in `p-diogo/totalreclaw-hermes`.
+
+### Generate-mode parity with import (extended in-PR 2026-04-22)
+
+The relay-served pair page now supports **`mode=generate`** natively — the full BIP-39 English wordlist (2048 canonical words, SHA-256 `2f5eed53…3b24dbda`) is inlined into the HTML and the browser runs the standard 128-bit-entropy → SHA-256-checksum → 12-word derivation via WebCrypto. Docker / managed-host / phone users can create a fresh recovery phrase without dropping to `TOTALRECLAW_PAIR_MODE=local`.
+
+- **`totalreclaw_pair` mode default is now `"either"`** — pair page shows a tab switcher so the user picks `Generate new` or `Import existing`. Callers can still pin `"generate"` or `"import"` to render only one panel.
+- **`open_remote_pair_session(mode=...)`** — the gateway forwards the requested mode in the open frame; the relay stores it on the session and renders the matching HTML.
+- **Audit log includes mode** — gateway logs `mode=generate|import|unspecified` on session completion. No phrase material ever enters the log — mode is derived from the unencrypted wire header, not the decrypted payload.
+
+### Added
+
+- **`totalreclaw.pair.remote_client`** — new module. Async WebSocket client for the relay-brokered pair flow:
+  - `open_remote_pair_session(*, relay_base_url=None, pin=None, client_id=None)` — generate ephemeral x25519 keypair, open WSS to `/pair/session/open`, send `{type:open, gateway_pubkey, pin, client_id}`, receive `{type:opened, token, short_url, expires_at}`. Returns a `RemotePairSession` handle with the user-facing URL (including `#pk=<gateway_pubkey>` fragment).
+  - `await_phrase_upload(session, *, complete_pairing)` — block on the kept-open WebSocket until the relay pushes `{type:forward, client_pubkey, nonce, ciphertext}`. Decrypts locally with the gateway's private key (same ECDH + HKDF + ChaCha20-Poly1305 primitives as rc.9), runs the caller-supplied `complete_pairing` handler, sends `{type:ack}` back, closes the WebSocket.
+  - `pair_via_relay` — one-shot convenience wrapper.
+- **`websockets>=12.0,<14`** runtime dep — pure Python async WebSocket client.
+- **`TOTALRECLAW_PAIR_RELAY_URL` env** — override the default `wss://api-staging.totalreclaw.xyz` relay base (self-hosters can point at their own relay).
+
+### Changed
+
+- **`totalreclaw_pair` tool default is now relay mode.** URL now looks like `https://api-staging.totalreclaw.xyz/pair/p/<token>#pk=<gateway_pubkey>` instead of `http://127.0.0.1:<ephemeral-port>/pair/<token>`. Tool payload shape unchanged (`{url, pin, expires_at, qr_png_b64, qr_unicode, mode, instructions}`) — only the URL origin differs, so existing agents don't need updates.
+- **`TOTALRECLAW_PAIR_MODE=local` preserved.** Air-gapped / offline / self-hosted users can opt back into the rc.4–rc.9 loopback HTTP flow by setting this env var; everything else stays identical.
+- **Background completion task.** In relay mode, `totalreclaw_pair` returns the URL + PIN to the agent immediately, then schedules an asyncio task that blocks on the WebSocket until the user completes the browser flow (or the 5-minute TTL lapses). The task calls `state.configure(phrase)` off-loop via `run_in_executor` so the credentials.json write doesn't stall the asyncio event loop.
+
+### Phrase-safety invariants (preserved)
+
+- Relay is blind: the gateway's ephemeral x25519 private key never leaves the host. The relay forwards opaque ciphertext; it cannot derive the symmetric key.
+- PIN is out-of-band: the user reads the PIN from agent chat and types it into the browser. The relay stores the PIN in memory only; logs carry no PIN, no ciphertext, no pubkey, no phrase.
+- Session state is in-memory on the relay with a 5-minute TTL and a 30-second purge interval. Redis deferred to Phase 2 per the design blueprint.
+- Backwards-compat: `TOTALRECLAW_PAIR_MODE=local` preserves every bit of the rc.4–rc.9 flow — same HTTP server, same session store, same browser page.
+
+### Tests
+
+- **`tests/test_pair_remote_client.py`** — 5 tests against a local websocket stub:
+  - happy-path open → opened frame propagates token + URL with correct `#pk=` fragment
+  - full round-trip: relay-stub encrypts TEST_PHRASE → `await_phrase_upload` decrypts + invokes `complete_pairing` → `ack` frame reaches relay
+  - invalid BIP-39 phrase → `nack` sent, `complete_pairing` NOT called, `RuntimeError` raised
+  - URL scheme conversion (`wss://` → `https://`, `ws://` → `http://`)
+  - relay `{type:error, error:rate_limited}` → `RuntimeError("rate_limited")`
+- **`tests/test_pair_tool_payload.py`** + **`tests/test_agent_tools_phrase_safety.py::TestPairToolReturnsNoPhrase`** — pinned to `TOTALRECLAW_PAIR_MODE=local` so they exercise the same assertions against the loopback path without requiring a live relay.
+
 ## [2.3.1rc9] — 2026-04-23
 
 Ship-stopper fix for two problems in the first-run welcome banner that surfaced during the rc.8 Hermes auto-QA run against the Git-plugin install path. Both rooted in `totalreclaw.onboarding.maybe_emit_welcome`:
