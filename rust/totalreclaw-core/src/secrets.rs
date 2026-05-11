@@ -650,7 +650,7 @@ mod tests {
 
     #[test]
     fn last_4_correct() {
-        let body = "abcdefghijklmnopqrstuvwxyz1234";
+        let body = format!("{}1234", "a".repeat(32)); // 36 chars: ghp_ needs 36–40 body chars
         let key = format!("ghp_{}", body);
         let m = detect_secrets(&key).into_iter().next().unwrap();
         assert_eq!(m.last_4, "1234");
