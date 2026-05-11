@@ -66,8 +66,9 @@ The agent exports `TOTALRECLAW_SERVER_URL=https://api-staging.totalreclaw.xyz` a
    > Installed TotalReclaw. I've disabled Hermes' built-in `memory` tool so TotalReclaw is your primary memory. Re-enabling it (`hermes tools enable memory`) is NOT recommended while TotalReclaw is installed. To wipe orphaned MEMORY.md / USER.md files later: `hermes memory reset`.
 4. Register the plugin manifest:
    ```bash
-   "$(dirname "$HERMES_PYTHON")/hermes" plugins install p-diogo/totalreclaw-hermes --enable
+   hermes plugins install p-diogo/totalreclaw-hermes --enable
    ```
+   (Or `"$(dirname "$HERMES_PYTHON")/hermes" plugins install p-diogo/totalreclaw-hermes --enable` when `hermes` isn't on `PATH`.)
 5. Issue `/restart` in chat to reload the Hermes gateway with the new plugin tools active.
 
 ---
@@ -125,6 +126,7 @@ These are hard rules. None of them are negotiable.
 - `totalreclaw_pair` returns a URL that 404s on the browser: the relay is unreachable — check `TOTALRECLAW_SERVER_URL` env var matches the user's intended channel (prod default, or staging from the QA prompt).
 - `totalreclaw_pair` returns a 5xx: ask the user to retry; report the error code verbatim.
 - Tool not bound after install: `/restart` once. If still missing, the package install hit the wrong Python; re-resolve `HERMES_PYTHON` and re-install.
+- `/restart` returns "not authorized" or "command not found" (managed Hermes deployments may gate it behind RBAC): issue `/new` to start a fresh session instead — the plugin manifest is reloaded on session start and the new tools bind without a full gateway restart.
 
 ---
 
