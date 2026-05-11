@@ -8,7 +8,6 @@
 
 import { validateMnemonic, mnemonicToSeed } from "@scure/bip39";
 import { wordlist } from "@scure/bip39/wordlists/english";
-import { HDKey } from "@scure/bip32";
 import { xchacha20poly1305 } from "@noble/ciphers/chacha";
 import { SessionKeys } from "./types";
 
@@ -68,12 +67,13 @@ export function isMnemonicValid(phrase: string): boolean {
 /**
  * Derive session keys from a 12-word BIP-39 mnemonic.
  *
- * Key derivation path mirrors client/src/crypto/seed.ts deriveKeysFromMnemonic():
+ * Matches client/src/crypto/seed.ts deriveKeysFromMnemonic() + mcp/src/subgraph/crypto.ts:
  *   seed = BIP-39 PBKDF2(mnemonic, "mnemonic", 2048, SHA-512, 64 bytes)
- *   privKey = BIP-32 m/44'/60'/0'/0/0 (Ethereum standard)
- *   seed32 = privKey (32 bytes) — used as HKDF IKM with per-key info strings
- *   authKey = HKDF-SHA256(seed32, salt=zeros, "totalreclaw-auth-key-v1", 32)
- *   encKey  = HKDF-SHA256(seed32, salt=zeros, "totalreclaw-encryption-key-v1", 32)
+ *   salt = seed[0:32]
+ *   authKey = HKDF-SHA256(seed, salt, "totalreclaw-auth-key-v1",       32)
+ *   encKey  = HKDF-SHA256(seed, salt, "totalreclaw-encryption-key-v1", 32)
+ *
+ * BIP-32 derivation is NOT used for session keys (only needed for UserOp signing).
  */
 export async function deriveSessionKeys(mnemonic: string): Promise<SessionKeys> {
   const normalized = mnemonic.trim().toLowerCase();
@@ -81,21 +81,10 @@ export async function deriveSessionKeys(mnemonic: string): Promise<SessionKeys> 
     throw new Error("Invalid 12-word recovery phrase");
   }
 
-  const seed = await mnemonicToSeed(normalized);
-  const root = HDKey.fromMasterSeed(seed);
-  // BIP-44 Ethereum path: m/44'/60'/0'/0/0
-  const child = root.derive("m/44'/60'/0'/0/0");
-  if (!child.privateKey) throw new Error("Key derivation failed");
-  const seed32 = child.privateKey;
-
-  const salt = new Uint8Array(32); // zero salt — matches server-side convention
-  const authKey = await hkdf(seed32, salt, "totalreclaw-auth-key-v1", 32);
-  const encryptionKey = await hkdf(
-    seed32,
-    salt,
-    "totalreclaw-encryption-key-v1",
-    32,
-  );
+  const seed = await mnemonicToSeed(normalized); // 512-bit BIP-39 seed
+  const salt = seed.slice(0, 32);
+  const authKey = await hkdf(seed, salt, "totalreclaw-auth-key-v1", 32);
+  const encryptionKey = await hkdf(seed, salt, "totalreclaw-encryption-key-v1", 32);
 
   return {
     mnemonic: normalized,
