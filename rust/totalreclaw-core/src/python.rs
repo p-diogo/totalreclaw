@@ -416,6 +416,8 @@ fn py_rerank_with_config(
         serde_json::from_str(candidates_json).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let config = reranker::RerankerConfig {
         apply_source_weights,
+        bm25_weight_override: None,
+        vector_weight_override: None,
     };
     let results = reranker::rerank_with_config(query, &query_embedding, &candidates, top_k, config)
         .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;

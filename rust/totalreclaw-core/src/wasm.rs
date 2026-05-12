@@ -393,6 +393,8 @@ pub fn wasm_rerank_with_config(
         .map_err(|e| JsError::new(&format!("Invalid candidates JSON: {}", e)))?;
     let config = reranker::RerankerConfig {
         apply_source_weights,
+        bm25_weight_override: None,
+        vector_weight_override: None,
     };
     let results = reranker::rerank_with_config(query, query_embedding, &candidates, top_k, config)
         .map_err(|e| JsError::new(&e.to_string()))?;
