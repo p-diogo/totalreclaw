@@ -91,6 +91,8 @@ Query fees alone are small ($1-$298/mo). Indexers are primarily incentivized by 
 
 Free tier: 250 memories/month on Base Sepolia (testnet, trial). Pro tier: unlimited memories on Gnosis mainnet (permanent on-chain storage).
 
+**Environment caveat:** the 250/month cap is enforced by the **production** relay (`api.totalreclaw.xyz`) only. The **staging** relay (`api-staging.totalreclaw.xyz`) does not enforce the free-tier quota so that QA, E2E suites, and RC-build users can write freely against testnet. User-facing prose (SKILL.md, setup guides, pricing page) describes the production limit; staging callers will see writes succeed past 250.
+
 ---
 
 ## 6. Payment Infrastructure

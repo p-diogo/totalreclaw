@@ -188,10 +188,10 @@ If you want separate memory per instance, use **different recovery phrases** or 
 
 | Tier | Writes | Reads | Storage | Price |
 |------|--------|-------|---------|-------|
-| **Free** | Unlimited | Unlimited | Testnet (Base Sepolia) | $0 |
+| **Free** | 250 / month | Unlimited | Testnet (Base Sepolia) | $0 |
 | **Pro** | Unlimited | Unlimited | Permanent on-chain (Gnosis) | $3.99/month |
 
-The free tier stores on Base Sepolia testnet (unlimited, but testnet data may be reset). Upgrade to Pro for permanent storage on Gnosis mainnet.
+The free tier stores on Base Sepolia testnet (250 writes/month, and testnet data may be reset). Upgrade to Pro for permanent storage on Gnosis mainnet.
 
 To upgrade, ask the agent: *"How do I upgrade TotalReclaw?"*
 
@@ -221,7 +221,7 @@ To upgrade, ask the agent: *"How do I upgrade TotalReclaw?"*
 
 ### Quota exceeded (403 errors)
 
-- The free tier is unlimited on testnet, but a high abuse-prevention cap exists server-side
+- The free tier is capped at 250 writes/month on testnet against the production relay (`api.totalreclaw.xyz`)
 - If you encounter a 403, check with *"What's my TotalReclaw status?"*
 - Upgrade to Pro for permanent mainnet storage
 

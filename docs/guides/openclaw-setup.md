@@ -296,7 +296,7 @@ See [Importing Memories](importing-memories.md).
 
 | Tier | Storage | Monthly writes | Reads | Price |
 |------|---------|---------------|-------|-------|
-| **Free** | Base Sepolia testnet (may reset) | 500 / month | Unlimited | $0 |
+| **Free** | Base Sepolia testnet (may reset) | 250 / month | Unlimited | $0 |
 | **Pro** | Permanent on Gnosis mainnet | Unlimited | Unlimited | $3.99/month |
 
 The plugin warns you automatically when you cross 80% of the monthly free-tier write limit (injected at conversation start). Check anytime by asking *"what's my TotalReclaw status?"* — that calls `totalreclaw_status` and reports tier, writes used, writes limit, reset date, and upgrade URL.

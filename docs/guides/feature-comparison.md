@@ -77,7 +77,7 @@ All platforms support two storage modes. The encryption is identical -- the diff
 | | Managed Service (default) | Self-Hosted |
 |---|---|---|
 | **Storage** | On-chain (Gnosis Chain) via The Graph | Your PostgreSQL database |
-| **Free tier** | Unlimited on Base Sepolia testnet | Unlimited (your infrastructure) |
+| **Free tier** | 250 writes/month on Base Sepolia testnet | Unlimited (your infrastructure) |
 | **Pro tier** | Permanent on Gnosis mainnet ($3.99/mo) | N/A |
 | **Setup** | Nothing -- works out of the box | Set `TOTALRECLAW_SELF_HOSTED=true` + server URL |
 | **Consolidation tool** | Not available (no batch delete on-chain) | Available |

@@ -214,7 +214,7 @@ Same phrase, same memories. Switch agents without losing anything. To migrate, c
 
 | Tier | Storage | Price |
 |------|---------|-------|
-| **Free** | Unlimited on Base Sepolia testnet (may reset) | $0 |
+| **Free** | 250 writes/month on Base Sepolia testnet (may reset) | $0 |
 | **Pro** | Permanent on Gnosis mainnet | $3.99/month |
 
 Both tiers have unlimited reads. Upgrade: *"Upgrade my TotalReclaw subscription."*

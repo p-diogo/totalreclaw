@@ -19,7 +19,7 @@
 
 Two storage modes: **Managed Service** (default -- on-chain via The Graph, accessed through relay) and **Self-Hosted** (PostgreSQL backend you run yourself). The client-side E2EE pipeline is identical for both.
 
-Managed Service uses a **dual-chain model**: Free tier stores on **Base Sepolia** testnet (chain 84532), Pro tier stores on **Gnosis mainnet** (chain 100). The relay routes bundler and subgraph requests to the correct chain based on user tier. Smart Account addresses are deterministic across both chains (CREATE2).
+Managed Service uses a **dual-chain model**: Free tier stores on **Base Sepolia** testnet (chain 84532), Pro tier stores on **Gnosis mainnet** (chain 100). The relay routes bundler and subgraph requests to the correct chain based on user tier. Smart Account addresses are deterministic across both chains (CREATE2). The 250/month free-tier cap is enforced by the **production** relay only; the **staging** relay (`api-staging.totalreclaw.xyz`) has no quota so QA + RC builds can write freely.
 
 ```
 +-------------------------------------------------------------------------+

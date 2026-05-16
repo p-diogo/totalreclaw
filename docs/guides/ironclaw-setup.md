@@ -124,7 +124,7 @@ If your IronClaw version supports event-triggered routines (e.g., `on_thread_idl
 
 | Tier | Memories | Storage | Price |
 |------|----------|---------|-------|
-| **Free** | Unlimited | Testnet (trial -- may be reset) | $0 |
+| **Free** | 250 / month | Testnet (trial -- may be reset) | $0 |
 | **Pro** | Unlimited | Permanent on-chain (Gnosis) | See [totalreclaw.xyz/pricing](https://totalreclaw.xyz/pricing/) |
 
 Upgrade anytime via the `totalreclaw_upgrade` tool -- the agent handles it for you.
