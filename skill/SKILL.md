@@ -558,7 +558,7 @@ Speak only these lines, in order. Substitute the bracketed placeholders. The use
 2. (account-setup URL + PIN, immediately after `tr pair --json` returns — no consent gate)
    > Open &lt;url&gt; in your browser. Enter PIN &lt;pin&gt;. Generate or paste a 12-word recovery phrase. Reply `done` once it's sealed.
 3. (done + free-tier confirmation)
-   > ✓ You're set up on the TotalReclaw free tier — 500 memories/month, unlimited reads. https://totalreclaw.xyz/pricing. Ask me to remember anything.
+   > ✓ You're set up on the TotalReclaw free tier — 250 memories/month, unlimited reads. https://totalreclaw.xyz/pricing. Ask me to remember anything.
 
 ### Steps
 
@@ -624,7 +624,7 @@ If you need to store a memory, use the `totalreclaw_remember` tool. If you need 
 
 ### Billing Awareness
 
-TotalReclaw has a free tier (500 memories/month, unlimited reads). The plugin monitors quota usage automatically:
+TotalReclaw has a free tier (250 memories/month, unlimited reads). The plugin monitors quota usage automatically:
 - If usage exceeds 80%, a warning is injected into your context at conversation start
 - If a write fails with quota exceeded (403), inform the user and suggest visiting https://totalreclaw.xyz/pricing
 - Use `totalreclaw_status` when the user asks about their subscription, quota, or billing

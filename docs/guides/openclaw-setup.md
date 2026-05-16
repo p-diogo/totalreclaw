@@ -55,7 +55,7 @@ Speak only these lines, in order. Substitute the bracketed placeholders with the
 4. (Step 4 — account-setup URL + PIN, immediately after `tr pair --json` returns — no consent gate)
    > Open &lt;url&gt; in your browser. Enter PIN &lt;pin&gt;. Generate or paste a 12-word recovery phrase. Reply `done` once it's sealed.
 5. (Step 5 — done + free-tier confirmation)
-   > ✓ You're set up on the TotalReclaw free tier — 500 memories/month, unlimited reads. https://totalreclaw.xyz/pricing. Ask me to remember anything.
+   > ✓ You're set up on the TotalReclaw free tier — 250 memories/month, unlimited reads. https://totalreclaw.xyz/pricing. Ask me to remember anything.
 
 That is the complete user-facing transcript for a healthy install. Expected line count for a fresh install + setup is **4–5 lines** (line 3 is mutually exclusive with lines 4-5; the `/totalreclaw-restart` cycle is no longer part of the primary path under hybrid mode).
 

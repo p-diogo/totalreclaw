@@ -97,6 +97,14 @@ class BillingStatus:
     free_writes_limit: int
     expires_at: Optional[str] = None
     features: Optional[BillingFeatures] = None
+    # ``period`` disambiguates the limit semantics for the agent.
+    # ``"monthly"`` (default for the free tier) means ``free_writes_limit``
+    # resets each calendar month; ``"lifetime"`` means it never resets.
+    # ``resets_at`` is the ISO 8601 timestamp of the next reset when
+    # ``period == "monthly"``. Both fields are populated by the relay; when
+    # absent we leave them ``None`` so older relays still work.
+    period: Optional[str] = None
+    resets_at: Optional[str] = None
 
 
 @dataclass
@@ -295,6 +303,8 @@ class RelayClient:
             free_writes_limit=data.get("free_writes_limit", 0),
             expires_at=data.get("expires_at"),
             features=features,
+            period=data.get("period"),
+            resets_at=data.get("resets_at"),
         )
 
     async def create_checkout(self) -> CheckoutResponse:

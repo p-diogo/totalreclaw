@@ -75,7 +75,7 @@ When the user asks to "set up TotalReclaw" or wants to remember something but ha
 2. The tool returns `{"url": "...", "pin": "...", "expires_at_ms": ...}`.
 3. Emit one user-facing line: "Open <url> in your browser. Enter PIN <pin>. Generate or paste a 12-word recovery phrase. Reply `done` once it's sealed."
 4. Wait for the user to say `done`. The browser handles phrase generation/import; the MCP server writes credentials silently.
-5. Confirm: "✓ You're set up on the TotalReclaw free tier — 500 memories/month, unlimited reads. https://totalreclaw.xyz/pricing. Ask me to remember anything."
+5. Confirm: "✓ You're set up on the TotalReclaw free tier — 250 memories/month, unlimited reads. https://totalreclaw.xyz/pricing. Ask me to remember anything."
 
 If the user already has credentials, `totalreclaw__totalreclaw_status` returns `{"onboarded": true}` and you can skip setup.
 

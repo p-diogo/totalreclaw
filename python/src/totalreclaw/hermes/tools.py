@@ -325,11 +325,17 @@ async def status(args: dict, state: "PluginState", **kwargs) -> str:
 
     try:
         billing = await client.status()
+        # ``period`` defaults to ``"monthly"`` on the free tier so older
+        # relays that don't yet populate the field still give the agent an
+        # unambiguous answer to "is that monthly or lifetime?".
+        period = billing.period or ("monthly" if billing.tier == "free" else None)
         return json.dumps({
             "tier": billing.tier,
             "free_writes_used": billing.free_writes_used,
             "free_writes_limit": billing.free_writes_limit,
             "expires_at": billing.expires_at,
+            "period": period,
+            "resets_at": billing.resets_at,
         })
     except Exception as e:
         logger.error("totalreclaw_status failed: %s", e)

@@ -30,7 +30,7 @@ Ask the agent: *"Do you have access to TotalReclaw memory tools?"* It should con
 
 ### Step 4: Free tier
 
-After setup, the agent is on the free tier: 500 memories per month, unlimited reads and searches. The skill warns automatically when quota usage exceeds 80%. For unlimited memories, the user can upgrade via the `totalreclaw_upgrade` tool or visit https://totalreclaw.xyz/pricing.
+After setup, the agent is on the free tier: 250 memories per month, unlimited reads and searches. The skill warns automatically when quota usage exceeds 80%. For unlimited memories, the user can upgrade via the `totalreclaw_upgrade` tool or visit https://totalreclaw.xyz/pricing.
 
 ---
 
@@ -182,7 +182,7 @@ NanoClaw integrates TotalReclaw through three lifecycle hooks in the agent-runne
 
 ## Billing and Quota
 
-TotalReclaw has a free tier (500 memories/month, unlimited reads). The skill monitors quota usage automatically:
+TotalReclaw has a free tier (250 memories/month, unlimited reads). The skill monitors quota usage automatically:
 
 - At conversation start (`before-agent-start`), billing status is fetched from the relay and cached for 2 hours
 - If usage exceeds 80%, a warning is injected into the agent context

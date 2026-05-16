@@ -40,6 +40,10 @@ export interface BillingCache {
     max_facts_per_extraction?: number;
     max_candidate_pool?: number;
   };
+  // Disambiguates limit semantics — "monthly" (default for free) or
+  // "lifetime". ``resets_at`` is the next monthly reset (ISO 8601).
+  period?: 'monthly' | 'lifetime' | null;
+  resets_at?: string | null;
   checked_at: number;
 }
 
@@ -218,6 +222,8 @@ export async function fetchBillingStatus(ctx: BillingContext): Promise<BillingCa
       free_writes_used: (data.free_writes_used as number) ?? 0,
       free_writes_limit: (data.free_writes_limit as number) ?? 0,
       features: data.features as BillingCache['features'] | undefined,
+      period: (data.period as BillingCache['period']) ?? null,
+      resets_at: (data.resets_at as string | null | undefined) ?? null,
       checked_at: Date.now(),
     };
 
@@ -276,6 +282,8 @@ export async function checkWelcomeBack(ctx: BillingContext): Promise<string> {
       free_writes_used: (data.free_writes_used as number) ?? 0,
       free_writes_limit: (data.free_writes_limit as number) ?? 0,
       features: data.features as BillingCache['features'] | undefined,
+      period: (data.period as BillingCache['period']) ?? null,
+      resets_at: (data.resets_at as string | null | undefined) ?? null,
       checked_at: Date.now(),
     });
 

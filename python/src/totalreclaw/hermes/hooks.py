@@ -364,7 +364,7 @@ def on_session_start(state: "PluginState", **kwargs) -> None:
             state.update_from_billing(billing)
 
             used = billing.get("free_writes_used", 0)
-            limit = max(billing.get("free_writes_limit", 500), 1)
+            limit = max(billing.get("free_writes_limit", 250), 1)
             if used / limit > 0.8:
                 pct = int(used / limit * 100)
                 state.set_quota_warning(

@@ -50,6 +50,10 @@ export interface BillingCache {
     max_facts_per_extraction?: number;
     max_candidate_pool?: number;
   };
+  // Disambiguates limit semantics — "monthly" (default for free) or
+  // "lifetime". ``resets_at`` is the next monthly reset (ISO 8601).
+  period?: 'monthly' | 'lifetime' | null;
+  resets_at?: string | null;
   checked_at: number;
 }
 

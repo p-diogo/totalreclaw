@@ -513,7 +513,7 @@ async function runC4(client: OpenClawClient): Promise<void> {
 
   const mentionsFreeTier =
     content.includes('free tier') ||
-    content.includes('500 memories') ||
+    content.includes('250 memories') ||
     content.includes('free') ||
     content.includes('upgrade');
 

@@ -44,6 +44,11 @@ export interface BillingStatusResponse {
   free_writes_limit: number;
   expires_at: string | null;
   features?: BillingFeatures;
+  // ``period`` disambiguates the limit semantics for the agent: "monthly"
+  // means ``free_writes_limit`` resets each calendar month, "lifetime"
+  // means it never resets. ``resets_at`` is the next monthly reset.
+  period?: 'monthly' | 'lifetime' | null;
+  resets_at?: string | null;
 }
 
 /** Last raw billing response (for candidate pool caching in index.ts). */
@@ -114,11 +119,19 @@ export async function handleStatus(
 
     // Format nicely for the LLM to present
     const tierLabel = data.tier === 'pro' ? 'Pro' : 'Free';
-    const usage = `${data.free_writes_used}/${data.free_writes_limit}`;
+    // Default the free-tier period to "monthly" so older relays that don't
+    // yet emit the field still give the agent an unambiguous answer.
+    const period = data.period ?? (data.tier === 'free' ? 'monthly' : null);
+    const periodSuffix = period === 'monthly' ? '/month' : '';
+    const usage = `${data.free_writes_used}/${data.free_writes_limit}${periodSuffix}`;
     const remaining = data.free_writes_limit - data.free_writes_used;
     const expiresLabel = data.expires_at
       ? `Expires: ${new Date(data.expires_at).toLocaleDateString()}`
-      : 'No expiry';
+      : data.resets_at
+        ? `Resets: ${new Date(data.resets_at).toLocaleDateString()}`
+        : period === 'monthly'
+          ? 'Resets monthly'
+          : 'No expiry';
 
     // 3.3.1 (internal#130) — echo the SA / scope address back to the
     // agent so the user can see it pre-write. The MCP tool already takes
@@ -143,6 +156,8 @@ export async function handleStatus(
           free_writes_limit: data.free_writes_limit,
           remaining_writes: remaining,
           expires_at: data.expires_at,
+          period,
+          resets_at: data.resets_at ?? null,
           scope_address: walletAddress,
           formatted,
         }),
