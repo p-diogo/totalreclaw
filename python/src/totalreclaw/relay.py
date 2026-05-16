@@ -80,6 +80,17 @@ def _detect_client_id() -> str:
     return "python-client"
 
 
+def _infer_environment_from_url(relay_url: str) -> str:
+    """Return ``"staging"`` for the staging relay, else ``"production"``.
+
+    Used as a fallback when the relay's billing response doesn't carry an
+    explicit ``environment`` field. The staging relay
+    (``api-staging.totalreclaw.xyz``) doesn't enforce the free-tier
+    quota, so agents need to know which one they're talking to.
+    """
+    return "staging" if "api-staging" in relay_url.lower() else "production"
+
+
 @dataclass
 class BillingFeatures:
     llm_dedup: bool = False
@@ -105,6 +116,12 @@ class BillingStatus:
     # absent we leave them ``None`` so older relays still work.
     period: Optional[str] = None
     resets_at: Optional[str] = None
+    # ``environment`` is ``"production"`` or ``"staging"``. The relay
+    # populates it when known; the client falls back to URL inference
+    # (api-staging.* → staging, anything else → production) so older
+    # relays still produce an unambiguous signal. Agents should surface a
+    # quota-not-enforced caveat ONLY when this is ``"staging"``.
+    environment: Optional[str] = None
 
 
 @dataclass
@@ -305,6 +322,7 @@ class RelayClient:
             features=features,
             period=data.get("period"),
             resets_at=data.get("resets_at"),
+            environment=data.get("environment") or _infer_environment_from_url(self._relay_url),
         )
 
     async def create_checkout(self) -> CheckoutResponse:

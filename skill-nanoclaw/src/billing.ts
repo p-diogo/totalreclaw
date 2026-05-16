@@ -44,7 +44,19 @@ export interface BillingCache {
   // "lifetime". ``resets_at`` is the next monthly reset (ISO 8601).
   period?: 'monthly' | 'lifetime' | null;
   resets_at?: string | null;
+  // "production" or "staging". Inferred from the relay URL
+  // (api-staging.* → staging) when the response doesn't carry it. Used to
+  // gate the staging-only quota-not-enforced note.
+  environment?: 'production' | 'staging' | null;
   checked_at: number;
+}
+
+/**
+ * Infer environment from the relay URL when the response doesn't carry
+ * an explicit ``environment`` field.
+ */
+export function inferEnvironment(serverUrl: string): 'production' | 'staging' {
+  return serverUrl.toLowerCase().includes('api-staging') ? 'staging' : 'production';
 }
 
 export interface BillingContext {
@@ -224,6 +236,7 @@ export async function fetchBillingStatus(ctx: BillingContext): Promise<BillingCa
       features: data.features as BillingCache['features'] | undefined,
       period: (data.period as BillingCache['period']) ?? null,
       resets_at: (data.resets_at as string | null | undefined) ?? null,
+      environment: (data.environment as BillingCache['environment']) ?? inferEnvironment(ctx.serverUrl),
       checked_at: Date.now(),
     };
 
@@ -246,6 +259,9 @@ export async function fetchBillingStatus(ctx: BillingContext): Promise<BillingCa
  */
 export function getQuotaWarning(cache: BillingCache | null): string {
   if (!cache || cache.free_writes_limit <= 0) return '';
+  // Staging doesn't enforce the cap — surfacing a "you're at 80%" warning
+  // there would be a lie that nudges QA toward a fake upgrade. Skip it.
+  if (cache.environment === 'staging') return '';
 
   const usageRatio = cache.free_writes_used / cache.free_writes_limit;
   if (usageRatio >= QUOTA_WARNING_THRESHOLD) {
@@ -284,6 +300,7 @@ export async function checkWelcomeBack(ctx: BillingContext): Promise<string> {
       features: data.features as BillingCache['features'] | undefined,
       period: (data.period as BillingCache['period']) ?? null,
       resets_at: (data.resets_at as string | null | undefined) ?? null,
+      environment: (data.environment as BillingCache['environment']) ?? inferEnvironment(ctx.serverUrl),
       checked_at: Date.now(),
     });
 

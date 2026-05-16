@@ -49,6 +49,20 @@ export interface BillingStatusResponse {
   // means it never resets. ``resets_at`` is the next monthly reset.
   period?: 'monthly' | 'lifetime' | null;
   resets_at?: string | null;
+  // ``environment`` is "production" or "staging". When the relay doesn't
+  // populate it, the client infers from the relay URL
+  // (api-staging.* → staging). Surface staging-specific notes ONLY when
+  // this is "staging" — production users should see no mention of it.
+  environment?: 'production' | 'staging' | null;
+}
+
+/**
+ * Infer environment from the relay URL when the response doesn't carry
+ * an explicit ``environment`` field. The staging relay
+ * (``api-staging.totalreclaw.xyz``) doesn't enforce the free-tier quota.
+ */
+function inferEnvironment(serverUrl: string): 'production' | 'staging' {
+  return serverUrl.toLowerCase().includes('api-staging') ? 'staging' : 'production';
 }
 
 /** Last raw billing response (for candidate pool caching in index.ts). */
@@ -125,6 +139,8 @@ export async function handleStatus(
     const periodSuffix = period === 'monthly' ? '/month' : '';
     const usage = `${data.free_writes_used}/${data.free_writes_limit}${periodSuffix}`;
     const remaining = data.free_writes_limit - data.free_writes_used;
+    const environment: 'production' | 'staging' =
+      data.environment ?? inferEnvironment(serverUrl);
     const expiresLabel = data.expires_at
       ? `Expires: ${new Date(data.expires_at).toLocaleDateString()}`
       : data.resets_at
@@ -132,6 +148,11 @@ export async function handleStatus(
         : period === 'monthly'
           ? 'Resets monthly'
           : 'No expiry';
+    // Only surface a staging caveat when actually on staging — production
+    // users should never see staging mentioned.
+    const stagingNote = environment === 'staging'
+      ? 'You are on the staging relay (api-staging.totalreclaw.xyz). The free-tier quota is NOT enforced here — writes will succeed past the listed limit. Production (api.totalreclaw.xyz) enforces the 250 writes/month cap.'
+      : null;
 
     // 3.3.1 (internal#130) — echo the SA / scope address back to the
     // agent so the user can see it pre-write. The MCP tool already takes
@@ -139,28 +160,36 @@ export async function handleStatus(
     // from the mnemonic and passed in by the host); surfacing it here makes
     // it visible in the tool response without the user needing to ask
     // separately.
-    const formatted = [
+    const formattedLines = [
       `Tier: ${tierLabel}`,
       `Smart Account: ${walletAddress}`,
       `Writes used: ${usage}`,
       `Remaining: ${remaining}`,
       expiresLabel,
-    ].join('\n');
+    ];
+    if (stagingNote) {
+      formattedLines.push(`Environment: staging — ${stagingNote}`);
+    }
+    const formatted = formattedLines.join('\n');
+
+    const payload: Record<string, unknown> = {
+      tier: data.tier,
+      free_writes_used: data.free_writes_used,
+      free_writes_limit: data.free_writes_limit,
+      remaining_writes: remaining,
+      expires_at: data.expires_at,
+      period,
+      resets_at: data.resets_at ?? null,
+      environment,
+      scope_address: walletAddress,
+      formatted,
+    };
+    if (stagingNote) payload.staging_note = stagingNote;
 
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify({
-          tier: data.tier,
-          free_writes_used: data.free_writes_used,
-          free_writes_limit: data.free_writes_limit,
-          remaining_writes: remaining,
-          expires_at: data.expires_at,
-          period,
-          resets_at: data.resets_at ?? null,
-          scope_address: walletAddress,
-          formatted,
-        }),
+        text: JSON.stringify(payload),
       }],
     };
   } catch (error) {

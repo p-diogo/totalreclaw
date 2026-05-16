@@ -42,11 +42,27 @@ export interface StatusToolResult {
    * before any chain write completes. Internal#130.
    */
   scope_address?: string;
+  /** "production" or "staging". Inferred from the relay URL when absent. */
+  environment?: 'production' | 'staging';
+  /** Caveat surfaced ONLY on staging (quota not enforced there). */
+  staging_note?: string;
   /** Human-readable formatted summary */
   formatted?: string;
   /** Error message (if failed) */
   error?: string;
 }
+
+/**
+ * Infer environment from the relay URL when the response doesn't carry
+ * an explicit ``environment`` field. The staging relay
+ * (``api-staging.totalreclaw.xyz``) doesn't enforce the free-tier quota.
+ */
+function inferEnvironment(serverUrl: string): 'production' | 'staging' {
+  return serverUrl.toLowerCase().includes('api-staging') ? 'staging' : 'production';
+}
+
+const STAGING_NOTE =
+  'You are on the staging relay (api-staging.totalreclaw.xyz). The free-tier quota is NOT enforced here — writes will succeed past the listed limit. Production (api.totalreclaw.xyz) enforces the 250 writes/month cap.';
 
 /**
  * Fetch billing/subscription status from the TotalReclaw server
@@ -121,6 +137,8 @@ export async function statusTool(
     const freeReadsLimit = (data.free_reads_limit as number) ?? 0;
     const freeWritesResetAt = data.free_writes_reset_at as string | undefined;
     const upgradeUrl = data.upgrade_url as string | undefined;
+    const environment: 'production' | 'staging' =
+      (data.environment as 'production' | 'staging' | undefined) ?? inferEnvironment(serverUrl);
 
     // Build formatted summary
     const tierLabel = tier === 'pro' ? 'Pro' : 'Free';
@@ -143,6 +161,12 @@ export async function statusTool(
       lines.push(`Upgrade: ${upgradeUrl}`);
     }
 
+    // Mention staging ONLY when on staging; production users should never
+    // see staging surfaced.
+    if (environment === 'staging') {
+      lines.push(`Environment: staging — ${STAGING_NOTE}`);
+    }
+
     return {
       success: true,
       tier,
@@ -153,6 +177,8 @@ export async function statusTool(
       free_writes_reset_at: freeWritesResetAt,
       upgrade_url: upgradeUrl,
       scope_address: walletAddress,
+      environment,
+      ...(environment === 'staging' ? { staging_note: STAGING_NOTE } : {}),
       formatted: lines.join('\n'),
     };
   } catch (error) {

@@ -153,6 +153,7 @@ import {
   readBillingCache,
   writeBillingCache,
   BILLING_CACHE_PATH,
+  inferEnvironment,
   type BillingCache,
 } from './billing-cache.js';
 import {
@@ -998,6 +999,9 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
             free_writes_used: (billingData.free_writes_used as number) ?? 0,
             free_writes_limit: (billingData.free_writes_limit as number) ?? 0,
             features: billingData.features as BillingCache['features'] | undefined,
+            period: (billingData.period as BillingCache['period']) ?? null,
+            resets_at: (billingData.resets_at as string | null | undefined) ?? null,
+            environment: (billingData.environment as BillingCache['environment']) ?? inferEnvironment(billingUrl),
             checked_at: Date.now(),
           });
           if (tier === 'pro' && expiresAt) {
@@ -4897,6 +4901,9 @@ const plugin = {
               free_writes_used: freeWritesUsed,
               free_writes_limit: freeWritesLimit,
               features: data.features as BillingCache['features'] | undefined,
+              period: (data.period as BillingCache['period']) ?? null,
+              resets_at: (data.resets_at as string | null | undefined) ?? freeWritesResetAt ?? null,
+              environment: (data.environment as BillingCache['environment']) ?? inferEnvironment(serverUrl),
               checked_at: Date.now(),
             });
 
@@ -6845,12 +6852,16 @@ const plugin = {
                   free_writes_used: (billingData.free_writes_used as number) ?? 0,
                   free_writes_limit: (billingData.free_writes_limit as number) ?? 0,
                   features: billingData.features as BillingCache['features'] | undefined,
+                  period: (billingData.period as BillingCache['period']) ?? null,
+                  resets_at: (billingData.resets_at as string | null | undefined) ?? null,
+                  environment: (billingData.environment as BillingCache['environment']) ?? inferEnvironment(billingUrl),
                   checked_at: Date.now(),
                 };
                 writeBillingCache(cache);
               }
             }
-            if (cache && cache.free_writes_limit > 0) {
+            // Staging doesn't enforce the cap — never warn there.
+            if (cache && cache.free_writes_limit > 0 && cache.environment !== 'staging') {
               const usageRatio = cache.free_writes_used / cache.free_writes_limit;
               if (usageRatio >= QUOTA_WARNING_THRESHOLD) {
                 billingWarning = `\n\nTotalReclaw quota warning: ${cache.free_writes_used}/${cache.free_writes_limit} writes used this month (${Math.round(usageRatio * 100)}%). Visit https://totalreclaw.xyz/pricing to upgrade.`;

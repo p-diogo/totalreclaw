@@ -54,7 +54,19 @@ export interface BillingCache {
   // "lifetime". ``resets_at`` is the next monthly reset (ISO 8601).
   period?: 'monthly' | 'lifetime' | null;
   resets_at?: string | null;
+  // "production" or "staging". Surface staging-specific notes ONLY when
+  // this is "staging" — production users should see no mention of it.
+  environment?: 'production' | 'staging' | null;
   checked_at: number;
+}
+
+/**
+ * Infer environment from the relay URL when the response doesn't carry
+ * an explicit ``environment`` field. ``api-staging.totalreclaw.xyz``
+ * doesn't enforce the free-tier quota — agents should be told.
+ */
+export function inferEnvironment(serverUrl: string): 'production' | 'staging' {
+  return serverUrl.toLowerCase().includes('api-staging') ? 'staging' : 'production';
 }
 
 // ---------------------------------------------------------------------------

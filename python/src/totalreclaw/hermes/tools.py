@@ -329,14 +329,25 @@ async def status(args: dict, state: "PluginState", **kwargs) -> str:
         # relays that don't yet populate the field still give the agent an
         # unambiguous answer to "is that monthly or lifetime?".
         period = billing.period or ("monthly" if billing.tier == "free" else None)
-        return json.dumps({
+        payload = {
             "tier": billing.tier,
             "free_writes_used": billing.free_writes_used,
             "free_writes_limit": billing.free_writes_limit,
             "expires_at": billing.expires_at,
             "period": period,
             "resets_at": billing.resets_at,
-        })
+            "environment": billing.environment,
+        }
+        # Surface the prod-vs-staging carve-out ONLY when actually on
+        # staging — production users should see no mention of staging.
+        if billing.environment == "staging":
+            payload["staging_note"] = (
+                "You are on the staging relay (api-staging.totalreclaw.xyz). "
+                "The free-tier quota is NOT enforced here — writes will succeed "
+                "past the listed limit. Production (api.totalreclaw.xyz) enforces "
+                "the 250 writes/month cap."
+            )
+        return json.dumps(payload)
     except Exception as e:
         logger.error("totalreclaw_status failed: %s", e)
         return json.dumps({"error": str(e)})
