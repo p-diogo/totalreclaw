@@ -556,6 +556,7 @@ impl TotalReclawMemory {
             limit,
             RerankerConfig {
                 apply_source_weights: true,
+                ..Default::default()
             },
         )?;
 

@@ -194,6 +194,9 @@ interface BillingCacheData {
   free_reads_used: number;
   free_reads_limit: number;
   checked_at: number;
+  // "production" or "staging". Inferred from the relay URL when absent.
+  environment?: 'production' | 'staging';
+  upgrade_url?: string;
 }
 
 function isBillingCacheData(data: unknown): data is BillingCacheData {
@@ -207,6 +210,10 @@ function isBillingCacheData(data: unknown): data is BillingCacheData {
     typeof d.free_reads_limit === 'number' &&
     typeof d.checked_at === 'number'
   );
+}
+
+function inferEnvironment(serverUrl: string): 'production' | 'staging' {
+  return serverUrl.toLowerCase().includes('api-staging') ? 'staging' : 'production';
 }
 
 // ============================================================================
@@ -417,13 +424,17 @@ export class TotalReclawSkill {
           const parsed: unknown = await response.json();
           if (isBillingCacheData(parsed)) {
             billingData = parsed;
+            if (!billingData.environment) {
+              billingData.environment = inferEnvironment(serverUrl);
+            }
             fs.mkdirSync(path.dirname(BILLING_CACHE_PATH), { recursive: true });
             fs.writeFileSync(BILLING_CACHE_PATH, JSON.stringify({ timestamp: Date.now(), data: billingData }));
           }
         }
       }
 
-      if (billingData && billingData.free_writes_limit > 0) {
+      // Staging doesn't enforce the cap — never warn there.
+      if (billingData && billingData.free_writes_limit > 0 && billingData.environment !== 'staging') {
         const usageRatio = billingData.free_writes_used / billingData.free_writes_limit;
         if (usageRatio >= QUOTA_WARNING_THRESHOLD) {
           billingWarning = `\n\n⚠️ TotalReclaw quota warning: ${billingData.free_writes_used}/${billingData.free_writes_limit} writes used this month (${Math.round(usageRatio * 100)}%). ` +

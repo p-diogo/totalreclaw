@@ -4939,6 +4939,11 @@ const plugin = {
             }
 
             const tierLabel = tier === 'pro' ? 'Pro' : 'Free';
+            const environment: 'production' | 'staging' =
+              (data.environment as 'production' | 'staging' | undefined) ?? inferEnvironment(serverUrl);
+            const stagingNote = environment === 'staging'
+              ? 'You are on the staging relay (api-staging.totalreclaw.xyz). The free-tier quota is NOT enforced here — writes will succeed past the listed limit. Production (api.totalreclaw.xyz) enforces the 250 writes/month cap.'
+              : null;
             const lines: string[] = [
               `Tier: ${tierLabel}`,
               `Writes: ${freeWritesUsed}/${freeWritesLimit} used this month`,
@@ -4952,6 +4957,9 @@ const plugin = {
             if (tier !== 'pro') {
               lines.push(`Pricing: https://totalreclaw.xyz/pricing`);
             }
+            if (stagingNote) {
+              lines.push(`Environment: staging — ${stagingNote}`);
+            }
 
             return {
               content: [{ type: 'text', text: lines.join('\n') }],
@@ -4960,6 +4968,8 @@ const plugin = {
                 free_writes_used: freeWritesUsed,
                 free_writes_limit: freeWritesLimit,
                 scope_address: scopeAddress,
+                environment,
+                ...(stagingNote ? { staging_note: stagingNote } : {}),
               },
             };
           } catch (err: unknown) {

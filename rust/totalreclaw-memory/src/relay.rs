@@ -42,12 +42,35 @@ pub struct GraphQLResponse<T> {
 }
 
 /// Billing status response.
+///
+/// ``period`` disambiguates the limit semantics ("monthly" vs "lifetime").
+/// ``resets_at`` is the next monthly reset (ISO 8601). ``environment`` is
+/// "production" or "staging" — the staging relay
+/// (`api-staging.totalreclaw.xyz`) does not enforce the free-tier quota,
+/// so clients must surface a caveat ONLY when staging.
 #[derive(Deserialize)]
 pub struct BillingStatus {
     pub tier: Option<String>,
     pub facts_used: Option<u64>,
     pub facts_limit: Option<u64>,
     pub features: Option<serde_json::Value>,
+    #[serde(default)]
+    pub period: Option<String>,
+    #[serde(default)]
+    pub resets_at: Option<String>,
+    #[serde(default)]
+    pub environment: Option<String>,
+}
+
+/// Infer environment from the relay URL when the response doesn't carry
+/// an explicit ``environment`` field. The staging relay does not enforce
+/// the free-tier quota — clients need to know which one they're talking to.
+pub fn infer_environment_from_url(relay_url: &str) -> &'static str {
+    if relay_url.to_lowercase().contains("api-staging") {
+        "staging"
+    } else {
+        "production"
+    }
 }
 
 /// Configuration for the relay client.
@@ -321,9 +344,17 @@ impl RelayClient {
             .await
             .map_err(|e| Error::Http(e.to_string()))?;
 
-        resp.json()
+        let mut status: BillingStatus = resp
+            .json()
             .await
-            .map_err(|e| Error::Http(e.to_string()))
+            .map_err(|e| Error::Http(e.to_string()))?;
+        // Fall back to URL-based inference if the relay didn't populate
+        // ``environment`` explicitly. Forward-compat shim — once the relay
+        // emits the field, this becomes a no-op.
+        if status.environment.is_none() {
+            status.environment = Some(infer_environment_from_url(&self.relay_url).to_string());
+        }
+        Ok(status)
     }
 
     /// Create a Stripe checkout session for upgrading to Pro.

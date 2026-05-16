@@ -363,15 +363,19 @@ def on_session_start(state: "PluginState", **kwargs) -> None:
             # Update extraction config from server
             state.update_from_billing(billing)
 
-            used = billing.get("free_writes_used", 0)
-            limit = max(billing.get("free_writes_limit", 250), 1)
-            if used / limit > 0.8:
-                pct = int(used / limit * 100)
-                state.set_quota_warning(
-                    f"TotalReclaw: {used}/{limit} memories used this month ({pct}%). "
-                    "Consider upgrading to Pro for unlimited storage."
-                )
-                logger.info("TotalReclaw: Memory usage >80%% — quota warning set")
+            # Staging doesn't enforce the 250/month cap — a quota warning
+            # there would nudge QA toward a fake upgrade. Skip it.
+            environment = billing.get("environment")
+            if environment != "staging":
+                used = billing.get("free_writes_used", 0)
+                limit = max(billing.get("free_writes_limit", 250), 1)
+                if used / limit > 0.8:
+                    pct = int(used / limit * 100)
+                    state.set_quota_warning(
+                        f"TotalReclaw: {used}/{limit} memories used this month ({pct}%). "
+                        "Consider upgrading to Pro for unlimited storage."
+                    )
+                    logger.info("TotalReclaw: Memory usage >80%% — quota warning set")
     except Exception:
         pass
 

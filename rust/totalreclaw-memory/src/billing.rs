@@ -73,7 +73,7 @@ pub struct FeatureFlags {
 // ---------------------------------------------------------------------------
 
 /// Cached billing status, matching the TypeScript `BillingCache` interface.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BillingCache {
     pub tier: String,
     pub facts_used: u64,
@@ -82,7 +82,24 @@ pub struct BillingCache {
     pub features: FeatureFlags,
     /// Unix epoch millis when this cache was written.
     pub checked_at: u64,
+    /// "monthly" or "lifetime". Defaults to "monthly" on the free tier so
+    /// older relays that don't yet emit the field still give an
+    /// unambiguous signal.
+    #[serde(default)]
+    pub period: Option<String>,
+    /// ISO 8601 timestamp of the next monthly reset.
+    #[serde(default)]
+    pub resets_at: Option<String>,
+    /// "production" or "staging". Surface staging-specific notes ONLY
+    /// when this is "staging" — production users should see no mention
+    /// of staging.
+    #[serde(default)]
+    pub environment: Option<String>,
 }
+
+/// Staging caveat text — kept as a constant so the prose is identical
+/// across all clients and tests can assert on it.
+pub const STAGING_NOTE: &str = "You are on the staging relay (api-staging.totalreclaw.xyz). The free-tier quota is NOT enforced here — writes will succeed past the listed limit. Production (api.totalreclaw.xyz) enforces the 250 writes/month cap.";
 
 impl BillingCache {
     /// Whether this cache entry is still valid (within TTL).
@@ -103,11 +120,19 @@ impl BillingCache {
     }
 
     /// Whether the user is above the 80% quota warning threshold.
+    ///
+    /// Returns `false` on staging — the cap isn't enforced there, so
+    /// surfacing an "approaching limit" warning would be a lie that
+    /// nudges QA toward a fake upgrade.
     pub fn is_quota_warning(&self) -> bool {
+        if self.is_staging() {
+            return false;
+        }
         self.quota_fraction() > QUOTA_WARNING_THRESHOLD
     }
 
-    /// Human-readable quota warning message (or None if under threshold).
+    /// Human-readable quota warning message (or None if under threshold
+    /// or on staging).
     pub fn quota_warning_message(&self) -> Option<String> {
         if !self.is_quota_warning() {
             return None;
@@ -122,6 +147,17 @@ impl BillingCache {
     /// Is this a Pro tier user?
     pub fn is_pro(&self) -> bool {
         self.tier == "pro"
+    }
+
+    /// Is this cache from the staging relay?
+    pub fn is_staging(&self) -> bool {
+        matches!(self.environment.as_deref(), Some("staging"))
+    }
+
+    /// Staging caveat text — `Some` only when on staging. Production
+    /// callers must never surface a staging mention.
+    pub fn staging_note(&self) -> Option<&'static str> {
+        if self.is_staging() { Some(STAGING_NOTE) } else { None }
     }
 }
 
@@ -188,12 +224,23 @@ pub async fn fetch_billing_status(relay: &RelayClient) -> Result<BillingCache> {
         .unwrap_or_default()
         .as_millis() as u64;
 
+    let tier = status.tier.unwrap_or_else(|| "free".into());
+    // Default the free-tier period to "monthly" so older relays that
+    // don't yet emit the field still give the agent an unambiguous answer.
+    let period = status.period.or_else(|| {
+        if tier == "free" { Some("monthly".to_string()) } else { None }
+    });
     let cache = BillingCache {
-        tier: status.tier.unwrap_or_else(|| "free".into()),
+        tier,
         facts_used: status.facts_used.unwrap_or(0),
-        facts_limit: status.facts_limit.unwrap_or(500),
+        // Production free-tier cap is 250/month. The relay should always
+        // populate ``facts_limit``; 250 is the fallback if it doesn't.
+        facts_limit: status.facts_limit.unwrap_or(250),
         features,
         checked_at: now_ms,
+        period,
+        resets_at: status.resets_at,
+        environment: status.environment,
     };
 
     write_cache(&cache);
@@ -290,6 +337,7 @@ mod tests {
             facts_limit: 500,
             features: FeatureFlags::default(),
             checked_at: now_ms,
+            ..Default::default()
         };
         assert!(cache.is_fresh());
 
@@ -309,6 +357,7 @@ mod tests {
             facts_limit: 500,
             features: FeatureFlags::default(),
             checked_at: 0,
+            ..Default::default()
         };
         assert!((cache.quota_fraction() - 0.84).abs() < 0.01);
         assert!(cache.is_quota_warning());
@@ -332,6 +381,7 @@ mod tests {
             facts_limit: 500,
             features: FeatureFlags::default(),
             checked_at: now_ms,
+            ..Default::default()
         };
         let msg = cache.quota_warning_message();
         assert!(msg.is_some());
@@ -349,6 +399,7 @@ mod tests {
                 ..Default::default()
             },
             checked_at: 0,
+            ..Default::default()
         };
         assert_eq!(get_extraction_interval(Some(&cache)), 5);
 
@@ -367,6 +418,7 @@ mod tests {
                 ..Default::default()
             },
             checked_at: 0,
+            ..Default::default()
         };
         assert_eq!(get_max_candidate_pool(Some(&cache)), 300);
 
@@ -413,8 +465,103 @@ mod tests {
                 ..Default::default()
             },
             checked_at: 0,
+            ..Default::default()
         };
         assert!(!is_llm_dedup_enabled(Some(&cache)));
         assert!(is_llm_dedup_enabled(None)); // Default: enabled
+    }
+
+    // ------------------------------------------------------------------
+    // Environment (prod vs staging) — production users must never see
+    // staging mentioned; staging callers MUST see the quota carve-out.
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_production_cache_emits_no_staging_note() {
+        let cache = BillingCache {
+            tier: "free".into(),
+            facts_used: 30,
+            facts_limit: 250,
+            environment: Some("production".into()),
+            ..Default::default()
+        };
+        assert!(!cache.is_staging());
+        assert!(cache.staging_note().is_none());
+    }
+
+    #[test]
+    fn test_staging_cache_emits_staging_note() {
+        let cache = BillingCache {
+            tier: "free".into(),
+            facts_used: 500, // Past the production cap — only possible on staging.
+            facts_limit: 250,
+            environment: Some("staging".into()),
+            ..Default::default()
+        };
+        assert!(cache.is_staging());
+        let note = cache.staging_note().expect("staging emits a note");
+        // The note must explain BOTH the staging behavior AND the
+        // production cap so the agent can give an honest comparison.
+        assert!(note.contains("staging"));
+        assert!(note.contains("NOT enforced") || note.to_lowercase().contains("not enforced"));
+        assert!(note.contains("250"));
+        assert!(note.contains("api-staging.totalreclaw.xyz"));
+        assert!(note.contains("api.totalreclaw.xyz"));
+    }
+
+    #[test]
+    fn test_quota_warning_suppressed_on_staging() {
+        // 90% usage on staging — would normally warn, but staging
+        // doesn't enforce the cap, so a warning would be a lie.
+        let cache = BillingCache {
+            tier: "free".into(),
+            facts_used: 450,
+            facts_limit: 500,
+            environment: Some("staging".into()),
+            ..Default::default()
+        };
+        assert!(!cache.is_quota_warning());
+        assert!(cache.quota_warning_message().is_none());
+    }
+
+    #[test]
+    fn test_quota_warning_fires_on_production() {
+        let cache = BillingCache {
+            tier: "free".into(),
+            facts_used: 450,
+            facts_limit: 500,
+            environment: Some("production".into()),
+            ..Default::default()
+        };
+        assert!(cache.is_quota_warning());
+        assert!(cache.quota_warning_message().is_some());
+    }
+
+    #[test]
+    fn test_environment_none_treated_as_production_for_warning() {
+        // Defensive: if environment is missing (older cache file), we
+        // must NOT suppress the warning — production users at 90%
+        // need the nudge.
+        let cache = BillingCache {
+            tier: "free".into(),
+            facts_used: 450,
+            facts_limit: 500,
+            environment: None,
+            ..Default::default()
+        };
+        assert!(!cache.is_staging());
+        assert!(cache.is_quota_warning());
+    }
+
+    #[test]
+    fn test_infer_environment_from_url() {
+        use crate::relay::infer_environment_from_url;
+        assert_eq!(infer_environment_from_url("https://api.totalreclaw.xyz"), "production");
+        assert_eq!(infer_environment_from_url("https://api-staging.totalreclaw.xyz"), "staging");
+        assert_eq!(infer_environment_from_url("HTTPS://API-STAGING.totalreclaw.xyz"), "staging");
+        // Self-hosted: treat as production (operator runs their own relay,
+        // not our staging instance).
+        assert_eq!(infer_environment_from_url("https://relay.example.com"), "production");
+        assert_eq!(infer_environment_from_url("http://localhost:8000"), "production");
     }
 }
