@@ -215,7 +215,17 @@ class TotalReclawMemoryProvider(_MemoryProviderBase):  # type: ignore[misc,valid
                     return json.dumps({"error": str(exc)})
                 return json.dumps(result) if not isinstance(result, str) else result
 
-        return super().handle_tool_call(tool_name, args, **kwargs)
+        # Coord-review feedback (PR #234): the upstream ``MemoryProvider``
+        # ABC does not define ``handle_tool_call`` — that method is
+        # TR-side. Delegating to ``super()`` raises ``AttributeError``,
+        # not the documented ``NotImplementedError``. Raise the latter
+        # directly so callers + tests see a stable, well-typed signal
+        # for unknown tools.
+        raise NotImplementedError(
+            f"TotalReclaw MemoryProvider has no handler for tool: "
+            f"{tool_name!r}. Registered tools: "
+            f"{[name for name, _, _ in _TOOL_HANDLERS]}"
+        )
 
     def get_config_schema(self) -> List[Dict[str, Any]]:
         """Describe TR's setup surface for ``hermes memory setup``.
