@@ -90,7 +90,8 @@ export interface BillingStatus {
   max_candidate_pool?: number;
 }
 
-/** Subgraph GraphQL response — `facts` entity per docs/specs/subgraph/seed-to-subgraph.md */
+/** Subgraph GraphQL response — `facts` entity per docs/specs/subgraph/seed-to-subgraph.md.
+ *  Note: `source` was removed from the schema in v0.6.0 (Session 53). */
 export interface SubgraphFact {
   id: string;
   encryptedBlob: string;
@@ -99,7 +100,6 @@ export interface SubgraphFact {
   timestamp: string;
   createdAt: string;
   version: number;
-  source: string;
   isActive: boolean;
 }
 

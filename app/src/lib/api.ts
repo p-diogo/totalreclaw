@@ -106,7 +106,6 @@ const PAGE_QUERY = `
       timestamp
       createdAt
       version
-      source
       isActive
     }
   }
@@ -170,7 +169,10 @@ function subgraphFactToRawFact(sf: SubgraphFact): RawFact {
     blind_indices: [], // subgraph carries blind indices separately; not needed for read path
     decay_score: Number(sf.decayScore),
     version: sf.version,
-    source: sf.source,
+    // `source` was removed from the subgraph Fact entity in v0.6.0. The
+    // decrypted MemoryClaim carries its own `source` field (taxonomy v1),
+    // so this stub is only used to keep the RawFact shape stable.
+    source: "",
     created_at: iso,
     updated_at: iso,
     encrypted_embedding: sf.encryptedEmbedding?.replace(/^0x/, "") || undefined,
