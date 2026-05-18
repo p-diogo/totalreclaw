@@ -35,7 +35,13 @@ if (!TARGET_URL) {
   process.exit(2);
 }
 
-function loadPhraseFromKeychain() {
+function loadPhrase() {
+  // CI / non-macOS path: env var wins if present. Set as a GH Actions
+  // secret and exported into the workflow step that invokes this driver.
+  const fromEnv = (process.env.QA_RECOVERY_PHRASE || "").trim();
+  if (fromEnv) return fromEnv;
+
+  // Local dev path: macOS keychain (`security add-generic-password ...`).
   try {
     return execFileSync(
       "security",
@@ -49,9 +55,9 @@ function loadPhraseFromKeychain() {
     ).toString().trim();
   } catch {
     console.error(
-      `\n[qa] failed to read phrase from keychain.\n` +
-      `[qa] add it with:\n` +
-      `[qa]   security add-generic-password -a ${KEYCHAIN_ACCOUNT} -s ${KEYCHAIN_SERVICE} -U -w\n`,
+      `\n[qa] no phrase available.\n` +
+      `[qa]   - local: security add-generic-password -a ${KEYCHAIN_ACCOUNT} -s ${KEYCHAIN_SERVICE} -U -w\n` +
+      `[qa]   - CI:    export QA_RECOVERY_PHRASE='<phrase>'\n`,
     );
     process.exit(3);
   }
@@ -71,7 +77,7 @@ function redactPhrase(text, phrase) {
 
 async function run() {
   mkdirSync(REPORT_DIR, { recursive: true });
-  const phrase = loadPhraseFromKeychain();
+  const phrase = loadPhrase();
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 
   const browser = await chromium.launch({ headless: !HEADED });
@@ -190,7 +196,7 @@ async function run() {
   writeFileSync(reportPath, JSON.stringify(report, null, 2));
 
   // Compact stdout summary so the operator sees the headline without grepping.
-  console.log(JSON.stringify({
+  const summary = {
     target: report.target,
     reachedVault: report.reachedVault,
     finalUrl: report.finalUrl,
@@ -200,7 +206,19 @@ async function run() {
     networkFailureCount: report.networkFailures.length,
     fullReport: reportPath,
     screenshot: report.screenshotPath,
-  }, null, 2));
+  };
+  console.log(JSON.stringify(summary, null, 2));
+
+  // Non-zero exit when CI should fail / open an issue.
+  const failed =
+    !!report.navError ||
+    !report.formReady ||
+    !report.reachedVault ||
+    !!report.visibleError ||
+    report.pageErrors.length > 0 ||
+    report.consoleErrors.length > 0 ||
+    report.networkFailures.length > 0;
+  process.exit(failed ? 1 : 0);
 }
 
 run().catch((err) => {
