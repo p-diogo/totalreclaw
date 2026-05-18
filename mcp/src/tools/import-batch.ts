@@ -13,6 +13,7 @@
 
 import { resolve } from 'node:path';
 import type { ImportSource, AdapterParseResult, ConversationChunk } from './import-from.js';
+import { getLastBillingResponse } from './status.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -115,6 +116,17 @@ export async function handleImportBatch(
   if (!input.source || !validSources.includes(input.source)) {
     return {
       content: [{ type: 'text', text: JSON.stringify({ success: false, error: `Invalid source. Must be one of: ${validSources.join(', ')}` }) }],
+    };
+  }
+
+  // All imports are Pro-only.
+  const billing = getLastBillingResponse();
+  if (billing && billing.tier !== 'pro') {
+    return {
+      content: [{ type: 'text', text: JSON.stringify({
+        success: false,
+        error: `Memory imports are a Pro feature. Run totalreclaw_upgrade to upgrade your plan, then retry. Free-tier users can still capture memories one at a time via totalreclaw_remember.`,
+      }) }],
     };
   }
 

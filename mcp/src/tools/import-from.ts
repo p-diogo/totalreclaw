@@ -2,6 +2,7 @@ import { TotalReclaw, FactMetadata } from '@totalreclaw/client';
 import { resolve } from 'node:path';
 import { IMPORT_FROM_TOOL_DESCRIPTION } from '../prompts.js';
 import { type MemoryType } from '../memory-types.js';
+import { getLastBillingResponse } from './status.js';
 
 // ── Types (mirrored from skill/plugin/import-adapters/types.ts) ─────────────
 // We define these locally to avoid importing from outside the MCP rootDir.
@@ -176,6 +177,16 @@ export async function handleImportFrom(
   const validSources: ImportSource[] = ['mem0', 'mcp-memory', 'chatgpt', 'claude', 'gemini'];
   if (!input.source || !validSources.includes(input.source)) {
     return errorResponse(`Invalid source. Must be one of: ${validSources.join(', ')}`);
+  }
+  // All imports are Pro-only. Free tier can use totalreclaw_remember to capture
+  // memories one at a time but cannot bulk-import from external sources.
+  {
+    const billing = getLastBillingResponse();
+    if (billing && billing.tier !== 'pro') {
+      return errorResponse(
+        `Memory imports are a Pro feature. Run totalreclaw_upgrade to upgrade your plan, then retry. Free-tier users can still capture memories one at a time via totalreclaw_remember.`,
+      );
+    }
   }
 
   try {

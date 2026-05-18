@@ -2299,6 +2299,19 @@ async function handlePluginImportFrom(
     return { success: false, error: `Invalid source. Must be one of: ${validSources.join(', ')}` };
   }
 
+  // All imports are Pro-only. Free tier can use totalreclaw_remember to
+  // capture memories interactively but cannot bulk-import from external sources.
+  {
+    const cache = readBillingCache();
+    if (cache?.tier !== 'pro') {
+      return {
+        success: false,
+        error: `Memory imports are a Pro feature. Run \`totalreclaw_upgrade\` to upgrade your plan, then retry. Free-tier users can still capture memories one at a time via \`totalreclaw_remember\`.`,
+        requires: 'pro',
+      };
+    }
+  }
+
   // Generate import_id up front so dry-run responses and background tasks share it.
   const importId = (params.resume_id as string | undefined) ?? crypto.randomUUID();
 
@@ -2725,6 +2738,18 @@ async function handleBatchImport(
   const validSources = ['mem0', 'mcp-memory', 'chatgpt', 'claude', 'gemini'];
   if (!source || !validSources.includes(source)) {
     return { success: false, error: `Invalid source. Must be one of: ${validSources.join(', ')}` };
+  }
+
+  // All imports are Pro-only — see handlePluginImportFrom.
+  {
+    const cache = readBillingCache();
+    if (cache?.tier !== 'pro') {
+      return {
+        success: false,
+        error: `Memory imports are a Pro feature. Run \`totalreclaw_upgrade\` to upgrade your plan, then retry. Free-tier users can still capture memories one at a time via \`totalreclaw_remember\`.`,
+        requires: 'pro',
+      };
+    }
   }
 
   const startTime = Date.now();
@@ -7520,6 +7545,12 @@ const plugin = {
 };
 
 export default plugin;
+
+// Test-only handler exports for import-gating tests. See import-gating.test.ts.
+export {
+  handlePluginImportFrom as __handlePluginImportFromForTesting,
+  handleBatchImport as __handleBatchImportForTesting,
+};
 
 /**
  * Reset all module-level state for test isolation.
