@@ -2,6 +2,8 @@
 
 Family of autonomous regression workflows that exercise TotalReclaw's user-facing surfaces against staging / preview / prod, and (on failure) open a labeled issue on the public repo for triage by `tr-triage-and-fix` or any other coding agent.
 
+> **Canonical QA index lives privately at `totalreclaw-internal/docs/qa/README.md`.** It covers the full three-tier QA stack — autopilot (this doc), the `qa-totalreclaw` human-in-loop skill that drives real-user QA against the Hetzner VPS, and the `tr-triage-and-fix` autonomous fix loop. This file is the public, autopilot-only surface; everything VPS-side or skill-side is documented privately.
+
 ## Family framework
 
 All autopilot workflows share these conventions:
