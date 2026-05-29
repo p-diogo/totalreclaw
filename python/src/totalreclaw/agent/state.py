@@ -399,12 +399,20 @@ class AgentState:
         extraction. Called from the ``post_llm_call`` hook regardless
         of whether the every-N-turns extraction fires this turn —
         the entry is what the next batch will process.
+
+        Defensive: tolerates state subclasses / mocks that don't
+        initialise ``_pending_extract_buffer`` in their ``__init__``.
+        Lazy-create the attribute on first use rather than crash with
+        AttributeError. Surfaces the same behaviour for legacy
+        ``_FakeState`` test mocks built before this attribute existed.
         """
         if not user_message or not user_message.strip():
             return
+        if not hasattr(self, "_pending_extract_buffer"):
+            self._pending_extract_buffer = []
         normalized = _normalize_for_dedup(user_message)
         self._pending_extract_buffer.append({
-            "turn": self._turn_count,
+            "turn": getattr(self, "_turn_count", 0),
             "text": user_message.strip(),
             "text_normalized": normalized,
         })
@@ -434,7 +442,9 @@ class AgentState:
         norm = _normalize_for_dedup(text)
         if not norm:
             return False
-        cutoff = self._turn_count - lookback_turns
+        if not hasattr(self, "_pending_extract_buffer"):
+            return False
+        cutoff = getattr(self, "_turn_count", 0) - lookback_turns
         for entry in self._pending_extract_buffer:
             if entry["turn"] < cutoff:
                 continue
@@ -449,6 +459,8 @@ class AgentState:
 
     def increment_suppressed_writes(self) -> None:
         """Increment the suppressed-manual-writes counter (F7)."""
+        if not hasattr(self, "_suppressed_manual_writes"):
+            self._suppressed_manual_writes = 0
         self._suppressed_manual_writes += 1
 
     def get_suppressed_writes_count(self) -> int:
@@ -456,7 +468,7 @@ class AgentState:
         session because they matched a pending auto-extract entry.
         Surfaced via ``totalreclaw_status`` so users can observe the
         dedup mechanism working."""
-        return self._suppressed_manual_writes
+        return getattr(self, "_suppressed_manual_writes", 0)
 
     def clear_pending_extract_buffer(self) -> None:
         """Reset the pending-extract buffer + the suppressed-writes
