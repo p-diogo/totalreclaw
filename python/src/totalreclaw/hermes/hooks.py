@@ -383,8 +383,10 @@ def on_session_start(state: "PluginState", **kwargs) -> None:
     # 2.4.4rc2 (F7) — reset the pending-auto-extract buffer + the
     # suppressed-writes counter at session boundaries. A previous
     # session's pending entries are stale + would suppress legitimate
-    # writes in the new session.
-    state.clear_pending_extract_buffer()
+    # writes in the new session. Defensive: tolerate legacy state
+    # subclasses / test mocks that don't expose the method.
+    if hasattr(state, "clear_pending_extract_buffer"):
+        state.clear_pending_extract_buffer()
     # 2.4.4rc2 (F6) — reset the debrief-nudge latch so each new
     # session can independently nudge the agent if the user requests
     # a debrief.
