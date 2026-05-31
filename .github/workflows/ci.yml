@@ -27,6 +27,7 @@ jobs:
     # + tests/phrase-safety/.
     name: Phrase Safety
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
@@ -53,6 +54,12 @@ jobs:
   client-tests:
     name: Client Tests (TypeScript)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Skip the onnxruntime-node CUDA/GPU binary fetch from api.nuget.org — it
+    # hung CI 25-30 min repeatedly (ETIMEDOUT) and blocked auto-merge on PRs
+    # that didn't even touch client/. CPU inference is all CI needs.
+    env:
+      ONNXRUNTIME_NODE_INSTALL_CUDA: skip
 
     steps:
       - uses: actions/checkout@v5
@@ -68,6 +75,7 @@ jobs:
   app-tests:
     name: Web App Tests (Vitest)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -79,6 +87,7 @@ jobs:
   plugin-build:
     name: Plugin Build Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v5
@@ -135,6 +144,11 @@ jobs:
   mcp-tests:
     name: MCP Server Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Same onnxruntime-node CUDA-fetch skip as client-tests (mcp depends on
+    # @huggingface/transformers → onnxruntime-node).
+    env:
+      ONNXRUNTIME_NODE_INSTALL_CUDA: skip
     steps:
       - uses: actions/checkout@v5
       # NOTE: The `mcp` package now depends on `@totalreclaw/core@^2.0.0` from
@@ -165,6 +179,7 @@ jobs:
   rust-tests:
     name: Rust Core Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
@@ -177,6 +192,7 @@ jobs:
   python-tests:
     name: Python Client Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
@@ -199,6 +215,7 @@ jobs:
   cross-language-parity:
     name: Cross-Language Parity Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
