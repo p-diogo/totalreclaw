@@ -9,6 +9,33 @@ on:
       - main
 
 jobs:
+  # Path filter — lets the heavy JS workspace jobs (client, mcp, app) run ONLY
+  # when their own code changes. Keeps the onnxruntime-fetch-prone client/mcp
+  # jobs off unrelated PRs (docs, contracts, relay, python) entirely, so a
+  # transient onnxruntime/nuget blip can't stall an unrelated PR's auto-merge.
+  # Skipped jobs report a "skipped" conclusion, which poseidon/wait-for-status-checks
+  # (auto-merge-l1.yml) treats as complete — so this does not block merges.
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      client: ${{ steps.filter.outputs.client }}
+      mcp: ${{ steps.filter.outputs.mcp }}
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            client:
+              - 'client/**'
+            mcp:
+              - 'mcp/**'
+            app:
+              - 'app/**'
+
   phrase-safety:
     # Static guard against accidental "display the recovery phrase" copy
     # leaking into a SKILL.md / README / docs page. Caught regressing
@@ -53,6 +80,8 @@ jobs:
 
   client-tests:
     name: Client Tests (TypeScript)
+    needs: changes
+    if: ${{ needs.changes.outputs.client == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Skip the onnxruntime-node CUDA/GPU binary fetch from api.nuget.org — it
@@ -74,6 +103,8 @@ jobs:
 
   app-tests:
     name: Web App Tests (Vitest)
+    needs: changes
+    if: ${{ needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -143,6 +174,8 @@ jobs:
 
   mcp-tests:
     name: MCP Server Tests
+    needs: changes
+    if: ${{ needs.changes.outputs.mcp == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Same onnxruntime-node CUDA-fetch skip as client-tests (mcp depends on
