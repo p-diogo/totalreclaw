@@ -55,6 +55,8 @@ This is not a rule the agent follows perfectly, but the more it can, the better 
 - Do not surface tool-call mechanics verbatim to the user. The user does not need to see `🐍 execute_code: "from hermes_tools import terminal..."` or `📚 skill_view: "..."` or `📋 todo: "planning N tasks"`. Run the tools silently and emit only the user-visible lines listed in the procedures below.
 - Use the explicit verbatim emit lines where the procedure provides them. Otherwise keep replies short and to-the-point.
 - Do not narrate "Now I'll do X, then Y, then Z." Do the work.
+- **Budget: a fresh install + setup should be ~5–6 short user-visible lines total.** Anything beyond that is almost always narration that should have stayed silent.
+- **Forbidden vocabulary during install / setup** (unless the user explicitly asks how it works): `Python`, `interpreter`, `venv`, `pip`, `ensurepip`, `bootstrap`, `detect`, `probing` — plus narration openers: "Let me check…", "Let me verify…", "Now installing…", "Plugin loaded, let me verify…", "Quick fix…", "One sec…", "Got it, doing X…", and any "I'm going to do X" / "About to do X" pre-narration of a tool call. These are tool-call mechanics, not user-facing prose. If the user asks ("what's it doing?", "show me the commands"), narrate freely — this only governs the default silent path.
 
 ---
 
@@ -141,7 +143,7 @@ The agent never generates the recovery phrase. Only the user's browser does, via
 
    > Open `<url>` in your browser. Enter PIN `<pin>`. On the page, choose **Generate new** (creates a fresh 12-word recovery phrase) OR **Import existing** (paste a phrase you already have). Reply `done` once the page says it's sealed.
 
-   Do not paraphrase the URL or PIN. Do not invent values when the tool fails — surface the failure verbatim and stop.
+   Do not paraphrase the URL or PIN. Do not invent values when the tool fails — surface the failure verbatim and stop. **This single line is the ENTIRE browser instruction.** Do not follow it with a numbered list restating the steps, a "what's done so far" recap, or a trailing "waiting for you to finish…" / "standing by…" line — the line already names every step and `Reply \`done\`` already encodes the wait (auto-QA #340 / #342).
 4. After the user replies `done`, re-check `~/.totalreclaw/credentials.json`. Present → continue to Post-setup. Absent → the PIN expired; call `totalreclaw_pair` again and resend step 3 once.
 
 ---
@@ -151,7 +153,7 @@ The agent never generates the recovery phrase. Only the user's browser does, via
 After credentials.json is confirmed present (step 4 above), call `totalreclaw_status` once and emit a single user-visible block containing:
 
 - A recovery-phrase backup reminder (verbatim — the user just generated it in their browser; this is the reminder to actually save it somewhere durable).
-- Current account state from `totalreclaw_status` (tier, memory count, free-tier memory limit, network).
+- Current account state from `totalreclaw_status` (tier, memory count, free-tier memory limit). Do NOT surface the underlying chain/network to the user.
 - A short confirmation that the agent will now use TotalReclaw for memory operations.
 
 Emit verbatim:
@@ -160,13 +162,15 @@ Emit verbatim:
 >
 > Back up your 12-word recovery phrase NOW — store it offline (password manager, paper, hardware key). It is the only way to recover your encrypted memory vault if you lose access to this device. We cannot recover it for you.
 >
-> Account status: `<tier>` tier, `<used>` / `<limit>` memories used, stored on Gnosis mainnet. Ask me to remember anything and I'll save it to your encrypted vault.
+> Account status: `<tier>` tier, `<used>` / `<limit>` memories used. Ask me to remember anything and I'll save it to your encrypted vault.
 
-(`<tier>`, `<used>`, `<limit>` from `totalreclaw_status`. All tiers store on Gnosis mainnet.)
+(`<tier>`, `<used>`, `<limit>` from `totalreclaw_status` — do not invent the numbers, and do not name the underlying chain/network to the user.)
+
+**Emit this block VERBATIM on the `done` turn.** Do not paraphrase, do not substitute the tier numbers (never render `<limit>` as "50,000 writes", "unlimited", or any figure not returned by `totalreclaw_status` — and if `totalreclaw_status` would show a higher staging limit, still quote what it returns, not a guess), do not add a preamble ("All green. Here's the summary:", "Everything looks good!", "✓ Setup complete. Tier info:"), and do not run any verification command (`hermes doctor`, `hermes plugins list`, a second diagnostic `totalreclaw_status`) on this turn — the credentials check in Account setup step 4 is the ONLY verification. Adding bullets, recaps, or "standing by…" lines inflates the transcript and is a setup-flow violation (auto-QA #340 / #342).
 
 This block ships on first successful pair completion. On subsequent install runs where credentials already exist (early-exit in Account setup step 1), instead emit just:
 
-> ✓ TotalReclaw is already set up. Account status: `<tier>` tier, `<used>` / `<limit>` memories used, stored on Gnosis mainnet.
+> ✓ TotalReclaw is already set up. Account status: `<tier>` tier, `<used>` / `<limit>` memories used.
 
 ---
 
