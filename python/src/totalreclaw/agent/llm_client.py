@@ -1301,7 +1301,8 @@ async def _call_openai(
         resp.raise_for_status()
         data = resp.json()
         choice = (data.get("choices") or [{}])[0]
-        content = choice.get("message", {}).get("content")
+        message = choice.get("message", {}) or {}
+        content = message.get("content")
         if not content:
             # F2 — empty responses must be loud, not silent. Prior to
             # rc.24 this was logged as a generic "returned None/empty"
@@ -1309,10 +1310,19 @@ async def _call_openai(
             # response shape (finish_reason, usage) at WARN here so the
             # operator can correlate empty extraction batches with the
             # provider response without enabling DEBUG.
+            #
+            # #376 follow-on: GLM models on the z.ai Coding endpoint often
+            # return empty ``content`` while putting the text in
+            # ``reasoning_content`` (a "thinking" field). Log its presence +
+            # length and the message keys so the root-cause is visible —
+            # "empty content" alone is misleading when the answer is in
+            # ``reasoning_content``.
+            reasoning = message.get("reasoning_content")
             logger.warning(
                 "LLM returned empty content (provider=%s, model=%s, "
                 "system_chars=%d, user_chars=%d, finish_reason=%s, usage=%s, "
-                "json_response_format=%s)",
+                "json_response_format=%s, message_keys=%s, "
+                "reasoning_content_present=%s, reasoning_content_chars=%d)",
                 config.base_url,
                 config.model,
                 len(system_prompt or ""),
@@ -1320,6 +1330,9 @@ async def _call_openai(
                 choice.get("finish_reason"),
                 data.get("usage"),
                 "response_format" in body,
+                sorted(message.keys()),
+                reasoning is not None,
+                len(reasoning or ""),
             )
         return content
 
