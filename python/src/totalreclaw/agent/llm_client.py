@@ -1318,13 +1318,22 @@ async def _call_openai(
             # "empty content" alone is misleading when the answer is in
             # ``reasoning_content``.
             reasoning = message.get("reasoning_content")
+            # Rate-limit / quota headers (z.ai + OpenAI-style) help the
+            # operator distinguish "exhausted key" from "reasoning ate the
+            # token budget". No secrets in response headers.
+            rl_headers = {
+                k: v for k, v in resp.headers.items()
+                if any(t in k.lower() for t in ("ratelimit", "quota", "x-request-id", "retry-after"))
+            }
             logger.warning(
                 "LLM returned empty content (provider=%s, model=%s, "
-                "system_chars=%d, user_chars=%d, finish_reason=%s, usage=%s, "
-                "json_response_format=%s, message_keys=%s, "
-                "reasoning_content_present=%s, reasoning_content_chars=%d)",
+                "http_status=%s, system_chars=%d, user_chars=%d, finish_reason=%s, "
+                "usage=%s, json_response_format=%s, message_keys=%s, "
+                "reasoning_content_present=%s, reasoning_content_chars=%d, "
+                "rl_headers=%s, body_snippet=%r)",
                 config.base_url,
                 config.model,
+                resp.status_code,
                 len(system_prompt or ""),
                 len(user_prompt or ""),
                 choice.get("finish_reason"),
@@ -1333,6 +1342,10 @@ async def _call_openai(
                 sorted(message.keys()),
                 reasoning is not None,
                 len(reasoning or ""),
+                rl_headers,
+                # Truncated raw message — shows where the text actually went
+                # (e.g. reasoning_content) without dumping a huge payload.
+                str(message)[:400],
             )
         return content
 
