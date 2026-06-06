@@ -1244,6 +1244,21 @@ def _supports_json_object_response_format(base_url: str) -> bool:
     return any(hint in lower for hint in _JSON_OBJECT_PROVIDER_HINTS)
 
 
+def _is_zai_base_url(base_url: str) -> bool:
+    """Return True for either z.ai endpoint (Coding ``/coding/paas/v4`` or
+    Standard ``/paas/v4``).
+
+    Used to gate the ``thinking: {"type": "disabled"}`` request body field
+    (see :func:`_call_openai`). z.ai is the only OpenAI-spec provider in our
+    table whose GLM models default to a server-side *thinking* mode that
+    routes generated text into ``message.reasoning_content`` and can leave
+    ``message.content`` empty — the #376 silent-no-op root cause.
+    """
+    if not base_url:
+        return False
+    return "z.ai" in base_url.lower()
+
+
 async def _call_openai(
     config: LLMConfig,
     system_prompt: str,
@@ -1288,6 +1303,29 @@ async def _call_openai(
         # what flips zai/GLM from empty-content responses to structured
         # output. See F2 in the rc.23 QA report.
         body["response_format"] = {"type": "json_object"}
+    if _is_zai_base_url(config.base_url):
+        # #376 ROOT CAUSE FIX. z.ai's GLM-4.5-series-and-up models
+        # (including the cheap extraction workhorse ``glm-4.5-flash``)
+        # default to ``thinking: {"type": "enabled"}``. With thinking on,
+        # the model spends the generation budget emitting chain-of-thought
+        # into ``message.reasoning_content`` and can return an EMPTY
+        # ``message.content`` — HTTP 200, no error. The extraction parser
+        # only reads ``content``, so the turn silently produces zero facts
+        # (rc7 QA: the #376 fallback fired 12× and STILL extracted nothing,
+        # because the flagship retry hits the SAME thinking-mode default).
+        #
+        # Sending ``thinking: {"type": "disabled"}`` tells GLM to put the
+        # answer in ``content``. This is z.ai's documented parameter
+        # (default "enabled"; allowed "enabled"/"disabled"); it applies to
+        # GLM-4.5 series and higher and is a no-op on providers that ignore
+        # it. SAME provider, SAME endpoint, SAME key — only the request
+        # body changes. We deliberately do NOT flip the endpoint (the
+        # Coding-plan key is endpoint-scoped; flipping 401s).
+        #
+        # Belt-and-suspenders for any provider/version that ignores the
+        # flag: ``_call_openai`` below also falls back to
+        # ``reasoning_content`` when ``content`` is empty.
+        body["thinking"] = {"type": "disabled"}
 
     async with httpx.AsyncClient(timeout=_LLM_TIMEOUT) as client:
         resp = await client.post(
@@ -1301,8 +1339,33 @@ async def _call_openai(
         resp.raise_for_status()
         data = resp.json()
         choice = (data.get("choices") or [{}])[0]
-        content = choice.get("message", {}).get("content")
+        message = choice.get("message", {}) or {}
+        content = message.get("content")
         if not content:
+            # #376 belt-and-suspenders: GLM (and some other reasoning
+            # models, e.g. Gemma on OpenAI-compat endpoints) can leave
+            # ``content`` empty while placing the actual answer in
+            # ``reasoning_content`` whenever thinking mode is active. We
+            # send ``thinking: {"type": "disabled"}`` for z.ai above to
+            # prevent this, but if a provider/version ignores that flag we
+            # still recover the payload here instead of silently dropping
+            # the whole extraction turn. The extraction parser already
+            # strips ``<think>`` wrappers and bracket-scans for the JSON
+            # body, so a reasoning_content blob that wraps the JSON parses
+            # cleanly.
+            reasoning = message.get("reasoning_content")
+            if isinstance(reasoning, str) and reasoning.strip():
+                logger.warning(
+                    "LLM returned empty content but non-empty "
+                    "reasoning_content (provider=%s, model=%s, "
+                    "reasoning_chars=%d) — recovering from reasoning_content. "
+                    "If this recurs on z.ai, ensure the request is not "
+                    "overriding thinking back to enabled.",
+                    config.base_url,
+                    config.model,
+                    len(reasoning),
+                )
+                return reasoning
             # F2 — empty responses must be loud, not silent. Prior to
             # rc.24 this was logged as a generic "returned None/empty"
             # downstream in extraction.py at INFO. Surface the actual
