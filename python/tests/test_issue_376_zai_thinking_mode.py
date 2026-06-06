@@ -1,44 +1,51 @@
-"""#376 ROOT-CAUSE — z.ai GLM ``thinking`` mode empties ``message.content``.
+"""z.ai GLM extraction efficiency + empty-content observability.
 
-Symptom (rc7 QA, z.ai GLM Coding Plan stack)
---------------------------------------------
-Hermes auto-extraction was a SILENT no-op on z.ai Coding: the "#376
-fallback" fired 12× and extraction still produced ZERO facts. Other
-providers (Anthropic / OpenAI / Gemini) were unaffected.
+Scope
+-----
+These tests cover three z.ai-related hardening measures for the extraction
+path. They are EFFICIENCY + OBSERVABILITY, not the #376 fix (see note).
 
-Root cause
-----------
-z.ai's GLM-4.5-series-and-up models — INCLUDING the cheap extraction
-workhorse ``glm-4.5-flash`` — default to ``thinking: {"type":
-"enabled"}``. With thinking on, the model emits its chain-of-thought into
-``message.reasoning_content`` and can return an EMPTY ``message.content``
-(HTTP 200, no error). The extraction parser only reads ``content``, so the
-turn silently yields nothing. The #376 chat-model fallback re-issues the
-request on the SAME endpoint with the SAME thinking-mode default, so the
-flagship empties too → silent no-op.
+z.ai's GLM-4.5-series-and-up models — including the cheap extraction
+workhorse ``glm-4.5-flash`` — default to ``thinking: {"type": "enabled"}``.
+With thinking on, the model spends generation budget emitting
+chain-of-thought into ``message.reasoning_content`` before answering. For
+our cheap, JSON-shaped extraction prompts that reasoning pass adds latency
+and burns completion tokens for no quality gain, and in edge cases (very
+small token budgets) can split the answer across ``reasoning_content`` with
+an empty ``content``.
 
   Evidence:
     - z.ai docs: ``thinking`` request param, default "enabled", allowed
       "enabled"/"disabled"; reasoning lands in ``message.reasoning_content``;
       applies to GLM-4.5 series and higher.
-    - Community reports: Z.AI GLM returns ``{"content":"","reasoning_content":
-      "..."}`` unless thinking is disabled; NousResearch/hermes-agent#16533
-      (z.ai expects ``thinking={"type":"enabled"}``), oh-my-openagent#980,
-      ollama#15288 (same empty-content-into-reasoning pattern).
+    - Community reports of ``{"content":"","reasoning_content":"..."}``
+      content/reasoning splits at tight token budgets.
 
-Fix (this change)
------------------
-1. PRIMARY: ``_call_openai`` sends ``thinking: {"type": "disabled"}`` for
-   z.ai endpoints so the answer lands in ``content``. SAME provider, SAME
-   endpoint, SAME key — only the request body changes. NOT sent to
-   non-z.ai providers (would 400 on OpenAI et al.).
-2. BELT-AND-SUSPENDERS: when ``content`` is empty, ``_call_openai`` falls
-   back to ``reasoning_content`` so any provider/version that ignores the
-   flag still yields the payload (the parser strips ``<think>`` and
+NOTE — NOT the #376 fix
+-----------------------
+Thinking mode is NOT the root cause of #376. At a realistic max_tokens
+budget GLM populates ``content`` with thinking on or off; the #376 QA
+empties were instant 200-empty responses (quota/throttle, ~14ms), with no
+``reasoning_content`` to recover. The real #376 fix — detect
+quota-exhausted instant-empty and surface an actionable "z.ai quota
+exhausted" error — is tracked separately. This change reduces wasted work
+and makes any residual empty-content case loud and diagnosable.
+
+Changes covered
+---------------
+1. EFFICIENCY: ``_call_openai`` sends ``thinking: {"type": "disabled"}`` for
+   z.ai endpoints so the answer lands in ``content`` without a reasoning
+   pass. SAME provider, SAME endpoint, SAME key — only the request body
+   changes. NOT sent to non-z.ai providers (would 400 on OpenAI et al.).
+2. HARDENING: when ``content`` is empty, ``_call_openai`` falls back to
+   ``reasoning_content`` so any provider/version that ignores the flag
+   still yields the payload (the parser strips ``<think>`` and
    bracket-scans for the JSON body).
-3. SAFETY NET: when the cheap model AND the #376 chat-model fallback both
-   come back empty, the no-op WARNING is now ACTIONABLE — it instructs the
-   operator to set ``TOTALRECLAW_EXTRACTION_MODEL``.
+3. OBSERVABILITY: when both ``content`` and ``reasoning_content`` are empty,
+   ``_call_openai`` WARNs with the full response shape (#318 rich diag), and
+   when the cheap model AND the chat-model fallback both empty, the
+   extraction no-op WARNING is ACTIONABLE — it names
+   ``TOTALRECLAW_EXTRACTION_MODEL``.
 
 All tests mock ``httpx`` / ``chat_completion`` — NO network, NO real keys.
 """
@@ -69,9 +76,14 @@ from totalreclaw.agent.llm_client import (
 
 
 class _FakeResp:
-    def __init__(self, payload: dict, status_code: int = 200) -> None:
+    def __init__(
+        self, payload: dict, status_code: int = 200, headers: dict | None = None
+    ) -> None:
         self._payload = payload
         self.status_code = status_code
+        # _call_openai's rich empty-content diag scans response headers for
+        # rate-limit/quota markers; mirror httpx.Response.headers.
+        self.headers = headers or {}
 
     def json(self) -> dict:
         return self._payload
@@ -127,8 +139,9 @@ def test_is_zai_base_url_rejects_other_providers() -> None:
 async def test_zai_request_disables_thinking(endpoint: str) -> None:
     """The z.ai request body MUST carry ``thinking: {"type": "disabled"}``.
 
-    This is the #376 root-cause fix: without it, GLM-4.5-flash routes its
-    output into reasoning_content and returns empty ``content``.
+    Efficiency: disabling thinking skips the chain-of-thought pass on cheap
+    JSON extraction calls (faster, fewer completion tokens) and avoids the
+    content/reasoning_content split at tight token budgets.
     """
     cfg = LLMConfig(api_key="k", base_url=endpoint, model="glm-4.5-flash", api_format="openai")
     fake = _post_returning({"choices": [{"message": {"content": '{"topics":[],"facts":[]}'}}]})
@@ -227,6 +240,44 @@ async def test_empty_content_and_empty_reasoning_warns_and_returns_empty(
     assert not any(
         "recovering from reasoning_content" in r.getMessage() for r in caplog.records
     )
+
+
+@pytest.mark.asyncio
+async def test_truly_empty_diag_surfaces_full_response_shape(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Supersedes PR #318: when ``content`` is empty with NO recoverable
+    ``reasoning_content``, the WARN must carry the FULL response shape so an
+    operator can tell a quota/throttle instant-empty (rl headers, HTTP 200,
+    no reasoning) apart from a token-budget/formatting issue (finish_reason,
+    usage) WITHOUT needing DEBUG. This is the observability guarantee behind
+    the #376 forensics.
+    """
+    cfg = LLMConfig(api_key="k", base_url=ZAI_CODING_BASE_URL, model="glm-4.5-flash", api_format="openai")
+    payload = {
+        "choices": [{"finish_reason": "length", "message": {"content": ""}}],
+        "usage": {"prompt_tokens": 12, "completion_tokens": 0, "total_tokens": 12},
+    }
+    caplog.set_level(logging.WARNING, logger="totalreclaw.agent.llm_client")
+    with patch("httpx.AsyncClient.post", new=_post_returning(payload)):
+        out = await chat_completion(cfg, "system", "user")
+
+    assert out in (None, "")
+    diag = [
+        r.getMessage()
+        for r in caplog.records
+        if "LLM returned empty content" in r.getMessage()
+    ]
+    assert diag, "truly-empty response must emit the rich diag"
+    msg = diag[0]
+    # Field-level guarantees (the #318 contribution over a bare WARN string).
+    assert "finish_reason=length" in msg
+    assert "reasoning_content_present=False" in msg
+    assert "reasoning_content_chars=0" in msg
+    assert "message_keys=" in msg
+    assert "http_status=200" in msg
+    assert "rl_headers=" in msg
+    assert "usage=" in msg
 
 
 @pytest.mark.asyncio
@@ -348,10 +399,11 @@ async def test_compaction_double_empty_emits_actionable_warning(
 
 @pytest.mark.asyncio
 async def test_thinking_disabled_makes_extraction_produce_facts_end_to_end() -> None:
-    """End-to-end happy path proving the fix RESTORES extraction on z.ai:
-    a mocked z.ai response (as it now behaves with thinking disabled —
-    JSON in ``content``) flows through ``extract_facts_llm`` and yields a
-    fact. Guards against a regression back to the silent no-op.
+    """End-to-end happy path on z.ai with thinking disabled: a mocked z.ai
+    response (JSON in ``content``) flows through ``extract_facts_llm`` and
+    yields a fact, while the issued request carries
+    ``thinking: {"type": "disabled"}`` and the cheap model. Guards the
+    efficiency path + request shape against regression.
     """
     chat = LLMConfig(api_key="sk-zai", base_url=ZAI_CODING_BASE_URL, model="glm-5.1", api_format="openai")
     canned = json.dumps(
