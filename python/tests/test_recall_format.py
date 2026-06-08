@@ -246,7 +246,7 @@ class TestHermesRecallDateField:
         state = MagicMock()
         state.get_client.return_value = mock_client
 
-        with patch("totalreclaw.hermes.tools.get_embedding", side_effect=Exception("no model")):
+        with patch("totalreclaw.embedding.get_embedding", side_effect=Exception("no model")):
             response = await recall({"query": "fireworks"}, state)
 
         data = json.loads(response)
@@ -278,7 +278,7 @@ class TestHermesRecallDateField:
         state = MagicMock()
         state.get_client.return_value = mock_client
 
-        with patch("totalreclaw.hermes.tools.get_embedding", side_effect=Exception("no model")):
+        with patch("totalreclaw.embedding.get_embedding", side_effect=Exception("no model")):
             response = await recall({"query": "dark mode"}, state)
 
         data = json.loads(response)
@@ -308,7 +308,7 @@ class TestHermesRecallDateField:
         state = MagicMock()
         state.get_client.return_value = mock_client
 
-        with patch("totalreclaw.hermes.tools.get_embedding", side_effect=Exception("no model")):
+        with patch("totalreclaw.embedding.get_embedding", side_effect=Exception("no model")):
             response = await recall({"query": "legacy"}, state)
 
         data = json.loads(response)
