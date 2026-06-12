@@ -221,6 +221,20 @@ class ImportEngine:
         #: Cached turn counts per session (parallel to _session_assignments).
         #: Used to detect singleton sessions (< 2 turns = no Crystal).
         self._session_turn_counts: Optional[list[int]] = None
+        #: Cached STABLE session_id per session (parallel to
+        #: _session_assignments). Minted ONCE in _get_session_assignments and
+        #: reused across every batch — so a session whose chunks straddle a
+        #: batch boundary keeps a single session_id (was a per-batch regen bug).
+        self._session_ids: Optional[list[str]] = None
+        #: Cross-batch accumulation state for Crystal emission. A session can
+        #: span multiple _process_chunk_batch calls; we accumulate its facts
+        #: and only emit its Crystal once, on whichever batch completes it.
+        #: chunk indices processed so far (across all batches):
+        self._processed_chunk_indices: set[int] = set()
+        #: session_id -> list of extracted facts seen so far across batches:
+        self._session_facts_accum: dict[str, list[dict]] = {}
+        #: session_ids whose Crystal has already been emitted (emit-once guard):
+        self._crystallized_session_ids: set[str] = set()
 
     # ── Estimate ─────────────────────────────────────────────────────────
 
@@ -420,19 +434,26 @@ class ImportEngine:
         # for this pass.
         session_assignments = await self._get_session_assignments(parsed.chunks)
 
-        # Build a map: chunk_global_index -> (session_id, is_singleton)
+        # Build a map: chunk_global_index -> (session_id, is_singleton).
         # is_singleton is True when the session has < 2 TURNS (not chunks).
-        # Turn counts come from _session_turn_counts (set by _get_session_assignments).
+        # CRITICAL: session_ids come from the CACHED self._session_ids (minted
+        # once in _get_session_assignments), NOT regenerated here — otherwise a
+        # session straddling a batch boundary would get a different id per batch
+        # and its facts would never group together. Same applies to turn counts.
         turn_counts = self._session_turn_counts or []
+        session_ids = self._session_ids or []
         session_is_singleton: dict[int, bool] = {}  # chunk_index -> bool
         session_id_map: dict[int, str] = {}  # chunk_index -> session_id (shared)
+        # chunk_index -> session index (into session_assignments), for accum keys
+        chunk_to_session_idx: dict[int, int] = {}
         for sess_i, sess_chunk_indices in enumerate(session_assignments):
-            sid = _uuid7()
+            sid = session_ids[sess_i] if sess_i < len(session_ids) else _uuid7()
             turn_count = turn_counts[sess_i] if sess_i < len(turn_counts) else len(sess_chunk_indices)
             singleton = turn_count < 2
             for idx in sess_chunk_indices:
                 session_is_singleton[idx] = singleton
                 session_id_map[idx] = sid
+                chunk_to_session_idx[idx] = sess_i
 
         facts_extracted = 0
         errors: list[str] = []
@@ -485,19 +506,14 @@ class ImportEngine:
                             meta["import_source"] = source
                         f["extra_metadata"] = meta
                 else:
-                    # Multi-turn session: tag with session_id + provenance
+                    # Multi-turn session: tag with the STABLE session_id +
+                    # provenance, and accumulate facts cross-batch so the
+                    # Crystal (emitted on the batch that completes the session)
+                    # summarizes the WHOLE session, not just this batch's slice.
                     for f in extracted:
                         self._tag_import_fact(f, session_id, source)
-
-                    # Emit Crystal only when this chunk is the LAST in its session
-                    # (avoids emitting multiple Crystals for sessions that span batches).
-                    # We determine "last" by checking whether the next chunk in this
-                    # session is in the current batch. If this is the final chunk of
-                    # the session we have all extracted facts to summarize.
-                    # Simplified approach: emit Crystal on the FIRST chunk of each
-                    # session that appears in this batch — we collect all extracted
-                    # facts across the session at the end of the extraction loop
-                    # (see _session_facts_buffer below).
+                    if session_id is not None:
+                        self._session_facts_accum.setdefault(session_id, []).extend(extracted)
 
                 all_extracted.extend(extracted)
             except Exception as e:
@@ -507,50 +523,56 @@ class ImportEngine:
             if len(errors) >= 20:
                 break
 
-        # ── Crystal emission ──────────────────────────────────────────────────
-        # After extracting all facts, group them by session_id and emit one
-        # Crystal per multi-turn session. We only emit a Crystal for sessions
-        # whose chunks are ALL within the current batch slice (i.e. we have the
-        # complete set of facts). Sessions that span multiple batches get their
-        # Crystal on the batch that completes them.
-        #
-        # Implementation: track which session_ids appeared in this batch and
-        # which session_ids are "complete" (all their chunks processed so far).
-        session_facts_by_id: dict[str, list[dict]] = {}
-        for fact in all_extracted:
-            sid = (fact.get("extra_metadata") or {}).get("session_id")
-            if sid:
-                session_facts_by_id.setdefault(sid, []).append(fact)
+        # Mark EVERY chunk in this batch slice as processed — including chunks
+        # that were smart-import-skipped or that failed extraction. A chunk is
+        # "processed" once we've passed over it; otherwise a session containing
+        # a skipped chunk would never be considered complete and would never get
+        # a Crystal. This set persists across batches on the instance.
+        self._processed_chunk_indices.update(range(offset, offset + chunks_processed))
 
-        # Determine complete sessions: those where all chunks in the session
-        # have global_index in [offset, offset+batch_size).
-        batch_indices = set(range(offset, offset + chunks_processed))
+        # ── Crystal emission (cross-batch complete) ───────────────────────────
+        # Emit ONE Crystal per multi-turn session, exactly once, on whichever
+        # batch completes the session (i.e. once ALL of its chunks have been
+        # processed across all batches so far). Facts are pulled from the
+        # cross-batch accumulator so the Crystal summarizes the WHOLE session
+        # even when its chunks straddled a batch boundary.
         turn_counts = self._session_turn_counts or []
         crystals_to_emit: list[dict] = []
         for sess_i, sess_chunk_indices in enumerate(session_assignments):
-            # Use turn count (not chunk count) for singleton detection.
-            # A session with 1 chunk but 2+ turns (merged Gemini entries) is
-            # NOT a singleton and DOES get a Crystal.
+            # Singleton check uses TURN count (not chunk count): a session with
+            # 1 chunk but 2+ turns (merged Gemini entries) is NOT a singleton.
             sess_turn_count = turn_counts[sess_i] if sess_i < len(turn_counts) else len(sess_chunk_indices)
             if sess_turn_count < 2:
                 continue  # singleton — no Crystal
-            # Is this session completely covered by this batch?
-            if all(idx in batch_indices for idx in sess_chunk_indices):
-                sid = session_id_map.get(sess_chunk_indices[0])
-                if sid is None:
-                    continue
-                sess_facts = session_facts_by_id.get(sid, [])
-                if not sess_facts:
-                    continue
-                # Gather all chunks for this session for the Crystal prompt.
-                sess_chunks = [parsed.chunks[idx] for idx in sess_chunk_indices
-                               if idx < len(parsed.chunks)]
-                try:
-                    crystal = await self._make_crystal(sess_chunks, sess_facts, sid, source)
-                    if crystal is not None:
-                        crystals_to_emit.append(crystal)
-                except Exception as e:
-                    logger.debug("Crystal emission failed for session %s: %s", sid, e)
+
+            sid = session_id_map.get(sess_chunk_indices[0]) if sess_chunk_indices else None
+            if sid is None or sid in self._crystallized_session_ids:
+                continue  # no id, or already crystallized on an earlier batch
+
+            # Complete = all of this session's chunks processed (any batch).
+            if not all(idx in self._processed_chunk_indices for idx in sess_chunk_indices):
+                continue  # still waiting on chunks in a later batch
+
+            sess_facts = self._session_facts_accum.get(sid, [])
+            if not sess_facts:
+                # Session complete but produced no facts (all extractions empty
+                # or skipped). Mark crystallized so we don't retry it forever.
+                self._crystallized_session_ids.add(sid)
+                continue
+
+            # Gather all chunks for this session for the Crystal prompt context.
+            sess_chunks = [parsed.chunks[idx] for idx in sess_chunk_indices
+                           if idx < len(parsed.chunks)]
+            try:
+                crystal = await self._make_crystal(sess_chunks, sess_facts, sid, source)
+                if crystal is not None:
+                    crystals_to_emit.append(crystal)
+            except Exception as e:
+                logger.debug("Crystal emission failed for session %s: %s", sid, e)
+            finally:
+                # Emit-once guard: mark crystallized whether or not _make_crystal
+                # produced output, so we never double-emit on a later batch.
+                self._crystallized_session_ids.add(sid)
 
         # Prepend Crystals so the SPA receives the session header before its facts.
         all_extracted = crystals_to_emit + all_extracted
@@ -840,6 +862,8 @@ class ImportEngine:
 
         if not chunks:
             self._session_assignments = []
+            self._session_turn_counts = []
+            self._session_ids = []
             return self._session_assignments
 
         from totalreclaw.session_segmentation import segment_sessions
@@ -899,6 +923,8 @@ class ImportEngine:
         if not turns:
             # All chunks are empty — one-chunk-per-session fallback.
             self._session_assignments = [[i] for i in range(len(chunks))]
+            self._session_turn_counts = [1 for _ in range(len(chunks))]
+            self._session_ids = [_uuid7() for _ in self._session_assignments]
             return self._session_assignments
 
         # ── Embed turns ─────────────────────────────────────────────────────
@@ -922,6 +948,8 @@ class ImportEngine:
         except Exception as e:
             logger.warning("session_segmentation failed (%s); falling back to one-chunk-per-session", e)
             self._session_assignments = [[i] for i in range(len(chunks))]
+            self._session_turn_counts = [1 for _ in range(len(chunks))]
+            self._session_ids = [_uuid7() for _ in self._session_assignments]
             return self._session_assignments
 
         # ── Map turn-level sessions to chunk-level sessions ──────────────────
@@ -964,6 +992,10 @@ class ImportEngine:
                 if any(turns[tidx][0] in s for tidx in tc)
             )
             self._session_turn_counts.append(total_turns)
+
+        # Mint a STABLE session_id per session ONCE here. Reused across every
+        # batch so cross-batch sessions keep one id (and one Crystal).
+        self._session_ids = [_uuid7() for _ in self._session_assignments]
 
         logger.debug(
             "session_segmentation: %d chunks -> %d turn-sessions -> %d sessions "

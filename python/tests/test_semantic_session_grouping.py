@@ -577,6 +577,106 @@ def test_crystal_prompt_includes_facts():
     assert "User relocated to Berlin" in prompt, "Prompt must include extracted facts"
 
 
+# ── Test 7b: Cross-batch session straddling a batch boundary ──────────────────
+
+
+def test_session_straddling_batch_boundary_one_id_one_crystal(monkeypatch):
+    """REGRESSION (multi-batch path): a multi-turn session whose chunks straddle
+    a batch boundary must (a) keep ONE stable session_id across batches and
+    (b) emit EXACTLY ONE Crystal — on the batch that completes the session.
+
+    This fails on the pre-fix code, which (1) regenerated session_id per
+    _process_chunk_batch call (so facts in different batches got different ids)
+    and (2) only emitted a Crystal when ALL of a session's chunks were in the
+    CURRENT batch (so a straddling session got no Crystal in any batch).
+
+    Setup: 3 chunks, all the SAME topic + within the same 30-min window -> ONE
+    semantic session of 3 turns. Driven with batch_size=2, so chunks {0,1} are
+    processed in batch 1 and chunk {2} in batch 2.
+    """
+    # Single topic vector for everything -> all turns in one session.
+    topic_a = _unit([1.0, 0.0, 0.0, 0.0])
+    import totalreclaw.embedding as emb_mod
+    monkeypatch.setattr(emb_mod, "get_embedding", lambda t: topic_a)
+
+    client = _BatchClient()
+
+    completion_calls = {"n": 0}
+
+    async def fake_completion(prompt):
+        completion_calls["n"] += 1
+        return json.dumps({
+            "title": "Berlin relocation",
+            "summary": "User moved to Berlin and discussed logistics.",
+        })
+
+    async def fake_extract_idx(messages, timestamp):
+        user_texts = " ".join(m.get("text", m.get("content", "")) for m in messages
+                              if m.get("role") == "user")
+        return [{"text": user_texts[:80] or "fact", "type": "fact", "importance": 8}]
+
+    engine = _make_engine(client, fake_extract_idx, fake_completion)
+
+    # 3 same-topic chunks, each 2 messages = 1 turn; all within 20 min.
+    chunks = [
+        ConversationChunk(
+            title=f"Berlin chunk {i}",
+            messages=[
+                {"role": "user", "text": f"Berlin question number {i}"},
+                {"role": "assistant", "text": f"Berlin answer {i}"},
+            ],
+            timestamp=f"2026-05-14T09:0{i}:00Z",
+        )
+        for i in range(3)
+    ]
+
+    parsed_result = None
+
+    def _build_parsed():
+        from totalreclaw.import_adapters.types import AdapterParseResult
+        return AdapterParseResult(
+            facts=[], chunks=chunks, total_messages=6, warnings=[], errors=[],
+        )
+
+    # Drive process_batch repeatedly with batch_size=2 (multi-batch path).
+    results = []
+    with patch("totalreclaw.import_engine.get_adapter") as mock_adapter:
+        mock_adapter.return_value.parse.side_effect = lambda *a, **k: _build_parsed()
+        offset = 0
+        while True:
+            r = asyncio.run(engine.process_batch(
+                source="gemini", content="unused", offset=offset, batch_size=2,
+            ))
+            results.append(r)
+            if r.is_complete:
+                break
+            offset += r.chunks_processed
+            assert offset < 100, "runaway batching loop"
+
+    # We must have run at least 2 batches (3 chunks / batch_size 2).
+    assert len(results) >= 2, f"Expected multi-batch run, got {len(results)} batch(es)"
+
+    payloads = client.all_payloads()
+    crystals = _crystals(payloads)
+    atoms = _atomic(payloads)
+
+    # (b) EXACTLY ONE Crystal across the whole multi-batch import.
+    assert len(crystals) == 1, \
+        f"Straddling session must emit exactly ONE Crystal across batches, got {len(crystals)}"
+
+    # (a) ALL atomic facts share ONE session_id — and it equals the Crystal's.
+    crystal_sid = crystals[0]["extra_metadata"]["session_id"]
+    assert crystal_sid, "Crystal must carry a session_id"
+    atom_sids = {a["extra_metadata"].get("session_id") for a in atoms}
+    assert atom_sids == {crystal_sid}, (
+        "All atomic facts across batches must share the SINGLE stable session_id "
+        f"(crystal={crystal_sid!r}, atoms={atom_sids!r})"
+    )
+
+    # We extracted from all 3 chunks -> 3 atomic facts.
+    assert len(atoms) == 3, f"Expected 3 atomic facts (one per chunk), got {len(atoms)}"
+
+
 # ── Test 8: Existing batch tests still pass ────────────────────────────────────
 
 
