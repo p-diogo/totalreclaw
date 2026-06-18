@@ -21,6 +21,16 @@ _SMALL_IMPORT_THRESHOLD = 50
 # Strong references to background import tasks so the event loop cannot GC them.
 _BG_TASKS: set[asyncio.Task] = set()
 
+# Process-scoped ImportEngine cache for totalreclaw_import_batch (#389).
+# Without this, every batch invocation built a fresh engine and paid the full
+# smart-import cost (profile + triage LLM passes over the whole chunks list,
+# ~17-25 min on a 1344-chunk Gemini import) AND reset the cross-batch
+# session/Crystal accumulators that guarantee emit-once-per-session. Keyed by
+# (id(client), source, file_or_content_key); entries older than the TTL are
+# evicted on access. Mirrors STALE_THRESHOLD_SECONDS in import_state.
+_IMPORT_ENGINE_CACHE: dict[tuple, tuple] = {}
+_IMPORT_ENGINE_TTL_SECONDS = 3600
+
 
 # First-person agent-voice phrases. LLMs use these to declare their own
 # operational decisions. A genuine user-attributed directive about a tool
@@ -967,6 +977,63 @@ async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
         return json.dumps({"error": str(e)})
 
 
+def _import_engine_cache_key(
+    client, source: str, file_path: Optional[str], content: Optional[str]
+) -> tuple:
+    """Cache key for an ImportEngine reused across import_batch calls.
+
+    Different clients, sources, or inputs miss separately. ``file_path``
+    matches by absolute path; inline ``content`` matches by sha1 of the
+    bytes (truncated). Collisions are tolerated since the cache is
+    process-scoped and short-lived.
+    """
+    if file_path:
+        return (id(client), source, "file", file_path)
+    import hashlib
+    h = hashlib.sha1((content or "").encode("utf-8", errors="ignore")).hexdigest()[:16]
+    return (id(client), source, "content", h)
+
+
+def _get_or_make_import_engine(
+    state: "PluginState",
+    source: str,
+    file_path: Optional[str],
+    content: Optional[str],
+):
+    """Reuse an ImportEngine across import_batch calls for the same file.
+
+    Without this, each totalreclaw_import_batch invocation paid the full
+    smart-import cost (~17-25 min of profile + triage LLM calls over the
+    whole chunks list) AND silently broke the Crystal emit-once invariant
+    for sessions spanning batches (issue #389).
+    """
+    import time
+    from totalreclaw.import_engine import ImportEngine
+
+    client = state.get_client()
+    key = _import_engine_cache_key(client, source, file_path, content)
+    now = time.time()
+
+    # Sweep stale entries on every access. Cache is small (per-import-id),
+    # so the linear walk is cheap.
+    expired = [k for k, (_, ts) in _IMPORT_ENGINE_CACHE.items()
+               if now - ts > _IMPORT_ENGINE_TTL_SECONDS]
+    for k in expired:
+        _IMPORT_ENGINE_CACHE.pop(k, None)
+
+    cached = _IMPORT_ENGINE_CACHE.get(key)
+    if cached is not None:
+        return cached[0]
+
+    engine = ImportEngine(
+        client=client,
+        llm_extract=_make_extractor(state),
+        llm_completion=_make_llm_completion(state),
+    )
+    _IMPORT_ENGINE_CACHE[key] = (engine, now)
+    return engine
+
+
 async def import_batch(args: dict, state: "PluginState", **kwargs) -> str:
     """Process one batch of a large import. Call repeatedly with increasing offset."""
     client = state.get_client()
@@ -983,13 +1050,7 @@ async def import_batch(args: dict, state: "PluginState", **kwargs) -> str:
         return json.dumps({"error": "No source specified"})
 
     try:
-        from totalreclaw.import_engine import ImportEngine
-
-        engine = ImportEngine(
-            client=client,
-            llm_extract=_make_extractor(state),
-            llm_completion=_make_llm_completion(state),
-        )
+        engine = _get_or_make_import_engine(state, source, file_path, content)
         result = await engine.process_batch(
             source=source,
             file_path=file_path,
