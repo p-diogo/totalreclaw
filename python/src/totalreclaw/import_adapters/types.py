@@ -76,6 +76,6 @@ class BatchImportResult:
     # ``{index, title, reason}`` dict per chunk that produced 0 storable facts
     # (excluding triage-skips and exceptions, which have their own reporting).
     # ``reason`` ∈ {extractor_empty, filtered_importance, filtered_text,
-    # filtered}. None when every chunk yielded facts. See
+    # filtered, malformed}. None when every chunk yielded facts. See
     # ``import_engine._classify_zero_fact_reason``.
     chunk_diagnostics: Optional[List[dict]] = None
