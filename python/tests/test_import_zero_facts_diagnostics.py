@@ -12,14 +12,17 @@ contract change):
   reason}`` list for every chunk that produced 0 facts (excluding triage-skips
   and exceptions, which already have their own reporting).
 * ``reason`` ∈ ``{extractor_empty, filtered_importance, filtered_text,
-  filtered}``:
+  filtered, malformed}``:
     - ``extractor_empty``     — extractor returned ``[]``/None (LLM empty /
       parse-fail / no-config all collapse here; DEBUG logs sub-split).
     - ``filtered_importance`` — extractor returned ≥1 candidate, all dropped
       for ``importance < 6`` (none too short).
     - ``filtered_text``       — extractor returned ≥1 candidate, all dropped
       for ``text < 5`` chars (none low-importance).
-    - ``filtered``            — both filters contributed (mixed).
+    - ``filtered``            — both filters contributed (mixed), or a mix of
+      malformed + filtered candidates.
+    - ``malformed``           — extractor returned ≥1 item but ALL were
+      non-dict (malformed output, not facts that failed a threshold).
 * The aggregate ``errors`` message summarises the counts by reason instead of
   the old generic "(possible LLM failures)" line.
 
@@ -44,6 +47,7 @@ REASON_EXTRACTOR_EMPTY = "extractor_empty"
 REASON_FILTERED_IMPORTANCE = "filtered_importance"
 REASON_FILTERED_TEXT = "filtered_text"
 REASON_FILTERED = "filtered"
+REASON_MALFORMED = "malformed"
 
 
 @pytest.fixture(autouse=True)
@@ -173,6 +177,24 @@ def test_mixed_filter_is_classified() -> None:
     assert _diag(result, index=0)["reason"] == REASON_FILTERED
 
 
+def test_malformed_non_dict_is_classified() -> None:
+    """All-non-dict extractor output is malformed, NOT 'filtered'.
+
+    A non-dict item (int / None / str) is malformed extractor output, not a
+    fact that failed a threshold — bucketing it as 'filtered' would be
+    misleading. This guards the code-review finding that non-dict items were
+    silently ``continue``d without counting.
+    """
+    engine = ImportEngine(
+        client=_pro_client(),
+        llm_extract=_returns([42, None, "not a dict"]),
+    )
+
+    result = _run(engine._process_chunk_batch(_parsed([_chunk("Zeta")]), 0, 1, 0))
+
+    assert _diag(result, index=0)["reason"] == REASON_MALFORMED
+
+
 def test_successful_chunk_has_no_diagnostic() -> None:
     """A chunk that yields a valid fact must NOT appear in diagnostics."""
     engine = ImportEngine(
@@ -188,19 +210,40 @@ def test_successful_chunk_has_no_diagnostic() -> None:
     assert result.facts_extracted == 1
 
 
+def test_valid_fact_plus_filtered_candidates_has_no_diagnostic() -> None:
+    """A valid fact alongside filtered candidates still yields NO diagnostic.
+
+    Guards the ``valid_count > 0 → no diagnostic`` invariant in the pure-mixed
+    case (one survivor + some dropped). A regression keying off ``raw_count > 0``
+    instead of ``valid_count > 0`` would wrongly emit a diagnostic here.
+    """
+    engine = ImportEngine(
+        client=_pro_client(),
+        llm_extract=_returns([
+            {"text": "A valid survivor fact worth keeping", "importance": 8, "type": "fact"},  # ok
+            {"text": "hi", "importance": 9, "type": "fact"},            # text < 5 → dropped
+            {"text": "Low value detail not worth storing", "importance": 2, "type": "fact"},  # importance < 6 → dropped
+        ]),
+    )
+
+    result = _run(engine._process_chunk_batch(_parsed([_chunk("Eta")]), 0, 1, 0))
+
+    assert result.chunk_diagnostics is None or result.chunk_diagnostics == []
+    assert result.facts_extracted == 1
+
+
 def test_diagnostics_carry_global_index_and_title() -> None:
     """Diagnostic index is the GLOBAL chunk index (offset + i), title is the chunk's."""
     chunks = [_chunk("First"), _chunk("Second"), _chunk("Third")]
     engine = ImportEngine(client=_pro_client(), llm_extract=_always_empty())
 
-    # offset=5 so global indices are 5, 6, 7 — only the middle chunk is in this
-    # batch slice.
-    result = _run(engine._process_chunk_batch(_parsed(chunks), offset=1, batch_size=1,  start_ms=0))
+    # Batch slice [1:3] → chunks "Second" (global 1) and "Third" (global 2).
+    # batch-local indices would be 0 and 1; global must be 1 and 2.
+    result = _run(engine._process_chunk_batch(_parsed(chunks), offset=1, batch_size=2, start_ms=0))
 
-    assert len(result.chunk_diagnostics) == 1
-    d = result.chunk_diagnostics[0]
-    assert d["index"] == 1  # global index, not batch-local 0
-    assert d["title"] == "Second"
+    assert len(result.chunk_diagnostics) == 2
+    by_index = {d["index"]: d["title"] for d in result.chunk_diagnostics}
+    assert by_index == {1: "Second", 2: "Third"}
 
 
 # ---------------------------------------------------------------------------
@@ -220,6 +263,8 @@ def test_partial_message_summarises_reason_counts() -> None:
 
     result = _run(engine._process_chunk_batch(_parsed(chunks), 0, 3, 0))
 
+    # Per-chunk surface must match the aggregate: exactly the two zero-fact chunks.
+    assert len(result.chunk_diagnostics) == 2
     zero_msg = next((e for e in result.errors if "0 facts" in e), None)
     assert zero_msg is not None, f"expected a '0 facts' summary in errors, got {result.errors!r}"
     # Both distinct reason categories must be named.

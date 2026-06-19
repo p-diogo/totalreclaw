@@ -748,8 +748,10 @@ class ImportEngine:
         valid: list[dict] = []
         dropped_text = 0
         dropped_importance = 0
+        dropped_nondict = 0
         for item in (extracted or []):
             if not isinstance(item, dict):
+                dropped_nondict += 1
                 continue
             text = str(item.get("text", "")).strip()
             if len(text) < 5:
@@ -779,7 +781,7 @@ class ImportEngine:
             })
 
         reason = _classify_zero_fact_reason(
-            len(valid), len(extracted or []), dropped_text, dropped_importance,
+            len(valid), len(extracted or []), dropped_text, dropped_importance, dropped_nondict,
         )
         return valid, reason
 
@@ -1336,21 +1338,30 @@ REASON_EXTRACTOR_EMPTY = "extractor_empty"
 REASON_FILTERED_IMPORTANCE = "filtered_importance"
 REASON_FILTERED_TEXT = "filtered_text"
 REASON_FILTERED = "filtered"
+REASON_MALFORMED = "malformed"
 
 
 def _classify_zero_fact_reason(
-    valid_count: int, raw_count: int, dropped_text: int, dropped_importance: int,
+    valid_count: int,
+    raw_count: int,
+    dropped_text: int,
+    dropped_importance: int,
+    dropped_nondict: int,
 ) -> Optional[str]:
     """Classify why a chunk produced 0 storable facts.
 
-    Returns None when the chunk actually yielded facts (no diagnostic). The
-    four buckets: extractor returned nothing; all candidates filtered for
-    importance < 6; all filtered for text < 5 chars; or a mix of both.
+    Returns None when the chunk actually yielded facts (no diagnostic). Buckets:
+    extractor returned nothing; all candidates filtered for importance < 6; all
+    filtered for text < 5 chars; all items malformed (non-dict); or a mix.
     """
     if valid_count > 0:
         return None
     if raw_count == 0:
         return REASON_EXTRACTOR_EMPTY
+    # Every item was a non-dict (malformed extractor output) — distinct from a
+    # fact that failed a threshold. Only triggers when nothing else was dropped.
+    if dropped_nondict and not dropped_text and not dropped_importance:
+        return REASON_MALFORMED
     if dropped_importance and not dropped_text:
         return REASON_FILTERED_IMPORTANCE
     if dropped_text and not dropped_importance:
@@ -1365,6 +1376,7 @@ def _summarize_zero_fact_reasons(reason_counts: dict) -> str:
         (REASON_EXTRACTOR_EMPTY, "extractor returned no facts"),
         (REASON_FILTERED_IMPORTANCE, "filtered below importance (<6)"),
         (REASON_FILTERED_TEXT, "filtered (text <5 chars)"),
+        (REASON_MALFORMED, "extractor returned malformed (non-dict) output"),
         (REASON_FILTERED, "filtered (other)"),
     ):
         n = reason_counts.get(reason, 0)
