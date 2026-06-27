@@ -114,8 +114,8 @@ function resetCache(): void {
   );
   assertEq(read?.checked_at, now, 'readBillingCache: checked_at round-trips');
 
-  // Side-effect: Free tier should set chain to 100.
-  assertEq(CONFIG.chainId, 100, 'writeBillingCache: Free tier syncs chain to 100');
+  // Side-effect: Free tier should set chain to 84532.
+  assertEq(CONFIG.chainId, 84532, 'writeBillingCache: Free tier syncs chain to 84532');
 }
 
 // ---------------------------------------------------------------------------
@@ -137,7 +137,7 @@ function resetCache(): void {
   // readBillingCache should also sync chain when loading persisted Pro tier
   // in a cold process (simulate by resetting override then reading).
   __resetChainIdOverrideForTests();
-  assertEq(CONFIG.chainId, 100, 'pre-read: chain override reset to 100 default');
+  assertEq(CONFIG.chainId, 84532, 'pre-read: chain override reset to 84532 default');
   const read = readBillingCache();
   assertEq(read?.tier, 'pro', 'readBillingCache: reads persisted Pro tier');
   assertEq(CONFIG.chainId, 100, 'readBillingCache: Pro tier syncs chain to 100 on load');
@@ -166,7 +166,7 @@ function resetCache(): void {
   // Should NOT have synced to Pro — the stale entry must not leak its tier.
   assertEq(
     CONFIG.chainId,
-    100,
+    84532,
     'readBillingCache: stale entry does not sync chain override',
   );
 }
