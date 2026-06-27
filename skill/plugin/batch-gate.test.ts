@@ -3,7 +3,7 @@
  * item imp-16).
  *
  * Covers:
- *   - default (env unset): Pro chain 100 → batch; Free chain 84532 → no batch
+ *   - default (env unset): Pro chain 100 → batch; Free chain 100 → no batch
  *   - env=true: Pro chain → batch; Free chain → no batch
  *   - env=false: kill-switch, both chains → no batch
  *   - env=FALSE / False (case-insensitive): kill-switch active
@@ -35,28 +35,28 @@ function assert(cond: boolean, name: string): void {
 }
 
 const PRO_CHAIN = 100;
-const FREE_CHAIN = 84532;
+const FREE_CHAIN = 100;
 const UNKNOWN_CHAIN = 137;
 
 // --- env unset → defaults ---
 {
   const env: NodeJS.ProcessEnv = {};
   assert(__testing.readGateForTests(env, PRO_CHAIN) === true, 'env unset + Gnosis(100) → batch');
-  assert(__testing.readGateForTests(env, FREE_CHAIN) === false, 'env unset + Sepolia(84532) → no batch');
+  assert(__testing.readGateForTests(env, FREE_CHAIN) === false, 'env unset + Sepolia(100) → no batch');
 }
 
 // --- env=true → same as default ---
 {
   const env: NodeJS.ProcessEnv = { TOTALRECLAW_GNOSIS_BATCH_ENABLED: 'true' };
   assert(__testing.readGateForTests(env, PRO_CHAIN) === true, 'env=true + Gnosis(100) → batch');
-  assert(__testing.readGateForTests(env, FREE_CHAIN) === false, 'env=true + Sepolia(84532) → no batch');
+  assert(__testing.readGateForTests(env, FREE_CHAIN) === false, 'env=true + Sepolia(100) → no batch');
 }
 
 // --- env=false → kill switch, batching off everywhere ---
 {
   const env: NodeJS.ProcessEnv = { TOTALRECLAW_GNOSIS_BATCH_ENABLED: 'false' };
   assert(__testing.readGateForTests(env, PRO_CHAIN) === false, 'env=false + Gnosis(100) → no batch (kill-switch)');
-  assert(__testing.readGateForTests(env, FREE_CHAIN) === false, 'env=false + Sepolia(84532) → no batch');
+  assert(__testing.readGateForTests(env, FREE_CHAIN) === false, 'env=false + Sepolia(100) → no batch');
 }
 
 // --- case-insensitive false ---
@@ -103,7 +103,7 @@ const UNKNOWN_CHAIN = 137;
   );
   assert(
     shouldBatchOnChain(FREE_CHAIN) === false,
-    'live export: shouldBatchOnChain(84532) is always false (Free tier never batches)',
+    'live export: shouldBatchOnChain(100) is always false (Free tier never batches)',
   );
 }
 
