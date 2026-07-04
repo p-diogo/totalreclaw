@@ -686,9 +686,13 @@ class TestRegister:
         # test_hermes_plugin_manifest_parity.py + this test must agree.
         # imp-1 — `totalreclaw_import_status` + `totalreclaw_import_abort`
         # added (background import Phase 1). Count → 16 stable, 17 RC.
+        # #412 — `totalreclaw_top_up` (#396) wired into ``register()`` +
+        # plugin.yaml. schemas.TOPUP + tools.top_up shipped in rc10 but the
+        # register_tool() call was missing, so the tool was absent from the
+        # agent manifest and unreachable. Count → 17 stable, 18 RC.
         from totalreclaw import __version__
         from totalreclaw.hermes.qa_bug_report import is_rc_build
-        expected_tools = 17 if is_rc_build(__version__) else 16
+        expected_tools = 18 if is_rc_build(__version__) else 17
         assert ctx.register_tool.call_count == expected_tools, (
             f"expected {expected_tools} tools for version {__version__!r}, "
             f"got {ctx.register_tool.call_count}"
@@ -713,6 +717,9 @@ class TestRegister:
         assert "totalreclaw_import_from" in tool_names
         assert "totalreclaw_import_batch" in tool_names
         assert "totalreclaw_upgrade" in tool_names
+        # #412 — top_up (#396) must be wired so the agent can reach the
+        # one-time top-up checkout; was defined but never registered.
+        assert "totalreclaw_top_up" in tool_names
         assert "totalreclaw_debrief" in tool_names
 
         # Check hook names

@@ -201,6 +201,18 @@ def register(ctx):
         is_async=True,
         description=schemas.UPGRADE["description"],
     )
+    # #396 — one-time top-up pack purchase (Stripe checkout). schemas.TOPUP +
+    # tools.top_up shipped in rc10 and the relay path is live, but the
+    # register_tool() call was never wired in, so the tool was absent from the
+    # agent's manifest and no user could reach it (#412). Mirrors upgrade above.
+    ctx.register_tool(
+        name="totalreclaw_top_up",
+        toolset="totalreclaw",
+        schema=schemas.TOPUP,
+        handler=lambda args, **kw: tools.top_up(args, state, **kw),
+        is_async=True,
+        description=schemas.TOPUP["description"],
+    )
     ctx.register_tool(
         name="totalreclaw_debrief",
         toolset="totalreclaw",

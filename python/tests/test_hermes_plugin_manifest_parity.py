@@ -199,3 +199,42 @@ class TestPluginYamlParity:
             "Hermes chat agent will see no pair tool and pairing flow "
             "dead-ends. This is exactly the rc.4 user-reported bug."
         )
+
+    def test_issue_412_top_up_registered_and_advertised(self):
+        """``totalreclaw_top_up`` (#396) MUST appear in both the manifest
+        and the register() call.
+
+        Context — S5 re-QA regression (2026-07-04, #412)
+        ------------------------------------------------
+        The one-time top-up purchase tool shipped in rc10: ``schemas.TOPUP``
+        + ``tools.top_up`` exist and the relay Stripe-checkout path is live
+        (verified in #404). But the ``ctx.register_tool`` call was never
+        wired into ``register()`` AND the name was never added to
+        ``plugin.yaml::provides_tools`` — so the tool was absent from the
+        agent's manifest and no user could ever reach it via chat. The
+        agent honestly reported "I don't have a tool for that" (sessions
+        ``20260704_170451_97d461`` / ``20260704_170748_0f92f2``).
+
+        Because the tool drifted out of BOTH the manifest and register()
+        in lockstep, the ``test_every_manifest_tool_is_registered`` parity
+        check above passed vacuously. This dedicated test pins the tool
+        into both halves so the feature can't silently ship dead again —
+        the same failure class as the #112-125 in-code warning.
+        """
+        manifest_names = set(_manifest_tool_names())
+        assert "totalreclaw_top_up" in manifest_names, (
+            "plugin.yaml is missing totalreclaw_top_up — the one-time "
+            "top-up purchase tool (#396). Without it in the manifest the "
+            "parity shield can't catch a missing register() call."
+        )
+
+        ctx = _register_with_mock_ctx()
+        registered_names = {
+            call.kwargs["name"] for call in ctx.register_tool.call_args_list
+        }
+        assert "totalreclaw_top_up" in registered_names, (
+            "register() never wired totalreclaw_top_up — the tool is "
+            "defined (schemas.TOPUP + tools.top_up) and its relay path "
+            "works, but the agent never sees it in its manifest, so no "
+            "user can reach the top-up checkout. This is the #412 bug."
+        )
