@@ -774,10 +774,13 @@ async function runTests(): Promise<void> {
     await sleep(80);
     const ticksBeforeReplace = ticks;
     assert(ticksBeforeReplace >= 1, 'replace: poller ticks while sentinel unchanged');
-    // Replace at the SAME path: an in-place rewrite ~80 ms after creation bumps
-    // mtimeMs (and the identity check also compares inode). existsSync stays
-    // true throughout — that is the whole point: the old existence guard would
+    // Replace at the SAME path via rm+recreate — the same operation a real
+    // uninstall→reinstall performs. This changes the INODE (deterministic on
+    // every filesystem, independent of mtime granularity), which is the
+    // identity clause that fires in production. existsSync is true again by
+    // the next tick — that is the whole point: the old existence guard would
     // never notice this, the identity guard must.
+    fs.rmSync(sentinel);
     fs.writeFileSync(sentinel, '// sentinel v2 (reinstalled)');
     assert(fs.existsSync(sentinel), 'replace: sentinel still exists at same path after replacement');
     await sleep(120);
