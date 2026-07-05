@@ -459,6 +459,14 @@ IMPORT_BATCH = {
                 "type": "string",
                 "description": "Path to the export file on disk",
             },
+            "disclosure_confirmed": {
+                "type": "boolean",
+                "description": (
+                    "Set true ONLY after the user consented to the privacy "
+                    "disclosure. Normally unnecessary — consent recorded by "
+                    "the initial import_from call carries over."
+                ),
+            },
             "content": {
                 "type": "string",
                 "description": "For file-based sources: the file content",

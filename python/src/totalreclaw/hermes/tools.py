@@ -876,11 +876,13 @@ _EXTRACTION_IMPORT_SOURCES = frozenset({"chatgpt", "claude", "gemini"})
 # imp-2 (#244): hosts a memory export legitimately comes from. URLs on these
 # hosts (or their subdomains) fetch without friction; anything else needs an
 # explicit user confirmation first (phishing / malicious-download guard).
+# Deliberately NOT here: bare `googleapis.com` — storage.googleapis.com is
+# multi-tenant (anyone can host a bucket), so trusting it would let an
+# attacker-controlled "export" fetch with no confirmation (review of PR #431).
 _EXPORT_URL_ALLOWLIST = (
     "chatgpt.com",
     "openai.com",
     "takeout.google.com",
-    "googleapis.com",
     "claude.ai",
     "anthropic.com",
 )
@@ -901,6 +903,55 @@ def _is_allowlisted_export_host(url: str) -> bool:
         host == allowed or host.endswith("." + allowed)
         for allowed in _EXPORT_URL_ALLOWLIST
     )
+
+
+def _prior_disclosure_consent(source: str, resume_id: Optional[str] = None) -> bool:
+    """True when a persisted import state already records disclosure consent.
+
+    Checked by resume paths and by ``totalreclaw_import_batch`` (which the
+    agent calls repeatedly after ``import_from`` recorded consent) so the
+    user is never re-prompted mid-import.
+    """
+    try:
+        from totalreclaw import import_state as ist
+        if resume_id:
+            prior = ist.read_import_state(resume_id)
+            if prior is not None:
+                return bool(prior.disclosure_confirmed)
+        for path in ist.IMPORT_STATE_DIR.glob("*.json"):
+            try:
+                data = json.loads(path.read_text())
+            except (OSError, ValueError):
+                continue
+            if data.get("source") == source and data.get("disclosure_confirmed"):
+                return True
+    except OSError:
+        pass
+    return False
+
+
+def _disclosure_required_response(source: str, import_id: str, estimate: Optional[dict] = None) -> str:
+    """The disclosure_required payload (PRD-IMP G-4) — provider named explicitly."""
+    provider_label = _extraction_provider_label()
+    payload = {
+        "disclosure_required": True,
+        "import_id": import_id,
+        "llm_provider": provider_label,
+        "message": (
+            "Before importing: extracting memories from this "
+            f"{source} export sends your past conversations in "
+            f"cleartext to {provider_label} for fact extraction. "
+            "TotalReclaw itself never sees plaintext — but that LLM "
+            "does. Relay this to the user, ask for explicit "
+            "confirmation, and only then call again with "
+            "disclosure_confirmed=true. If they decline, stop — "
+            "nothing has been processed."
+        ),
+    }
+    if estimate:
+        payload["estimated_facts"] = estimate.get("estimated_facts")
+        payload["estimated_minutes"] = estimate.get("estimated_minutes")
+    return json.dumps(payload)
 
 
 def _extraction_provider_label() -> str:
@@ -924,11 +975,44 @@ def _extraction_provider_label() -> str:
     return "your configured LLM provider"
 
 
-def _fetch_export_url(url: str) -> str:
+def _make_redirect_validator(require_allowlist: bool):
+    """Redirect handler that re-validates every hop (review of PR #431).
+
+    urllib's default handler follows redirects to ANY http/https URL, so an
+    open redirect on a trusted host could bypass the allowlist entirely.
+    - require_allowlist=True (initial URL was allowlisted): every hop must
+      also be allowlisted.
+    - require_allowlist=False (user explicitly confirmed a non-allowlisted
+      host): hops may go anywhere https, but a cleartext http downgrade is
+      always blocked.
+    """
+    import urllib.error
+    import urllib.request
+
+    class _ValidatedRedirectHandler(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            from urllib.parse import urlparse
+            if require_allowlist:
+                if not _is_allowlisted_export_host(newurl):
+                    raise urllib.error.URLError(
+                        f"Redirect to non-allowlisted URL blocked: {newurl}"
+                    )
+            elif urlparse(newurl).scheme != "https":
+                raise urllib.error.URLError(
+                    f"Redirect off https blocked: {newurl}"
+                )
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+    return _ValidatedRedirectHandler
+
+
+def _fetch_export_url(url: str, *, require_allowlist: bool = True) -> str:
     """Download an export archive to a temp file and return its path.
 
     Enforces the 500MB import cap during streaming so a hostile or
-    mis-linked URL can't fill the disk.
+    mis-linked URL can't fill the disk, and re-validates redirects (see
+    ``_make_redirect_validator``). The temp file is kept for the lifetime
+    of the import — resume (US-7) re-reads it by path.
     """
     import tempfile
     import urllib.request
@@ -937,7 +1021,8 @@ def _fetch_export_url(url: str) -> str:
     cap = 500 * 1024 * 1024
     suffix = os.path.splitext(urlparse(url).path)[1] or ".download"
     req = urllib.request.Request(url, headers={"User-Agent": "totalreclaw-import"})
-    with urllib.request.urlopen(req, timeout=120) as resp:
+    opener = urllib.request.build_opener(_make_redirect_validator(require_allowlist)())
+    with opener.open(req, timeout=120) as resp:
         length = resp.headers.get("Content-Length")
         if length and int(length) > cap:
             raise ValueError(f"Download is {int(length) / (1024*1024):.0f}MB — exceeds the 500MB import cap.")
@@ -988,7 +1073,8 @@ async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
 
     # ── imp-2: URL input — allowlist gate, then server-side fetch ──────────
     if url and not file_path and not content:
-        if not _is_allowlisted_export_host(url) and not url_confirmed:
+        url_allowlisted = _is_allowlisted_export_host(url)
+        if not url_allowlisted and not url_confirmed:
             from urllib.parse import urlparse
             host = (urlparse(url).hostname or url) if url else url
             return json.dumps({
@@ -1003,8 +1089,19 @@ async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
                     "url_confirmed=true. Nothing was downloaded."
                 ),
             })
+        # Disclosure comes BEFORE the download for gated sources (review of
+        # PR #431 finding 4): don't spend a multi-hundred-MB fetch on a call
+        # that is about to return disclosure_required anyway. No estimate is
+        # available at this point — the agent's dry_run already surfaced it.
+        if (
+            not dry_run
+            and source in _EXTRACTION_IMPORT_SOURCES
+            and not disclosure_confirmed
+            and not _prior_disclosure_consent(source, resume_id)
+        ):
+            return _disclosure_required_response(source, import_id)
         try:
-            file_path = _fetch_export_url(url)
+            file_path = _fetch_export_url(url, require_allowlist=url_allowlisted)
         except Exception as e:
             return json.dumps({"error": f"Failed to download export from URL: {e}"})
 
@@ -1065,27 +1162,12 @@ async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
         # an LLM in cleartext. The user must consent AFTER being told which
         # provider will read them — before any extraction begins. Consent is
         # persisted in the import state file so a resume never re-prompts.
-        if source in _EXTRACTION_IMPORT_SOURCES and not disclosure_confirmed:
-            prior = read_import_state(resume_id) if resume_id else None
-            if not (prior and prior.disclosure_confirmed):
-                provider_label = _extraction_provider_label()
-                return json.dumps({
-                    "disclosure_required": True,
-                    "import_id": import_id,
-                    "llm_provider": provider_label,
-                    "estimated_facts": estimate.get("estimated_facts"),
-                    "estimated_minutes": estimate.get("estimated_minutes"),
-                    "message": (
-                        "Before importing: extracting memories from this "
-                        f"{source} export sends your past conversations in "
-                        f"cleartext to {provider_label} for fact extraction. "
-                        "TotalReclaw itself never sees plaintext — but that LLM "
-                        "does. Relay this to the user, ask for explicit "
-                        "confirmation, and only then call again with "
-                        "disclosure_confirmed=true. If they decline, stop — "
-                        "nothing has been processed."
-                    ),
-                })
+        if (
+            source in _EXTRACTION_IMPORT_SOURCES
+            and not disclosure_confirmed
+            and not _prior_disclosure_consent(source, resume_id)
+        ):
+            return _disclosure_required_response(source, import_id, estimate)
 
         if total_items <= _SMALL_IMPORT_THRESHOLD:
             # Small import: process synchronously but still write state for tracking.
@@ -1278,6 +1360,18 @@ async def import_batch(args: dict, state: "PluginState", **kwargs) -> str:
 
     if not source:
         return json.dumps({"error": "No source specified"})
+
+    # ── imp-2: disclosure gate (review of PR #431 finding 1) ───────────────
+    # import_batch runs the same LLM extraction as import_from; without this
+    # check it would be a consent bypass. The normal flow satisfies it via
+    # the state file import_from wrote (consent persists per source), so the
+    # documented import_from -> import_batch loop never re-prompts.
+    if (
+        source in _EXTRACTION_IMPORT_SOURCES
+        and not bool(args.get("disclosure_confirmed", False))
+        and not _prior_disclosure_consent(source)
+    ):
+        return _disclosure_required_response(source, args.get("import_id") or "")
 
     try:
         engine = _get_or_create_import_engine(state, source, file_path)

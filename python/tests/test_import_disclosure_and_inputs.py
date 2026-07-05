@@ -162,7 +162,7 @@ def _patch_fetch(monkeypatch, tmp_path):
     from totalreclaw.hermes import tools
     fetched = []
 
-    def fake_fetch(url):
+    def fake_fetch(url, **_kw):
         fetched.append(url)
         p = tmp_path / "downloaded-export.json"
         p.write_text("[]")
@@ -176,7 +176,6 @@ def _patch_fetch(monkeypatch, tmp_path):
     "https://chatgpt.com/backup/export-123.zip",
     "https://cdn.openai.com/exports/export.zip",
     "https://takeout.google.com/exports/gemini.zip",
-    "https://storage.googleapis.com/takeout/x.zip",
     "https://claude.ai/exports/data.zip",
     "https://files.anthropic.com/export.zip",
 ])
@@ -190,10 +189,33 @@ def test_allowlisted_hosts(url):
     "https://chatgpt.com.evil.io/x.zip",       # suffix spoof
     "https://notopenai.com/export.zip",        # substring spoof
     "http://chatgpt.com/x.zip",                # non-https
+    # multi-tenant object storage: anyone can host a bucket there, so it
+    # must NOT be trusted implicitly (PR #431 review finding 2)
+    "https://storage.googleapis.com/attacker-bucket/fake-export.zip",
 ])
 def test_non_allowlisted_hosts(url):
     from totalreclaw.hermes.tools import _is_allowlisted_export_host
     assert _is_allowlisted_export_host(url) is False
+
+
+def test_redirects_are_revalidated():
+    """PR #431 review finding 3 — an open redirect on a trusted host must
+    not escape the allowlist, and confirmed fetches must not downgrade to
+    cleartext http."""
+    import urllib.error
+    from totalreclaw.hermes.tools import _make_redirect_validator
+
+    strict = _make_redirect_validator(True)()
+    with pytest.raises(urllib.error.URLError):
+        strict.redirect_request(
+            MagicMock(), None, 302, "Found", {}, "https://evil.example.com/x.zip",
+        )
+
+    confirmed = _make_redirect_validator(False)()
+    with pytest.raises(urllib.error.URLError):
+        confirmed.redirect_request(
+            MagicMock(), None, 302, "Found", {}, "http://evil.example.com/x.zip",
+        )
 
 
 @pytest.mark.asyncio
@@ -247,6 +269,78 @@ async def test_unknown_host_with_confirmation_proceeds(tmp_path, monkeypatch):
     ))
     assert fetched == ["https://evil.example.com/e.zip"]
     assert res.get("url_confirmation_required") is not True
+    assert process.await_count >= 1
+
+
+@pytest.mark.asyncio
+async def test_url_is_not_downloaded_before_disclosure(tmp_path, monkeypatch):
+    """PR #431 review finding 4 — a gated source given a URL must return the
+    disclosure BEFORE spending the download."""
+    _redirect_state_dir(tmp_path, monkeypatch)
+    from totalreclaw.hermes import tools
+    _patch_engine(monkeypatch)
+    _patch_provider(monkeypatch)
+    fetched = _patch_fetch(monkeypatch, tmp_path)
+    state = _state_with_tier("pro")
+
+    res = json.loads(await tools.import_from(
+        {"source": "chatgpt", "url": "https://chatgpt.com/backup/e.zip"}, state,
+    ))
+    assert res.get("disclosure_required") is True
+    assert fetched == []  # nothing downloaded pre-consent
+
+
+# ---------------------------------------------------------------------------
+# import_batch must honor the same gate (PR #431 review finding 1)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_import_batch_is_disclosure_gated(tmp_path, monkeypatch):
+    _redirect_state_dir(tmp_path, monkeypatch)
+    from totalreclaw.hermes import tools
+    process = _patch_engine(monkeypatch)
+    _patch_provider(monkeypatch)
+    state = _state_with_tier("pro")
+
+    res = json.loads(await tools.import_batch(
+        {"source": "chatgpt", "content": "x", "offset": 0}, state,
+    ))
+    assert res.get("disclosure_required") is True
+    assert process.await_count == 0
+
+
+@pytest.mark.asyncio
+async def test_import_batch_honors_persisted_consent(tmp_path, monkeypatch):
+    """The documented flow — import_from records consent, import_batch loops
+    without re-prompting."""
+    _redirect_state_dir(tmp_path, monkeypatch)
+    from totalreclaw.hermes import tools
+    process = _patch_engine(monkeypatch)
+    state = _state_with_tier("pro")
+
+    write_import_state(ImportState(
+        import_id="consented", source="chatgpt", status="running",
+        started_at="2026-07-05T00:00:00+00:00", last_updated="x",
+        disclosure_confirmed=True,
+    ))
+    res = json.loads(await tools.import_batch(
+        {"source": "chatgpt", "content": "x", "offset": 0}, state,
+    ))
+    assert res.get("disclosure_required") is not True
+    assert process.await_count >= 1
+
+
+@pytest.mark.asyncio
+async def test_import_batch_prestructured_not_gated(tmp_path, monkeypatch):
+    _redirect_state_dir(tmp_path, monkeypatch)
+    from totalreclaw.hermes import tools
+    process = _patch_engine(monkeypatch)
+    state = _state_with_tier("pro")
+
+    res = json.loads(await tools.import_batch(
+        {"source": "mem0", "content": "x", "offset": 0}, state,
+    ))
+    assert res.get("disclosure_required") is not True
     assert process.await_count >= 1
 
 
