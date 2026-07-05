@@ -46,6 +46,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+# Single source of truth for the relay URL (repo forbids duplicate URL literals).
+from .relay import _HARDCODED_DEFAULT_URL as _CANONICAL_PROD_URL
+
 logger = logging.getLogger(__name__)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -70,9 +73,13 @@ MAX_BATCH_SIZE = 30
 #: (~/.totalreclaw/import-state/). See import_state.py.
 RECRYSTALLIZE_STATE_DIR: Path = Path.home() / ".totalreclaw" / "recrystallize-state"
 
-#: Hard project rule: all testing hits staging, never production.
-STAGING_RELAY_URL = "https://api-staging.totalreclaw.xyz"
-PRODUCTION_RELAY_URL = "https://api.totalreclaw.xyz"
+#: Hard project rule: all testing hits staging, never production. Both URLs are
+#: sourced from the ONE canonical site (`relay._HARDCODED_DEFAULT_URL`) rather
+#: than re-baked here — the repo forbids duplicate URL literals (see
+#: `test_no_other_hardcoded_default_url_sites`). Staging is the same host with
+#: the `api-staging` subdomain; also overridable via `TOTALRECLAW_SERVER_URL`.
+PRODUCTION_RELAY_URL = _CANONICAL_PROD_URL
+STAGING_RELAY_URL = PRODUCTION_RELAY_URL.replace("://api.", "://api-staging.")
 
 
 # ── Data model ────────────────────────────────────────────────────────────────
