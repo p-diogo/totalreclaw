@@ -486,7 +486,8 @@ async function submitFactOnChainLocked(
   // On AA10 "sender already constructed", mark sender as force-deployed and retry.
   // AA10 can occur at pm_sponsorUserOperation (initCode present on deployed sender)
   // or eth_sendUserOperation (same root cause). This loop handles both.
-  let userOpHash: string;
+  let userOpHash: string | undefined;
+  let lastErr: any;
   let attempt = 0;
   const maxAttempts = 2;
 
@@ -544,6 +545,7 @@ async function submitFactOnChainLocked(
       const msg = err?.message || '';
       // AA10 "sender already constructed" or AA25 invalid nonce → retry
       if (/AA25|AA10|invalid account nonce|already being processed/i.test(msg)) {
+        lastErr = err;
         console.error(`AA25/AA10 detected (attempt ${attempt}/${maxAttempts}), retrying...`);
         // On AA10, force-mark sender as deployed so next retry omits initCode
         if (/AA10/i.test(msg)) {
@@ -560,6 +562,12 @@ async function submitFactOnChainLocked(
       throw err;
     }
   }
+
+  // Retry budget exhausted with no successful submission — throw the last
+  // retryable error instead of falling through to a receipt poll against an
+  // undefined userOpHash (which used to burn 120s and surface a misleading
+  // 'submission failed (tx=…)'). See #402.
+  if (userOpHash === undefined) throw lastErr;
 
   // 10. Wait for receipt (poll up to 120s)
   let receipt = null;
@@ -682,7 +690,8 @@ async function submitFactBatchOnChainLocked(
 
   // Single retry loop: getInitCode → build UserOp → estimate → sponsor → sign → send
   // On AA10 "sender already constructed", mark sender as force-deployed and retry.
-  let userOpHash: string;
+  let userOpHash: string | undefined;
+  let lastErr: any;
   let attempt = 0;
   const maxAttempts = 2;
 
@@ -754,6 +763,7 @@ async function submitFactBatchOnChainLocked(
       const msg = err?.message || '';
       // AA10 "sender already constructed" or AA25 invalid nonce → retry
       if (/AA25|AA10|invalid account nonce|already being processed/i.test(msg)) {
+        lastErr = err;
         console.error(`AA25/AA10 detected (batch, attempt ${attempt}/${maxAttempts}), retrying...`);
         // On AA10, force-mark sender as deployed so next retry omits initCode
         if (/AA10/i.test(msg)) {
@@ -770,6 +780,12 @@ async function submitFactBatchOnChainLocked(
       throw err;
     }
   }
+
+  // Retry budget exhausted with no successful submission — throw the last
+  // retryable error instead of polling for a receipt against an undefined
+  // userOpHash (which used to burn 120s and surface a misleading
+  // 'submission failed (tx=…)'). See #402.
+  if (userOpHash === undefined) throw lastErr;
 
   // Wait for receipt (poll up to 120s)
   let receipt = null;

@@ -497,6 +497,90 @@ function restoreFetch(ctl: FetchController): void {
 }
 
 // ---------------------------------------------------------------------------
+// Scenario 7: retry budget exhausted (2× AA25) → REJECTS, no receipt poll (#402)
+// ---------------------------------------------------------------------------
+//
+// When every attempt in the submit retry loop fails with a retryable error
+// (AA25 here), the old loop exited silently with `userOpHash` undefined, then
+// ran the 120s receipt poll against undefined and surfaced a misleading
+// 'On-chain batch submission failed (tx=…)'. The fix captures the last error
+// and, if no userOpHash was produced, throws it after the loop — so the caller
+// gets the real AA25 error immediately, with NO receipt polling.
+
+{
+  __resetDeployedAccountsForTests();
+  __resetRpcProbeCountForTests();
+
+  // Make the 15s retry sleeps + 2s receipt-poll sleeps instant so the test is
+  // fast and deterministic. Restore in finally.
+  const origSetTimeout = globalThis.setTimeout;
+  globalThis.setTimeout = ((fn: any) => origSetTimeout(fn, 0)) as any;
+
+  const ctl = installFetchMock();
+
+  const mockWasm = {
+    deriveEoa: () => ({ private_key: '0x' + 'a'.repeat(64), address: '0xbbbb' + 'b'.repeat(36) }),
+    encodeBatchCall: () => new Uint8Array([1, 2, 3]),
+    getEntryPointAddress: () => '0x5FF137D4b0FD9490299197e9fB6f7936EF32a416',
+    hashUserOp: () => '0x' + 'c'.repeat(64),
+    signUserOp: () => 'd'.repeat(128),
+    getSimpleAccountFactory: () => '0x9406Cc6185a346906296840746125A0E4493a848',
+    getDataEdgeAddress: () => '0x' + 'e'.repeat(40),
+  };
+  __setWasmForTests(mockWasm);
+
+  function stage(method: string, result: any, error?: { message: string }) {
+    if (!ctl.responseQueue.has(method)) ctl.responseQueue.set(method, []);
+    ctl.responseQueue.get(method)!.push({ result, error });
+  }
+
+  // gas price (once, before the loop)
+  stage('pimlico_getUserOperationGasPrice', { fast: { maxFeePerGas: '0x1', maxPriorityFeePerGas: '0x1' } });
+  // Two full attempts: deployed sender (no initCode), nonce, gas estimate, sponsor OK, send → AA25.
+  for (let i = 0; i < 2; i++) {
+    stage('eth_getCode', '0x1234'); // deployed → no initCode
+    stage('eth_call', '0x0'); // nonce
+    stage('eth_estimateUserOperationGas', { callGasLimit: '0x10000', verificationGasLimit: '0x10000', preVerificationGas: '0x10000' });
+    stage('pm_sponsorUserOperation', { callGasLimit: '0x10000', verificationGasLimit: '0x10000', preVerificationGas: '0x10000', paymaster: '0x' + 'f'.repeat(40), paymasterData: '0x' });
+    stage('eth_sendUserOperation', null, { message: 'AA25 invalid account nonce' });
+  }
+  // If the (buggy) code polls for a receipt, it would drain these — the fix must NOT reach here.
+  stage('eth_getUserOperationReceipt', null);
+
+  const { submitFactBatchOnChain } = await import('./subgraph-store.js');
+  const config = {
+    relayUrl: 'http://dummy-relay/v1',
+    mnemonic: 'test test test test test test test test test test test junk',
+    walletAddress: '0xaaaa' + 'a'.repeat(36),
+    chainId: 100,
+    entryPointAddress: '0x5FF137D4b0FD9490299197e9fB6f7936EF32a416',
+    cachePath: '',
+    dataEdgeAddress: '0x' + 'e'.repeat(40),
+  };
+  const payloads = [Buffer.from([1]), Buffer.from([2])];
+
+  let threw = false;
+  let errMsg = '';
+  try {
+    await submitFactBatchOnChain(payloads, config);
+  } catch (e: any) {
+    threw = true;
+    errMsg = e?.message || '';
+  } finally {
+    globalThis.setTimeout = origSetTimeout;
+    restoreFetch(ctl);
+    __clearWasmForTests();
+  }
+
+  check(threw, 'retry exhausted (2× AA25): submitFactBatchOnChain REJECTS (does not resolve)');
+  check(/AA25/i.test(errMsg), `retry exhausted: thrown error preserves AA25 message (got: ${errMsg})`);
+  const sendCalls = ctl.requests.filter(r => r.method === 'eth_sendUserOperation').length;
+  check(sendCalls === 2, `retry exhausted: exactly 2 eth_sendUserOperation attempts (got ${sendCalls})`);
+  const receiptCalls = ctl.requests.filter(r => r.method === 'eth_getUserOperationReceipt').length;
+  check(receiptCalls === 0, `retry exhausted: NO receipt polling after throw (got ${receiptCalls})`);
+}
+
+// ---------------------------------------------------------------------------
 // Summary
 // ---------------------------------------------------------------------------
 
