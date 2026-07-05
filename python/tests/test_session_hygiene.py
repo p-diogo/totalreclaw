@@ -8,12 +8,18 @@ import time
 
 import pytest
 
+import totalreclaw.agent.state as state_mod
 from totalreclaw.agent.state import (
     AgentState,
     _session_id_from_host,
     _session_idle_seconds,
 )
 from totalreclaw.hermes import hooks
+
+
+def _advance_clock(monkeypatch, base: float, delta: float) -> None:
+    """Pin state.time.monotonic to base+delta (robust vs fresh-boot clocks)."""
+    monkeypatch.setattr(state_mod.time, "monotonic", lambda: base + delta)
 
 
 # ── honoring a host-provided conversation id ──────────────────────────
@@ -41,24 +47,24 @@ def test_start_session_no_host_mints_uuid7():
 
 
 # ── idle-timeout rollover eligibility ─────────────────────────────────
-def test_should_roll_only_when_idle_and_self_minted():
+def test_should_roll_only_when_idle_and_self_minted(monkeypatch):
     s = AgentState()
     # no session yet
     assert s.should_roll_idle_session(3600) is False
     # fresh minted session, no gap
     s.start_session()
     assert s.should_roll_idle_session(3600) is False
-    # simulate a long gap since the last turn
-    s._last_activity = time.monotonic() - 10_000
+    # advance the clock past the idle window (real _last_activity, no negatives)
+    _advance_clock(monkeypatch, s._last_activity, 10_000)
     assert s.should_roll_idle_session(3600) is True
     # disabled by config
     assert s.should_roll_idle_session(0) is False
 
 
-def test_host_derived_session_never_idle_rolls():
+def test_host_derived_session_never_idle_rolls(monkeypatch):
     s = AgentState()
     s.start_session(external_id="telegram:chat=9")
-    s._last_activity = time.monotonic() - 10_000
+    _advance_clock(monkeypatch, s._last_activity, 10_000)
     # the host owns this conversation boundary — never split it on a timer
     assert s.should_roll_idle_session(3600) is False
 
@@ -80,7 +86,7 @@ def test_maybe_roll_rotates_session_id(monkeypatch):
     # force the cheap unconfigured branch — no network / real vault
     monkeypatch.setattr(s, "is_configured", lambda: False)
     first = s.start_session()
-    s._last_activity = time.monotonic() - 10_000
+    _advance_clock(monkeypatch, s._last_activity, 10_000)
     hooks._maybe_roll_idle_session(s)
     assert s.session_id is not None
     assert s.session_id != first, "an idle turn must start a fresh session id"
