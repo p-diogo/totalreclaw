@@ -219,12 +219,21 @@ let activePoller: TrajectoryPollerHandle | null = null;
 
 /**
  * Path to THIS module's own file, captured once at load. Each poll tick
- * verifies it still exists; if the plugin dir was removed/replaced (an old
- * version uninstalled), the poller self-terminates so a zombie module instance
- * from a stale version can't keep submitting UserOps (rc.20, #402). Tests
- * override this via `opts.sentinelPath`.
+ * verifies it still exists AND is the same file (same inode + mtime); if the
+ * plugin dir was removed, or the file at this path was swapped for a different
+ * one (an old version uninstalled then a new version reinstalled at the SAME
+ * path within seconds — the gateway restart is an in-process signal, so the
+ * stale module instance survives), the poller self-terminates so a zombie
+ * module instance from a stale version can't keep submitting UserOps (rc.20,
+ * #402). An existence-only check missed the same-path reinstall case (review
+ * LOW-2, observed live: OpenClaw recreates dist at the same path in ~45s, so
+ * `existsSync` stayed true and the old-version poller ran on). Tests override
+ * this path via `opts.sentinelPath`.
  */
 const MODULE_SENTINEL = fileURLToPath(import.meta.url);
+
+/** File-identity fingerprint used to detect a same-path replacement. */
+type SentinelIdentity = { ino: number; mtimeMs: number };
 
 /**
  * Start the trajectory poller. Runs an initial poll after 5 s, then
@@ -242,6 +251,18 @@ export function startTrajectoryPoller(
   const pollIntervalMs = opts.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
   const stateFile = opts.stateFile ?? STATE_FILE;
   const sentinelPath = opts.sentinelPath ?? MODULE_SENTINEL;
+
+  // Capture the sentinel's file identity (inode + mtime) once at start so each
+  // tick can tell "same file still there" from "different file swapped in at
+  // the same path" (reinstall/upgrade). If the initial stat throws, fall back
+  // to existence-only semantics rather than crashing startup.
+  let sentinelIdentity: SentinelIdentity | null = null;
+  try {
+    const st = fs.statSync(sentinelPath);
+    sentinelIdentity = { ino: st.ino, mtimeMs: st.mtimeMs };
+  } catch {
+    sentinelIdentity = null;
+  }
 
   // Singleton guard: stop any poller this module instance started earlier so a
   // same-version re-register (in-process SIGUSR1 restart) does not stack a
@@ -262,11 +283,24 @@ export function startTrajectoryPoller(
 
   const pollAndExtract = async (): Promise<void> => {
     try {
-      // Cross-version self-termination: if this module's own file is gone
-      // (plugin uninstalled or replaced by a new version), stop — a zombie
-      // poller from a stale module instance must not keep capturing.
-      if (!fs.existsSync(sentinelPath)) {
+      // Cross-version self-termination: if this module's own file is gone, or a
+      // DIFFERENT file was swapped in at the same path (uninstall→reinstall of a
+      // newer version), stop — a zombie poller from a stale module instance must
+      // not keep capturing.
+      let sentinelStat: fs.Stats | null = null;
+      try {
+        sentinelStat = fs.statSync(sentinelPath);
+      } catch {
+        // File gone (plugin dir removed).
         deps.logger.warn('extractd: poller self-terminated (plugin dir removed)');
+        stop();
+        return;
+      }
+      if (
+        sentinelIdentity !== null &&
+        (sentinelStat.ino !== sentinelIdentity.ino || sentinelStat.mtimeMs !== sentinelIdentity.mtimeMs)
+      ) {
+        deps.logger.warn('extractd: poller self-terminated (plugin file replaced — reinstall/upgrade detected)');
         stop();
         return;
       }

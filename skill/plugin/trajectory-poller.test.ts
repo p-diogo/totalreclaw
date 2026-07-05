@@ -752,6 +752,44 @@ async function runTests(): Promise<void> {
     );
     assertEq(ticks, ticksBeforeRemoval, 'self-term: ticks freeze after sentinel removed (interval cleared)');
   }
+
+  // 7c. Same-path replacement — replacing the sentinel file in place (new
+  // mtime/inode at the SAME path) stops ticks, even though the file EXISTS
+  // the entire time. Guards the uninstall→reinstall zombie-poller hole
+  // (#402, review LOW-2, observed live on the QA host): OpenClaw recreates
+  // dist at the same path within ~45s, so an existence check alone never
+  // trips and an old-version poller keeps running alongside the new one.
+  {
+    const home = path.join(TMP, 'replace-home');
+    fs.mkdirSync(path.join(home, '.openclaw', 'agents'), { recursive: true });
+    const origHome = process.env.HOME;
+    process.env.HOME = home;
+    const sentinel = path.join(home, 'sentinel-c.js');
+    fs.writeFileSync(sentinel, '// sentinel v1');
+    const stateFile = path.join(home, '.totalreclaw', 'state.json');
+
+    let ticks = 0;
+    const msgs: string[] = [];
+    const h = startTrajectoryPoller(tickDeps(() => { ticks++; }, msgs), { pollIntervalMs: 20, stateFile, sentinelPath: sentinel });
+    await sleep(80);
+    const ticksBeforeReplace = ticks;
+    assert(ticksBeforeReplace >= 1, 'replace: poller ticks while sentinel unchanged');
+    // Replace at the SAME path: an in-place rewrite ~80 ms after creation bumps
+    // mtimeMs (and the identity check also compares inode). existsSync stays
+    // true throughout — that is the whole point: the old existence guard would
+    // never notice this, the identity guard must.
+    fs.writeFileSync(sentinel, '// sentinel v2 (reinstalled)');
+    assert(fs.existsSync(sentinel), 'replace: sentinel still exists at same path after replacement');
+    await sleep(120);
+    h.stop();
+    if (origHome === undefined) delete process.env.HOME; else process.env.HOME = origHome;
+
+    assert(
+      msgs.some((m) => /poller self-terminated \(plugin file replaced/.test(m)),
+      'replace: logs self-terminated when sentinel replaced at same path',
+    );
+    assertEq(ticks, ticksBeforeReplace, 'replace: ticks freeze after sentinel replaced (identity check tripped)');
+  }
 }
 
 // ---------------------------------------------------------------------------
