@@ -36,6 +36,7 @@ def _state_with_tier(tier="pro"):
 
 def _patch_engine(monkeypatch, *, process=None):
     import totalreclaw.import_engine as ie
+    from totalreclaw.import_adapters import BatchImportResult
     monkeypatch.setattr(
         ie.ImportEngine, "estimate",
         lambda self, **k: {
@@ -44,8 +45,12 @@ def _patch_engine(monkeypatch, *, process=None):
         },
     )
     if process is None:
-        process = AsyncMock(return_value=MagicMock(
-            facts_stored=3, facts_extracted=3, is_complete=True,
+        # A real dataclass: the small-import path round-trips the result
+        # through dataclasses.asdict().
+        process = AsyncMock(return_value=BatchImportResult(
+            success=True, batch_offset=0, batch_size=25, chunks_processed=2,
+            total_chunks=2, facts_extracted=3, facts_stored=3,
+            remaining_chunks=0, is_complete=True,
         ))
     monkeypatch.setattr(ie.ImportEngine, "process_batch", lambda self, **k: process(**k))
     return process

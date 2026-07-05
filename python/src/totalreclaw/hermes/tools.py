@@ -867,6 +867,101 @@ async def _persist_import_memory(state: "PluginState", text: str, importance: fl
         logger.info("import-memory persist skipped: %s", e)
 
 
+# imp-2 (#244): sources whose import sends raw conversation text to an LLM
+# for fact extraction. These REQUIRE the privacy disclosure (PRD-IMP G-4).
+# mem0 / mcp-memory ship pre-structured facts — no conversation text ever
+# reaches an LLM, so no disclosure applies.
+_EXTRACTION_IMPORT_SOURCES = frozenset({"chatgpt", "claude", "gemini"})
+
+# imp-2 (#244): hosts a memory export legitimately comes from. URLs on these
+# hosts (or their subdomains) fetch without friction; anything else needs an
+# explicit user confirmation first (phishing / malicious-download guard).
+_EXPORT_URL_ALLOWLIST = (
+    "chatgpt.com",
+    "openai.com",
+    "takeout.google.com",
+    "googleapis.com",
+    "claude.ai",
+    "anthropic.com",
+)
+
+
+def _is_allowlisted_export_host(url: str) -> bool:
+    """True when *url* is https on an allowlisted export host (or subdomain)."""
+    from urllib.parse import urlparse
+
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False
+    if parsed.scheme != "https" or not parsed.hostname:
+        return False
+    host = parsed.hostname.lower()
+    return any(
+        host == allowed or host.endswith("." + allowed)
+        for allowed in _EXPORT_URL_ALLOWLIST
+    )
+
+
+def _extraction_provider_label() -> str:
+    """Human-readable name of the LLM that will read conversation text.
+
+    The privacy disclosure must name the provider explicitly (PRD-IMP G-4);
+    this resolves the same config chain ``_make_extractor`` uses.
+    """
+    try:
+        from totalreclaw.agent.llm_client import read_hermes_llm_config, detect_llm_config
+        config = read_hermes_llm_config() or detect_llm_config()
+        if config:
+            provider = getattr(config, "provider", None)
+            model = getattr(config, "model", None)
+            if provider and model:
+                return f"{provider} ({model})"
+            if provider:
+                return str(provider)
+    except Exception:
+        pass
+    return "your configured LLM provider"
+
+
+def _fetch_export_url(url: str) -> str:
+    """Download an export archive to a temp file and return its path.
+
+    Enforces the 500MB import cap during streaming so a hostile or
+    mis-linked URL can't fill the disk.
+    """
+    import tempfile
+    import urllib.request
+    from urllib.parse import urlparse
+
+    cap = 500 * 1024 * 1024
+    suffix = os.path.splitext(urlparse(url).path)[1] or ".download"
+    req = urllib.request.Request(url, headers={"User-Agent": "totalreclaw-import"})
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        length = resp.headers.get("Content-Length")
+        if length and int(length) > cap:
+            raise ValueError(f"Download is {int(length) / (1024*1024):.0f}MB — exceeds the 500MB import cap.")
+        fd, tmp_path = tempfile.mkstemp(prefix="totalreclaw-import-", suffix=suffix)
+        written = 0
+        try:
+            with os.fdopen(fd, "wb") as out:
+                while True:
+                    block = resp.read(1 << 20)
+                    if not block:
+                        break
+                    written += len(block)
+                    if written > cap:
+                        raise ValueError("Download exceeds the 500MB import cap.")
+                    out.write(block)
+        except Exception:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
+    return tmp_path
+
+
 async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
     """Import memories from other AI tools (Gemini, ChatGPT, Claude, Mem0, etc.)."""
     client = state.get_client()
@@ -878,6 +973,9 @@ async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
     content = args.get("content")
     dry_run = args.get("dry_run", False)
     resume_id = args.get("resume_id")
+    disclosure_confirmed = bool(args.get("disclosure_confirmed", False))
+    url = args.get("url")
+    url_confirmed = bool(args.get("url_confirmed", False))
 
     if not source:
         from totalreclaw.import_adapters import list_sources
@@ -887,6 +985,28 @@ async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
         })
 
     import_id = resume_id or str(uuid.uuid4())
+
+    # ── imp-2: URL input — allowlist gate, then server-side fetch ──────────
+    if url and not file_path and not content:
+        if not _is_allowlisted_export_host(url) and not url_confirmed:
+            from urllib.parse import urlparse
+            host = (urlparse(url).hostname or url) if url else url
+            return json.dumps({
+                "url_confirmation_required": True,
+                "host": host,
+                "import_id": import_id,
+                "message": (
+                    f"⚠️ This URL is from `{host}`, which I don't recognize as a "
+                    "trusted memory-export host. Fetching it could expose you to "
+                    "phishing or download a malicious file. Ask the user to "
+                    "confirm they trust this source, then call again with "
+                    "url_confirmed=true. Nothing was downloaded."
+                ),
+            })
+        try:
+            file_path = _fetch_export_url(url)
+        except Exception as e:
+            return json.dumps({"error": f"Failed to download export from URL: {e}"})
 
     try:
         from totalreclaw.import_engine import ImportEngine
@@ -940,6 +1060,33 @@ async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
                 ),
             })
 
+        # ── imp-2: mandatory privacy disclosure (PRD-IMP G-4) ──────────────
+        # Extraction-based imports send the user's raw past conversations to
+        # an LLM in cleartext. The user must consent AFTER being told which
+        # provider will read them — before any extraction begins. Consent is
+        # persisted in the import state file so a resume never re-prompts.
+        if source in _EXTRACTION_IMPORT_SOURCES and not disclosure_confirmed:
+            prior = read_import_state(resume_id) if resume_id else None
+            if not (prior and prior.disclosure_confirmed):
+                provider_label = _extraction_provider_label()
+                return json.dumps({
+                    "disclosure_required": True,
+                    "import_id": import_id,
+                    "llm_provider": provider_label,
+                    "estimated_facts": estimate.get("estimated_facts"),
+                    "estimated_minutes": estimate.get("estimated_minutes"),
+                    "message": (
+                        "Before importing: extracting memories from this "
+                        f"{source} export sends your past conversations in "
+                        f"cleartext to {provider_label} for fact extraction. "
+                        "TotalReclaw itself never sees plaintext — but that LLM "
+                        "does. Relay this to the user, ask for explicit "
+                        "confirmation, and only then call again with "
+                        "disclosure_confirmed=true. If they decline, stop — "
+                        "nothing has been processed."
+                    ),
+                })
+
         if total_items <= _SMALL_IMPORT_THRESHOLD:
             # Small import: process synchronously but still write state for tracking.
             now = datetime.now(timezone.utc).isoformat()
@@ -951,6 +1098,7 @@ async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
                 file_path=file_path,
                 estimated_total_facts=estimate.get("estimated_facts", 0),
                 estimated_minutes=estimate.get("estimated_minutes", 0),
+                disclosure_confirmed=True,
             )
             write_import_state(istate)
             try:
@@ -988,6 +1136,7 @@ async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
                 estimated_total_facts=estimate.get("estimated_facts", 0),
                 estimated_minutes=estimated_minutes,
                 estimated_completion_iso=eta_iso,
+                disclosure_confirmed=True,
             )
             write_import_state(istate)
 
