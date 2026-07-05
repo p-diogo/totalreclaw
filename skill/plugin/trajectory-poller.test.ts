@@ -635,17 +635,37 @@ async function runTests(): Promise<void> {
   }
 
   // -------------------------------------------------------------------------
-  // 6. recheckSlot fires once per poll tick (3.3.12-rc.19 slot self-heal)
+  // 6. No slot re-check on poll ticks (rc.20, #402)
   // -------------------------------------------------------------------------
+  // OpenClaw 2026.6.8 natively sets `plugins.slots.memory=<pluginId>` during
+  // `plugins install`/`enable` (its persistPluginInstall "slot selection"
+  // phase), so TR's hand-written per-tick slot self-heal (rc.18/rc.19) was
+  // retired. `recheckSlot` is no longer a field on TrajectoryPollerDeps and a
+  // poll tick performs no slot-related side effect. A recheckSlot-shaped
+  // callback (cast through unknown, since the field no longer exists on the
+  // deps type) must NEVER be invoked.
   {
     let slotChecks = 0;
     const home = path.join(TMP, 'slot-recheck-home');
     fs.mkdirSync(path.join(home, '.totalreclaw'), { recursive: true });
-    await withPoller(home, { recheckSlot: () => { slotChecks++; } }, async (handle) => {
+    const stray = { recheckSlot: () => { slotChecks++; } } as unknown as Partial<TrajectoryPollerDeps>;
+    await withPoller(home, stray, async (handle) => {
       await handle.pollOnce();
-      assertEq(slotChecks, 1, 'recheckSlot invoked once per poll tick');
       await handle.pollOnce();
-      assertEq(slotChecks, 2, 'recheckSlot invoked on every tick (2 polls → 2 calls)');
+      assertEq(slotChecks, 0, 'poller performs NO slot re-check (native OpenClaw slot-selection, #402)');
+    });
+  }
+
+  // Regression (rc.20, #402): startTrajectoryPoller runs with NO slot-related
+  // dep at all — the deps object built by withPoller has no recheckSlot, and
+  // a poll tick still extracts + persists normally.
+  {
+    const home = path.join(TMP, 'no-slot-dep-home');
+    writeTrajectoryFile(home, 'sess-noslot', [['user 1', 'assistant 1'], ['user 2', 'assistant 2']]);
+    await withPoller(home, {}, async (h, calls) => {
+      await h.pollOnce();
+      assertEq(calls.extraction, 1, 'poller extracts without any slot dep (#402)');
+      assert(calls.persisted > 0, 'poller persists without any slot dep (#402)');
     });
   }
 }
