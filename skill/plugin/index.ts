@@ -1006,12 +1006,15 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
           const billingData = await resp.json() as Record<string, unknown>;
           const tier = billingData.tier as string;
           const expiresAt = billingData.expires_at as string | undefined;
-          // Populate billing cache for future use.
+          // Populate billing cache for future use. Copy the relay's
+          // authoritative chain_id so it lands on disk and drives the runtime
+          // chain override verbatim (#402).
           writeBillingCache({
             tier: tier || 'free',
             free_writes_used: (billingData.free_writes_used as number) ?? 0,
             free_writes_limit: (billingData.free_writes_limit as number) ?? 0,
             features: billingData.features as BillingCache['features'] | undefined,
+            chain_id: billingData.chain_id as number | undefined,
             checked_at: Date.now(),
           });
           if (tier === 'pro' && expiresAt) {
@@ -4760,6 +4763,8 @@ const plugin = {
                   free_writes_used: (billingData.free_writes_used as number) ?? 0,
                   free_writes_limit: (billingData.free_writes_limit as number) ?? 0,
                   features: billingData.features as BillingCache['features'] | undefined,
+                  // Relay's authoritative chain_id → drives the chain override verbatim (#402).
+                  chain_id: billingData.chain_id as number | undefined,
                   checked_at: Date.now(),
                 };
                 writeBillingCache(cache);

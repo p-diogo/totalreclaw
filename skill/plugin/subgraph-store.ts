@@ -34,7 +34,7 @@ export interface SubgraphStoreConfig {
   relayUrl: string;           // TotalReclaw relay server URL (proxies bundler + subgraph)
   mnemonic: string;           // BIP-39 mnemonic for key derivation
   cachePath: string;          // Hot cache file path
-  chainId: number;            // 100 for Gnosis mainnet, 84532 for Base Sepolia
+  chainId: number;            // Gnosis mainnet (100) after ops-1; from relay chain_id (#402)
   dataEdgeAddress: string;    // EventfulDataEdge contract address
   entryPointAddress: string;  // ERC-4337 EntryPoint v0.7
   authKeyHex?: string;        // HKDF auth key for relay server Authorization header
@@ -121,9 +121,12 @@ function getDefaultRpcUrl(chainId: number): string {
     case 100:
       return 'https://rpc.gnosischain.com';
     case 84532:
+      // Retained for the legacy Base Sepolia chain id, but after ops-1 nothing
+      // should resolve here — the relay's authoritative chain_id is 100 (#402).
       return 'https://sepolia.base.org';
     default:
-      return 'https://sepolia.base.org';
+      // Unknown chain id → Gnosis mainnet (after ops-1 default), NOT Base Sepolia.
+      return 'https://rpc.gnosischain.com';
   }
 }
 
@@ -139,7 +142,9 @@ function getDefaultRpcUrl(chainId: number): string {
  */
 export async function deriveSmartAccountAddress(mnemonic: string, chainId?: number): Promise<string> {
   const eoa = getWasm().deriveEoa(mnemonic) as { private_key: string; address: string };
-  const resolvedChainId = chainId ?? 84532;
+  // Default to Gnosis mainnet (100) after ops-1 — the SA address is CREATE2 and
+  // byte-equal across chains, but the RPC we query must be the live one (#402).
+  const resolvedChainId = chainId ?? 100;
 
   // SimpleAccountFactory.getAddress(address owner, uint256 salt) — view function
   // Selector: 0x8cb84e18 = keccak256("getAddress(address,uint256)")[0:4]
