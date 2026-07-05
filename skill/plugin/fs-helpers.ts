@@ -1081,7 +1081,8 @@ export function patchOpenClawConfig(
     // was redundant on the good path and twice failed in production. The
     // plugin no longer touches the memory slot — a pre-existing value is left
     // byte-identical. Fix numbering below is preserved for continuity with the
-    // #225/#226 history. The Fix #6 install-record self-heal (above) stays.
+    // #225/#226 history. The Fix #6 install-record self-heal was retired
+    // above too (rc.20, #402).
 
     // --- Fix #2: plugins.entries.totalreclaw.hooks.allowConversationAccess = true ---
     if (typeof cfg.plugins.entries !== 'object' || cfg.plugins.entries === null) {

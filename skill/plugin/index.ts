@@ -3742,7 +3742,8 @@ const plugin = {
             'TotalReclaw: failed to auto-patch openclaw.json for OpenClaw 2026.5.x ' +
               'compatibility. If memory hooks are silently disabled, add this key ' +
               'manually: plugins.entries.totalreclaw.hooks.allowConversationAccess=true. ' +
-              '(The memory slot is set by OpenClaw itself on plugin install/enable.)',
+              '(The memory slot is set by OpenClaw itself on plugin install/enable; ' +
+              'if the slot is wrong, run: openclaw plugins enable totalreclaw)',
           );
         }
         // 'unchanged' and 'skipped' are silent — no log needed.
