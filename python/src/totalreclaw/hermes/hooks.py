@@ -565,6 +565,9 @@ def _maybe_roll_idle_session(state: "PluginState") -> None:
     are left alone. Best-effort — never raises into the turn.
     """
     try:
+        # Tolerate legacy state subclasses / test mocks without the new API.
+        if not hasattr(state, "should_roll_idle_session"):
+            return
         if not state.should_roll_idle_session(_session_idle_seconds()):
             return
         if not state.is_configured():
@@ -878,7 +881,9 @@ def post_llm_call(state: "PluginState", **kwargs) -> None:
     """
     # Record turn time for idle-timeout session rollover (every turn, either
     # driver). Kept before the provider gate so activity tracks in both modes.
-    state.note_activity()
+    # hasattr-guarded to tolerate legacy state subclasses / test mocks.
+    if hasattr(state, "note_activity"):
+        state.note_activity()
 
     # Fix #191 safety net — pick up a mid-session pair before ingest_turn
     # decides whether the user is configured. Always runs (the provider does
