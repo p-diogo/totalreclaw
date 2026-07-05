@@ -260,7 +260,7 @@ def test_engine_groups_sessions_by_conversation_id(monkeypatch):
 
     parse = _parse([_conv("plain"), _conv("long"), _conv("singleton")])
     engine = ImportEngine(client=_BatchClient(), llm_extract=None)
-    sessions = engine._group_chunks_into_sessions(parse.chunks)
+    sessions = asyncio.run(engine._get_session_assignments(parse.chunks))
 
     # one session per conversation, each containing all of that conversation's chunks
     by_conv = {}
@@ -276,7 +276,8 @@ def test_end_to_end_sessions_equal_conversations(monkeypatch):
     monkeypatch.setattr(emb, "get_embedding", lambda t: [0.1, 0.2, 0.3])
 
     async def fake_extract(messages, timestamp):
-        return [{"text": f"fact about {messages[0]['text'][:20]}", "type": "fact", "importance": 8}]
+        # engine contract: messages arrive as [{"role", "content"}]
+        return [{"text": f"fact about {messages[0]['content'][:20]}", "type": "fact", "importance": 8}]
 
     async def fake_completion(prompt):
         return (
