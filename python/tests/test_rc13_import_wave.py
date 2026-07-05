@@ -366,3 +366,102 @@ def test_export_facts_include_provenance(monkeypatch):
     assert facts[0]["source"] == "external"
     assert facts[0]["import_source"] == "chatgpt"
     assert facts[0]["session_id"] == "0198-x"
+
+
+# ---------------------------------------------------------------------------
+# F2 (#422) — client-side pre-write dedup
+# ---------------------------------------------------------------------------
+
+class _DedupBatchClient:
+    """Gnosis client whose vault already contains the 'known' fact."""
+
+    def __init__(self, known_texts):
+        self.known = set(known_texts)
+        self.batches = []
+        self._n = 0
+
+    async def _ensure_chain_id(self):
+        return 100
+
+    async def find_duplicate_texts(self, texts):
+        return [t in self.known for t in texts]
+
+    async def remember_batch(self, payloads, source=None):
+        self.batches.append(list(payloads))
+        ids = [f"f{self._n + i}" for i in range(len(payloads))]
+        self._n += len(payloads)
+        return ids
+
+
+@pytest.mark.asyncio
+async def test_store_skips_crossvault_and_intracall_duplicates():
+    from totalreclaw.import_engine import ImportEngine
+
+    client = _DedupBatchClient(known_texts={"User lives in Lisbon"})
+    engine = ImportEngine(client=client, llm_extract=None)
+
+    facts = [
+        {"text": "User lives in Lisbon", "type": "claim", "importance": 8},   # cross-vault dup
+        {"text": "User visited Bergen", "type": "episode", "importance": 7},
+        {"text": "User visited  bergen", "type": "episode", "importance": 7}, # intra-call dup (normalized)
+        {"text": "User is vegetarian", "type": "preference", "importance": 8},
+    ]
+    stored, errors, dups = await engine._store_facts_chunked(facts)
+    assert not errors
+    assert dups == 2
+    assert stored == 2
+    stored_texts = [p["text"] for b in client.batches for p in b]
+    assert stored_texts == ["User visited Bergen", "User is vegetarian"]
+
+
+@pytest.mark.asyncio
+async def test_dedup_fails_open_when_lookup_errors():
+    from totalreclaw.import_engine import ImportEngine
+
+    class _Brittle(_DedupBatchClient):
+        async def find_duplicate_texts(self, texts):
+            raise RuntimeError("subgraph down")
+
+    client = _Brittle(known_texts=set())
+    engine = ImportEngine(client=client, llm_extract=None)
+    stored, errors, dups = await engine._store_facts_chunked(
+        [{"text": "unique fact", "type": "claim", "importance": 8}],
+    )
+    assert stored == 1 and dups == 0 and not errors
+
+
+@pytest.mark.asyncio
+async def test_find_duplicate_texts_maps_fingerprints():
+    from totalreclaw.client import TotalReclaw
+    import totalreclaw.client as client_mod
+
+    tr = TotalReclaw.__new__(TotalReclaw)  # no real init — no phrase involved
+    tr._keys = MagicMock(dedup_key=b"k" * 32)
+    tr._wallet_address = "0xOWNER"
+    tr._relay = MagicMock()
+
+    async def _noop():
+        return None
+    tr._ensure_address = _noop
+    tr._ensure_registered = _noop
+
+    import totalreclaw.crypto as crypto_mod
+    fp_map = {"a": "fp-a", "b": "fp-b"}
+
+    def fake_fp(text, key):
+        return fp_map[text]
+
+    orig = crypto_mod.generate_content_fingerprint
+    crypto_mod.generate_content_fingerprint = fake_fp
+    try:
+        async def fake_find(keys, owner, relay, fps):
+            return {"fp-a"}
+        orig_find = client_mod.find_existing_content_fps
+        client_mod.find_existing_content_fps = fake_find
+        try:
+            flags = await tr.find_duplicate_texts(["a", "b"])
+        finally:
+            client_mod.find_existing_content_fps = orig_find
+    finally:
+        crypto_mod.generate_content_fingerprint = orig
+    assert flags == [True, False]
