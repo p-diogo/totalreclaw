@@ -567,7 +567,9 @@ async function submitFactOnChainLocked(
   // retryable error instead of falling through to a receipt poll against an
   // undefined userOpHash (which used to burn 120s and surface a misleading
   // 'submission failed (tx=…)'). See #402.
-  if (userOpHash === undefined) throw lastErr;
+  if (userOpHash == null) {
+    throw lastErr ?? new Error('eth_sendUserOperation returned no result');
+  }
 
   // 10. Wait for receipt (poll up to 120s)
   let receipt = null;
@@ -785,7 +787,9 @@ async function submitFactBatchOnChainLocked(
   // retryable error instead of polling for a receipt against an undefined
   // userOpHash (which used to burn 120s and surface a misleading
   // 'submission failed (tx=…)'). See #402.
-  if (userOpHash === undefined) throw lastErr;
+  if (userOpHash == null) {
+    throw lastErr ?? new Error('eth_sendUserOperation returned no result');
+  }
 
   // Wait for receipt (poll up to 120s)
   let receipt = null;
