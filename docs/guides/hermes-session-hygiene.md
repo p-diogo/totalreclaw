@@ -44,9 +44,9 @@ turns apart — Hermes' `pre_llm_call` / `post_llm_call` hooks currently carry o
 the message text, no conversation identifier. The complete fix needs the
 **host** to pass its conversation id — whatever the platform uses to identify a
 conversation (a chat id, a thread/topic id, a room id) — into the per-turn hooks;
-the plugin already knows how to scope by it (mechanism 1). This is platform-
-agnostic: nothing here is specific to any one messenger. Until then, the idle
-rollover covers conversations that are separated in time.
+the plugin already knows how to scope by it (mechanism 1). This mechanism is
+platform-agnostic: nothing here is specific to any one messenger. Until then,
+the idle rollover covers conversations that are separated in time.
 
 ## Tips
 
