@@ -419,6 +419,84 @@ function restoreFetch(ctl: FetchController): void {
 }
 
 // ---------------------------------------------------------------------------
+// Scenario 6: getInitCode — RPC error envelope is NOT "not deployed" (#402)
+// ---------------------------------------------------------------------------
+//
+// A rate-limited public RPC can return a JSON-RPC error envelope (or a
+// non-string result) for eth_getCode. The old code read `.result` as
+// undefined and fell through to "account not deployed" → attached initCode to
+// a possibly-deployed sender → guaranteed AA10 at the sponsor. The fix: any
+// error envelope / non-string result THROWS `eth_getCode failed: ...`. Only a
+// literal '0x'/'0x0' result means not-deployed.
+
+{
+  __resetDeployedAccountsForTests();
+  __resetRpcProbeCountForTests();
+  const ctl = installFetchMock();
+  // eth_getCode returns an error envelope (rate-limited public RPC).
+  ctl.responseQueue.set('eth_getCode', [{ error: { message: 'rate limited' } }]);
+
+  const sender = '0x3333333333333333333333333333333333333333';
+  const eoa    = '0x4444444444444444444444444444444444444444';
+  const rpcUrl = 'http://localhost:0/rpc';
+
+  let threw = false;
+  let errMsg = '';
+  try {
+    await __getInitCodeForTests(sender, eoa, rpcUrl);
+  } catch (e: any) {
+    threw = true;
+    errMsg = e?.message || '';
+  }
+  check(threw, 'getInitCode: RPC error envelope → throws (NOT treated as undeployed)');
+  check(
+    /eth_getCode failed/i.test(errMsg),
+    `getInitCode: thrown message says "eth_getCode failed" (got: ${errMsg})`,
+  );
+
+  restoreFetch(ctl);
+}
+
+{
+  // A non-string result (no error field) also throws — never fabricate initCode.
+  __resetDeployedAccountsForTests();
+  __resetRpcProbeCountForTests();
+  const ctl = installFetchMock();
+  ctl.responseQueue.set('eth_getCode', [{ result: null }]);
+
+  const sender = '0x5555555555555555555555555555555555555555';
+  const eoa    = '0x6666666666666666666666666666666666666666';
+  const rpcUrl = 'http://localhost:0/rpc';
+
+  let threw = false;
+  try {
+    await __getInitCodeForTests(sender, eoa, rpcUrl);
+  } catch {
+    threw = true;
+  }
+  check(threw, 'getInitCode: null result (no error) → throws (never fabricate initCode)');
+
+  restoreFetch(ctl);
+}
+
+{
+  // Sanity: a literal '0x' result still means "not deployed" → factory returned.
+  __resetDeployedAccountsForTests();
+  __resetRpcProbeCountForTests();
+  const ctl = installFetchMock();
+  ctl.codeResponses.push('0x');
+
+  const first = await __getInitCodeForTests(
+    '0x7777777777777777777777777777777777777777',
+    '0x8888888888888888888888888888888888888888',
+    'http://localhost:0/rpc',
+  );
+  check(first.factory !== null, "getInitCode: literal '0x' → factory returned (not-deployed)");
+
+  restoreFetch(ctl);
+}
+
+// ---------------------------------------------------------------------------
 // Summary
 // ---------------------------------------------------------------------------
 

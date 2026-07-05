@@ -353,8 +353,19 @@ async function getInitCode(
     method: 'eth_getCode',
     params: [sender, 'latest'],
   });
-  const codeResult = codeJson.result as string | undefined;
-  const isDeployed = codeResult && codeResult !== '0x' && codeResult !== '0x0';
+  // A JSON-RPC error envelope (e.g. a rate-limited public RPC) or a
+  // non-string result is NOT evidence the account is undeployed. Treat it as
+  // a hard failure and throw — otherwise we would attach initCode to a
+  // possibly-deployed sender, guaranteeing AA10 "sender already constructed"
+  // at the paymaster. The thrown error propagates to the submit retry-loop
+  // catch; it does not match the AA25/AA10 regex, so it fails fast with an
+  // accurate message rather than poisoning a UserOp. Only a literal '0x' /
+  // '0x0' result means "not deployed" (#402).
+  const codeResult = codeJson.result;
+  if (codeJson.error || typeof codeResult !== 'string') {
+    throw new Error('eth_getCode failed: ' + (codeJson.error?.message || 'no result'));
+  }
+  const isDeployed = codeResult !== '0x' && codeResult !== '0x0';
 
   if (isDeployed) {
     return { factory: null, factoryData: null };
