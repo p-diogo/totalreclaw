@@ -668,6 +668,90 @@ async function runTests(): Promise<void> {
       assert(calls.persisted > 0, 'poller persists without any slot dep (#402)');
     });
   }
+
+  // -------------------------------------------------------------------------
+  // 7. Lifecycle guards (rc.20, #402)
+  // -------------------------------------------------------------------------
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  // Minimal tick-counting deps. `tick` fires from ensureInitialized, which runs
+  // AFTER the per-tick sentinel check — so a self-terminated tick does not
+  // increment. An empty ~/.openclaw/agents dir makes findTrajectoryFiles() → [].
+  function tickDeps(tick: () => void, logMsgs: string[]): TrajectoryPollerDeps {
+    return {
+      logger: {
+        info: (m: string) => logMsgs.push(m),
+        warn: (m: string) => logMsgs.push(m),
+        error: (m: string) => logMsgs.push(m),
+      },
+      ensureInitialized: async () => { tick(); },
+      isPairingPending: () => false,
+      isImportActive: () => false,
+      getExtractInterval: () => 2,
+      getMaxFactsPerExtraction: () => 10,
+      isDedupEnabled: () => false,
+      getDedupCandidates: async () => [],
+      runExtraction: async () => [],
+      filterByImportance: (f) => ({ kept: f, dropped: 0 }),
+      persistFacts: async () => 0,
+    };
+  }
+
+  // 7a. Singleton — a second start stops the first (only one live tick stream).
+  {
+    const home = path.join(TMP, 'singleton-home');
+    fs.mkdirSync(path.join(home, '.openclaw', 'agents'), { recursive: true });
+    const origHome = process.env.HOME;
+    process.env.HOME = home;
+    const sentinel = path.join(home, 'sentinel-a.js');
+    fs.writeFileSync(sentinel, '// sentinel');
+    const stateFile = path.join(home, '.totalreclaw', 'state.json');
+
+    let ticksA = 0;
+    let ticksB = 0;
+    const msgsB: string[] = [];
+    const a = startTrajectoryPoller(tickDeps(() => { ticksA++; }, []), { pollIntervalMs: 20, stateFile, sentinelPath: sentinel });
+    const b = startTrajectoryPoller(tickDeps(() => { ticksB++; }, msgsB), { pollIntervalMs: 20, stateFile, sentinelPath: sentinel });
+    await sleep(120);
+    a.stop();
+    b.stop();
+    if (origHome === undefined) delete process.env.HOME; else process.env.HOME = origHome;
+
+    assert(
+      msgsB.some((m) => /previous poller stopped \(re-register\)/.test(m)),
+      'singleton: second start stops the first and logs re-register',
+    );
+    assertEq(ticksA, 0, 'singleton: first poller stopped before its interval fired (no A ticks)');
+    assert(ticksB >= 1, 'singleton: second poller is the only live tick stream');
+  }
+
+  // 7b. Self-termination — removing the sentinel file stops ticks.
+  {
+    const home = path.join(TMP, 'selfterm-home');
+    fs.mkdirSync(path.join(home, '.openclaw', 'agents'), { recursive: true });
+    const origHome = process.env.HOME;
+    process.env.HOME = home;
+    const sentinel = path.join(home, 'sentinel-b.js');
+    fs.writeFileSync(sentinel, '// sentinel');
+    const stateFile = path.join(home, '.totalreclaw', 'state.json');
+
+    let ticks = 0;
+    const msgs: string[] = [];
+    const h = startTrajectoryPoller(tickDeps(() => { ticks++; }, msgs), { pollIntervalMs: 20, stateFile, sentinelPath: sentinel });
+    await sleep(80);
+    const ticksBeforeRemoval = ticks;
+    assert(ticksBeforeRemoval >= 1, 'self-term: poller ticks while sentinel present');
+    fs.rmSync(sentinel);
+    await sleep(120);
+    h.stop();
+    if (origHome === undefined) delete process.env.HOME; else process.env.HOME = origHome;
+
+    assert(
+      msgs.some((m) => /poller self-terminated \(plugin dir removed\)/.test(m)),
+      'self-term: logs self-terminated when sentinel gone',
+    );
+    assertEq(ticks, ticksBeforeRemoval, 'self-term: ticks freeze after sentinel removed (interval cleared)');
+  }
 }
 
 // ---------------------------------------------------------------------------

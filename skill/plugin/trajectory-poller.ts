@@ -91,6 +91,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // ---------------------------------------------------------------------------
 // Public surface
@@ -205,19 +206,70 @@ const STATE_FILE = path.join(os.homedir(), '.totalreclaw', 'extract-state.json')
 const STALE_TRAJECTORY_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
+ * Module-global handle to the currently-running poller (rc.20, #402).
+ *
+ * OpenClaw's SIGUSR1 restarts are IN-PROCESS — the module cache survives, so a
+ * same-version re-register hits THIS module instance again. Without a guard,
+ * each re-register started a fresh setInterval on top of the previous one and
+ * live pollers accumulated (a fresh container boot was observed with 2 from
+ * boot double-register). `startTrajectoryPoller` stops the previous poller
+ * from this module instance before starting a new one.
+ */
+let activePoller: TrajectoryPollerHandle | null = null;
+
+/**
+ * Path to THIS module's own file, captured once at load. Each poll tick
+ * verifies it still exists; if the plugin dir was removed/replaced (an old
+ * version uninstalled), the poller self-terminates so a zombie module instance
+ * from a stale version can't keep submitting UserOps (rc.20, #402). Tests
+ * override this via `opts.sentinelPath`.
+ */
+const MODULE_SENTINEL = fileURLToPath(import.meta.url);
+
+/**
  * Start the trajectory poller. Runs an initial poll after 5 s, then
  * every `pollIntervalMs` (default 60 s). Returns a handle the caller
  * can use to stop polling and run one-shot polls in tests.
+ *
+ * Lifecycle guards (rc.20, #402): a previously-started poller from this module
+ * instance is stopped first (singleton), and each tick self-terminates if this
+ * module's file is gone.
  */
 export function startTrajectoryPoller(
   deps: TrajectoryPollerDeps,
-  opts: { pollIntervalMs?: number; stateFile?: string } = {},
+  opts: { pollIntervalMs?: number; stateFile?: string; sentinelPath?: string } = {},
 ): TrajectoryPollerHandle {
   const pollIntervalMs = opts.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
   const stateFile = opts.stateFile ?? STATE_FILE;
+  const sentinelPath = opts.sentinelPath ?? MODULE_SENTINEL;
+
+  // Singleton guard: stop any poller this module instance started earlier so a
+  // same-version re-register (in-process SIGUSR1 restart) does not stack a
+  // second live setInterval on top of the first.
+  if (activePoller) {
+    activePoller.stop();
+    deps.logger.info('extractd: previous poller stopped (re-register)');
+  }
+
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let initialTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  const stop = (): void => {
+    if (timer) clearInterval(timer);
+    if (initialTimeout) clearTimeout(initialTimeout);
+    if (activePoller === handle) activePoller = null;
+  };
 
   const pollAndExtract = async (): Promise<void> => {
     try {
+      // Cross-version self-termination: if this module's own file is gone
+      // (plugin uninstalled or replaced by a new version), stop — a zombie
+      // poller from a stale module instance must not keep capturing.
+      if (!fs.existsSync(sentinelPath)) {
+        deps.logger.warn('extractd: poller self-terminated (plugin dir removed)');
+        stop();
+        return;
+      }
       await deps.ensureInitialized();
       if (deps.isPairingPending()) return;
       if (deps.isImportActive()) return;
@@ -311,25 +363,24 @@ export function startTrajectoryPoller(
     }
   };
 
-  const timer = setInterval(() => {
+  timer = setInterval(() => {
     void pollAndExtract();
   }, pollIntervalMs);
   if (typeof timer.unref === 'function') timer.unref();
 
-  const initialTimeout = setTimeout(() => {
+  initialTimeout = setTimeout(() => {
     void pollAndExtract();
   }, 5_000);
   if (typeof initialTimeout.unref === 'function') initialTimeout.unref();
 
   deps.logger.info(`extractd: trajectory poller started (interval=${Math.round(pollIntervalMs / 1000)}s)`);
 
-  return {
-    stop: () => {
-      clearInterval(timer);
-      clearTimeout(initialTimeout);
-    },
+  const handle: TrajectoryPollerHandle = {
+    stop,
     pollOnce: pollAndExtract,
   };
+  activePoller = handle;
+  return handle;
 }
 
 // ---------------------------------------------------------------------------

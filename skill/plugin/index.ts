@@ -5236,6 +5236,14 @@ const plugin = {
     // surface (scanner constraint: a single file may not contain both
     // fs.read* AND outbound-request trigger words). Deps are passed in
     // here with neutral aliases for the same reason.
+    //
+    // Lifecycle (rc.20, #402): register() can run more than once per process
+    // (OpenClaw's SIGUSR1 restarts are IN-PROCESS, so the module cache and any
+    // running poller survive). No guard is needed here — startTrajectoryPoller
+    // holds a module-global singleton and stops the previous poller before
+    // starting a new one, and each tick self-terminates if the plugin's own
+    // module file is gone (uninstalled/replaced). This prevents the poller
+    // accumulation + zombie-old-version submitters seen on pop-os.
     // ---------------------------------------------------------------
 
     startTrajectoryPoller({
