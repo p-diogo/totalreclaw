@@ -943,17 +943,15 @@ export function resolveOnboardingState(
 // on-load + .pair-pending.json + SIGUSR1-for-pair dance was retired because
 // pairing is now user-initiated QR. `patchOpenClawConfig` itself was NEVER
 // part of the auto-pair state machine — it applies OpenClaw 2026.5.x
-// compatibility keys (memory slot, hook access, telegram streaming,
-// bundledDiscovery, installs self-heal) and is idempotent (returns
-// `'unchanged'` when all keys are already correct). Its only caller is
-// register() in index.ts; the SIGUSR1 emitted on `'patched'` is the
-// "restart-so-the-new-keys-take-effect-this-boot" signal, NOT a pair signal.
+// compatibility keys (hook access, telegram streaming, bundledDiscovery,
+// installs self-heal) and is idempotent (returns `'unchanged'` when all keys
+// are already correct). Its only caller is register() in index.ts; the
+// SIGUSR1 emitted on `'patched'` is the "restart-so-the-new-keys-take-effect-
+// this-boot" signal, NOT a pair signal.
 //
-// Whether this remains necessary depends on Task 0.1 (Step-0 config-strip
-// check on OpenClaw 2026.6.8): if a plain `openclaw plugins install`
-// persists the slot/activation across a gateway reload on 2026.6.8, a
-// follow-up removes this entirely. If 2026.6.8 still strips config (the
-// standalone-installer case), this minimal version stays. Deferred to 0.1.
+// The memory-slot write (formerly Fix #1) was retired in rc.20 (#402):
+// OpenClaw 2026.6.8 claims the memory slot natively during
+// `plugins install`/`enable`, so this helper no longer touches it.
 
 /**
  * Outcome of `patchOpenClawConfig`.
@@ -973,14 +971,10 @@ export type OpenClawConfigPatchResult = 'patched' | 'unchanged' | 'skipped' | 'e
  * Auto-patch `~/.openclaw/openclaw.json` with the entries required by
  * OpenClaw 2026.5.x for clean operation (issues #225 + #226 + verbosity):
  *
- *   1. `plugins.slots.memory = "totalreclaw"` (gated on install record)
- *      Claim the memory slot so the plugin loads instead of deferring to
- *      the built-in `memory-core` tenant. As of 3.3.9-rc.4 this fix is
- *      gated on `plugins.installs.totalreclaw.version` being present —
- *      writing the slot without an install record produces a startup
- *      crash loop ("plugins.slots.memory: plugin not found: totalreclaw")
- *      that survives container restarts until `openclaw plugins install`
- *      repopulates the install record.
+ *   NOTE (rc.20, #402): this helper no longer writes `plugins.slots.memory`.
+ *   OpenClaw 2026.6.8 claims the memory slot natively during
+ *   `plugins install`/`enable`, so the hand-written slot write was retired.
+ *   A pre-existing slot value is left untouched. The remaining fixes are:
  *
  *   2. `plugins.entries.totalreclaw.hooks.allowConversationAccess = true`
  *      Grant the plugin access to `agent_end` and `before_agent_start`
@@ -1110,51 +1104,16 @@ export function patchOpenClawConfig(
       }
     }
 
-    // --- Fix #1: plugins.slots.memory = "totalreclaw" (gated on install) ---
+    // --- Fix #1 (memory-slot write) RETIRED in rc.20 (#402) ---
     //
-    // DEFENSIVE GATE (3.3.9-rc.4 — 2026-05-05): only write the slot when
-    // the plugin is genuinely INSTALLED (`plugins.installs.totalreclaw`
-    // present with a `version`). Writing the slot unconditionally
-    // produced a startup crash loop on Pedro's pop-os QA host on
-    // 2026-05-05 — after a config reset, `plugins.installs.totalreclaw`
-    // was missing but a previously-written `slots.memory = "totalreclaw"`
-    // had survived. OpenClaw's startup validator refuses to start with
-    //
-    //   Gateway failed to start: Error: Invalid config at openclaw.json.
-    //   plugins.slots.memory: plugin not found: totalreclaw
-    //   Run "openclaw doctor --fix" to repair, then retry.
-    //
-    // The container restart-loop drained ~13 attempts (12:10-12:23 UTC)
-    // until `openclaw plugins install` was re-run and re-populated
-    // `plugins.installs.totalreclaw`. With this gate, future installs
-    // that wipe `plugins.installs` (config reset, `doctor --fix`,
-    // migration tools) cannot regress into the same boot loop — slot is
-    // only ever written when the install record exists, and the install
-    // record is the install pipeline's authoritative signal that the
-    // plugin is on disk and registered with the gateway.
-    //
-    // The hooks patch (Fix #2) and Telegram streaming patch (Fix #3) are
-    // not gated this way — they write under `plugins.entries` and
-    // `channels` which are inert without an install record, so they can
-    // never trip the validator.
-    const installsRoot = cfg.plugins.installs;
-    const installEntry = typeof installsRoot === 'object' && installsRoot !== null
-      ? installsRoot.totalreclaw
-      : undefined;
-    const pluginIsInstalled = typeof installEntry === 'object'
-      && installEntry !== null
-      && typeof installEntry.version === 'string'
-      && installEntry.version.length > 0;
-
-    if (pluginIsInstalled) {
-      if (typeof cfg.plugins.slots !== 'object' || cfg.plugins.slots === null) {
-        cfg.plugins.slots = {};
-      }
-      if (cfg.plugins.slots.memory !== 'totalreclaw') {
-        cfg.plugins.slots.memory = 'totalreclaw';
-        mutated = true;
-      }
-    }
+    // patchOpenClawConfig used to write `plugins.slots.memory = "totalreclaw"`
+    // (install-gated, to dodge a startup crash loop). OpenClaw 2026.6.8 now
+    // claims the memory slot NATIVELY during `plugins install`/`enable` (its
+    // persistPluginInstall "slot selection" phase), so the hand-written write
+    // was redundant on the good path and twice failed in production. The
+    // plugin no longer touches the memory slot — a pre-existing value is left
+    // byte-identical. Fix numbering below is preserved for continuity with the
+    // #225/#226 history. The Fix #6 install-record self-heal (above) stays.
 
     // --- Fix #2: plugins.entries.totalreclaw.hooks.allowConversationAccess = true ---
     if (typeof cfg.plugins.entries !== 'object' || cfg.plugins.entries === null) {
