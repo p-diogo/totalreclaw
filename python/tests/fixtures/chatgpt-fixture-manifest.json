@@ -1,0 +1,44 @@
+{
+  "plain": {
+    "source_file": "conversations-000.json",
+    "conversation_id": "03c09bbc-29c4-46bf-ba96-4c520ce5bffe",
+    "title": "Visit Geneva in February",
+    "message_nodes": 5
+  },
+  "singleton": {
+    "source_file": "conversations-000.json",
+    "conversation_id": "04926f65-ffdc-4051-b799-8ebc8e02e0fb",
+    "title": "Peer Interview Questions: Chemistry",
+    "message_nodes": 3
+  },
+  "branched": {
+    "source_file": "conversations-000.json",
+    "conversation_id": "07bcdb4c-5ff1-4cb8-bfad-9497c990b01d",
+    "title": "Leadership Skills Assessment",
+    "message_nodes": 7
+  },
+  "long": {
+    "source_file": "conversations-000.json",
+    "conversation_id": "12c1038e-7dee-4cc8-bf08-546eee8e1375",
+    "title": "Vietnam Trip: Culture, Nature, Beach",
+    "message_nodes": 80
+  },
+  "code": {
+    "source_file": "conversations-000.json",
+    "conversation_id": "1d71ba64-6400-4f77-a658-85c6e7cf8fb5",
+    "title": "Sort Good and Bad Topics",
+    "message_nodes": 36
+  },
+  "voice": {
+    "source_file": "conversations-006.json",
+    "conversation_id": "69b37522-0514-8388-9ff0-22290ad067a9",
+    "title": "Diapers / Hygiene",
+    "message_nodes": 255
+  },
+  "empty": {
+    "source_file": "<synthetic>",
+    "conversation_id": "00000000-0000-4000-8000-00000000f1x7",
+    "title": "Image only, no text",
+    "message_nodes": 1
+  }
+}
