@@ -3657,14 +3657,13 @@ const plugin = {
       }
 
       // 3.3.9-rc.2 (issues #225 + #226): auto-patch openclaw.json for
-      // OpenClaw 2026.5.x. Two required config keys were not auto-applied
-      // by `openclaw plugins install` in 2026.5.x:
+      // OpenClaw 2026.5.x. Required config keys not auto-applied by
+      // `openclaw plugins install` in 2026.5.x:
       //
-      //   1. plugins.slots.memory = "totalreclaw"
-      //      OpenClaw 2026.5.x introduced memory-slot exclusivity — a
-      //      memory-kind plugin MUST explicitly claim the slot or it is
-      //      silently disabled (no error shown; `openclaw plugins inspect`
-      //      shows "memory slot set to memory-core"). #225.
+      //   NOTE (rc.20, #402): the memory slot (plugins.slots.memory) is NO
+      //   LONGER patched here. OpenClaw 2026.6.8 claims it natively during
+      //   `plugins install`/`enable`, so the hand-written slot write was
+      //   retired. patchOpenClawConfig now applies only the keys below.
       //
       //   2. plugins.entries.totalreclaw.hooks.allowConversationAccess = true
       //      Non-bundled plugins in 2026.5.x require this flag to receive
@@ -3720,7 +3719,7 @@ const plugin = {
           // pattern.
           api.logger.warn(
             'TotalReclaw: updated openclaw.json with required 2026.5.x keys ' +
-              '(plugins.slots.memory + hooks.allowConversationAccess + ' +
+              '(hooks.allowConversationAccess + ' +
               'channels.telegram.streaming.mode + plugins.bundledDiscovery + ' +
               'plugins.allow + plugins.installs.totalreclaw self-heal). ' +
               'Auto-restarting gateway via SIGUSR1 to apply.',
@@ -3740,9 +3739,9 @@ const plugin = {
         } else if (patchResult === 'error') {
           api.logger.warn(
             'TotalReclaw: failed to auto-patch openclaw.json for OpenClaw 2026.5.x ' +
-              'compatibility. If memory hooks are silently disabled, add these keys ' +
-              'manually: plugins.slots.memory="totalreclaw" and ' +
-              'plugins.entries.totalreclaw.hooks.allowConversationAccess=true.',
+              'compatibility. If memory hooks are silently disabled, add this key ' +
+              'manually: plugins.entries.totalreclaw.hooks.allowConversationAccess=true. ' +
+              '(The memory slot is set by OpenClaw itself on plugin install/enable.)',
           );
         }
         // 'unchanged' and 'skipped' are silent — no log needed.
