@@ -943,15 +943,16 @@ export function resolveOnboardingState(
 // on-load + .pair-pending.json + SIGUSR1-for-pair dance was retired because
 // pairing is now user-initiated QR. `patchOpenClawConfig` itself was NEVER
 // part of the auto-pair state machine — it applies OpenClaw 2026.5.x
-// compatibility keys (hook access, telegram streaming, bundledDiscovery,
-// installs self-heal) and is idempotent (returns `'unchanged'` when all keys
-// are already correct). Its only caller is register() in index.ts; the
-// SIGUSR1 emitted on `'patched'` is the "restart-so-the-new-keys-take-effect-
-// this-boot" signal, NOT a pair signal.
+// compatibility keys (hook access, telegram streaming, bundledDiscovery) and
+// is idempotent (returns `'unchanged'` when all keys are already correct). Its
+// only caller is register() in index.ts; the SIGUSR1 emitted on `'patched'` is
+// the "restart-so-the-new-keys-take-effect-this-boot" signal, NOT a pair signal.
 //
-// The memory-slot write (formerly Fix #1) was retired in rc.20 (#402):
-// OpenClaw 2026.6.8 claims the memory slot natively during
-// `plugins install`/`enable`, so this helper no longer touches it.
+// Retired in rc.20 (#402): the memory-slot write (formerly Fix #1) and the
+// install-record self-heal (formerly Fix #6). OpenClaw 2026.6.8 claims the
+// memory slot natively on `plugins install`/`enable`, and its record reader
+// discards the whole installs map if any entry fails schema validation — so
+// this helper no longer touches `plugins.slots.memory` or `plugins.installs`.
 
 /**
  * Outcome of `patchOpenClawConfig`.
@@ -971,10 +972,11 @@ export type OpenClawConfigPatchResult = 'patched' | 'unchanged' | 'skipped' | 'e
  * Auto-patch `~/.openclaw/openclaw.json` with the entries required by
  * OpenClaw 2026.5.x for clean operation (issues #225 + #226 + verbosity):
  *
- *   NOTE (rc.20, #402): this helper no longer writes `plugins.slots.memory`.
- *   OpenClaw 2026.6.8 claims the memory slot natively during
- *   `plugins install`/`enable`, so the hand-written slot write was retired.
- *   A pre-existing slot value is left untouched. The remaining fixes are:
+ *   NOTE (rc.20, #402): this helper no longer writes `plugins.slots.memory`
+ *   (OpenClaw 2026.6.8 claims the memory slot natively on install/enable) nor
+ *   `plugins.installs` (the former Fix #6 self-heal — its record reader
+ *   discards the whole installs map if any entry fails schema validation).
+ *   Pre-existing values of both are left untouched. The remaining fixes are:
  *
  *   2. `plugins.entries.totalreclaw.hooks.allowConversationAccess = true`
  *      Grant the plugin access to `agent_end` and `before_agent_start`
@@ -1020,8 +1022,8 @@ export type OpenClawConfigPatchResult = 'patched' | 'unchanged' | 'skipped' | 'e
  */
 export function patchOpenClawConfig(
   configPath?: string,
-  // 3.3.12-rc.3 — plugin version (used by Fix #6 to self-heal a stripped
-  // `plugins.installs.totalreclaw` record so Fix #1 (slot) can fire).
+  // Retained on the signature (register() passes it) but no longer consumed:
+  // the Fix #6 install-record self-heal it fed was retired in rc.20 (#402).
   pluginVersion?: string,
 ): OpenClawConfigPatchResult {
   const home = envHomeDir();
@@ -1043,45 +1045,23 @@ export function patchOpenClawConfig(
 
     let mutated = false;
 
-    // --- Fix #6 (3.3.12-rc.3): self-heal `plugins.installs.totalreclaw` ---
+    // --- Fix #6 (installs self-heal) RETIRED in rc.20 (#402) ---
     //
-    // OpenClaw 2026.5.6 has a config-rewrite-after-restart behaviour
-    // observed on Pedro's pop-os QA host (2026-05-08): `openclaw plugins
-    // install` writes the install record, gateway restart fires, but
-    // after the restart something STRIPS `plugins.installs.totalreclaw` (and
-    // sometimes `plugins.allow`, `plugins.entries.totalreclaw`,
-    // `plugins.slots.memory`) from openclaw.json. The plugin's binary
-    // remains in `~/.openclaw/npm/node_modules/@totalreclaw/totalreclaw/`,
-    // but `openclaw plugins list` shows it as `disabled` because no
-    // install record + no allow entry.
-    //
-    // Defensive self-heal: when this register() runs (which means the
-    // plugin IS physically loaded by the gateway), if the install record
-    // is missing or has no version, write a minimal record. This unlocks
-    // Fix #1 (slot) and avoids the user-visible "plugin disabled"
-    // condition without requiring `openclaw plugins install --force`.
-    //
-    // Phrase-safety: writes only metadata (version, spec, source,
-    // installedAt). No mnemonic / userId / SA leakage.
-    if (pluginVersion) {
-      if (typeof cfg.plugins.installs !== 'object' || cfg.plugins.installs === null) {
-        cfg.plugins.installs = {};
-      }
-      const existing = cfg.plugins.installs.totalreclaw;
-      const existingVersion = (typeof existing === 'object' && existing !== null && typeof existing.version === 'string')
-        ? existing.version
-        : null;
-      if (!existingVersion) {
-        cfg.plugins.installs.totalreclaw = {
-          ...(typeof existing === 'object' && existing !== null ? existing : {}),
-          version: pluginVersion,
-          spec: '@totalreclaw/totalreclaw',
-          source: 'self-heal',
-          installedAt: new Date().toISOString(),
-        };
-        mutated = true;
-      }
-    }
+    // patchOpenClawConfig used to fabricate a `plugins.installs.totalreclaw`
+    // record (version/spec/source:"self-heal"/installedAt) whenever a version
+    // was passed and no record existed. Removed because it was inert at best
+    // and harmful at worst on OpenClaw 2026.6.8:
+    //   (a) the record reader validates the WHOLE installs map against a
+    //       schema where `source` must be a valid PluginInstallSource — the
+    //       fabricated `source:"self-heal"` (and any source-less record) fails
+    //       safeParse, discarding the ENTIRE installs map at load; and
+    //   (b) the native installer never persists install records into
+    //       openclaw.json (it strips them via withoutPluginInstallRecords and
+    //       commits to the SQLite index, which always wins on merge).
+    // So the plugin no longer writes `plugins.installs` at all; a pre-existing
+    // record is left byte-identical. `pluginVersion` is retained on the
+    // signature (register() passes it) but is no longer consumed here.
+    void pluginVersion;
 
     // --- Fix #5 (3.3.12-rc.3): plugins.allow includes "totalreclaw" ---
     //

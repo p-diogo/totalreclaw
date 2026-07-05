@@ -579,6 +579,42 @@ const TEST_HEADER = '# Memory\n\n> TotalReclaw is active. Test header.\n\n';
   );
 }
 
+// --- Installs-never-written regression (rc.20, #402) ---
+//
+// Fix #6 (installs self-heal) retired: patchOpenClawConfig must NEVER
+// fabricate a plugins.installs.totalreclaw record, even when a plugin version
+// is passed. OpenClaw 2026.6.8 validates the whole installs map against a
+// schema (each record's source must be a valid PluginInstallSource value); a
+// fabricated source:"self-heal" record made safeParse discard the ENTIRE
+// installs map at load, and the native installer commits records to its SQLite
+// index while stripping config-level records — so the self-heal was inert at
+// best and harmful at worst.
+
+{
+  // Empty installs + version passed → still no installs record written.
+  const cfgPath = path.join(TMP, 'openclaw-installs-never-written.json');
+  fs.writeFileSync(cfgPath, JSON.stringify({ plugins: {} }));
+  patchOpenClawConfig(cfgPath, '9.9.9-rc.1');
+  const after = JSON.parse(fs.readFileSync(cfgPath, 'utf-8')) as Record<string, unknown>;
+  const plugins = after.plugins as Record<string, unknown>;
+  assertEq(
+    plugins.installs,
+    undefined,
+    'patchOpenClawConfig: plugins.installs NEVER written even when version passed (#402)',
+  );
+}
+
+{
+  // A pre-existing installs record is left byte-identical (never overwritten).
+  const cfgPath = path.join(TMP, 'openclaw-installs-preserved.json');
+  const initial = { plugins: { installs: { totalreclaw: { version: '1.2.3', source: 'npm' } } } };
+  fs.writeFileSync(cfgPath, JSON.stringify(initial));
+  patchOpenClawConfig(cfgPath, '9.9.9-rc.1');
+  const after = JSON.parse(fs.readFileSync(cfgPath, 'utf-8')) as typeof initial;
+  assertEq(after.plugins.installs.totalreclaw.version, '1.2.3', 'patchOpenClawConfig: existing installs.version preserved (#402)');
+  assertEq(after.plugins.installs.totalreclaw.source, 'npm', 'patchOpenClawConfig: existing installs.source preserved (#402)');
+}
+
 {
   // preserves existing config keys when patching
   const cfgPath = path.join(TMP, 'openclaw-with-other-keys.json');
