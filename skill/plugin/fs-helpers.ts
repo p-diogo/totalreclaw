@@ -943,16 +943,18 @@ export function resolveOnboardingState(
 // on-load + .pair-pending.json + SIGUSR1-for-pair dance was retired because
 // pairing is now user-initiated QR. `patchOpenClawConfig` itself was NEVER
 // part of the auto-pair state machine — it applies OpenClaw 2026.5.x
-// compatibility keys (hook access, telegram streaming, bundledDiscovery) and
-// is idempotent (returns `'unchanged'` when all keys are already correct). Its
-// only caller is register() in index.ts; the SIGUSR1 emitted on `'patched'` is
-// the "restart-so-the-new-keys-take-effect-this-boot" signal, NOT a pair signal.
+// compatibility keys (hook access, telegram streaming) and is idempotent
+// (returns `'unchanged'` when all keys are already correct). Its only caller
+// is register() in index.ts; the SIGUSR1 emitted on `'patched'` is the
+// "restart-so-the-new-keys-take-effect-this-boot" signal, NOT a pair signal.
 //
-// Retired in rc.20 (#402): the memory-slot write (formerly Fix #1) and the
-// install-record self-heal (formerly Fix #6). OpenClaw 2026.6.8 claims the
-// memory slot natively on `plugins install`/`enable`, and its record reader
-// discards the whole installs map if any entry fails schema validation — so
-// this helper no longer touches `plugins.slots.memory` or `plugins.installs`.
+// Retired in rc.20 (#402): the memory-slot write (formerly Fix #1), the
+// install-record self-heal (formerly Fix #6), and the plugins.allow self-append
+// + bundledDiscovery="compat" pair (formerly Fix #5 + Fix #4). OpenClaw 2026.6.8
+// claims the memory slot natively on `plugins install`/`enable`, manages the
+// allowlist itself, and discards the whole installs map if any entry fails
+// schema validation — so this helper no longer touches `plugins.slots.memory`,
+// `plugins.installs`, `plugins.allow`, or `plugins.bundledDiscovery`.
 
 /**
  * Outcome of `patchOpenClawConfig`.
@@ -990,15 +992,11 @@ export type OpenClawConfigPatchResult = 'patched' | 'unchanged' | 'skipped' | 'e
  *      this to "off" on first run for a clean UX. Existing explicit values
  *      ("partial", "block", "progress") are preserved.
  *
- *   4. `plugins.bundledDiscovery = "compat"` (only if unset, and only when
- *      `plugins.allow` is populated). When `plugins.allow` is a non-empty
- *      array, OpenClaw 2026.5.x switches the loader into strict-allowlist
- *      mode and silently rejects non-bundled plugins like totalreclaw —
- *      EVEN IF they are listed in the allow array. Setting
- *      `bundledDiscovery: "compat"` restores the looser behavior so allow-
- *      listed non-bundled plugins load. Without this fix, users with
- *      telegram or any model provider configured before TR install (which
- *      populates allow) get a silent plugin-skip on every gateway boot.
+ *   Fix #4 (`plugins.bundledDiscovery="compat"`) and Fix #5 (appending
+ *   "totalreclaw" to `plugins.allow`) were RETIRED together in rc.20 (#402):
+ *   native install manages the allowlist, and TR growing it was the only
+ *   thing that forced strict-allowlist mode (the sole reason the compat
+ *   workaround existed). Pre-existing values of both keys are left untouched.
  *
  * Design constraints
  * ------------------
@@ -1063,26 +1061,16 @@ export function patchOpenClawConfig(
     // signature (register() passes it) but is no longer consumed here.
     void pluginVersion;
 
-    // --- Fix #5 (3.3.12-rc.3): plugins.allow includes "totalreclaw" ---
+    // --- Fix #5 (plugins.allow self-append) RETIRED in rc.20 (#402) ---
     //
-    // OpenClaw 2026.5.x: when `plugins.allow` is a non-empty array, the
-    // gateway switches into strict-allowlist mode. Plugins NOT in the
-    // allow list are silently rejected at load time — even bundled ones
-    // are gated. Pedro's pop-os 2026-05-08 QA had `plugins.allow` =
-    // ['device-pair', 'google', 'telegram', 'zai'] AFTER `openclaw
-    // plugins install @totalreclaw/totalreclaw@rc` ran. The install
-    // command did NOT add 'totalreclaw' to the allow list. Plugin
-    // shipped as `disabled`. Setup never proceeded.
-    //
-    // Defensive: when allow is a non-empty array and 'totalreclaw' is
-    // not in it, append. Don't touch null/undefined allow (means
-    // auto-discover mode — plugin is reachable without explicit allow).
-    if (Array.isArray(cfg.plugins.allow) && cfg.plugins.allow.length > 0) {
-      if (!cfg.plugins.allow.includes('totalreclaw')) {
-        cfg.plugins.allow.push('totalreclaw');
-        mutated = true;
-      }
-    }
+    // patchOpenClawConfig used to append "totalreclaw" to a non-empty
+    // `plugins.allow`. Removed as a pair with Fix #4 (below): OpenClaw's native
+    // `persistPluginInstall` already calls `addInstalledPluginToAllowlist`, and
+    // an empty/absent allowlist means allow-all (no write needed). TR
+    // unconditionally growing an allowlist was the very thing that flipped
+    // hosts into strict-allowlist enforcement — which then required the Fix #4
+    // `bundledDiscovery:"compat"` workaround. Dropping both lets native install
+    // own the allowlist; existing hosts keep whatever is already on disk.
 
     // --- Fix #1 (memory-slot write) RETIRED in rc.20 (#402) ---
     //
@@ -1138,36 +1126,15 @@ export function patchOpenClawConfig(
       }
     }
 
-    // --- Fix #4: plugins.bundledDiscovery = "compat" (3.3.11-rc.4) ---
+    // --- Fix #4 (plugins.bundledDiscovery="compat") RETIRED in rc.20 (#402) ---
     //
-    // OpenClaw 2026.5.x: when `plugins.allow` is populated (any non-empty
-    // array), the gateway's plugin loader switches into strict-allowlist
-    // mode. In strict mode, NON-BUNDLED plugins like totalreclaw are
-    // silently rejected even when listed in `plugins.allow`, unless
-    // `plugins.bundledDiscovery = "compat"` is explicitly set. Pedro's
-    // 2026-05-07 QA on pop-os surfaced this — the gateway booted with only
-    // the bundled providers (telegram, device-pair) and skipped totalreclaw
-    // despite it being in the allow list. `openclaw doctor --fix` cures it
-    // by setting `bundledDiscovery: "compat"`, but users shouldn't need
-    // to run doctor manually for the plugin to load.
-    //
-    // Fix: when `plugins.allow` is a non-empty array AND
-    // `plugins.bundledDiscovery` is unset, set it to "compat". If the user
-    // explicitly chose "allowlist" (the stricter mode), preserve their
-    // choice — only first-run defaults are touched.
-    //
-    // This bug was missed by the auto-QA harness because the harness ran
-    // on a fresh canonical container with `plugins.allow=null`, hitting
-    // the auto-discover code path. Real users with telegram + a model
-    // provider configured before TR install have a populated allow list,
-    // hitting the strict-mode path. The auto-QA harness in 3.3.11-rc.4
-    // adds a populated-allow scenario to catch future regressions.
-    if (Array.isArray(cfg.plugins.allow) && cfg.plugins.allow.length > 0) {
-      if (cfg.plugins.bundledDiscovery === undefined) {
-        cfg.plugins.bundledDiscovery = 'compat';
-        mutated = true;
-      }
-    }
+    // patchOpenClawConfig used to set `plugins.bundledDiscovery = "compat"`
+    // whenever `plugins.allow` was populated, to keep non-bundled totalreclaw
+    // loadable under strict-allowlist mode. Retired as a pair with Fix #5: the
+    // ONLY reason a host was in strict-allowlist mode was that TR itself grew
+    // the allowlist (Fix #5). With Fix #5 gone, native install manages the
+    // allowlist and this compat workaround is unnecessary. An existing
+    // `bundledDiscovery` value on disk is left untouched.
 
     if (!mutated) return 'unchanged';
 

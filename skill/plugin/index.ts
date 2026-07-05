@@ -3660,10 +3660,13 @@ const plugin = {
       // OpenClaw 2026.5.x. Required config keys not auto-applied by
       // `openclaw plugins install` in 2026.5.x:
       //
-      //   NOTE (rc.20, #402): the memory slot (plugins.slots.memory) is NO
-      //   LONGER patched here. OpenClaw 2026.6.8 claims it natively during
-      //   `plugins install`/`enable`, so the hand-written slot write was
-      //   retired. patchOpenClawConfig now applies only the keys below.
+      //   NOTE (rc.20, #402): patchOpenClawConfig now applies only the two
+      //   keys below. Retired: the memory slot (plugins.slots.memory — OpenClaw
+      //   2026.6.8 claims it natively on install/enable), the installs
+      //   self-heal (plugins.installs — native install owns it; a fabricated
+      //   record fails the host's schema validation), and the plugins.allow
+      //   self-append + plugins.bundledDiscovery="compat" pair (native install
+      //   manages the allowlist).
       //
       //   2. plugins.entries.totalreclaw.hooks.allowConversationAccess = true
       //      Non-bundled plugins in 2026.5.x require this flag to receive
@@ -3682,9 +3685,9 @@ const plugin = {
       // openclaw.json at startup, not dynamically). We emit a warn so
       // the user and ops scripts know to trigger a restart.
       try {
-        // 3.3.12-rc.3: pass pluginVersion so Fix #6 can self-heal a
-        // stripped `plugins.installs.totalreclaw` record (and unblock
-        // Fix #1 which gates on installs being present).
+        // pluginVersion is still passed for signature stability; as of rc.20
+        // (#402) patchOpenClawConfig no longer consumes it (the Fix #6 installs
+        // self-heal it fed was retired).
         const patchResult = patchOpenClawConfig(undefined, pluginVersion ?? undefined);
         if (patchResult === 'patched') {
           // 3.3.12-rc.6 (auto-QA finding 2026-05-09): previously we only
@@ -3719,9 +3722,7 @@ const plugin = {
           // pattern.
           api.logger.warn(
             'TotalReclaw: updated openclaw.json with required 2026.5.x keys ' +
-              '(hooks.allowConversationAccess + ' +
-              'channels.telegram.streaming.mode + plugins.bundledDiscovery + ' +
-              'plugins.allow + plugins.installs.totalreclaw self-heal). ' +
+              '(hooks.allowConversationAccess + channels.telegram.streaming.mode). ' +
               'Auto-restarting gateway via SIGUSR1 to apply.',
           );
           setTimeout(() => {
