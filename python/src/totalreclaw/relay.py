@@ -71,6 +71,12 @@ def _default_relay_url() -> str:
 # it as a constant for direct reads but the client should prefer
 # _default_relay_url(). The constant resolves to whichever default the
 # build-time rewrite landed on.
+#
+# NOTE: this is a snapshot taken at import time. Do NOT use it as a default
+# parameter value — ``RelayClient.__init__`` resolves the URL via
+# ``_default_relay_url()`` at construction so a runtime change to
+# ``TOTALRECLAW_SERVER_URL`` (e.g. tests, dev sessions pinning staging after
+# import) is honored. Kept only for any external readers of the attribute.
 DEFAULT_RELAY_URL = _default_relay_url()
 
 
@@ -141,13 +147,17 @@ class CheckoutResponse:
 class RelayClient:
     def __init__(
         self,
-        relay_url: str = DEFAULT_RELAY_URL,
+        relay_url: Optional[str] = None,
         auth_key_hex: Optional[str] = None,
         wallet_address: Optional[str] = None,
         is_test: bool = False,
         session_id: Optional[str] = None,
     ):
-        self._relay_url = relay_url.rstrip("/")
+        # Resolve the default at construction (not import) so a runtime change
+        # to ``TOTALRECLAW_SERVER_URL`` after this module is imported takes
+        # effect. Using the module-level ``DEFAULT_RELAY_URL`` snapshot as a
+        # default param would silently pin a stale URL.
+        self._relay_url = (relay_url or _default_relay_url()).rstrip("/")
         self._auth_key_hex = auth_key_hex
         self._wallet_address = wallet_address
         self._client_id = _detect_client_id()

@@ -278,13 +278,16 @@ function assertEq<T>(actual: T, expected: T, name: string): void {
 function makeCaptureLogger() {
   const infos: string[] = [];
   const warns: string[] = [];
+  const debugs: string[] = [];
   return {
     logger: {
       info: (m: string) => infos.push(m),
       warn: (m: string) => warns.push(m),
+      debug: (m: string) => debugs.push(m),
     },
     infos,
     warns,
+    debugs,
   };
 }
 
@@ -351,8 +354,8 @@ function makeCaptureLogger() {
   assert(facts.length === 1, 'prose-wrapper: recovered 1 fact via bracket-scan');
   assert(facts[0].type === 'directive', 'prose-wrapper: v0 rule → v1 directive');
   assert(
-    cap.infos.some((m) => m.includes('bracket-scan fallback')),
-    'prose-wrapper: info log announces recovery path',
+    cap.debugs.some((m) => m.includes('bracket-scan fallback')),
+    'prose-wrapper: debug log announces recovery path',
   );
   assert(cap.warns.length === 0, 'prose-wrapper: no parse-error warning on successful recovery');
 }
@@ -404,8 +407,8 @@ function makeCaptureLogger() {
   // Unclosed think tag won't match the strip regex; we rely on bracket-scan fallback.
   assert(facts.length === 1, 'unclosed-think: bracket-scan fallback recovers the JSON');
   assert(
-    cap.infos.some((m) => m.includes('bracket-scan')),
-    'unclosed-think: info log announces recovery',
+    cap.debugs.some((m) => m.includes('bracket-scan')),
+    'unclosed-think: debug log announces recovery',
   );
 }
 

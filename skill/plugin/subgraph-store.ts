@@ -492,7 +492,7 @@ async function submitFactOnChainLocked(
   // AA10 can occur at pm_sponsorUserOperation (initCode present on deployed sender)
   // or eth_sendUserOperation (same root cause). This loop handles both.
   let userOpHash: string | undefined;
-  let lastErr: any;
+  let lastErr: unknown;
   let attempt = 0;
   const maxAttempts = 2;
 
@@ -546,8 +546,8 @@ async function submitFactOnChainLocked(
       userOpHash = await rpc('eth_sendUserOperation', [unsignedOp, entryPoint]);
       // Success — break out of retry loop
       break;
-    } catch (err: any) {
-      const msg = err?.message || '';
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       // AA10 "sender already constructed" or AA25 invalid nonce → retry
       if (/AA25|AA10|invalid account nonce|already being processed/i.test(msg)) {
         lastErr = err;
@@ -698,7 +698,7 @@ async function submitFactBatchOnChainLocked(
   // Single retry loop: getInitCode → build UserOp → estimate → sponsor → sign → send
   // On AA10 "sender already constructed", mark sender as force-deployed and retry.
   let userOpHash: string | undefined;
-  let lastErr: any;
+  let lastErr: unknown;
   let attempt = 0;
   const maxAttempts = 2;
 
@@ -766,8 +766,8 @@ async function submitFactBatchOnChainLocked(
       userOpHash = await rpc('eth_sendUserOperation', [unsignedOp, entryPoint]);
       // Success — break out of retry loop
       break;
-    } catch (err: any) {
-      const msg = err?.message || '';
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       // AA10 "sender already constructed" or AA25 invalid nonce → retry
       if (/AA25|AA10|invalid account nonce|already being processed/i.test(msg)) {
         lastErr = err;

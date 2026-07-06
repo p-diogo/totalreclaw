@@ -612,7 +612,7 @@ export function parseFactsResponseForCompaction(
     }
   }
   if (recoveryUsed === 'bracket-scan') {
-    logger?.info?.(
+    logger?.debug?.(
       `parseFactsResponseForCompaction: recovered JSON via bracket-scan fallback`,
     );
   }
@@ -784,7 +784,7 @@ export async function extractFactsForCompaction(
     return [];
   }
 
-  logger?.info?.(
+  logger?.debug?.(
     `extractFactsForCompaction: LLM returned ${response.length} chars; handing to parseFactsResponseForCompaction`,
   );
   let facts = parseFactsResponseForCompaction(response, logger);
@@ -805,7 +805,7 @@ export async function extractFactsForCompaction(
       const oldImportance = f.importance;
       const effectiveBump = f.importance >= 8 ? Math.min(bump, 1) : bump;
       f.importance = Math.min(10, f.importance + effectiveBump);
-      logger?.info?.(
+      logger?.debug?.(
         `extractFactsForCompaction: lexical bump +${bump} for "${f.text.slice(0, 60)}..." (${oldImportance} → ${f.importance})`,
       );
     }
@@ -1097,7 +1097,7 @@ export function parseMergedResponseV1(
     }
   }
   if (recoveryUsed === 'bracket-scan') {
-    logger?.info?.(
+    logger?.debug?.(
       `parseFactsResponse: recovered JSON via bracket-scan fallback`,
     );
   }
@@ -1471,12 +1471,12 @@ export async function extractFacts(
     return [];
   }
 
-  logger?.info?.(
+  logger?.debug?.(
     `extractFacts: LLM returned ${response.length} chars; parsing merged response`,
   );
   const { topics, facts: rawFacts } = parseMergedResponseV1(response, logger);
   if (topics.length > 0) {
-    logger?.info?.(`extractFacts: topics = ${JSON.stringify(topics)}`);
+    logger?.debug?.(`extractFacts: topics = ${JSON.stringify(topics)}`);
   }
 
   // Provenance filter (tag-don't-drop)
@@ -1495,7 +1495,7 @@ export async function extractFacts(
       const oldImportance = f.importance;
       const effectiveBump = f.importance >= 8 ? Math.min(bump, 1) : bump;
       f.importance = Math.min(10, f.importance + effectiveBump);
-      logger?.info?.(
+      logger?.debug?.(
         `extractFacts: lexical bump +${bump} for "${f.text.slice(0, 60)}..." (${oldImportance} → ${f.importance})`,
       );
     }

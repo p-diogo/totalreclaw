@@ -1050,10 +1050,6 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
   }
 }
 
-function isDocker(): boolean {
-  return isRunningInDocker();
-}
-
 function buildSetupErrorMsg(): string {
   // NOTE: the legacy `totalreclaw_setup` agent tool was retired in 3.2.0
   // (phrase-safety: the agent must never accept or relay a recovery phrase).
@@ -1065,33 +1061,6 @@ function buildSetupErrorMsg(): string {
     'Run `tr pair --url-pin` on the gateway host (or `openclaw totalreclaw pair generate --url-pin-only`) ' +
     'and hand the user the returned `url` and `pin`. The user opens the URL in a browser to complete pairing. ' +
     'Do NOT ask the user for a recovery phrase and do NOT attempt to generate or relay one yourself.';
-}
-
-function buildSetupErrorMsgLegacy(): string {
-  const base =
-    'TotalReclaw setup required:\n' +
-    '1. Set TOTALRECLAW_RECOVERY_PHRASE — ask the user if they have an existing recovery phrase or generate a new 12-word recovery phrase.\n' +
-    '2. Restart the gateway to apply changes.\n' +
-    '   (Optional: set TOTALRECLAW_SELF_HOSTED=true if using your own server instead of the managed service.)\n\n';
-
-  if (isDocker()) {
-    return base +
-      'Running in Docker — pass env vars via `-e` flags or your compose file:\n' +
-      '  -e TOTALRECLAW_RECOVERY_PHRASE="word1 word2 ..."';
-  }
-
-  if (process.platform === 'darwin') {
-    return base +
-      'Running on macOS — add env vars to the LaunchAgent plist at\n' +
-      '~/Library/LaunchAgents/ai.openclaw.gateway.plist under <key>EnvironmentVariables</key>:\n' +
-      '  <key>TOTALRECLAW_RECOVERY_PHRASE</key><string>word1 word2 ...</string>\n' +
-      'Then run: openclaw gateway restart';
-  }
-
-  return base +
-    'Running on Linux — add env vars to the systemd unit override or your shell profile:\n' +
-    '  export TOTALRECLAW_RECOVERY_PHRASE="word1 word2 ..."\n' +
-    'Then run: openclaw gateway restart';
 }
 
 const SETUP_ERROR_MSG = buildSetupErrorMsg();

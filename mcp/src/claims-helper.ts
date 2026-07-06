@@ -65,7 +65,7 @@ export interface ExtractedEntity {
 export interface ClaimInput {
   /** Human-readable fact text. */
   text: string;
-  /** One of the 8 memory types. Defaults to `fact` when absent. */
+  /** One of the legacy v0 memory types in `memory-types.ts` (v1 writes go through `v1-types.ts`). Defaults to `fact` when absent. */
   type?: MemoryType;
   /** LLM-assessed confidence (0.0-1.0). Defaults to 0.85. */
   confidence?: number;

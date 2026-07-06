@@ -36,12 +36,16 @@ interface BillingStatusResponse {
  * Fetches billing status and fact count, then returns a comprehensive
  * account overview including a recovery phrase hint.
  */
+export interface AccountToolOptions {
+  serverUrl: string;
+  authKeyHex: string;
+  walletAddress: string;
+  mnemonicHint: string;
+  getFactCount: () => Promise<number>;
+}
+
 export async function handleAccount(
-  serverUrl: string,
-  authKeyHex: string,
-  walletAddress: string,
-  mnemonicHint: string,
-  getFactCount: () => Promise<number>,
+  { serverUrl, authKeyHex, walletAddress, mnemonicHint, getFactCount }: AccountToolOptions,
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   // Fetch billing status and fact count in parallel
   const [billingResult, factCount] = await Promise.all([

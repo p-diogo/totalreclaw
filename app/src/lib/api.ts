@@ -4,7 +4,11 @@ import {
   VaultItem,
   MemoryClaimV1,
   MemoryTypeV1,
+  MemorySource,
+  MemoryScope,
   MEMORY_TYPES_V1,
+  MEMORY_SOURCES,
+  MEMORY_SCOPES,
   SubgraphFact,
 } from "./types";
 import { decryptBlob } from "./crypto";
@@ -187,6 +191,25 @@ function resolveType(claim: MemoryClaimV1, tags: string[]): MemoryTypeV1 | strin
   return fromTags ?? "claim";
 }
 
+/**
+ * Coerce the decrypted JSON into a well-typed MemoryClaimV1. On-chain blobs
+ * may carry source/scope strings outside the v1 closed enums (malformed or
+ * future values); we clamp them to safe taxonomy members here so the narrow
+ * types downstream are honest rather than casting blindly.
+ */
+function normalizeClaim(raw: MemoryClaimV1): MemoryClaimV1 {
+  const source: MemorySource = MEMORY_SOURCES.includes(raw.source)
+    ? raw.source
+    : "external";
+  const scope: MemoryScope | undefined =
+    raw.scope === undefined
+      ? undefined
+      : MEMORY_SCOPES.includes(raw.scope)
+        ? raw.scope
+        : "unspecified";
+  return { ...raw, source, scope };
+}
+
 /** Decrypt all raw facts into VaultItems. Skips items that fail decryption. */
 export function decryptFacts(
   facts: RawFact[],
@@ -196,7 +219,7 @@ export function decryptFacts(
   for (const fact of facts) {
     try {
       const plaintext = decryptBlob(fact.encrypted_blob, keys.encryptionKey);
-      const claim = JSON.parse(plaintext) as MemoryClaimV1;
+      const claim = normalizeClaim(JSON.parse(plaintext) as MemoryClaimV1);
       const tags: string[] = claim.tags ?? [];
       items.push({
         id: fact.id,
