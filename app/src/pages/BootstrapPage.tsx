@@ -54,7 +54,7 @@ export function BootstrapPage() {
       setError(null);
       try {
         await bootstrap({ mnemonic });
-        navigate("/vault", { replace: true });
+        navigate("/memory", { replace: true });
       } catch (e) {
         if (e instanceof PrfUnsupportedError) {
           setStep("unsupported");

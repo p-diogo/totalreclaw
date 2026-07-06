@@ -19,7 +19,7 @@ export function UnlockPage() {
   const [showPhrase, setShowPhrase] = useState(false);
   const [phrase, setPhrase] = useState("");
 
-  const goVault = useCallback(() => navigate("/vault", { replace: true }), [navigate]);
+  const goVault = useCallback(() => navigate("/memory", { replace: true }), [navigate]);
 
   const handlePasskey = useCallback(async () => {
     setBusy(true);
