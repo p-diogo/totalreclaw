@@ -121,21 +121,21 @@ export function findNearDuplicate(
 
   if (existing.length === 0) return null;
 
-  const resultJs = (wasm as any).findBestNearDuplicate(
+  const bestMatchJs = (wasm as any).findBestNearDuplicate(
     JSON.stringify(newFactEmbedding),
     JSON.stringify(existing),
     threshold,
   );
 
-  if (resultJs == null) return null;
+  if (bestMatchJs == null) return null;
 
-  const result: { fact_id: string; similarity: number } =
-    typeof resultJs === 'string' ? JSON.parse(resultJs) : resultJs;
+  const bestMatch: { fact_id: string; similarity: number } =
+    typeof bestMatchJs === 'string' ? JSON.parse(bestMatchJs) : bestMatchJs;
 
-  const matched = candidates.find((c) => c.id === result.fact_id);
+  const matched = candidates.find((c) => c.id === bestMatch.fact_id);
   if (!matched) return null;
 
-  return { existingFact: matched, similarity: result.similarity };
+  return { existingFact: matched, similarity: bestMatch.similarity };
 }
 
 // ---------------------------------------------------------------------------
@@ -202,14 +202,14 @@ export function clusterFacts(
 
   if (wasmCandidates.length === 0) return [];
 
-  const resultJs = (wasm as any).clusterFacts(
+  const clustersJs = (wasm as any).clusterFacts(
     JSON.stringify(wasmCandidates),
     threshold,
   );
 
   // WASM returns a JSON string: [{ representative: string, duplicates: string[] }]
   const wasmClusters: { representative: string; duplicates: string[] }[] =
-    typeof resultJs === 'string' ? JSON.parse(resultJs) : resultJs;
+    typeof clustersJs === 'string' ? JSON.parse(clustersJs) : clustersJs;
 
   // Build a lookup map for fast ID -> DecryptedCandidate resolution.
   const byId = new Map<string, DecryptedCandidate>();
@@ -219,7 +219,7 @@ export function clusterFacts(
   // Filter out singleton clusters (no duplicates) to match the pre-WASM
   // plugin contract — callers rely on `clusters.length === 0` when nothing
   // duplicates anything.
-  const result: ConsolidationCluster[] = [];
+  const clusters: ConsolidationCluster[] = [];
   for (const wc of wasmClusters) {
     const rep = byId.get(wc.representative);
     if (!rep) continue;
@@ -229,9 +229,9 @@ export function clusterFacts(
       .filter((d): d is DecryptedCandidate => d !== undefined);
 
     if (dups.length > 0) {
-      result.push({ representative: rep, duplicates: dups });
+      clusters.push({ representative: rep, duplicates: dups });
     }
   }
 
-  return result;
+  return clusters;
 }

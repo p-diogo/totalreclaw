@@ -108,9 +108,9 @@ export class SyncState {
   }
 
   static fromJSON(json: string): SyncState {
-    const data = JSON.parse(json);
-    const state = new SyncState(data.lastSequence ?? 0);
-    state.lastSyncAt = data.lastSyncAt ? new Date(data.lastSyncAt) : null;
+    const parsed = JSON.parse(json);
+    const state = new SyncState(parsed.lastSequence ?? 0);
+    state.lastSyncAt = parsed.lastSyncAt ? new Date(parsed.lastSyncAt) : null;
     return state;
   }
 }
@@ -155,24 +155,24 @@ export class SyncClient {
       );
     }
 
-    const data = await response.json() as {
+    const syncJson = await response.json() as {
       success: boolean;
       facts?: SyncedFact[];
       latest_sequence?: number;
       has_more?: boolean;
       error_message?: string;
     };
-    if (!data.success) {
+    if (!syncJson.success) {
       throw new TotalReclawError(
         TotalReclawErrorCode.NETWORK_ERROR,
-        `Sync failed: ${data.error_message}`
+        `Sync failed: ${syncJson.error_message}`
       );
     }
 
     return {
-      facts: data.facts ?? [],
-      latestSequence: data.latest_sequence ?? 0,
-      hasMore: data.has_more ?? false,
+      facts: syncJson.facts ?? [],
+      latestSequence: syncJson.latest_sequence ?? 0,
+      hasMore: syncJson.has_more ?? false,
     };
   }
 

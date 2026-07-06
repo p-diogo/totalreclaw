@@ -183,36 +183,36 @@ export function extractV1Fields(decrypted: string): {
   createdAt?: string;
 } {
   try {
-    const obj = JSON.parse(decrypted) as Record<string, unknown>;
+    const decodedClaim = JSON.parse(decrypted) as Record<string, unknown>;
 
     // v1 canonical path — presence of top-level text+type (closed enum) is
     // the signature; `schema_version` is omitted when equal to the default
     // (Rust `skip_serializing_if`), so we don't require it.
     if (
-      typeof obj.text === 'string' &&
-      typeof obj.type === 'string' &&
-      (VALID_MEMORY_TYPES_V1 as readonly string[]).includes(String(obj.type)) &&
-      (typeof obj.schema_version !== 'string' ||
-        obj.schema_version === MEMORY_CLAIM_V1_SCHEMA_VERSION)
+      typeof decodedClaim.text === 'string' &&
+      typeof decodedClaim.type === 'string' &&
+      (VALID_MEMORY_TYPES_V1 as readonly string[]).includes(String(decodedClaim.type)) &&
+      (typeof decodedClaim.schema_version !== 'string' ||
+        decodedClaim.schema_version === MEMORY_CLAIM_V1_SCHEMA_VERSION)
     ) {
       return {
-        text: String(obj.text),
-        type: (VALID_MEMORY_TYPES_V1 as readonly string[]).includes(String(obj.type))
-          ? (obj.type as MemoryTypeV1)
+        text: String(decodedClaim.text),
+        type: (VALID_MEMORY_TYPES_V1 as readonly string[]).includes(String(decodedClaim.type))
+          ? (decodedClaim.type as MemoryTypeV1)
           : 'claim',
-        source: typeof obj.source === 'string' ? (obj.source as MemorySource) : 'user-inferred',
-        scope: typeof obj.scope === 'string' ? (obj.scope as MemoryScope) : undefined,
+        source: typeof decodedClaim.source === 'string' ? (decodedClaim.source as MemorySource) : 'user-inferred',
+        scope: typeof decodedClaim.scope === 'string' ? (decodedClaim.scope as MemoryScope) : undefined,
         volatility:
-          typeof obj.volatility === 'string' ? (obj.volatility as MemoryVolatility) : undefined,
-        reasoning: typeof obj.reasoning === 'string' ? obj.reasoning : undefined,
-        importance: typeof obj.importance === 'number' ? obj.importance : undefined,
-        confidence: typeof obj.confidence === 'number' ? obj.confidence : undefined,
-        createdAt: typeof obj.created_at === 'string' ? obj.created_at : undefined,
+          typeof decodedClaim.volatility === 'string' ? (decodedClaim.volatility as MemoryVolatility) : undefined,
+        reasoning: typeof decodedClaim.reasoning === 'string' ? decodedClaim.reasoning : undefined,
+        importance: typeof decodedClaim.importance === 'number' ? decodedClaim.importance : undefined,
+        confidence: typeof decodedClaim.confidence === 'number' ? decodedClaim.confidence : undefined,
+        createdAt: typeof decodedClaim.created_at === 'string' ? decodedClaim.created_at : undefined,
       };
     }
 
     // v0 short-key canonical path — map `c` short-key to v1 type, default source user-inferred
-    if (typeof obj.t === 'string') {
+    if (typeof decodedClaim.t === 'string') {
       const cMap: Record<string, MemoryTypeV1> = {
         fact: 'claim',
         claim: 'claim',
@@ -225,17 +225,17 @@ export function extractV1Fields(decrypted: string): {
         sum: 'summary',
       };
       return {
-        text: String(obj.t),
-        type: cMap[String(obj.c)] ?? 'claim',
+        text: String(decodedClaim.t),
+        type: cMap[String(decodedClaim.c)] ?? 'claim',
         source: 'user-inferred',
         importance:
-          typeof obj.i === 'number' ? Math.max(1, Math.min(10, Math.round(obj.i))) : undefined,
+          typeof decodedClaim.i === 'number' ? Math.max(1, Math.min(10, Math.round(decodedClaim.i))) : undefined,
       };
     }
 
     // v0 plugin-legacy path
-    if (typeof obj.text === 'string') {
-      const meta = (obj.metadata as Record<string, unknown>) ?? {};
+    if (typeof decodedClaim.text === 'string') {
+      const meta = (decodedClaim.metadata as Record<string, unknown>) ?? {};
       const typeLegacyToV1: Record<string, MemoryTypeV1> = {
         fact: 'claim',
         context: 'claim',
@@ -249,7 +249,7 @@ export function extractV1Fields(decrypted: string): {
       const legacyType = typeof meta.type === 'string' ? meta.type : 'fact';
       const impFloat = typeof meta.importance === 'number' ? meta.importance : 0.5;
       return {
-        text: String(obj.text),
+        text: String(decodedClaim.text),
         type: typeLegacyToV1[legacyType] ?? 'claim',
         source: 'user-inferred',
         importance: Math.max(1, Math.min(10, Math.round(impFloat * 10))),

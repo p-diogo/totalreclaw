@@ -333,12 +333,12 @@ async function cmdRemember(rawArgs: string[]): Promise<void> {
       authKeyHex: ctx.authKeyHex,
       walletAddress: ctx.walletAddress,
     };
-    const result = await submitFactBatchOnChain([protobuf], config);
+    const submitResult = await submitFactBatchOnChain([protobuf], config);
 
-    if (!result.success) {
+    if (!submitResult.success) {
       die(
         `remember failed: on-chain UserOp did not succeed (userOpHash=${
-          result.userOpHash || 'none'
+          submitResult.userOpHash || 'none'
         })`,
       );
     }
@@ -404,18 +404,18 @@ async function cmdForget(rawArgs: string[]): Promise<void> {
       authKeyHex: ctx.authKeyHex,
       walletAddress: ctx.walletAddress,
     };
-    const result = await submitFactBatchOnChain([protobuf], config);
+    const submitResult = await submitFactBatchOnChain([protobuf], config);
 
-    if (!result.success) {
+    if (!submitResult.success) {
       die(
         `forget failed: on-chain tombstone did not succeed (userOpHash=${
-          result.userOpHash || 'none'
+          submitResult.userOpHash || 'none'
         })`,
       );
     }
 
     if (jsonMode) {
-      log(JSON.stringify({ ok: true, id: factId, tx_hash: result.txHash }));
+      log(JSON.stringify({ ok: true, id: factId, tx_hash: submitResult.txHash }));
     } else {
       log(`ok — tombstoned ${factId} (tx=${result.txHash || 'pending'})`);
     }

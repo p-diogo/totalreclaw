@@ -270,7 +270,7 @@ export async function runRelayPairCli(
   };
 
   try {
-    const result = await awaitPhraseUpload(session, {
+    const completion = await awaitPhraseUpload(session, {
       phraseValidator: (p: string) => validateMnemonic(p, wordlist),
       completePairing: async ({ mnemonic }) => {
         try {
@@ -296,8 +296,8 @@ export async function runRelayPairCli(
             // serves both protocols on the same host.
             const httpsBase = opts.relayBaseUrl.replace(/^ws/, 'http').replace(/\/+$/, '');
             const apiClient = createApiClient(httpsBase);
-            const result = await apiClient.register(authKeyHash, saltHex);
-            registeredUserId = result.user_id;
+            const registerResult = await apiClient.register(authKeyHash, saltHex);
+            registeredUserId = registerResult.user_id;
             opts.logger.info(
               `pair-cli (relay): registered user_id=${registeredUserId} (salt + auth-key persisted)`,
             );
@@ -361,12 +361,12 @@ export async function runRelayPairCli(
       emitStatus('\nCanceled. Pairing session invalidated.\n');
       return { status: 'canceled', sid: session.token };
     }
-    if (result.state === 'active') {
+    if (completion.state === 'active') {
       emitStatus('\nPairing complete. Account is active.\n');
       return { status: 'completed', sid: session.token };
     }
-    emitStatus(`\nPairing failed: ${result.error ?? 'unknown_error'}\n`);
-    return { status: 'error', sid: session.token, error: result.error ?? 'unknown_error' };
+    emitStatus(`\nPairing failed: ${completion.error ?? 'unknown_error'}\n`);
+    return { status: 'error', sid: session.token, error: completion.error ?? 'unknown_error' };
   } catch (err) {
     if (canceled) {
       emitStatus('\nCanceled. Pairing session invalidated.\n');

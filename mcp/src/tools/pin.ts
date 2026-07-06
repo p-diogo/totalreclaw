@@ -313,9 +313,9 @@ interface ParsedBlob {
 }
 
 export function parseBlobForPin(decrypted: string): ParsedBlob {
-  let obj: Record<string, unknown>;
+  let decodedClaim: Record<string, unknown>;
   try {
-    obj = JSON.parse(decrypted) as Record<string, unknown>;
+    decodedClaim = JSON.parse(decrypted) as Record<string, unknown>;
   } catch {
     // Raw text — treat as a legacy fact with default metadata
     return {
@@ -333,17 +333,17 @@ export function parseBlobForPin(decrypted: string): ParsedBlob {
   // in executePinOperation uses `plaintext` directly (re-parsed via
   // projectToV1) so no data loss.
   if (
-    typeof obj.text === 'string' &&
-    typeof obj.type === 'string' &&
-    typeof obj.schema_version === 'string' &&
-    obj.schema_version.startsWith('1.')
+    typeof decodedClaim.text === 'string' &&
+    typeof decodedClaim.type === 'string' &&
+    typeof decodedClaim.schema_version === 'string' &&
+    decodedClaim.schema_version.startsWith('1.')
   ) {
-    const rawPin = typeof obj.pin_status === 'string' ? obj.pin_status : undefined;
+    const rawPin = typeof decodedClaim.pin_status === 'string' ? decodedClaim.pin_status : undefined;
     const human: HumanStatus = rawPin === 'pinned' ? 'pinned' : 'active';
     // Build a v0-shape projection for legacy callers (tests, etc) that inspect
     // `parsed.claim.t` / `parsed.claim.c`. Pin/unpin's rewrite path does NOT
     // use this projection — it re-parses the plaintext via projectToV1().
-    const v1Type = String(obj.type);
+    const v1Type = String(decodedClaim.type);
     const shortCategory = ((): string => {
       const map: Record<string, string> = {
         claim: 'claim', preference: 'pref', directive: 'rule',
@@ -352,31 +352,31 @@ export function parseBlobForPin(decrypted: string): ParsedBlob {
       return map[v1Type] ?? 'claim';
     })();
     const claimProjection: Record<string, unknown> = {
-      t: obj.text,
+      t: decodedClaim.text,
       c: shortCategory,
-      cf: typeof obj.confidence === 'number' ? obj.confidence : 0.85,
-      i: typeof obj.importance === 'number' ? obj.importance : 5,
-      sa: typeof obj.source === 'string' ? obj.source : 'mcp-server',
-      ea: typeof obj.created_at === 'string' ? obj.created_at : new Date().toISOString(),
+      cf: typeof decodedClaim.confidence === 'number' ? decodedClaim.confidence : 0.85,
+      i: typeof decodedClaim.importance === 'number' ? decodedClaim.importance : 5,
+      sa: typeof decodedClaim.source === 'string' ? decodedClaim.source : 'mcp-server',
+      ea: typeof decodedClaim.created_at === 'string' ? decodedClaim.created_at : new Date().toISOString(),
     };
     if (rawPin === 'pinned') claimProjection.st = 'p';
     return { claim: claimProjection, currentStatus: human, isLegacy: false };
   }
 
   // v0 canonical Claim — short keys present.
-  if (typeof obj.t === 'string' && typeof obj.c === 'string') {
-    const st = typeof obj.st === 'string' ? obj.st : 'a';
+  if (typeof decodedClaim.t === 'string' && typeof decodedClaim.c === 'string') {
+    const st = typeof decodedClaim.st === 'string' ? decodedClaim.st : 'a';
     const human = SHORT_TO_HUMAN[st] ?? 'active';
     // Deep clone so callers can mutate without touching caller copy
-    const cloned = JSON.parse(JSON.stringify(obj)) as Record<string, unknown>;
+    const cloned = JSON.parse(JSON.stringify(decodedClaim)) as Record<string, unknown>;
     return { claim: cloned, currentStatus: human, isLegacy: false };
   }
 
   // Legacy {text, metadata: {importance: 0-1}} shape
-  if (typeof obj.text === 'string') {
-    const meta = (obj.metadata as Record<string, unknown>) ?? {};
+  if (typeof decodedClaim.text === 'string') {
+    const meta = (decodedClaim.metadata as Record<string, unknown>) ?? {};
     return {
-      claim: buildCanonicalObjectFromLegacy(obj.text, meta),
+      claim: buildCanonicalObjectFromLegacy(decodedClaim.text, meta),
       currentStatus: 'active',
       isLegacy: true,
     };

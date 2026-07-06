@@ -665,15 +665,15 @@ export async function runNonInteractiveOnboard(
     }
   }
 
-  const result: NonInteractiveOnboardResult = {
+  const onboardResult: NonInteractiveOnboardResult = {
     ok: true,
     action,
     credentials_path: inputs.credentialsPath,
   };
-  if (scopeAddress) result.scope_address = scopeAddress;
-  if (inputs.emitPhrase) result.mnemonic = mnemonic;
+  if (scopeAddress) onboardResult.scope_address = scopeAddress;
+  if (inputs.emitPhrase) onboardResult.mnemonic = mnemonic;
   void state; // Touch for clarity — state is persisted via writeCredsAndState.
-  return result;
+  return onboardResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -840,7 +840,7 @@ export function registerOnboardingCli(
           phrase = await readAllStdin();
         }
 
-        const result = await runNonInteractiveOnboard({
+        const onboardResult = await runNonInteractiveOnboard({
           credentialsPath: opts.credentialsPath,
           statePath: opts.statePath,
           mode,
@@ -854,13 +854,13 @@ export function registerOnboardingCli(
           // the JSON payload is about to include the plaintext phrase.
           // stderr is intentional: stdout must remain a single
           // machine-parseable JSON line.
-          if (cliOpts.emitPhrase && result.ok && result.mnemonic) {
+          if (cliOpts.emitPhrase && onboardResult.ok && onboardResult.mnemonic) {
             process.stderr.write(PHRASE_PRINT_DEPRECATION_WARNING);
           }
-          process.stdout.write(JSON.stringify(result) + '\n');
+          process.stdout.write(JSON.stringify(onboardResult) + '\n');
         } else {
-          if (result.ok) {
-            if (result.mnemonic) {
+          if (onboardResult.ok) {
+            if (onboardResult.mnemonic) {
               process.stderr.write(PHRASE_PRINT_DEPRECATION_WARNING);
               process.stderr.write(
                 'WARNING: --emit-phrase was set. The plaintext recovery phrase was returned.\n' +
@@ -869,15 +869,15 @@ export function registerOnboardingCli(
               );
             }
             process.stdout.write(
-              `onboarding: ok  action=${result.action}  ` +
-                (result.scope_address ? `scope_address=${result.scope_address}  ` : '') +
-                `credentials=${result.credentials_path}\n`,
+              `onboarding: ok  action=${onboardResult.action}  ` +
+                (onboardResult.scope_address ? `scope_address=${onboardResult.scope_address}  ` : '') +
+                `credentials=${onboardResult.credentials_path}\n`,
             );
           } else {
-            process.stderr.write(`onboarding: ${result.error}: ${result.error_detail ?? ''}\n`);
+            process.stderr.write(`onboarding: ${onboardResult.error}: ${onboardResult.error_detail ?? ''}\n`);
           }
         }
-        process.exit(result.ok ? 0 : 1);
+        process.exit(onboardResult.ok ? 0 : 1);
       }
 
       if (cliOpts.json) {
@@ -890,18 +890,18 @@ export function registerOnboardingCli(
       // Interactive path — original 3.2.0 behaviour preserved in full.
       const io = buildDefaultIo();
       try {
-        const result = await runOnboardingWizard({
+        const wizardResult = await runOnboardingWizard({
           credentialsPath: opts.credentialsPath,
           statePath: opts.statePath,
           io,
         });
-        if (result.error) {
-          opts.logger.warn(`onboarding wizard exited with error: ${result.error}`);
+        if (wizardResult.error) {
+          opts.logger.warn(`onboarding wizard exited with error: ${wizardResult.error}`);
           io.close();
           process.exit(1);
         }
-        if (result.choice === 'generate' || result.choice === 'import') {
-          opts.logger.info(`onboarding: state=active createdBy=${result.state?.createdBy}`);
+        if (wizardResult.choice === 'generate' || wizardResult.choice === 'import') {
+          opts.logger.info(`onboarding: state=active createdBy=${wizardResult.state?.createdBy}`);
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

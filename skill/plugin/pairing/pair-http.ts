@@ -542,7 +542,7 @@ export function buildPairRoutes(cfg: PairHttpConfig): PairRouteBundle {
     //    sid/mode for log correlation.
     void (async (): Promise<void> => {
       try {
-        const result = await awaitPhraseUpload(session, {
+        const completion = await awaitPhraseUpload(session, {
           phraseValidator: validate,
           timeoutMs: cfg.initAwaitTimeoutMs,
           completePairing: async ({ mnemonic }) => {
@@ -557,13 +557,13 @@ export function buildPairRoutes(cfg: PairHttpConfig): PairRouteBundle {
             return cfg.completePairing({ mnemonic, session: sessionLike });
           },
         });
-        if (result.state === 'active') {
+        if (completion.state === 'active') {
           cfg.logger.info(
             `pair-http /init: session ${redactSid(session.token)} completed in-process; onboarding active`,
           );
         } else {
           cfg.logger.warn(
-            `pair-http /init: session ${redactSid(session.token)} completion non-active: ${result.error ?? 'unknown'}`,
+            `pair-http /init: session ${redactSid(session.token)} completion non-active: ${completion.error ?? 'unknown'}`,
           );
         }
       } catch (err) {

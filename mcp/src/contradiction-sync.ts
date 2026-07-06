@@ -281,15 +281,15 @@ export interface CandidateClaim {
  */
 export function parseCandidateClaim(decryptedJson: string): CanonicalClaim | null {
   if (isDigestBlob(decryptedJson)) return null;
-  let obj: Record<string, unknown>;
+  let parsedClaim: Record<string, unknown>;
   try {
-    obj = JSON.parse(decryptedJson) as Record<string, unknown>;
+    parsedClaim = JSON.parse(decryptedJson) as Record<string, unknown>;
   } catch {
     return null;
   }
-  if (typeof obj.t !== 'string' || typeof obj.c !== 'string') return null;
-  if (obj.c === 'dig' || obj.c === 'ent') return null;
-  return obj as CanonicalClaim;
+  if (typeof parsedClaim.t !== 'string' || typeof parsedClaim.c !== 'string') return null;
+  if (parsedClaim.c === 'dig' || parsedClaim.c === 'ent') return null;
+  return parsedClaim as CanonicalClaim;
 }
 
 /** Is this candidate claim pinned (status `p`)? Delegates to WASM core. */

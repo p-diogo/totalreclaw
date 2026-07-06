@@ -165,13 +165,13 @@ async function paginateChunk(
 ): Promise<void> {
   let lastId = '';
   while (allResults.size < maxCandidates) {
-    const data = await gqlQuery<SearchResponse>(
+    const subgraphResponse = await gqlQuery<SearchResponse>(
       subgraphUrl,
       PAGINATE_QUERY,
       { trapdoors: chunk, owner, first: PAGE_SIZE, lastId },
       authKeyHex,
     );
-    const entries = data?.blindIndexes ?? [];
+    const entries = subgraphResponse?.blindIndexes ?? [];
     if (entries.length === 0) break;
     collectFacts(entries, allResults);
     if (entries.length < PAGE_SIZE) break;
@@ -234,13 +234,13 @@ export async function searchSubgraph(
 
   const batchResults = await Promise.all(
     chunks.map(async (chunk) => {
-      const data = await gqlQuery<SearchResponse>(
+      const subgraphResponse = await gqlQuery<SearchResponse>(
         subgraphUrl,
         SEARCH_QUERY,
         { trapdoors: chunk, owner, first: PAGE_SIZE },
         authKeyHex,
       );
-      return { chunk, entries: data?.blindIndexes ?? [] };
+      return { chunk, entries: subgraphResponse?.blindIndexes ?? [] };
     }),
   );
 
@@ -298,14 +298,14 @@ export async function searchSubgraphBroadened(
     }
   `;
 
-  const data = await gqlQuery<{ facts?: SubgraphSearchFact[] }>(
+  const subgraphResponse = await gqlQuery<{ facts?: SubgraphSearchFact[] }>(
     subgraphUrl,
     query,
     { owner, first: Math.min(maxCandidates, 1000) },
     authKeyHex,
   );
 
-  return (data?.facts ?? []).filter(f => f.isActive !== false);
+  return (subgraphResponse?.facts ?? []).filter(f => f.isActive !== false);
 }
 
 /**
@@ -343,14 +343,14 @@ export async function fetchFactById(
     }
   `;
 
-  const data = await gqlQuery<{ fact?: (SubgraphSearchFact & { owner: string }) | null }>(
+  const subgraphResponse = await gqlQuery<{ fact?: (SubgraphSearchFact & { owner: string }) | null }>(
     subgraphUrl,
     query,
     { id: factId },
     authKeyHex,
   );
 
-  const fact = data?.fact;
+  const fact = subgraphResponse?.fact;
   if (!fact) return null;
   if (fact.isActive === false) return null;
   if (typeof fact.owner === 'string' && fact.owner.toLowerCase() !== owner.toLowerCase()) {
@@ -376,15 +376,15 @@ export async function getSubgraphFactCount(owner: string, authKeyHex?: string): 
     }
   `;
 
-  const data = await gqlQuery<{ globalStates?: Array<{ totalFacts: string }> }>(
+  const subgraphResponse = await gqlQuery<{ globalStates?: Array<{ totalFacts: string }> }>(
     subgraphUrl,
     query,
     {},
     authKeyHex,
   );
 
-  if (data?.globalStates && data.globalStates.length > 0) {
-    const count = parseInt(data.globalStates[0].totalFacts, 10);
+  if (subgraphResponse?.globalStates && subgraphResponse.globalStates.length > 0) {
+    const count = parseInt(subgraphResponse.globalStates[0].totalFacts, 10);
     return isNaN(count) ? 0 : count;
   }
 

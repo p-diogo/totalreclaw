@@ -191,11 +191,11 @@ async function registerUser(
     }
     throw new Error(`register failed (HTTP ${response.status}): ${body || response.statusText}`);
   }
-  const data = (await response.json()) as { user_id?: string };
-  if (!data.user_id) {
+  const pairJson = (await response.json()) as { user_id?: string };
+  if (!pairJson.user_id) {
     throw new Error('register: response missing user_id');
   }
-  return data.user_id;
+  return pairJson.user_id;
 }
 
 // ---------------------------------------------------------------------------

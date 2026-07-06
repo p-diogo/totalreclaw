@@ -89,14 +89,14 @@ export async function handleUpgrade(
       };
     }
 
-    const data = (await response.json()) as CheckoutResponse;
+    const checkoutJson = (await response.json()) as CheckoutResponse;
 
     return {
       content: [{
         type: 'text',
         text: JSON.stringify({
-          checkout_url: data.checkout_url,
-          message: `Open this URL to complete your upgrade to Pro: ${data.checkout_url}`,
+          checkout_url: checkoutJson.checkout_url,
+          message: `Open this URL to complete your upgrade to Pro: ${checkoutJson.checkout_url}`,
         }),
       }],
     };

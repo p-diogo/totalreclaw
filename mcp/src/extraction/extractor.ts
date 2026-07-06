@@ -625,8 +625,8 @@ export function parseFactsResponseForCompaction(
     return [];
   }
 
-  const obj = parsed as Record<string, unknown>;
-  const rawFacts = Array.isArray(obj.facts) ? (obj.facts as unknown[]) : null;
+  const parsedObj = parsed as Record<string, unknown>;
+  const rawFacts = Array.isArray(parsedObj.facts) ? (parsedObj.facts as unknown[]) : null;
 
   // Legacy v0 compaction output (bare JSON array) — best-effort parse.
   const rawArray = rawFacts ?? (Array.isArray(parsed) ? (parsed as unknown[]) : null);
@@ -1114,27 +1114,27 @@ export function parseMergedResponseV1(
   // a bare JSON array of fact objects (legacy / test fixture shape). The
   // bare array is wrapped as { topics: [], facts: [...] } so the downstream
   // logic stays uniform. A single fact object (no wrapper) is also wrapped.
-  let obj: Record<string, unknown>;
+  let parsedObj: Record<string, unknown>;
   if (Array.isArray(parsed)) {
-    obj = { topics: [], facts: parsed };
+    parsedObj = { topics: [], facts: parsed };
   } else if (
     typeof (parsed as Record<string, unknown>).facts === 'undefined' &&
     typeof (parsed as Record<string, unknown>).text === 'string'
   ) {
     // Single fact object, not a merged wrapper.
-    obj = { topics: [], facts: [parsed] };
+    parsedObj = { topics: [], facts: [parsed] };
   } else {
-    obj = parsed as Record<string, unknown>;
+    parsedObj = parsed as Record<string, unknown>;
   }
 
-  const rawTopics = obj.topics;
+  const rawTopics = parsedObj.topics;
   const topics = Array.isArray(rawTopics)
     ? (rawTopics as unknown[])
         .filter((t): t is string => typeof t === 'string' && t.length > 0)
         .slice(0, 3)
     : [];
 
-  const rawFacts = obj.facts;
+  const rawFacts = parsedObj.facts;
   if (!Array.isArray(rawFacts)) return { topics, facts: [] };
 
   const validActions: ExtractionAction[] = ['ADD', 'UPDATE', 'DELETE', 'NOOP'];

@@ -81,9 +81,9 @@ function parseJsonContent(content: string): { facts: ParsedFact[]; errors: strin
   const facts: ParsedFact[] = [];
 
   try {
-    const data = JSON.parse(content);
+    const parsedJson = JSON.parse(content);
 
-    const factArray = Array.isArray(data) ? data : data.facts;
+    const factArray = Array.isArray(parsedJson) ? parsedJson : parsedJson.facts;
     if (!Array.isArray(factArray)) {
       errors.push('JSON must contain a facts array');
       return { facts, errors };

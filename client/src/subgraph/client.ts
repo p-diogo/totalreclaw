@@ -50,7 +50,7 @@ export class SubgraphClient {
 
     for (let i = 0; i < trapdoors.length; i += TRAPDOOR_BATCH_SIZE) {
       const batch = trapdoors.slice(i, i + TRAPDOOR_BATCH_SIZE);
-      const data = await this.query<{
+      const blindIndexJson = await this.query<{
         blindIndexes?: SubgraphBlindIndex[];
         blindIndices?: SubgraphBlindIndex[];
       }>(SEARCH_BY_BLIND_INDEX, {
@@ -63,8 +63,8 @@ export class SubgraphClient {
       // The Graph Node pluralizes BlindIndex as `blindIndexes`, but some
       // legacy subgraphs may return `blindIndices`. Handle both.
       const entries: SubgraphBlindIndex[] =
-        data?.blindIndexes ||
-        data?.blindIndices ||
+        blindIndexJson?.blindIndexes ||
+        blindIndexJson?.blindIndices ||
         [];
 
       for (const entry of entries) {
@@ -82,12 +82,12 @@ export class SubgraphClient {
    * Used as a fallback when trapdoor search returns 0 candidates.
    */
   async searchBroadened(owner: string, maxCandidates: number = 200): Promise<SubgraphFact[]> {
-    const data = await this.query<{ facts?: SubgraphFact[] }>(BROADENED_SEARCH, {
+    const subgraphResponse = await this.query<{ facts?: SubgraphFact[] }>(BROADENED_SEARCH, {
       owner,
       first: Math.min(maxCandidates, PAGE_SIZE),
     });
 
-    return (data?.facts ?? []).filter(
+    return (subgraphResponse?.facts ?? []).filter(
       (f: SubgraphFact) => f.isActive !== false
     );
   }
@@ -97,13 +97,13 @@ export class SubgraphClient {
     let skip = 0;
 
     while (true) {
-      const data = await this.query<{ facts?: SubgraphFact[] }>(FETCH_ALL_FACTS, {
+      const pageJson = await this.query<{ facts?: SubgraphFact[] }>(FETCH_ALL_FACTS, {
         owner,
         first: PAGE_SIZE,
         skip,
       });
 
-      const facts = data?.facts || [];
+      const facts = pageJson?.facts || [];
       allFacts.push(...facts);
 
       if (facts.length < PAGE_SIZE) break;
@@ -118,14 +118,14 @@ export class SubgraphClient {
     let skip = 0;
 
     while (true) {
-      const data = await this.query<{ facts?: SubgraphFact[] }>(DELTA_SYNC_FACTS, {
+      const pageJson = await this.query<{ facts?: SubgraphFact[] }>(DELTA_SYNC_FACTS, {
         owner,
         sinceBlock: sinceBlock.toString(),
         first: PAGE_SIZE,
         skip,
       });
 
-      const facts = data?.facts || [];
+      const facts = pageJson?.facts || [];
       allFacts.push(...facts);
 
       if (facts.length < PAGE_SIZE) break;
@@ -136,8 +136,8 @@ export class SubgraphClient {
   }
 
   async getFactCount(owner: string): Promise<number> {
-    const data = await this.query<{ facts?: SubgraphFact[] }>(COUNT_FACTS, { owner });
-    return data?.facts?.length || 0;
+    const subgraphResponse = await this.query<{ facts?: SubgraphFact[] }>(COUNT_FACTS, { owner });
+    return subgraphResponse?.facts?.length || 0;
   }
 
   private async query<T>(

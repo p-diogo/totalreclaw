@@ -1066,10 +1066,10 @@ async function searchForNearDuplicates(
 
     if (decryptedCandidates.length === 0) return null;
 
-    const result = findNearDuplicate(factEmbedding, decryptedCandidates, getStoreDedupThreshold());
-    if (!result) return null;
+    const nearDup = findNearDuplicate(factEmbedding, decryptedCandidates, getStoreDedupThreshold());
+    if (!nearDup) return null;
 
-    return { match: result.existingFact, similarity: result.similarity };
+    return { match: nearDup.existingFact, similarity: nearDup.similarity };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.warn(`Store-time dedup search failed (proceeding with store): ${msg}`);
@@ -1195,8 +1195,8 @@ function scheduleDigestRecompile(
       version: PROTOBUF_VERSION_V4,
     });
     const config = { ...getSubgraphConfig(), authKeyHex: authKey, walletAddress: ownerForBatch };
-    const result = await submitFactBatchOnChain([protobuf], config);
-    if (!result.success) {
+    const batchResult = await submitFactBatchOnChain([protobuf], config);
+    if (!batchResult.success) {
       throw new Error('Digest store UserOp did not succeed on-chain');
     }
   };
@@ -1222,8 +1222,8 @@ function scheduleDigestRecompile(
     };
     const protobuf = encodeFactProtobuf(tombstone);
     const config = { ...getSubgraphConfig(), authKeyHex: authKey, walletAddress: ownerForBatch };
-    const result = await submitFactBatchOnChain([protobuf], config);
-    if (!result.success) {
+    const batchResult = await submitFactBatchOnChain([protobuf], config);
+    if (!batchResult.success) {
       throw new Error('Digest tombstone UserOp did not succeed on-chain');
     }
   };
@@ -1313,8 +1313,8 @@ async function fetchAllFactsByOwner(
       ? { owner, first: MIGRATION_PAGE_SIZE, lastId }
       : { owner, first: MIGRATION_PAGE_SIZE };
 
-    const data = await migrationGqlQuery<{ facts?: MigrationFact[] }>(subgraphUrl, query, vars, authKey);
-    const facts = data?.facts ?? [];
+    const subgraphResponse = await migrationGqlQuery<{ facts?: MigrationFact[] }>(subgraphUrl, query, vars, authKey);
+    const facts = subgraphResponse?.facts ?? [];
     if (facts.length === 0) break;
     allFacts.push(...facts);
     if (facts.length < MIGRATION_PAGE_SIZE) break;
@@ -1342,8 +1342,8 @@ async function fetchContentFingerprintsByOwner(
       ? { owner, first: MIGRATION_PAGE_SIZE, lastId }
       : { owner, first: MIGRATION_PAGE_SIZE };
 
-    const data = await migrationGqlQuery<{ facts?: Array<{ id: string; contentFp: string }> }>(subgraphUrl, query, vars, authKey);
-    const facts = data?.facts ?? [];
+    const subgraphResponse = await migrationGqlQuery<{ facts?: Array<{ id: string; contentFp: string }> }>(subgraphUrl, query, vars, authKey);
+    const facts = subgraphResponse?.facts ?? [];
     if (facts.length === 0) break;
     for (const f of facts) {
       if (f.contentFp) fps.add(f.contentFp);
@@ -1361,24 +1361,24 @@ async function fetchBlindIndicesByFactIds(
   factIds: string[],
   authKey: string,
 ): Promise<Map<string, string[]>> {
-  const result = new Map<string, string[]>();
+  const hashesByFactId = new Map<string, string[]>();
   const CHUNK = 50;
 
   for (let i = 0; i < factIds.length; i += CHUNK) {
     const chunk = factIds.slice(i, i + CHUNK);
     const query = `query($factIds:[String!]!,$first:Int!){blindIndexes(where:{fact_in:$factIds},first:$first){hash fact{id}}}`;
-    const data = await migrationGqlQuery<{
+    const subgraphResponse = await migrationGqlQuery<{
       blindIndexes?: Array<{ hash: string; fact: { id: string } }>;
     }>(subgraphUrl, query, { factIds: chunk, first: 1000 }, authKey);
 
-    for (const entry of data?.blindIndexes ?? []) {
-      const existing = result.get(entry.fact.id) || [];
+    for (const entry of subgraphResponse?.blindIndexes ?? []) {
+      const existing = hashesByFactId.get(entry.fact.id) || [];
       existing.push(entry.hash);
-      result.set(entry.fact.id, existing);
+      hashesByFactId.set(entry.fact.id, existing);
     }
   }
 
-  return result;
+  return hashesByFactId;
 }
 
 /**
@@ -1507,10 +1507,10 @@ async function storeExtractedFacts(
 
   for (const fact of facts) {
     try {
-      const result = await generateEmbeddingAndLSH(fact.text, logger);
-      if (result) {
-        embeddingMap.set(fact.text, result.embedding);
-        embeddingResultMap.set(fact.text, result);
+      const embeddingResult = await generateEmbeddingAndLSH(fact.text, logger);
+      if (embeddingResult) {
+        embeddingMap.set(fact.text, embeddingResult.embedding);
+        embeddingResultMap.set(fact.text, embeddingResult);
       }
     } catch {
       // Embedding generation failed for this fact -- proceed without it.
@@ -1864,12 +1864,12 @@ async function storeExtractedFacts(
     for (let i = 0; i < pendingPayloads.length; i++) {
       const slice = [pendingPayloads[i]]; // Single fact per UserOp
       try {
-        const result = await submitFactBatchOnChain(slice, batchConfig);
-        if (result.success) {
+        const submitResult = await submitFactBatchOnChain(slice, batchConfig);
+        if (submitResult.success) {
           stored += slice.length;
-          logger.info(`Fact ${i + 1}/${pendingPayloads.length}: submitted on-chain (tx=${result.txHash.slice(0, 10)}…)`);
+          logger.info(`Fact ${i + 1}/${pendingPayloads.length}: submitted on-chain (tx=${submitResult.txHash.slice(0, 10)}…)`);
         } else {
-          batchError = `On-chain batch submission failed (tx=${result.txHash.slice(0, 10)}…)`;
+          batchError = `On-chain batch submission failed (tx=${submitResult.txHash.slice(0, 10)}…)`;
           logger.warn(batchError);
           break; // Stop submitting remaining batches
         }
@@ -2188,9 +2188,9 @@ function buildRecallDeps(logger: OpenClawPluginApi['logger']): TrNativeMemoryDep
     if (isSubgraphMode()) {
       if (!subgraphOwner) return null;
       try {
-        const result = await fetchFactById(subgraphOwner, id, authKeyHex);
-        if (!result) return null;
-        const docJson = decryptFromHex(result.encryptedBlob, encryptionKey);
+        const fetchedFact = await fetchFactById(subgraphOwner, id, authKeyHex);
+        if (!fetchedFact) return null;
+        const docJson = decryptFromHex(fetchedFact.encryptedBlob, encryptionKey);
         if (isDigestBlob(docJson)) return null;
         const doc = readClaimFromBlob(docJson);
         return { id, plaintext: doc.text };
@@ -2750,7 +2750,7 @@ const plugin = {
             }) => {
               try {
                 await requireFullSetup(api.logger);
-                const result = await handlePluginImportFrom({
+                const importResult = await handlePluginImportFrom({
                   source,
                   file_path: opts.file,
                   content: opts.content,
@@ -2763,30 +2763,30 @@ const plugin = {
                 }, api.logger);
 
                 if (opts.json) {
-                  process.stdout.write(JSON.stringify(result) + '\n');
+                  process.stdout.write(JSON.stringify(importResult) + '\n');
                 } else {
                   // Human-readable summary. The handler already returns a
                   // `message` for chunked (background) imports; for direct
                   // stores + dry runs, synthesize a short summary.
-                  if (result.dry_run) {
-                    const chunks = result.total_chunks as number | undefined;
+                  if (importResult.dry_run) {
+                    const chunks = importResult.total_chunks as number | undefined;
                     if (chunks !== undefined) {
                       process.stdout.write(
-                        `Dry run: ~${result.estimated_facts} facts from ${chunks} chunks ` +
-                        `(~${result.estimated_minutes} min). Confirm without --dry-run to start.\n`,
+                        `Dry run: ~${importResult.estimated_facts} facts from ${chunks} chunks ` +
+                        `(~${importResult.estimated_minutes} min). Confirm without --dry-run to start.\n`,
                       );
                     } else {
                       process.stdout.write(
-                        `Dry run: found ${result.total_found} facts. Confirm without --dry-run to import.\n`,
+                        `Dry run: found ${importResult.total_found} facts. Confirm without --dry-run to import.\n`,
                       );
                     }
-                  } else if (result.import_id && result.status === 'running') {
+                  } else if (importResult.import_id && importResult.status === 'running') {
                     process.stdout.write(
-                      `${result.message}\nImport id: ${result.import_id}\n`,
+                      `${importResult.message}\nImport id: ${importResult.import_id}\n`,
                     );
                   } else {
-                    const stored = result.imported as number | undefined;
-                    const total = result.total_found as number | undefined;
+                    const stored = importResult.imported as number | undefined;
+                    const total = importResult.total_found as number | undefined;
                     process.stdout.write(
                       `Imported ${stored ?? 0}/${total ?? stored ?? 0} facts from ${source}.\n`,
                     );
@@ -2811,25 +2811,25 @@ const plugin = {
             .action(async (opts: { id?: string; json?: boolean }) => {
               try {
                 await requireFullSetup(api.logger);
-                const result = await handleImportStatus({ import_id: opts.id }, api.logger);
+                const statusResult = await handleImportStatus({ import_id: opts.id }, api.logger);
                 if (opts.json) {
-                  process.stdout.write(JSON.stringify(result) + '\n');
+                  process.stdout.write(JSON.stringify(statusResult) + '\n');
                 } else {
-                  const status = result.status as string | undefined;
-                  const stored = result.facts_stored as number | undefined;
-                  const batchDone = result.batch_done as number | undefined;
-                  const batchTotal = result.batch_total as number | undefined;
+                  const status = statusResult.status as string | undefined;
+                  const stored = statusResult.facts_stored as number | undefined;
+                  const batchDone = statusResult.batch_done as number | undefined;
+                  const batchTotal = statusResult.batch_total as number | undefined;
                   if (status === 'no_active_import') {
                     process.stdout.write('No active import. Start one with `openclaw totalreclaw import from <source>`.\n');
                   } else if (status === 'running') {
                     process.stdout.write(
-                      `Import ${result.import_id}: running — ${stored} facts stored, ` +
+                      `Import ${statusResult.import_id}: running — ${stored} facts stored, ` +
                       `batch ${batchDone}/${batchTotal}` +
-                      (result.completion_iso ? `, ETA ${result.completion_iso}` : '') + '.\n',
+                      (statusResult.completion_iso ? `, ETA ${statusResult.completion_iso}` : '') + '.\n',
                     );
                   } else {
                     process.stdout.write(
-                      `Import ${result.import_id}: ${status} — ${stored ?? 0} facts stored.\n`,
+                      `Import ${statusResult.import_id}: ${status} — ${stored ?? 0} facts stored.\n`,
                     );
                   }
                 }
@@ -2852,17 +2852,17 @@ const plugin = {
             .action(async (importId: string, opts: { json?: boolean }) => {
               try {
                 await requireFullSetup(api.logger);
-                const result = await handleImportAbort({ import_id: importId }, api.logger);
+                const abortResult = await handleImportAbort({ import_id: importId }, api.logger);
                 if (opts.json) {
-                  process.stdout.write(JSON.stringify(result) + '\n');
+                  process.stdout.write(JSON.stringify(abortResult) + '\n');
                 } else {
-                  if (result.aborted) {
+                  if (abortResult.aborted) {
                     process.stdout.write(
-                      `Import ${importId}: abort requested. ${result.facts_already_stored ?? 0} facts already stored (kept).\n`,
+                      `Import ${importId}: abort requested. ${abortResult.facts_already_stored ?? 0} facts already stored (kept).\n`,
                     );
                   } else {
                     process.stdout.write(
-                      `Import ${importId}: ${result.error ?? 'abort failed'}\n`,
+                      `Import ${importId}: ${abortResult.error ?? 'abort failed'}\n`,
                     );
                   }
                 }
@@ -2909,15 +2909,15 @@ const plugin = {
                   throw new Error(`checkout session failed (HTTP ${response.status}): ${body || response.statusText}`);
                 }
 
-                const data = await response.json() as { checkout_url?: string };
-                if (!data.checkout_url) {
+                const checkoutJson = await response.json() as { checkout_url?: string };
+                if (!checkoutJson.checkout_url) {
                   throw new Error('no checkout URL returned by the relay');
                 }
 
                 if (opts.json) {
-                  process.stdout.write(JSON.stringify({ checkout_url: data.checkout_url }) + '\n');
+                  process.stdout.write(JSON.stringify({ checkout_url: checkoutJson.checkout_url }) + '\n');
                 } else {
-                  process.stdout.write(`Open this URL to upgrade to Pro: ${data.checkout_url}\n`);
+                  process.stdout.write(`Open this URL to upgrade to Pro: ${checkoutJson.checkout_url}\n`);
                 }
               } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : String(err);

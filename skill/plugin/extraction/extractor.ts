@@ -688,7 +688,7 @@ export function parseFactsResponseForCompaction(
         if (valid.length > 0) entities = valid;
       }
 
-      const result: ExtractedFact = {
+      const extractedFact: ExtractedFact = {
         text: String(f.text).slice(0, 512),
         type,
         source,
@@ -699,8 +699,8 @@ export function parseFactsResponseForCompaction(
         existingFactId: typeof f.existingFactId === 'string' ? f.existingFactId : undefined,
         confidence: normalizeConfidence(f.confidence),
       };
-      if (entities) result.entities = entities;
-      return result;
+      if (entities) extractedFact.entities = entities;
+      return extractedFact;
     })
     // Reject illegal type:summary + source:user
     .filter((f) => !(f.type === 'summary' && f.source === 'user'))
@@ -1268,27 +1268,27 @@ export function parseMergedResponseV1(
   // a bare JSON array of fact objects (legacy / test fixture shape). The
   // bare array is wrapped as { topics: [], facts: [...] } so the downstream
   // logic stays uniform. A single fact object (no wrapper) is also wrapped.
-  let obj: Record<string, unknown>;
+  let wrapper: Record<string, unknown>;
   if (Array.isArray(parsed)) {
-    obj = { topics: [], facts: parsed };
+    wrapper = { topics: [], facts: parsed };
   } else if (
     typeof (parsed as Record<string, unknown>).facts === 'undefined' &&
     typeof (parsed as Record<string, unknown>).text === 'string'
   ) {
     // Single fact object, not a merged wrapper.
-    obj = { topics: [], facts: [parsed] };
+    wrapper = { topics: [], facts: [parsed] };
   } else {
-    obj = parsed as Record<string, unknown>;
+    wrapper = parsed as Record<string, unknown>;
   }
 
-  const rawTopics = obj.topics;
+  const rawTopics = wrapper.topics;
   const topics = Array.isArray(rawTopics)
     ? (rawTopics as unknown[])
         .filter((t): t is string => typeof t === 'string' && t.length > 0)
         .slice(0, 3)
     : [];
 
-  const rawFacts = obj.facts;
+  const rawFacts = wrapper.facts;
   if (!Array.isArray(rawFacts)) return { topics, facts: [] };
 
   const validActions: ExtractionAction[] = ['ADD', 'UPDATE', 'DELETE', 'NOOP'];

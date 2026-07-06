@@ -37,18 +37,18 @@ async function apiFetch<T>(
   keys: SessionKeys,
   init?: RequestInit,
 ): Promise<T> {
-  const res = await fetch(`${SERVER_URL}${path}`, {
+  const response = await fetch(`${SERVER_URL}${path}`, {
     ...init,
     headers: {
       ...authHeaders(keys),
       ...(init?.headers ?? {}),
     },
   });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`API ${path} → ${res.status}: ${body}`);
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`API ${path} → ${response.status}: ${body}`);
   }
-  return res.json() as Promise<T>;
+  return response.json() as Promise<T>;
 }
 
 /**
@@ -67,7 +67,7 @@ export async function registerSession(keys: SessionKeys): Promise<void> {
   const saltHex = await sha256Hex(
     concat(new TextEncoder().encode("totalreclaw-spa-salt-v1"), keys.authKey),
   );
-  const res = await fetch(`${SERVER_URL}/v1/register`, {
+  const response = await fetch(`${SERVER_URL}/v1/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -78,9 +78,9 @@ export async function registerSession(keys: SessionKeys): Promise<void> {
       salt: saltHex,
     }),
   });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`register → ${res.status}: ${body}`);
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`register → ${response.status}: ${body}`);
   }
 }
 
@@ -129,7 +129,7 @@ export async function exportAllFacts(
   let skip = 0;
 
   for (;;) {
-    const res = await apiFetch<SubgraphResponse<{ facts: SubgraphFact[] }>>(
+    const subgraphResponse = await apiFetch<SubgraphResponse<{ facts: SubgraphFact[] }>>(
       "/v1/subgraph",
       keys,
       {
@@ -145,11 +145,11 @@ export async function exportAllFacts(
       },
     );
 
-    if (res.errors?.length) {
-      throw new Error(`subgraph: ${res.errors.map((e) => e.message).join("; ")}`);
+    if (subgraphResponse.errors?.length) {
+      throw new Error(`subgraph: ${subgraphResponse.errors.map((e) => e.message).join("; ")}`);
     }
 
-    const page = res.data?.facts ?? [];
+    const page = subgraphResponse.data?.facts ?? [];
     for (const fact of page) {
       all.push(subgraphFactToRawFact(fact));
     }

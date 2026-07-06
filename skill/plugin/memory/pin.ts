@@ -151,9 +151,9 @@ export interface ParsedBlob {
 
 /** Parse a decrypted blob into a canonical mutable Claim + current human status. */
 export function parseBlobForPin(decrypted: string): ParsedBlob {
-  let obj: Record<string, unknown>;
+  let parsed: Record<string, unknown>;
   try {
-    obj = JSON.parse(decrypted) as Record<string, unknown>;
+    parsed = JSON.parse(decrypted) as Record<string, unknown>;
   } catch {
     const shortClaim = buildCanonicalObjectFromLegacy(decrypted, {});
     return {
@@ -167,16 +167,16 @@ export function parseBlobForPin(decrypted: string): ParsedBlob {
   // v1 payload (plugin v3.0.0+): long-form fields + schema_version "1.x".
   // Preserve the v1 structure so the pin path can emit v1 on output.
   if (
-    typeof obj.text === 'string' &&
-    typeof obj.type === 'string' &&
-    typeof obj.schema_version === 'string' &&
-    obj.schema_version.startsWith('1.')
+    typeof parsed.text === 'string' &&
+    typeof parsed.type === 'string' &&
+    typeof parsed.schema_version === 'string' &&
+    parsed.schema_version.startsWith('1.')
   ) {
     const v1 = readV1Blob(decrypted);
     if (v1) {
       // Current status = pinStatus if present, else active.
       const human: HumanStatus = v1.pinStatus === 'pinned' ? 'pinned' : 'active';
-      const shortProjection = v1ToShortKeyClaim(obj);
+      const shortProjection = v1ToShortKeyClaim(parsed);
       return {
         source: {
           kind: 'v1',
@@ -204,10 +204,10 @@ export function parseBlobForPin(decrypted: string): ParsedBlob {
   }
 
   // v0 canonical Claim — short keys present.
-  if (typeof obj.t === 'string' && typeof obj.c === 'string') {
-    const st = typeof obj.st === 'string' ? obj.st : 'a';
+  if (typeof parsed.t === 'string' && typeof parsed.c === 'string') {
+    const st = typeof parsed.st === 'string' ? parsed.st : 'a';
     const human = SHORT_TO_HUMAN[st] ?? 'active';
-    const cloned = JSON.parse(JSON.stringify(obj)) as Record<string, unknown>;
+    const cloned = JSON.parse(JSON.stringify(parsed)) as Record<string, unknown>;
     return {
       source: { kind: 'v0', claim: cloned },
       claim: cloned,
@@ -217,9 +217,9 @@ export function parseBlobForPin(decrypted: string): ParsedBlob {
   }
 
   // Legacy {text, metadata: {importance: 0-1}} shape.
-  if (typeof obj.text === 'string') {
-    const meta = (obj.metadata as Record<string, unknown>) ?? {};
-    const shortClaim = buildCanonicalObjectFromLegacy(obj.text, meta);
+  if (typeof parsed.text === 'string') {
+    const meta = (parsed.metadata as Record<string, unknown>) ?? {};
+    const shortClaim = buildCanonicalObjectFromLegacy(parsed.text, meta);
     return {
       source: { kind: 'v0', claim: shortClaim },
       claim: shortClaim,

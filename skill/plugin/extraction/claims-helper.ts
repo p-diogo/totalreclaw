@@ -478,34 +478,34 @@ export interface V1BlobReadResult {
 
 export function readV1Blob(decrypted: string): V1BlobReadResult | null {
   try {
-    const obj = JSON.parse(decrypted) as Record<string, unknown>;
-    if (typeof obj.schema_version !== 'string' || !obj.schema_version.startsWith('1.')) {
+    const decodedBlob = JSON.parse(decrypted) as Record<string, unknown>;
+    if (typeof decodedBlob.schema_version !== 'string' || !decodedBlob.schema_version.startsWith('1.')) {
       return null;
     }
 
-    const text = typeof obj.text === 'string' ? obj.text : '';
-    const rawType = typeof obj.type === 'string' ? obj.type : 'claim';
+    const text = typeof decodedBlob.text === 'string' ? decodedBlob.text : '';
+    const rawType = typeof decodedBlob.type === 'string' ? decodedBlob.type : 'claim';
     const type: MemoryType = isValidMemoryType(rawType) ? rawType : 'claim';
 
-    const rawSource = typeof obj.source === 'string' ? obj.source : 'user-inferred';
+    const rawSource = typeof decodedBlob.source === 'string' ? decodedBlob.source : 'user-inferred';
     const source: MemorySource = (VALID_MEMORY_SOURCES as readonly string[]).includes(rawSource)
       ? (rawSource as MemorySource)
       : 'user-inferred';
 
-    const rawScope = typeof obj.scope === 'string' ? obj.scope : 'unspecified';
+    const rawScope = typeof decodedBlob.scope === 'string' ? decodedBlob.scope : 'unspecified';
     const scope: MemoryScope = (VALID_MEMORY_SCOPES as readonly string[]).includes(rawScope)
       ? (rawScope as MemoryScope)
       : 'unspecified';
 
-    const rawVolatility = typeof obj.volatility === 'string' ? obj.volatility : 'updatable';
+    const rawVolatility = typeof decodedBlob.volatility === 'string' ? decodedBlob.volatility : 'updatable';
     const volatility: MemoryVolatility = (VALID_MEMORY_VOLATILITIES as readonly string[]).includes(rawVolatility)
       ? (rawVolatility as MemoryVolatility)
       : 'updatable';
 
-    const impRaw = typeof obj.importance === 'number' ? obj.importance : 5;
+    const impRaw = typeof decodedBlob.importance === 'number' ? decodedBlob.importance : 5;
     const importance = Math.max(1, Math.min(10, Math.round(impRaw)));
 
-    const confRaw = typeof obj.confidence === 'number' ? obj.confidence : 0.85;
+    const confRaw = typeof decodedBlob.confidence === 'number' ? decodedBlob.confidence : 0.85;
     const confidence = Math.max(0, Math.min(1, confRaw));
 
     const result: V1BlobReadResult = {
@@ -516,14 +516,14 @@ export function readV1Blob(decrypted: string): V1BlobReadResult | null {
       volatility,
       importance,
       confidence,
-      createdAt: typeof obj.created_at === 'string' ? obj.created_at : '',
+      createdAt: typeof decodedBlob.created_at === 'string' ? decodedBlob.created_at : '',
     };
 
-    if (typeof obj.reasoning === 'string' && obj.reasoning.length > 0) {
-      result.reasoning = obj.reasoning;
+    if (typeof decodedBlob.reasoning === 'string' && decodedBlob.reasoning.length > 0) {
+      result.reasoning = decodedBlob.reasoning;
     }
-    if (Array.isArray(obj.entities)) {
-      result.entities = (obj.entities as unknown[]).filter(
+    if (Array.isArray(decodedBlob.entities)) {
+      result.entities = (decodedBlob.entities as unknown[]).filter(
         (e): e is { name: string; type: string; role?: string } =>
           !!e &&
           typeof e === 'object' &&
@@ -531,11 +531,11 @@ export function readV1Blob(decrypted: string): V1BlobReadResult | null {
           typeof (e as { type?: unknown }).type === 'string',
       ) as Array<{ name: string; type: string; role?: string }>;
     }
-    if (typeof obj.expires_at === 'string') result.expiresAt = obj.expires_at;
-    if (typeof obj.superseded_by === 'string') result.supersededBy = obj.superseded_by;
-    if (typeof obj.id === 'string') result.id = obj.id;
-    if (typeof obj.pin_status === 'string') {
-      const ps = obj.pin_status;
+    if (typeof decodedBlob.expires_at === 'string') result.expiresAt = decodedBlob.expires_at;
+    if (typeof decodedBlob.superseded_by === 'string') result.supersededBy = decodedBlob.superseded_by;
+    if (typeof decodedBlob.id === 'string') result.id = decodedBlob.id;
+    if (typeof decodedBlob.pin_status === 'string') {
+      const ps = decodedBlob.pin_status;
       if (ps === 'pinned' || ps === 'unpinned') {
         result.pinStatus = ps;
       }
@@ -543,8 +543,8 @@ export function readV1Blob(decrypted: string): V1BlobReadResult | null {
     // 3.3.1-rc.22 — pull the embedder identity tag through. Plugin-only
     // field added by `buildCanonicalClaimV1` / `buildV1ClaimBlob` after
     // core validation.
-    if (typeof obj.embedding_model_id === 'string' && obj.embedding_model_id.length > 0) {
-      result.embeddingModelId = obj.embedding_model_id;
+    if (typeof decodedBlob.embedding_model_id === 'string' && decodedBlob.embedding_model_id.length > 0) {
+      result.embeddingModelId = decodedBlob.embedding_model_id;
     }
 
     return result;
@@ -654,60 +654,60 @@ export interface BlobReadResult {
 
 export function readClaimFromBlob(decryptedJson: string): BlobReadResult {
   try {
-    const obj = JSON.parse(decryptedJson) as Record<string, unknown>;
+    const decodedBlob = JSON.parse(decryptedJson) as Record<string, unknown>;
 
     // v1 payload: long-form fields + schema_version "1.x"
     if (
-      typeof obj.text === 'string' &&
-      typeof obj.type === 'string' &&
-      typeof obj.schema_version === 'string' &&
-      obj.schema_version.startsWith('1.')
+      typeof decodedBlob.text === 'string' &&
+      typeof decodedBlob.type === 'string' &&
+      typeof decodedBlob.schema_version === 'string' &&
+      decodedBlob.schema_version.startsWith('1.')
     ) {
-      const importance = typeof obj.importance === 'number'
-        ? Math.max(1, Math.min(10, Math.round(obj.importance)))
+      const importance = typeof decodedBlob.importance === 'number'
+        ? Math.max(1, Math.min(10, Math.round(decodedBlob.importance)))
         : 5;
       return {
-        text: obj.text,
+        text: decodedBlob.text,
         importance,
-        category: mapTypeToCategory(obj.type as MemoryType),
+        category: mapTypeToCategory(decodedBlob.type as MemoryType),
         metadata: {
-          type: obj.type,
-          source: typeof obj.source === 'string' ? obj.source : 'user-inferred',
-          scope: typeof obj.scope === 'string' ? obj.scope : 'unspecified',
-          volatility: typeof obj.volatility === 'string' ? obj.volatility : 'updatable',
-          reasoning: typeof obj.reasoning === 'string' ? obj.reasoning : undefined,
+          type: decodedBlob.type,
+          source: typeof decodedBlob.source === 'string' ? decodedBlob.source : 'user-inferred',
+          scope: typeof decodedBlob.scope === 'string' ? decodedBlob.scope : 'unspecified',
+          volatility: typeof decodedBlob.volatility === 'string' ? decodedBlob.volatility : 'updatable',
+          reasoning: typeof decodedBlob.reasoning === 'string' ? decodedBlob.reasoning : undefined,
           // v1.1: surface pin_status verbatim for downstream (recall display +
           // export). Absent ⇒ undefined (receivers treat as "unpinned").
-          pin_status: typeof obj.pin_status === 'string' ? obj.pin_status : undefined,
+          pin_status: typeof decodedBlob.pin_status === 'string' ? decodedBlob.pin_status : undefined,
           importance: importance / 10,
-          created_at: typeof obj.created_at === 'string' ? obj.created_at : '',
-          schema_version: obj.schema_version,
+          created_at: typeof decodedBlob.created_at === 'string' ? decodedBlob.created_at : '',
+          schema_version: decodedBlob.schema_version,
         },
       };
     }
 
     // New canonical Claim format: short keys
-    if (typeof obj.t === 'string' && typeof obj.c === 'string') {
-      const importance = typeof obj.i === 'number' ? Math.max(1, Math.min(10, Math.round(obj.i))) : 5;
+    if (typeof decodedBlob.t === 'string' && typeof decodedBlob.c === 'string') {
+      const importance = typeof decodedBlob.i === 'number' ? Math.max(1, Math.min(10, Math.round(decodedBlob.i))) : 5;
       return {
-        text: obj.t,
+        text: decodedBlob.t,
         importance,
-        category: obj.c,
+        category: decodedBlob.c,
         metadata: {
-          type: obj.c,
+          type: decodedBlob.c,
           importance: importance / 10,
-          source: typeof obj.sa === 'string' ? obj.sa : 'auto-extraction',
-          created_at: typeof obj.ea === 'string' ? obj.ea : '',
+          source: typeof decodedBlob.sa === 'string' ? decodedBlob.sa : 'auto-extraction',
+          created_at: typeof decodedBlob.ea === 'string' ? decodedBlob.ea : '',
         },
       };
     }
     // Legacy plugin {text, metadata: {importance: 0-1}} format
-    if (typeof obj.text === 'string') {
-      const meta = (obj.metadata as Record<string, unknown>) ?? {};
+    if (typeof decodedBlob.text === 'string') {
+      const meta = (decodedBlob.metadata as Record<string, unknown>) ?? {};
       const impFloat = typeof meta.importance === 'number' ? meta.importance : 0.5;
       const importance = Math.max(1, Math.min(10, Math.round(impFloat * 10)));
       return {
-        text: obj.text,
+        text: decodedBlob.text,
         importance,
         category: typeof meta.type === 'string' ? meta.type : 'fact',
         metadata: meta,

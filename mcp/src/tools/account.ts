@@ -118,8 +118,8 @@ async function fetchBillingStatus(
       };
     }
 
-    const data = (await response.json()) as BillingStatusResponse;
-    return { data };
+    const billingJson = (await response.json()) as BillingStatusResponse;
+    return { data: billingJson };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return { error: `Failed to fetch billing status: ${message}` };

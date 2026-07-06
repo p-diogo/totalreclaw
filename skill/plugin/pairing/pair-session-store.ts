@@ -592,16 +592,16 @@ export async function updatePairSession(
     }
     const current = pruned.file.sessions[idx];
     const next = mutate(current);
-    let result: PairSession | null;
+    let mutatedSession: PairSession | null;
     if (next === null) {
       pruned.file.sessions.splice(idx, 1);
-      result = null;
+      mutatedSession = null;
     } else {
       pruned.file.sessions[idx] = next;
-      result = next;
+      mutatedSession = next;
     }
     writePairSessionsFileSync(sessionsPath, pruned.file);
-    return result;
+    return mutatedSession;
   } finally {
     release();
   }

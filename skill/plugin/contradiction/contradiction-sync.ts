@@ -306,17 +306,17 @@ export interface CandidateClaim {
  */
 export function parseCandidateClaim(decryptedJson: string): CanonicalClaim | null {
   if (isDigestBlob(decryptedJson)) return null;
-  let obj: Record<string, unknown>;
+  let parsed: Record<string, unknown>;
   try {
-    obj = JSON.parse(decryptedJson) as Record<string, unknown>;
+    parsed = JSON.parse(decryptedJson) as Record<string, unknown>;
   } catch {
     return null;
   }
-  if (typeof obj.t !== 'string' || typeof obj.c !== 'string') return null;
+  if (typeof parsed.t !== 'string' || typeof parsed.c !== 'string') return null;
   // Filter out infra categories — digests and entity rollup claims are not
   // user-facing knowledge and must never be considered contradictions.
-  if (obj.c === 'dig' || obj.c === 'ent') return null;
-  return obj as CanonicalClaim;
+  if (parsed.c === 'dig' || parsed.c === 'ent') return null;
+  return parsed as CanonicalClaim;
 }
 
 /** Is this candidate claim pinned (status `p`)? Delegates to WASM core. */
@@ -1052,9 +1052,9 @@ export function findDecisionForPin(
 ): DecisionLogEntry | null {
   if (!logContent || logContent.length === 0) return null;
   try {
-    const result = getWasm().findDecisionForPin(factId, role, logContent);
-    if (result === 'null') return null;
-    return JSON.parse(result) as DecisionLogEntry;
+    const decisionJson = getWasm().findDecisionForPin(factId, role, logContent);
+    if (decisionJson === 'null') return null;
+    return JSON.parse(decisionJson) as DecisionLogEntry;
   } catch {
     // Fallback: local implementation if WASM fails.
     const lines = logContent.split('\n').filter((l) => l.length > 0);
@@ -1141,13 +1141,13 @@ export function buildFeedbackFromDecision(
 ): FeedbackEntry | null {
   if (!decision.winner_components || !decision.loser_components) return null;
   try {
-    const result = getWasm().buildFeedbackFromDecision(
+    const feedbackJson = getWasm().buildFeedbackFromDecision(
       JSON.stringify(decision),
       action,
       Math.floor(nowUnixSeconds),
     );
-    if (result === 'null') return null;
-    return JSON.parse(result) as FeedbackEntry;
+    if (feedbackJson === 'null') return null;
+    return JSON.parse(feedbackJson) as FeedbackEntry;
   } catch {
     // Fallback: local implementation if WASM fails.
     if (action === 'pin_loser') {

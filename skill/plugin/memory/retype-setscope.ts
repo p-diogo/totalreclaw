@@ -163,19 +163,19 @@ interface NormalizedFact {
 }
 
 function projectFromDecrypted(decrypted: string): NormalizedFact | null {
-  let obj: Record<string, unknown>;
+  let parsed: Record<string, unknown>;
   try {
-    obj = JSON.parse(decrypted) as Record<string, unknown>;
+    parsed = JSON.parse(decrypted) as Record<string, unknown>;
   } catch {
     return null;
   }
 
   // v1 blob (schema_version "1.x")
   if (
-    typeof obj.text === 'string' &&
-    typeof obj.type === 'string' &&
-    typeof obj.schema_version === 'string' &&
-    obj.schema_version.startsWith('1.')
+    typeof parsed.text === 'string' &&
+    typeof parsed.type === 'string' &&
+    typeof parsed.schema_version === 'string' &&
+    parsed.schema_version.startsWith('1.')
   ) {
     const v1 = readV1Blob(decrypted);
     if (v1) {
@@ -198,20 +198,20 @@ function projectFromDecrypted(decrypted: string): NormalizedFact | null {
   }
 
   // v0 short-key blob — upgrade to v1 shape.
-  if (typeof obj.t === 'string' && typeof obj.c === 'string') {
-    const v0Type = typeof obj.c === 'string' ? obj.c : 'fact';
+  if (typeof parsed.t === 'string' && typeof parsed.c === 'string') {
+    const v0Type = typeof parsed.c === 'string' ? parsed.c : 'fact';
     const v1Type: MemoryType = (V0_TO_V1_TYPE as Record<string, MemoryType>)[v0Type] ?? 'claim';
-    const imp = typeof obj.i === 'number' ? obj.i : 5;
-    const conf = typeof obj.cf === 'number' ? obj.cf : 0.85;
-    const sa = typeof obj.sa === 'string' ? obj.sa : 'user';
+    const imp = typeof parsed.i === 'number' ? parsed.i : 5;
+    const conf = typeof parsed.cf === 'number' ? parsed.cf : 0.85;
+    const sa = typeof parsed.sa === 'string' ? parsed.sa : 'user';
     const validSource: MemorySource = (
       ['user', 'user-inferred', 'assistant', 'external', 'derived'] as const
     ).includes(sa as MemorySource)
       ? (sa as MemorySource)
       : 'user';
-    const ea = typeof obj.ea === 'string' ? obj.ea : new Date().toISOString();
-    const entities = Array.isArray(obj.e)
-      ? (obj.e as unknown[])
+    const ea = typeof parsed.ea === 'string' ? parsed.ea : new Date().toISOString();
+    const entities = Array.isArray(parsed.e)
+      ? (parsed.e as unknown[])
           .map((e) => {
             if (!e || typeof e !== 'object') return null;
             const entity = e as Record<string, unknown>;
@@ -224,7 +224,7 @@ function projectFromDecrypted(decrypted: string): NormalizedFact | null {
           .filter((e): e is { name: string; type: string; role?: string } => e !== null)
       : undefined;
     return {
-      text: typeof obj.t === 'string' ? obj.t : '',
+      text: typeof parsed.t === 'string' ? parsed.t : '',
       type: v1Type,
       source: validSource,
       scope: undefined,

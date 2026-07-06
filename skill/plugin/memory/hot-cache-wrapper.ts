@@ -96,12 +96,12 @@ export class PluginHotCache {
     if (!fs.existsSync(this.cachePath)) return;
 
     try {
-      const data = fs.readFileSync(this.cachePath);
-      if (data.length < IV_LENGTH + TAG_LENGTH) return;
+      const encryptedFile = fs.readFileSync(this.cachePath);
+      if (encryptedFile.length < IV_LENGTH + TAG_LENGTH) return;
 
-      const iv = data.subarray(0, IV_LENGTH);
-      const tag = data.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
-      const ciphertext = data.subarray(IV_LENGTH + TAG_LENGTH);
+      const iv = encryptedFile.subarray(0, IV_LENGTH);
+      const tag = encryptedFile.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
+      const ciphertext = encryptedFile.subarray(IV_LENGTH + TAG_LENGTH);
 
       const decipher = crypto.createDecipheriv('aes-256-gcm', this.key, iv);
       decipher.setAuthTag(tag);

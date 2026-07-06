@@ -395,9 +395,9 @@ export async function awaitPhraseUpload(
 
   // Hand off to the caller-supplied completion handler. Wrapped in try/finally
   // so we always drop our own reference to the mnemonic.
-  let result: RelayCompletionResult;
+  let completion: RelayCompletionResult;
   try {
-    result = await opts.completePairing({ mnemonic, session });
+    completion = await opts.completePairing({ mnemonic, session });
   } catch (err) {
     safeSend(ws, { type: 'nack', error: 'completion_failed' });
     safeClose(ws);
@@ -408,15 +408,15 @@ export async function awaitPhraseUpload(
     mnemonic = '';
   }
 
-  if (result.state !== 'active') {
-    safeSend(ws, { type: 'nack', error: result.error ?? 'completion_failed' });
+  if (completion.state !== 'active') {
+    safeSend(ws, { type: 'nack', error: completion.error ?? 'completion_failed' });
     safeClose(ws);
-    return result;
+    return completion;
   }
 
   safeSend(ws, { type: 'ack' });
   safeClose(ws);
-  return result;
+  return completion;
 }
 
 /**

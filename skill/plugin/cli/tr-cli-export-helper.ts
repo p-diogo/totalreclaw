@@ -104,8 +104,8 @@ export async function exportAllFacts(
       ? { owner: walletAddress, first: PAGE_SIZE, lastId }
       : { owner: walletAddress, first: PAGE_SIZE };
 
-    const data = await gql<{ facts?: FactRow[] }>(query, variables);
-    const facts = data?.facts ?? [];
+    const subgraphResponse = await gql<{ facts?: FactRow[] }>(query, variables);
+    const facts = subgraphResponse?.facts ?? [];
     if (facts.length === 0) break;
 
     for (const f of facts) {

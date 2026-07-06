@@ -188,8 +188,8 @@ function resolveMnemonic(): string | undefined {
 
   // Priority 2: credentials.json mnemonic field
   try {
-    const data = fs.readFileSync(CREDENTIALS_PATH, 'utf-8');
-    const parsed = JSON.parse(data) as { mnemonic?: string };
+    const credentialsRaw = fs.readFileSync(CREDENTIALS_PATH, 'utf-8');
+    const parsed = JSON.parse(credentialsRaw) as { mnemonic?: string };
     if (parsed.mnemonic && typeof parsed.mnemonic === 'string') {
       const trimmed = parsed.mnemonic.trim();
       const words = trimmed.split(/\s+/);
@@ -458,8 +458,8 @@ interface StoredCredentials {
 
 async function loadCredentials(path: string): Promise<{ userId: string; salt: Buffer }> {
   const fs = await import('fs/promises');
-  const data = await fs.readFile(path, 'utf-8');
-  const parsed = JSON.parse(data) as StoredCredentials;
+  const fileContents = await fs.readFile(path, 'utf-8');
+  const parsed = JSON.parse(fileContents) as StoredCredentials;
   return {
     userId: parsed.userId,
     salt: Buffer.from(parsed.salt, 'hex'),
@@ -470,11 +470,11 @@ async function saveCredentials(path: string, credentials: { userId: string; salt
   const fs = await import('fs/promises');
   const dir = path.substring(0, path.lastIndexOf('/'));
   await fs.mkdir(dir, { recursive: true }).catch(() => {});
-  const data: StoredCredentials = {
+  const storedCredentials: StoredCredentials = {
     userId: credentials.userId,
     salt: credentials.salt.toString('hex'),
   };
-  await fs.writeFile(path, JSON.stringify(data, null, 2), 'utf-8');
+  await fs.writeFile(path, JSON.stringify(storedCredentials, null, 2), 'utf-8');
 }
 
 // ── Subgraph handlers ───────────────────────────────────────────────────────
@@ -1439,8 +1439,8 @@ function buildPinDepsFromState(state: SubgraphState): PinOpDeps {
         authKeyHex: Buffer.from(state.authKey).toString('hex'),
         walletAddress: state.smartAccountAddress,
       });
-      const result = await submitFactBatchOnChain(payloads, config);
-      return { txHash: result.txHash, success: result.success };
+      const batchResult = await submitFactBatchOnChain(payloads, config);
+      return { txHash: batchResult.txHash, success: batchResult.success };
     },
     generateIndices: async (text: string, entityNames: string[]) => {
       if (!text) return { blindIndices: [] };
@@ -1462,12 +1462,12 @@ function buildPinDepsFromState(state: SubgraphState): PinOpDeps {
     },
     confirmIndexed: async (factId: string, expect?: 'active' | 'inactive') => {
       const subgraphUrl = process.env.TOTALRECLAW_SUBGRAPH_URL || `${state.serverUrl}/v1/subgraph`;
-      const result = await confirmIndexed(factId, {
+      const confirmation = await confirmIndexed(factId, {
         subgraphUrl,
         authKeyHex: Buffer.from(state.authKey).toString('hex'),
         expect,
       });
-      return result.indexed;
+      return confirmation.indexed;
     },
   };
 }
@@ -1761,8 +1761,8 @@ const callToolHandler = createCallToolHandler({
 
 async function showPhrase(): Promise<void> {
   try {
-    const data = fs.readFileSync(CREDENTIALS_PATH, 'utf-8');
-    const parsed = JSON.parse(data) as { mnemonic?: string };
+    const credentialsRaw = fs.readFileSync(CREDENTIALS_PATH, 'utf-8');
+    const parsed = JSON.parse(credentialsRaw) as { mnemonic?: string };
     if (parsed.mnemonic) {
       console.log(parsed.mnemonic);
     } else {

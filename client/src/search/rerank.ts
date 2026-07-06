@@ -303,11 +303,11 @@ export function combineSignals(
     const values = Array.from(signal.values());
     const normalized = normalizeScores(values);
     const idArray = Array.from(signal.keys());
-    const result = new Map<string, number>();
+    const normalizedMap = new Map<string, number>();
     for (let i = 0; i < idArray.length; i++) {
-      result.set(idArray[i], normalized[i]);
+      normalizedMap.set(idArray[i], normalized[i]);
     }
-    return result;
+    return normalizedMap;
   });
 
   // Combine with weights

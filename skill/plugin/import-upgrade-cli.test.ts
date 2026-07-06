@@ -205,8 +205,8 @@ assert(
 
 // JSON branch emits a single JSON.stringify line on stdout (agent-parseable)
 assert(
-  /opts\.json[\s\S]{0,200}JSON\.stringify\(result\)/.test(registerCliBody),
-  'index.ts: import subcommands emit JSON.stringify(result) on --json',
+  /opts\.json[\s\S]{0,200}JSON\.stringify\(\w*[Rr]esult\)/.test(registerCliBody),
+  'index.ts: import subcommands emit JSON.stringify(<result>) on --json',
 );
 
 // ---------------------------------------------------------------------------

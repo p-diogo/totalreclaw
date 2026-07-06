@@ -442,7 +442,7 @@ export async function handleRemember(
       }
 
       try {
-        const result = await storeSingleFact(client, {
+        const storeResult = await storeSingleFact(client, {
           text: f.text,
           importance: imp,
           type: f.type,
@@ -451,17 +451,17 @@ export async function handleRemember(
           reasoning: f.reasoning,
         });
 
-        if (result.action === 'skipped' && result.was_duplicate) {
+        if (storeResult.action === 'skipped' && storeResult.was_duplicate) {
           dedupSkipped++;
           skipped++;
-        } else if (result.action === 'updated') {
+        } else if (storeResult.action === 'updated') {
           dedupSuperseded++;
           created++;
         } else {
           created++;
         }
 
-        results.push(result);
+        results.push(storeResult);
       } catch (error) {
         results.push({
           success: false,
@@ -523,7 +523,7 @@ export async function handleRemember(
       ? ((singleInput.metadata as Record<string, unknown>).reasoning as string)
       : undefined;
 
-    const result = await storeSingleFact(client, {
+    const storeResult = await storeSingleFact(client, {
       text: singleInput.fact,
       importance: singleInput.importance ?? 5,
       type: singleInput.metadata?.type,
@@ -540,7 +540,7 @@ export async function handleRemember(
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify(result),
+        text: JSON.stringify(storeResult),
       }],
     };
   } catch (error) {
