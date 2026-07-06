@@ -85,10 +85,63 @@ def _import_concurrency() -> int:
         return IMPORT_CONCURRENCY_DEFAULT
 
 
-# Maximum facts per batched UserOperation. Mirrors userop.MAX_BATCH_SIZE; kept
-# local to avoid importing from userop here (consistent with lifecycle.py's
-# _LIFECYCLE_MAX_BATCH). If the userop constant changes, update both.
-IMPORT_MAX_BATCH_SIZE = 30
+# Maximum facts per batched UserOperation (COUNT ceiling). rc4 (internal#435):
+# restored to 15 from 30 — the #382 raise to 30 was never staging-validated
+# with realistic import payloads. The instrumented staging repro showed
+# Pimlico's executeBatch simulation reverting with the catch-all -32500
+# ("Sender does not implement validateUserOp or factory is not deployed")
+# somewhere between 15 (~67KB calldata, passes) and 20 (~85KB, fails) realistic
+# facts (~600-char text + encrypted 640-dim embedding ≈ 4.5KB each). The byte
+# cap below (_MAX_BATCH_BYTES) is the real guard; this count ceiling is a
+# conservative belt-and-braces cap. userop.MAX_BATCH_SIZE (the Rust core hard
+# cap) stays 30 — 15 ≤ 30, so the core still accepts every group.
+IMPORT_MAX_BATCH_SIZE = 15
+
+# rc4 (internal#435): estimated on-chain calldata-byte ceiling per batched
+# UserOp. Kept comfortably under the observed ~85KB sim-revert cliff (a
+# sim-passing ~67KB op at 15 facts still didn't reliably get INCLUDED on the
+# staging bundler either, so 32KB buys inclusion headroom too). Groups flush
+# when adding the next fact would exceed EITHER this or the count ceiling.
+_MAX_BATCH_BYTES = 32_000
+
+
+def _estimate_payload_bytes(payload: dict) -> int:
+    """Estimate a single fact's on-chain UserOp calldata contribution.
+
+    ``1200`` bytes of protobuf-blob + per-call indices/overhead, ``1.1×`` the
+    UTF-8-ish text length, and ``2700`` bytes for an encrypted 640-dim f32
+    embedding when present. Deliberately a slight over-estimate — over-shooting
+    flushes a batch one fact early (safe), under-shooting risks the sim cliff.
+    """
+    text = payload.get("text") or ""
+    est = 1200 + int(len(text) * 1.1)
+    if payload.get("embedding"):
+        est += 2700
+    return est
+
+
+def _group_payloads_by_size(
+    payloads: list, max_count: int, max_bytes: int
+):
+    """Yield successive batch groups respecting BOTH a count and a byte cap.
+
+    A group is flushed before appending a fact whose addition would exceed
+    either cap. A single fact larger than ``max_bytes`` still forms its own
+    group (never dropped) — the adaptive halving in the store loop is the
+    backstop if such a lone op still sim-reverts.
+    """
+    group: list = []
+    group_bytes = 0
+    for p in payloads:
+        est = _estimate_payload_bytes(p)
+        if group and (len(group) >= max_count or group_bytes + est > max_bytes):
+            yield group
+            group = []
+            group_bytes = 0
+        group.append(p)
+        group_bytes += est
+    if group:
+        yield group
 
 # Gnosis mainnet chain ID — the Pro-tier chain where batched UserOps are
 # economically meaningful. Free-tier (Base Sepolia, 84532) falls back to
@@ -1525,33 +1578,22 @@ class ImportEngine:
         facts_stored = 0
 
         if chain_id == _GNOSIS_CHAIN_ID:
-            for chunk_start in range(0, len(facts), IMPORT_MAX_BATCH_SIZE):
-                chunk = facts[chunk_start:chunk_start + IMPORT_MAX_BATCH_SIZE]
-                payloads = [self._prepare_fact_payload(f) for f in chunk]
-                try:
-                    ids = await self._client.remember_batch(payloads, source="import")
-                    facts_stored += len(ids)
-                    if len(ids) < len(chunk):
-                        logger.debug(
-                            "remember_batch returned %d ids for %d-fact chunk "
-                            "(likely fingerprint dedup of subset)",
-                            len(ids), len(chunk),
-                        )
-                except Exception as e:
-                    msg = str(e)
-                    if '409' in msg or 'duplicate' in msg or 'fingerprint' in msg:
-                        logger.debug(
-                            "Batch of %d facts rejected as duplicate", len(chunk),
-                        )
-                    else:
+            # rc4 (internal#435): build all payloads up front, then group by
+            # BOTH the count ceiling and the estimated calldata-byte cap so no
+            # single executeBatch UserOp crosses Pimlico's sim-revert cliff.
+            all_payloads = [self._prepare_fact_payload(f) for f in facts]
+            for group in _group_payloads_by_size(
+                all_payloads, IMPORT_MAX_BATCH_SIZE, _MAX_BATCH_BYTES
+            ):
+                stored, group_errors = await self._store_group_adaptive(group)
+                facts_stored += stored
+                if group_errors:
+                    errors.extend(group_errors)
+                    if len(errors) >= 20:
                         errors.append(
-                            f"Batch store failed ({len(chunk)} facts): {msg}"
+                            "Error limit reached (20). Remaining facts in this batch skipped."
                         )
-                        if len(errors) >= 20:
-                            errors.append(
-                                "Error limit reached (20). Remaining facts in this batch skipped."
-                            )
-                            break
+                        break
             return facts_stored, errors, dups_skipped
 
         # Per-fact fallback: free-tier / non-Gnosis / chain probe failed.
@@ -1572,6 +1614,48 @@ class ImportEngine:
                         break
 
         return facts_stored, errors, dups_skipped
+
+    async def _store_group_adaptive(self, group: list) -> tuple[int, list[str]]:
+        """Store one payload group via ``remember_batch``; halve-and-retry on a
+        simulation-size revert.
+
+        rc4 (internal#435): Pimlico surfaces an oversized-``executeBatch``
+        simulation failure as the catch-all ``-32500 "... reverted during
+        simulation ..."``. When a group of >1 fact hits it, split in half and
+        retry each half recursively (floor 1). This makes the importer
+        adaptive to wherever a given bundler's calldata-size cliff actually
+        sits, on top of the static byte cap. A duplicate rejection is swallowed
+        (0 stored, no error); any other error — or a size revert at the
+        single-fact floor — is surfaced into the returned error list so the
+        batch is counted FAILED, not stored.
+
+        Returns ``(stored, errors)``.
+        """
+        try:
+            ids = await self._client.remember_batch(group, source="import")
+            return len(ids), []
+        except Exception as e:
+            msg = str(e)
+            if '409' in msg or 'duplicate' in msg or 'fingerprint' in msg:
+                logger.debug("Batch of %d facts rejected as duplicate", len(group))
+                return 0, []
+            is_sim_revert = (
+                "-32500" in msg or "reverted during simulation" in msg.lower()
+            )
+            if is_sim_revert and len(group) > 1:
+                mid = len(group) // 2
+                logger.warning(
+                    "Batch sim revert on %d facts (%s) — splitting %d/%d and "
+                    "retrying each half",
+                    len(group), msg[:120], mid, len(group) - mid,
+                )
+                s1, e1 = await self._store_group_adaptive(group[:mid])
+                s2, e2 = await self._store_group_adaptive(group[mid:])
+                return s1 + s2, e1 + e2
+            # Single-fact floor (can't split further) or a non-size error —
+            # surface it so the fact is counted failed rather than silently
+            # dropped.
+            return 0, [f"Batch store failed ({len(group)} facts): {msg}"]
 
 
 # ── Per-chunk "0 facts" diagnostics (issue #389 follow-up) ──────────────
