@@ -1,11 +1,11 @@
 """Re-crystallize / re-key backfill for collapsed on-chain sessions.
 
-**SCAFFOLD — not a runnable on-chain writer.** The dry-run planner
-(:func:`plan_recrystallize`) and all *pure* logic (segmentation → session plan,
-cost estimation) are implemented and unit-tested. The on-chain write/tombstone
-path (:func:`execute_recrystallize`) is a **stub that raises
-``NotImplementedError``**. See ``docs/specs/totalreclaw/recrystallize-backfill.md``
-for the full design.
+Both the dry-run planner (:func:`plan_recrystallize`, pure segmentation +
+cost estimation) and the guarded on-chain write/tombstone path
+(:func:`execute_recrystallize`) are implemented + validated against staging
+(#438). See ``docs/specs/totalreclaw/recrystallize-backfill.md`` for the full
+design and §12 for usage. Not yet run against any real user vault (Phase B/C,
+gated on Pedro).
 
 Why this exists
 ---------------
@@ -351,7 +351,7 @@ def build_plan(
     )
 
 
-# ── Fetch + decrypt front-end (STUB — network/crypto path) ────────────────────
+# ── Fetch + decrypt front-end (network/crypto path) ──────────────────────────
 
 
 #: A widened export query — like ``operations.EXPORT_QUERY`` but the fact
@@ -680,7 +680,7 @@ async def plan_recrystallize(
     )
 
 
-# ── Execute entry point (STUB — on-chain writer, guarded) ─────────────────────
+# ── Execute entry point (on-chain writer, guarded) ───────────────────────────
 
 
 class QuotaPaused(Exception):
@@ -958,7 +958,7 @@ async def execute_recrystallize(
 _OLD_CRYSTALS_KEY = "__old_crystals__"
 
 
-# ── Checkpoint / resumability (STUB persistence; shape is real) ───────────────
+# ── Checkpoint / resumability (atomic JSON persistence) ──────────────────────
 
 
 @dataclass
