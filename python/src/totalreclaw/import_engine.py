@@ -143,7 +143,11 @@ def _estimate_payload_bytes(payload: dict) -> int:
     import json as _json
 
     text = payload.get("text") or ""
-    est = _BYTES_FIXED_OVERHEAD + len(text)
+    # The encrypted claim blob stores the canonical-claim JSON as UTF-8 BYTES
+    # (build_canonical_claim_v1 uses ensure_ascii=False), so the blob term must
+    # count UTF-8 bytes, not code points — CJK ≈3B/char, emoji ≈4B/cp (PR #461
+    # re-review Finding A). ASCII is unaffected (len == utf-8 length).
+    est = _BYTES_FIXED_OVERHEAD + len(text.encode("utf-8"))
 
     meta = payload.get("extra_metadata")
     if isinstance(meta, dict) and meta:

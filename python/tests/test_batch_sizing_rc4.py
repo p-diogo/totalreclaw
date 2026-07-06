@@ -275,6 +275,34 @@ def test_estimate_bounds_real_for_all_unique_tokens():
     assert est >= real, f"estimate {est} under-counts real {real} for all-unique tokens"
 
 
+# Dense non-ASCII scripts: the encrypted blob stores UTF-8 BYTES
+# (ensure_ascii=False), so a code-point estimate under-counts (CJK ~3B/char,
+# emoji ~4B/cp, RTL ~2B/char) — PR #461 re-review Finding A.
+_NONASCII = {
+    "cjk": "这是一个关于搬到柏林并寻找住房的对话摘要用户需要完成登记并购买保险还要办理居留许可",
+    "emoji": "Trip recap 🎉🏙️🚆🏡💶📝✈️🗺️🎊🥳 moving to Berlin ",
+    "rtl": "ملخص المحادثة حول الانتقال إلى برلين والبحث عن سكن والتسجيل والتأمين وتصريح الإقامة ",
+}
+
+
+@pytest.mark.parametrize("script", ["cjk", "emoji", "rtl"])
+@pytest.mark.parametrize("nchars", [300, 1000, 2000])
+@pytest.mark.parametrize("with_embedding", [False, True])
+def test_estimate_bounds_real_non_ascii(script, nchars, with_embedding):
+    seed = _NONASCII[script]
+    text = seed
+    while len(text) < nchars:
+        text += seed
+    text = text[:nchars]
+    embedding = [0.01 * i for i in range(640)] if with_embedding else None
+    real = _real_protobuf_bytes(text, embedding)
+    est = _estimate_payload_bytes(_payload(text, embedding))
+    assert est >= real, (
+        f"estimate {est} under-counts real {real} for {script} {nchars} chars "
+        f"({len(text.encode('utf-8'))} utf-8 bytes) embedding={with_embedding}"
+    )
+
+
 def test_estimate_bounds_real_for_crystal_metadata():
     # Crystal-shaped fact: extra_metadata carries key_outcomes/open_threads/etc.
     text = "Session summary about relocating to Berlin and finding housing."
