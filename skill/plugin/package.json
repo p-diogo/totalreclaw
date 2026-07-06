@@ -49,11 +49,11 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "tr": "./dist/tr-cli.js"
+    "tr": "./dist/cli/tr-cli.js"
   },
   "files": [
     "dist/",
-    "*.ts",
+    "**/*.ts",
     "import-adapters/",
     "!**/*.test.ts",
     "!pocv2-e2e-test.ts",
