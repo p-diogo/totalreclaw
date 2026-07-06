@@ -214,6 +214,146 @@ def test_atexit_reaper_fails_running_spawned_imports(tmp_path, monkeypatch):
     assert read_import_state("bg-done").status == "completed"
 
 
+# ── #457b review Finding 1: heartbeat + reap-safe background loop ───────────
+def _bg_result(**over):
+    from totalreclaw.import_adapters import BatchImportResult
+    base = dict(
+        success=True, batch_offset=0, batch_size=25, chunks_processed=25,
+        total_chunks=100, facts_extracted=5, facts_stored=6, remaining_chunks=75,
+        is_complete=False, derived_facts=1,
+    )
+    base.update(over)
+    return BatchImportResult(**base)
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_keeps_live_batch0_fresh(tmp_path, monkeypatch):
+    """A live-but-slow batch 0 (last_updated frozen at spawn) must NOT read as
+    early-stale — the heartbeat refreshes last_updated while the batch runs."""
+    _redirect_state_dir(tmp_path, monkeypatch)
+    monkeypatch.setattr(tools, "_HEARTBEAT_INTERVAL_S", 0.02)
+    old = (datetime.now(timezone.utc) - timedelta(minutes=15)).isoformat()
+    _write_state_raw(
+        "live-1", source="gemini", status="running",
+        started_at=old, last_updated=old, batch_done=0, batch_total=5)
+    # Confirm it WOULD be early-stale before the heartbeat runs.
+    assert is_import_early_stale(read_import_state("live-1"))
+
+    class _SlowEngine:
+        async def process_batch(self, **k):
+            await asyncio.sleep(0.15)  # ~7 heartbeat ticks
+            return _bg_result(is_complete=True)
+
+    await tools._process_batch_with_heartbeat(
+        _SlowEngine(), "live-1", source="gemini", offset=0, batch_size=25)
+
+    s = read_import_state("live-1")
+    # batch_done still 0 (helper doesn't checkpoint) but last_updated is fresh.
+    assert s.batch_done == 0
+    assert not is_import_early_stale(s)
+
+
+@pytest.mark.asyncio
+async def test_background_loop_stops_and_stays_failed_on_reap(tmp_path, monkeypatch):
+    """If the record is reaped (status→failed) mid-run, the loop must stop, do
+    no further store calls, and NOT resurrect the record."""
+    _redirect_state_dir(tmp_path, monkeypatch)
+    monkeypatch.setattr(tools, "_HEARTBEAT_INTERVAL_S", 10)  # no heartbeat interference
+    monkeypatch.setattr(tools, "_persist_import_memory", AsyncMock())
+    start = datetime.now(timezone.utc)
+    _write_state_raw(
+        "reap-1", source="gemini", status="running",
+        started_at=start.isoformat(), last_updated=start.isoformat(),
+        batch_done=0, batch_total=4)
+
+    calls = {"n": 0}
+
+    class _ReapingEngine:
+        async def process_batch(self, **k):
+            calls["n"] += 1
+            # Simulate an external reaper flipping the record to failed during
+            # the first batch.
+            from dataclasses import asdict as _ad
+            s = read_import_state("reap-1")
+            write_import_state(ImportState(**{**_ad(s), "status": "failed",
+                                              "errors": ["reaped externally"]}))
+            return _bg_result(is_complete=False)
+
+    await tools._run_import_background(
+        engine=_ReapingEngine(), state=MagicMock(), import_id="reap-1",
+        source="gemini", file_path=None, content="x",
+        estimate={"batch_size": 25}, total_items=100, num_batches=4, start_dt=start)
+
+    # Only ONE batch ran — the reap halted the loop before batch 2.
+    assert calls["n"] == 1
+    s = read_import_state("reap-1")
+    # Not resurrected to running/completed.
+    assert s.status == "failed"
+    assert any("reaped externally" in e for e in s.errors)
+
+
+@pytest.mark.asyncio
+async def test_background_loop_completes_when_healthy(tmp_path, monkeypatch):
+    """Regression: an uninterrupted loop still flips the record to completed."""
+    _redirect_state_dir(tmp_path, monkeypatch)
+    monkeypatch.setattr(tools, "_HEARTBEAT_INTERVAL_S", 10)
+    monkeypatch.setattr(tools, "_persist_import_memory", AsyncMock())
+    start = datetime.now(timezone.utc)
+    _write_state_raw(
+        "ok-1", source="gemini", status="running",
+        started_at=start.isoformat(), last_updated=start.isoformat(),
+        batch_done=0, batch_total=1)
+
+    class _Engine:
+        async def process_batch(self, **k):
+            return _bg_result(facts_stored=6, facts_extracted=5, derived_facts=1,
+                              is_complete=True)
+
+    await tools._run_import_background(
+        engine=_Engine(), state=MagicMock(), import_id="ok-1",
+        source="gemini", file_path=None, content="x",
+        estimate={"batch_size": 25}, total_items=25, num_batches=1, start_dt=start)
+
+    s = read_import_state("ok-1")
+    assert s.status == "completed"
+    assert s.facts_stored == 6 and s.facts_extracted == 5 and s.derived_facts == 1
+
+
+@pytest.mark.asyncio
+async def test_reimport_all_skipped_is_success_not_failed(tmp_path, monkeypatch):
+    """A re-import where the registry skips EVERY conversation yields 0
+    extracted / 0 stored but conversations_skipped>0 — that is a SUCCESS, not
+    an import_failed (fail-loud keys on the ESTIMATE, not the empty result)."""
+    _redirect_state_dir(tmp_path, monkeypatch)
+    # Estimate shows real content (the file has conversations) → no fail-loud.
+    _patch_estimate(monkeypatch, {
+        "total_chunks": 2, "total_facts": 0, "errors": [],
+        "estimated_facts": 5, "num_batches": 1, "batch_size": 25,
+    })
+    import totalreclaw.import_engine as ie
+    process = AsyncMock(return_value=_bg_result(
+        facts_extracted=0, facts_stored=0, derived_facts=0,
+        conversations_skipped=2, is_complete=True))
+    monkeypatch.setattr(ie.ImportEngine, "process_batch", lambda self, **k: process(**k))
+    state = _state_with_tier("pro")
+
+    res = json.loads(await tools.import_from(
+        {"source": "chatgpt", "content": "x", "disclosure_confirmed": True,
+         "disclosure_token": "unused"}, state,
+    ))
+    # First call returns disclosure_required; drive the consented call.
+    if res.get("disclosure_required"):
+        res = json.loads(await tools.import_from(
+            {"source": "chatgpt", "content": "x", "disclosure_confirmed": True,
+             "disclosure_token": res["disclosure_token"]}, state,
+        ))
+    assert res.get("error") != "import_failed"
+    assert res.get("conversations_skipped") == 2
+    assert res.get("facts_stored") == 0
+    s = read_import_state(res["import_id"])
+    assert s is not None and s.status == "completed"
+
+
 # ── #437 disclosure token hashed at rest ────────────────────────────────────
 def test_token_stored_hashed_not_plaintext(tmp_path, monkeypatch):
     _redirect_state_dir(tmp_path, monkeypatch)

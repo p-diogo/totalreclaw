@@ -1310,6 +1310,172 @@ def _register_spawned_import(import_id: str) -> None:
         _ORPHAN_ATEXIT_REGISTERED = True
 
 
+# ── #457b review Finding 1: heartbeat so a live-but-slow batch isn't reaped ─
+#
+# ``is_import_early_stale`` keys on ``last_updated``, which the background loop
+# only writes at BATCH BOUNDARIES — so it stays frozen at spawn time for the
+# whole of batch 0. A healthy first batch (25 chunks × receipt-confirmed
+# byte-capped groups, each store waiting up to 240s) can exceed the 10-min
+# early-stale window, which would false-reap a LIVE import as an orphan — and
+# then (because the loop only stopped on "aborted" and checkpoints re-inherit
+# the old status) the still-running task would keep writing on-chain while the
+# record reports failed forever. The heartbeat refreshes ``last_updated`` every
+# ~60s WHILE a batch runs: a live process keeps its record fresh; a dead one
+# doesn't; early-stale then reaps only true orphans.
+_HEARTBEAT_INTERVAL_S = 60
+
+
+async def _import_heartbeat(import_id: str, interval: Optional[float] = None) -> None:
+    """Refresh a ``running`` import's ``last_updated`` on a fixed interval.
+
+    Stops itself the moment the record is reaped (status flipped off
+    ``running``) or removed — it never resurrects a reaped import.
+    """
+    from totalreclaw.import_state import read_import_state, write_import_state
+    iv = _HEARTBEAT_INTERVAL_S if interval is None else interval
+    try:
+        while True:
+            await asyncio.sleep(iv)
+            s = read_import_state(import_id)
+            if s is None or s.status != "running":
+                return
+            write_import_state(s)  # write_import_state re-stamps last_updated=now
+    except asyncio.CancelledError:
+        return
+
+
+async def _process_batch_with_heartbeat(engine, import_id: str, **batch_kwargs):
+    """Run one ``engine.process_batch`` with a concurrent heartbeat that keeps
+    the import record fresh for the (possibly multi-minute) duration of the
+    batch. The heartbeat is always cancelled when the batch returns."""
+    beat = asyncio.ensure_future(_import_heartbeat(import_id))
+    try:
+        return await engine.process_batch(**batch_kwargs)
+    finally:
+        beat.cancel()
+        try:
+            await beat
+        except BaseException:
+            pass
+
+
+async def _run_import_background(
+    *, engine, state, import_id, source, file_path, content,
+    estimate, total_items, num_batches, start_dt,
+) -> None:
+    """Background driver for a large import (extracted from ``import_from`` so
+    the stop-signal + checkpoint-preservation invariants are unit-testable).
+
+    #457b review fixes:
+      (b) stop on ANY reap — the loop halts when the record's status is no
+          longer ``running`` (aborted / early-stale-failed / 2h-stale-failed /
+          external), not just on ``aborted``.
+      (c) checkpoints never resurrect a reaped record — after each batch we
+          re-read the state and, if it was reaped mid-batch, stop WITHOUT
+          overwriting (so a heartbeat-less-but-actually-dead orphan stays
+          failed, and a live reap actually halts the on-chain writes).
+    """
+    from totalreclaw.import_state import read_import_state, write_import_state, ImportState
+    offset = 0
+    batch_size = estimate.get("batch_size", 25)
+    total_stored = 0
+    total_extracted = 0
+    total_derived = 0
+    batch_done = 0
+    try:
+        await _persist_import_memory(
+            state,
+            text=(
+                f"Active background import: id={import_id}, source={source}, "
+                f"chunks={total_items}, batches={num_batches}, "
+                f"started={start_dt.isoformat()}. Check status with "
+                f"totalreclaw_import_status."
+            ),
+            importance=0.7,
+        )
+        while offset < total_items:
+            # (b) Any non-running status is a stop signal.
+            current = read_import_state(import_id)
+            if current is None or current.status != "running":
+                logger.info(
+                    "Import %s: no longer running (%s) at offset %d — stopping",
+                    import_id, current.status if current else "missing", offset,
+                )
+                return
+            result = await _process_batch_with_heartbeat(
+                engine, import_id,
+                source=source, file_path=file_path, content=content,
+                offset=offset, batch_size=batch_size,
+            )
+            total_stored += result.facts_stored
+            total_extracted += result.facts_extracted
+            total_derived += getattr(result, "derived_facts", 0)
+            batch_done += 1
+            offset += batch_size
+            # (c) Re-read before checkpointing: a reap DURING the batch must
+            # not be resurrected by an old-status checkpoint write.
+            s = read_import_state(import_id)
+            if s is None or s.status != "running":
+                logger.info(
+                    "Import %s: reaped during batch (%s) — stopping without "
+                    "overwrite", import_id, s.status if s else "missing",
+                )
+                return
+            elapsed = (datetime.now(timezone.utc).timestamp() - datetime.fromisoformat(
+                s.started_at.replace("Z", "+00:00")).timestamp())
+            sec_per_batch = elapsed / batch_done if batch_done else 45
+            remaining = num_batches - batch_done
+            eta_ms = remaining * sec_per_batch
+            write_import_state(ImportState(**{
+                **asdict(s),
+                "batch_done": batch_done,
+                "facts_stored": total_stored,
+                "facts_extracted": total_extracted,
+                "derived_facts": total_derived,
+                "estimated_completion_iso": datetime.fromtimestamp(
+                    datetime.now(timezone.utc).timestamp() + eta_ms,
+                    tz=timezone.utc,
+                ).isoformat(),
+            }))
+            eta_min = f"{eta_ms / 60:.0f}min" if eta_ms else "?"
+            logger.info(
+                "Import %s: batch %d/%d complete (%d facts stored, %d extracted, ETA ~%s)",
+                import_id, batch_done, num_batches, total_stored, total_extracted, eta_min,
+            )
+            if result.is_complete:
+                break
+        # Mark complete — only if still running (a reap wins).
+        s = read_import_state(import_id)
+        if s and s.status == "running":
+            write_import_state(ImportState(**{**asdict(s), "status": "completed",
+                                              "batch_done": num_batches,
+                                              "facts_stored": total_stored,
+                                              "facts_extracted": total_extracted,
+                                              "derived_facts": total_derived}))
+        end_dt = datetime.now(timezone.utc)
+        duration_min = (end_dt - start_dt).total_seconds() / 60
+        logger.info(
+            "Import %s: COMPLETED in %.0f minutes — %d facts stored, %d extracted, %d batches",
+            import_id, duration_min, total_stored, total_extracted, batch_done,
+        )
+        await _persist_import_memory(
+            state,
+            text=(
+                f"Import {import_id} completed: {total_stored} memories stored, "
+                f"{total_extracted} extracted from {total_items} chunks "
+                f"({batch_done} batches) in {duration_min:.0f} minutes. "
+                f"Source: {source}."
+            ),
+            importance=0.8,
+        )
+    except Exception as e:
+        s = read_import_state(import_id)
+        if s and s.status == "running":
+            write_import_state(ImportState(**{**asdict(s), "status": "failed",
+                                              "errors": s.errors + [str(e)]}))
+        logger.error("Import %s: background task failed: %s", import_id, e)
+
+
 async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
     """Import memories from other AI tools (Gemini, ChatGPT, Claude, Mem0, etc.)."""
     client = state.get_client()
@@ -1509,111 +1675,14 @@ async def import_from(args: dict, state: "PluginState", **kwargs) -> str:
             )
             write_import_state(istate)
 
-            async def _run_background() -> None:
-                from totalreclaw.import_state import read_import_state, write_import_state, ImportState
-                offset = 0
-                batch_size = estimate.get("batch_size", 25)
-                total_stored = 0
-                total_extracted = 0
-                total_derived = 0
-                batch_done = 0
-                start_dt = now_dt
-                try:
-                    # #401: persist the import id to memory at start so the agent
-                    # recovers it after context compaction and can poll
-                    # totalreclaw_import_status without the user re-supplying the
-                    # id. Best-effort; never blocks the import. Done inside the
-                    # background task (not the caller) so import_from returns
-                    # immediately with the "started" ack.
-                    await _persist_import_memory(
-                        state,
-                        text=(
-                            f"Active background import: id={import_id}, source={source}, "
-                            f"chunks={total_items}, batches={num_batches}, "
-                            f"started={now_dt.isoformat()}. Check status with "
-                            f"totalreclaw_import_status."
-                        ),
-                        importance=0.7,
-                    )
-                    while offset < total_items:
-                        # Check abort flag before each batch.
-                        current = read_import_state(import_id)
-                        if current and current.status == "aborted":
-                            logger.info("Import %s: abort flag detected at offset %d", import_id, offset)
-                            return
-                        result = await engine.process_batch(
-                            source=source, file_path=file_path, content=content,
-                            offset=offset, batch_size=batch_size,
-                        )
-                        total_stored += result.facts_stored
-                        total_extracted += result.facts_extracted
-                        total_derived += getattr(result, "derived_facts", 0)
-                        batch_done += 1
-                        offset += batch_size
-                        # Checkpoint state.
-                        s = read_import_state(import_id)
-                        if s:
-                            elapsed = (datetime.now(timezone.utc).timestamp() - datetime.fromisoformat(
-                                s.started_at.replace("Z", "+00:00")).timestamp())
-                            sec_per_batch = elapsed / batch_done if batch_done else 45
-                            remaining = num_batches - batch_done
-                            eta_ms = remaining * sec_per_batch
-                            write_import_state(ImportState(**{
-                                **asdict(s),
-                                "batch_done": batch_done,
-                                "facts_stored": total_stored,
-                                "facts_extracted": total_extracted,
-                                "derived_facts": total_derived,
-                                "estimated_completion_iso": datetime.fromtimestamp(
-                                    datetime.now(timezone.utc).timestamp() + eta_ms,
-                                    tz=timezone.utc,
-                                ).isoformat(),
-                            }))
-                        # #401: INFO-level batch progress so
-                        # ``journalctl -u hermes-gateway | grep "Import "``
-                        # reconstructs the timeline without polling the state
-                        # file. Was checkpoint-only (silent) pre-#401.
-                        eta_min = f"{eta_ms / 60:.0f}min" if (s and eta_ms) else "?"
-                        logger.info(
-                            "Import %s: batch %d/%d complete (%d facts stored, %d extracted, ETA ~%s)",
-                            import_id, batch_done, num_batches, total_stored, total_extracted, eta_min,
-                        )
-                        if result.is_complete:
-                            break
-                    # Mark complete.
-                    s = read_import_state(import_id)
-                    if s and s.status == "running":
-                        write_import_state(ImportState(**{**asdict(s), "status": "completed",
-                                                          "batch_done": num_batches,
-                                                          "facts_stored": total_stored,
-                                                          "facts_extracted": total_extracted,
-                                                          "derived_facts": total_derived}))
-                    end_dt = datetime.now(timezone.utc)
-                    duration_min = (end_dt - start_dt).total_seconds() / 60
-                    logger.info(
-                        "Import %s: COMPLETED in %.0f minutes — %d facts stored, %d extracted, %d batches",
-                        import_id, duration_min, total_stored, total_extracted, batch_done,
-                    )
-                    # #401: persist completion to the vault so the agent
-                    # recovers the result after context compaction. Best-effort.
-                    await _persist_import_memory(
-                        state,
-                        text=(
-                            f"Import {import_id} completed: {total_stored} memories stored, "
-                            f"{total_extracted} extracted from {total_items} chunks "
-                            f"({batch_done} batches) in {duration_min:.0f} minutes. "
-                            f"Source: {source}."
-                        ),
-                        importance=0.8,
-                    )
-                except Exception as e:
-                    s = read_import_state(import_id)
-                    if s and s.status == "running":
-                        write_import_state(ImportState(**{**asdict(s), "status": "failed",
-                                                          "errors": s.errors + [str(e)]}))
-                    logger.error("Import %s: background task failed: %s", import_id, e)
-
-            _bg_task = asyncio.ensure_future(_run_background())
+            # #457b: the loop is a module-level coroutine (testable) with a
+            # heartbeat, reap-aware stop signal, and resurrection-safe
+            # checkpoints — see _run_import_background.
+            _bg_task = asyncio.ensure_future(_run_import_background(
+                engine=engine, state=state, import_id=import_id, source=source,
+                file_path=file_path, content=content, estimate=estimate,
+                total_items=total_items, num_batches=num_batches, start_dt=now_dt,
+            ))
             _BG_TASKS.add(_bg_task)
             _bg_task.add_done_callback(_BG_TASKS.discard)
             # #457b: if this process exits before the task finishes (one-shot
