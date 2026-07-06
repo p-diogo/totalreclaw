@@ -68,6 +68,18 @@ _SPONSOR_32500 = {
         ),
     }
 }
+# A -32500 that is NOT a redeploy signal (AA13 initCode-failed). Must NOT
+# latch the account deployed / strip the factory — a fresh account's deploy
+# depends on the factory.
+_SPONSOR_AA13 = {
+    "error": {
+        "code": -32500,
+        "message": (
+            "UserOperation reverted during simulation with reason: AA13 "
+            "initCode failed or OOG"
+        ),
+    }
+}
 _RECEIPT_OK = {"result": {"success": True, "receipt": {"transactionHash": "0xabc"}}}
 
 
@@ -218,6 +230,41 @@ async def test_sponsor_32500_marks_deployed_and_retries_without_factory(monkeypa
     assert "factory" in record["sponsor_userops"][0]
     assert "factory" not in record["sponsor_userops"][1]
     assert _SA.lower() in userop._sender_deployed
+
+
+@pytest.mark.asyncio
+async def test_fresh_account_non_redeploy_32500_keeps_factory_not_latched(monkeypatch):
+    """Review Finding 1 (BLOCKER): a non-redeploy -32500 (AA13 initCode-failed)
+    on a FRESH account must NOT latch _sender_deployed or strip the factory —
+    the deploy depends on the factory. Every retry keeps the factory; the
+    account is never bricked in-process."""
+    monkeypatch.setattr(userop, "get_nonce", AsyncMock(return_value=0))  # fresh
+
+    async def _getcode(http, rpc, addr):
+        return "0x"  # genuinely undeployed
+
+    monkeypatch.setattr(userop, "_eth_get_code", _getcode)
+    # Don't actually sleep on the transient-retry backoff.
+    monkeypatch.setattr(userop.asyncio, "sleep", AsyncMock())
+    # Every sponsor attempt returns AA13 → exhausts retries and raises.
+    mock, record = _make_relay_mock([_SPONSOR_AA13, _SPONSOR_AA13, _SPONSOR_AA13])
+    monkeypatch.setattr(userop, "_relay_rpc", mock)
+
+    with pytest.raises(RuntimeError):
+        await userop.build_and_send_userop_batch(
+            sender=_SA, eoa_address=_EOA, eoa_private_key=_KEY,
+            protobuf_payloads=[b"f1", b"f2"], relay_url="https://mock",
+            auth_key_hex="dead", wallet_address=_SA, chain_id=100,
+        )
+
+    # NOT falsely latched deployed — a re-import can still deploy this account.
+    assert _SA.lower() not in userop._sender_deployed
+    # The account retried (>1 sponsor attempt) and EVERY attempt kept the
+    # factory — it was never stripped.
+    assert len(record["sponsor_userops"]) >= 2
+    for uo in record["sponsor_userops"]:
+        assert "factory" in uo
+        assert "factoryData" in uo
 
 
 @pytest.mark.asyncio

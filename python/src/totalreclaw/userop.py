@@ -173,19 +173,37 @@ def _is_sender_state_error(err_str: str) -> bool:
     """True when a sponsor/bundler error indicates the account is ALREADY
     deployed (so re-attaching the factory is the actual fault).
 
-    Covers the paymaster ``-32500`` revert (\"Sender does not implement
-    validateUserOp or factory is not deployed\"), the EntryPoint ``AA10
-    sender already constructed`` code, and the raw \"already constructed\"
-    phrasing. Checked only AFTER an ``AA25`` nonce-conflict has been ruled
-    out (an AA25 revert is also surfaced with code ``-32500``)."""
+    Matches ONLY the specific "account already exists" signals:
+      - the paymaster revert \"Sender does not implement validateUserOp or
+        factory is not deployed\" (the #435 root-cause message), and
+      - the EntryPoint ``AA10 sender already constructed`` code / phrasing.
+
+    Deliberately NOT keyed on the bare JSON-RPC code ``-32500``: many
+    UNRELATED failures share it (AA13 initCode-failed, AA21 prefund,
+    AA23 sig, AA31/AA33 paymaster, transient sim errors). Latching those as
+    "deployed" would strip the factory from a FRESH account's first op —
+    whose deploy DEPENDS on the factory — and permanently brick it in-process
+    (the cache is never cleared). AA13 in particular must retry WITH the
+    factory; see the transient-``-32500`` retry branch in the submit loops.
+    Checked only AFTER an ``AA25`` nonce-conflict has been ruled out."""
     if not err_str:
         return False
     return (
         "already constructed" in err_str          # AA10 / raw phrasing
         or "AA10" in err_str
         or "validateUserOp or factory" in err_str  # paymaster -32500 revert
-        or "-32500" in err_str
     )
+
+
+def _is_transient_sim_error(err_str: str) -> bool:
+    """True for a ``-32500`` simulation error that is NOT a redeploy signal.
+
+    A ``-32500`` that :func:`_is_sender_state_error` did not claim (AA13
+    initCode-failed, AA21 prefund, transient sim reverts, …) is treated as
+    transient: rebuild and retry with the deploy state UNCHANGED — the
+    account is NOT latched deployed and a fresh account keeps its factory.
+    Callers must have already ruled out AA25 and the sender-state case."""
+    return bool(err_str) and "-32500" in err_str
 
 
 async def _resolve_is_deployed(
@@ -845,6 +863,19 @@ async def build_and_send_userop(
                     )
                     _mark_sender_deployed(sender)
                     continue
+                if _is_transient_sim_error(err_str) and retryable:
+                    # #435 review: a -32500 that is NOT a redeploy signal
+                    # (AA13 initCode-failed, AA21 prefund, transient sim) —
+                    # do NOT latch deployed or strip the factory. Rebuild and
+                    # retry with the deploy state unchanged (a fresh account
+                    # keeps its factory, which its deploy depends on).
+                    logger.warning(
+                        "transient -32500 sim error (attempt %d/%d) — retrying "
+                        "with unchanged deploy state: %s",
+                        attempt + 1, _MAX_NONCE_RETRIES, err_str[:200],
+                    )
+                    await asyncio.sleep(min(2 ** attempt, 4))
+                    continue
                 raise
 
 
@@ -1137,6 +1168,20 @@ async def build_and_send_userop_batch(
                         len(protobuf_payloads), err_str[:200],
                     )
                     _mark_sender_deployed(sender)
+                    continue
+                if _is_transient_sim_error(err_str) and retryable:
+                    # #435 review: a non-redeploy -32500 (AA13 initCode-failed,
+                    # AA21 prefund, transient sim) — do NOT latch deployed or
+                    # strip the factory. Rebuild and retry with deploy state
+                    # unchanged so a fresh account keeps its (required) factory.
+                    logger.warning(
+                        "Batch transient -32500 sim error (attempt %d/%d, "
+                        "batch size %d) — retrying with unchanged deploy "
+                        "state: %s",
+                        attempt + 1, _MAX_NONCE_RETRIES,
+                        len(protobuf_payloads), err_str[:200],
+                    )
+                    await asyncio.sleep(min(2 ** attempt, 4))
                     continue
                 raise
 

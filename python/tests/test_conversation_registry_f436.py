@@ -151,6 +151,34 @@ def test_fresh_import_records_completed_conversations(monkeypatch):
     assert ist.load_imported_conversations("chatgpt") == {"c1", "c2"}
 
 
+def test_extraction_failure_does_not_record_conversation(monkeypatch):
+    """Review Finding 2: a conversation whose chunk FAILS extraction must NOT
+    be recorded as imported — otherwise the natural re-import recovery skips
+    it forever. Other (successful) conversations in the same batch are still
+    recorded."""
+    _install_fake_embedding(monkeypatch)
+    chunks = [
+        _chunk("c1", "good topic", "2026-05-14T09:00:00Z"),
+        _chunk("c2", "boom topic", "2026-05-14T10:00:00Z"),
+    ]
+    _install_fake_adapter(monkeypatch, chunks)
+
+    async def flaky_extract(messages, timestamp):
+        # c2's chunk text is "boom topic ..." — raise for it, succeed otherwise.
+        if any("boom" in (m.get("content") or "") for m in messages):
+            raise RuntimeError("transient LLM failure")
+        return [{"text": "an extracted fact worth keeping", "type": "fact", "importance": 8}]
+
+    engine = ImportEngine(client=_BatchClient(), llm_extract=flaky_extract)
+    result = asyncio.run(engine.process_batch(source="chatgpt", content="x"))
+
+    # Batch completed (c1 stored a fact); c2 failed extraction.
+    assert result.facts_stored >= 1
+    recorded = ist.load_imported_conversations("chatgpt")
+    assert "c1" in recorded          # succeeded → recorded
+    assert "c2" not in recorded      # failed → NOT recorded, stays re-importable
+
+
 def test_partial_import_only_records_fully_processed_conversations(monkeypatch):
     _install_fake_embedding(monkeypatch)
     # c1 fits in batch 1; c2's two chunks straddle the batch boundary.

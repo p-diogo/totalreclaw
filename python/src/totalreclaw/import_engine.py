@@ -268,6 +268,12 @@ class ImportEngine:
         #: the registry for a conversation on every subsequent batch once it
         #: has been marked complete.
         self._recorded_conversations: set[str] = set()
+        #: #436 review — global chunk indices whose LLM extraction FAILED
+        #: (raised) this run. A conversation touching any of these is excluded
+        #: from the imported-conversation registry so a transient extraction
+        #: failure doesn't mark it imported and block the natural re-import
+        #: recovery. Persists across batches on the instance.
+        self._failed_chunk_indices: set[int] = set()
 
     # ── Estimate ─────────────────────────────────────────────────────────
 
@@ -615,11 +621,20 @@ class ImportEngine:
         # skipped remaining chunks' LLM calls. Under concurrency all calls have
         # already fired by this point, so the cap now only stops *accumulating*
         # later chunks' results (same stored-facts outcome at the cap).
-        for (global_index, chunk), res in zip(to_extract, raw_results):
+        for pos, ((global_index, chunk), res) in enumerate(zip(to_extract, raw_results)):
             if isinstance(res, BaseException):
                 extraction_failures += 1
+                # #436 review: mark this chunk failed so its conversation is
+                # NOT recorded as imported (a transient failure must stay
+                # re-importable).
+                self._failed_chunk_indices.add(global_index)
                 errors.append(f"Extraction failed for chunk '{chunk.title}': {repr(res)}")
                 if len(errors) >= 20:
+                    # Bailing early leaves the rest of this batch's extractions
+                    # unverified — treat them as failed too so their
+                    # conversations aren't recorded on incomplete evidence.
+                    for gi, _ in to_extract[pos + 1:]:
+                        self._failed_chunk_indices.add(gi)
                     break
                 continue
 
@@ -686,6 +701,9 @@ class ImportEngine:
                 if cid not in self._recorded_conversations
                 and cid not in imported_convs
                 and all(ix in self._processed_chunk_indices for ix in indices)
+                # #436 review: never record a conversation any of whose chunks
+                # failed extraction — keep it re-importable.
+                and not any(ix in self._failed_chunk_indices for ix in indices)
             ]
             if newly_complete:
                 record_imported_conversations(source, newly_complete)
