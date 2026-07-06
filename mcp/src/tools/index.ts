@@ -1,3 +1,10 @@
+export type { ToolContext, ToolResponse } from './types.js';
+export {
+  pickMemoryId,
+  resolveMemoryId,
+  toolError,
+  MEMORY_ID_REQUIRED_MESSAGE,
+} from './helpers.js';
 export { rememberToolDefinition, handleRemember } from './remember.js';
 export { recallToolDefinition, handleRecall } from './recall.js';
 export { forgetToolDefinition, handleForget } from './forget.js';

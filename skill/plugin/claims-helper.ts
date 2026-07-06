@@ -16,19 +16,16 @@ import type {
   ExtractedFact,
   MemoryType,
   MemoryTypeV0,
-  MemoryTypeV1,
   MemoryScope,
   MemorySource,
   MemoryVolatility,
 } from './extractor.js';
 import {
   isValidMemoryType,
-  isValidMemoryTypeV1,
   V0_TO_V1_TYPE,
   VALID_MEMORY_SCOPES,
   VALID_MEMORY_SOURCES,
   VALID_MEMORY_VOLATILITIES,
-  VALID_MEMORY_TYPES_V1,
 } from './extractor.js';
 import { envStringLower } from './entry.js';
 
@@ -163,7 +160,7 @@ export const V1_SCHEMA_VERSION = '1.0' as const;
 export type PinStatus = 'pinned' | 'unpinned';
 
 export interface BuildClaimV1Input {
-  /** The extracted fact in v1 shape. Must have `type` as a MemoryTypeV1 token. */
+  /** The extracted fact in v1 shape. Must have `type` as a MemoryType token. */
   fact: ExtractedFact;
   /** Final importance after any store-time dedup adjustment. 1-10. */
   importance: number;
@@ -453,7 +450,7 @@ export function isV1Blob(decrypted: string): boolean {
  */
 export interface V1BlobReadResult {
   text: string;
-  type: MemoryTypeV1;
+  type: MemoryType;
   source: MemorySource;
   scope: MemoryScope;
   volatility: MemoryVolatility;
@@ -488,7 +485,7 @@ export function readV1Blob(decrypted: string): V1BlobReadResult | null {
 
     const text = typeof obj.text === 'string' ? obj.text : '';
     const rawType = typeof obj.type === 'string' ? obj.type : 'claim';
-    const type: MemoryTypeV1 = isValidMemoryTypeV1(rawType) ? rawType : 'claim';
+    const type: MemoryType = isValidMemoryType(rawType) ? rawType : 'claim';
 
     const rawSource = typeof obj.source === 'string' ? obj.source : 'user-inferred';
     const source: MemorySource = (VALID_MEMORY_SOURCES as readonly string[]).includes(rawSource)
@@ -555,11 +552,6 @@ export function readV1Blob(decrypted: string): V1BlobReadResult | null {
     return null;
   }
 }
-
-// Suppress unused-import lint warnings for VALID_MEMORY_TYPES_V1 — it is
-// exported from extractor.ts for downstream clients and kept in scope here
-// so future v1 helpers can reuse it without re-importing.
-void VALID_MEMORY_TYPES_V1;
 
 // ---------------------------------------------------------------------------
 // Back-compat alias: buildCanonicalClaimRouted
@@ -677,7 +669,7 @@ export function readClaimFromBlob(decryptedJson: string): BlobReadResult {
       return {
         text: obj.text,
         importance,
-        category: mapTypeToCategory(obj.type as MemoryTypeV1),
+        category: mapTypeToCategory(obj.type as MemoryType),
         metadata: {
           type: obj.type,
           source: typeof obj.source === 'string' ? obj.source : 'user-inferred',

@@ -81,18 +81,26 @@ async def store(
     Store encrypted facts.
 
     The client sends:
-    - user_id: User's UUID (must match authenticated user)
+    - user_id: User's UUID (legacy field, kept for back-compat)
     - facts: List of encrypted facts with blind indices
 
     The server:
-    1. Validates user_id matches authenticated user
+    1. Scopes every write to the authenticated user (from get_current_user)
     2. Stores facts with encrypted_blob and blind_indices
     3. Returns list of stored fact IDs
+
+    Ownership is enforced by the data access itself: every DB call below is
+    keyed on the authenticated ``user_id``, never on the body-supplied value.
+    The body ``user_id`` compare is a defense-in-depth guard that rejects
+    contradictory requests; it is not the ownership boundary.
 
     The server NEVER decrypts the blob - it's stored as-is.
     """
     try:
-        # Validate user_id matches authenticated user
+        # Defense-in-depth: reject requests whose body user_id contradicts the
+        # authenticated identity. Storage is scoped to the authenticated
+        # user_id regardless, so this only preserves the historical
+        # AUTH_FAILED response for mismatched requests.
         if request_obj.user_id != user_id:
             return StoreResponseJSON(
                 success=False,

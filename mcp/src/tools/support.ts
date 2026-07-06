@@ -5,6 +5,7 @@
  * No server calls needed -- works in all modes including unconfigured.
  */
 
+import type { ToolContext } from './types.js';
 import { SUPPORT_TOOL_DESCRIPTION } from '../prompts.js';
 
 export const supportToolDefinition = {
@@ -62,11 +63,14 @@ const TROUBLESHOOTING = [
 /**
  * Handle a totalreclaw_support tool call.
  *
- * Returns static support information. No server calls needed.
+ * Returns static support information. No server calls needed — `async` only
+ * for signature uniformity with the rest of the tool surface.
  */
-export function handleSupport(
-  walletAddress: string | null,
-): { content: Array<{ type: string; text: string }> } {
+export async function handleSupport(
+  ctx: ToolContext,
+  _args?: unknown,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
+  const walletAddress = ctx.walletAddress ?? null;
   const subject = walletAddress
     ? `TotalReclaw Support (wallet: ${walletAddress})`
     : 'TotalReclaw Support';

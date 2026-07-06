@@ -1,4 +1,5 @@
 import { TotalReclaw, FactMetadata } from '@totalreclaw/client';
+import type { ToolContext } from './types.js';
 import { IMPORT_TOOL_DESCRIPTION } from '../prompts.js';
 
 export interface ImportInput {
@@ -157,9 +158,10 @@ function generateImportId(): string {
 }
 
 export async function handleImport(
-  client: TotalReclaw,
+  ctx: ToolContext,
   args: unknown,
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  const client = ctx.client as TotalReclaw;
   const input = args as ImportInput;
   const errors: ImportOutput['errors'] = [];
   const warnings: string[] = [];

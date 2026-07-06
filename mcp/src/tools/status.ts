@@ -5,6 +5,7 @@
  * Queries the relay server's billing endpoint.
  */
 
+import type { ToolContext } from './types.js';
 import { STATUS_TOOL_DESCRIPTION } from '../prompts.js';
 import { getClientId } from '../client-id.js';
 import { getSessionId } from '../session-id.js';
@@ -60,10 +61,11 @@ export function getLastBillingResponse(): BillingStatusResponse | null {
  * Fetches billing status from the relay server and formats it for the LLM.
  */
 export async function handleStatus(
-  serverUrl: string,
-  authKey: string,
+  ctx: ToolContext,
   args: unknown,
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  const serverUrl = ctx.serverUrl ?? '';
+  const authKey = ctx.authKeyHex ?? '';
   const input = args as Record<string, unknown>;
   const walletAddress = input?.wallet_address as string;
 

@@ -66,7 +66,7 @@ describe('handleRecall — source-weighting disabled (ranks by base score)', () 
     mockRecall.mockResolvedValueOnce([userFact, assistantFact]);
 
     const client = createMockClient() as any;
-    const out = await handleRecall(client, { query: 'Bangkok trip' });
+    const out = await handleRecall({ client: client }, { query: 'Bangkok trip' });
     const body = JSON.parse(out.content[0].text);
     expect(body.memories).toHaveLength(2);
 
@@ -103,7 +103,7 @@ describe('handleRecall — source-weighting disabled (ranks by base score)', () 
     mockRecall.mockResolvedValueOnce([noSourceFact, userFact]);
 
     const client = createMockClient() as any;
-    const out = await handleRecall(client, { query: 'test' });
+    const out = await handleRecall({ client: client }, { query: 'test' });
     const body = JSON.parse(out.content[0].text);
     // Both keep base score 1.0 — no provenance reweighting promotes one over the other.
     for (const m of body.memories) {
@@ -118,7 +118,7 @@ describe('handleRecall — source-weighting disabled (ranks by base score)', () 
     mockRecall.mockResolvedValueOnce([b, a]);
 
     const client = createMockClient() as any;
-    const out = await handleRecall(client, { query: 'q' });
+    const out = await handleRecall({ client: client }, { query: 'q' });
     const body = JSON.parse(out.content[0].text);
     // Higher-scored assistant fact ranks first even with the same weight.
     expect(body.memories[0].fact_id).toBe('a');
@@ -151,7 +151,7 @@ describe('handleRecall — source-weighting disabled (ranks by base score)', () 
     mockRecall.mockResolvedValueOnce([v1WithScope]);
 
     const client = createMockClient() as any;
-    const out = await handleRecall(client, { query: 'work' });
+    const out = await handleRecall({ client: client }, { query: 'work' });
     const body = JSON.parse(out.content[0].text);
     // Canonical decoder maps the v1 `directive` type to its short-key `rule`,
     // matching the managed (subgraph) read path in handleRecallSubgraph.

@@ -9,6 +9,8 @@
  */
 
 import crypto from 'node:crypto';
+import type { ToolContext } from './types.js';
+import { resolveMemoryId } from './helpers.js';
 import type { SubgraphSearchFact } from '../subgraph/search.js';
 import { encodeFactProtobuf } from '../subgraph/store.js';
 import {
@@ -45,6 +47,10 @@ export const retypeToolDefinition = {
         type: 'string',
         description: 'The ID of the memory to retype (from a prior totalreclaw_recall result).',
       },
+      fact_id: {
+        type: 'string',
+        description: 'Back-compat alias for `memory_id`. Prefer `memory_id`.',
+      },
       new_type: {
         type: 'string',
         enum: [...VALID_MEMORY_TYPES_V1],
@@ -52,7 +58,9 @@ export const retypeToolDefinition = {
           'New Memory Taxonomy v1 type. One of: claim, preference, directive, commitment, episode, summary.',
       },
     },
-    required: ['memory_id', 'new_type'],
+    // `memory_id` accepts a `fact_id` alias, so only `new_type` is strictly
+    // required here; the handler validates the id presence.
+    required: ['new_type'],
   },
   annotations: {
     readOnlyHint: false,
@@ -80,15 +88,12 @@ export function validateRetypeArgs(args: unknown): ValidatedArgs {
     };
   }
   const record = args as Record<string, unknown>;
-  const memoryId = record.memory_id;
-  if (typeof memoryId !== 'string' || memoryId.trim().length === 0) {
-    return {
-      ok: false,
-      memoryId: '',
-      newType: 'claim',
-      error: 'Invalid input: memory_id must be a non-empty string',
-    };
+  // Canonical `memory_id`, `fact_id` accepted as alias (see tools/helpers.ts).
+  const resolved = resolveMemoryId(record);
+  if (!resolved.ok) {
+    return { ok: false, memoryId: '', newType: 'claim', error: resolved.error };
   }
+  const memoryId = resolved.memoryId;
   const newType = record.new_type;
   if (
     typeof newType !== 'string' ||
@@ -480,6 +485,7 @@ export async function executeRetype(
 // ── Handler wrappers ─────────────────────────────────────────────────────────
 
 export async function handleRetype(
+  _ctx: ToolContext,
   args: unknown,
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   const validation = validateRetypeArgs(args);

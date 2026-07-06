@@ -43,6 +43,7 @@ import {
   handlePair,
 } from './tools/index.js';
 import { getLastBillingResponse } from './tools/status.js';
+import type { ToolContext } from './tools/types.js';
 import { setOnRememberCallback } from './tools/remember.js';
 import {
   findNearDuplicate,
@@ -1688,7 +1689,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   // Handle support tool (available in all modes, including unconfigured)
   if (name === 'totalreclaw_support') {
     const walletAddress = subgraphState?.smartAccountAddress ?? null;
-    return handleSupport(walletAddress);
+    return await handleSupport({ walletAddress }, args);
   }
 
   // Handle pair tool (available in all modes — primary unconfigured-mode entry
@@ -1697,7 +1698,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   // → user pairs in browser → server writes ~/.totalreclaw/credentials.json
   // → user restarts host → server boots in subgraph mode).
   if (name === 'totalreclaw_pair') {
-    return await handlePair(args as Record<string, unknown> | undefined);
+    return await handlePair({}, args as Record<string, unknown> | undefined);
   }
 
   // In unconfigured mode, all other tools return setup guidance pointing at
@@ -1733,7 +1734,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           (args as Record<string, unknown>)?.wallet_address ||
           subgraphState?.smartAccountAddress,
       };
-      const statusResult = await handleStatus(SERVER_URL, authKeyHex, enrichedArgs);
+      const statusResult = await handleStatus({ serverUrl: SERVER_URL, authKeyHex }, enrichedArgs);
 
       // Cache billing features for candidate pool sizing.
       // handleStatus stores the raw response; extract max_candidate_pool from it.
@@ -1756,7 +1757,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const authKeyHex = subgraphState
         ? Buffer.from(subgraphState.authKey).toString('hex')
         : '';
-      return await handleUpgrade(SERVER_URL, authKeyHex, args);
+      return await handleUpgrade({ serverUrl: SERVER_URL, authKeyHex }, args);
     }
 
     if (name === 'totalreclaw_account') {
@@ -1785,7 +1786,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         walletAddress: subgraphState.smartAccountAddress,
         mnemonicHint,
         getFactCount,
-      });
+      }, args);
     }
 
     // ── Subgraph mode ─────────────────────────────────────────────────────
@@ -1946,11 +1947,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     // ── HTTP mode (existing behavior) ─────────────────────────────────────
     const client = await getClient();
+    const httpCtx: ToolContext = { client };
 
     switch (name) {
       case 'totalreclaw_remember': {
         try {
-          const result = await handleRemember(client, args);
+          const result = await handleRemember(httpCtx, args);
           return result;
         } catch (error) {
           if (isQuotaExceededError(error)) {
@@ -1961,10 +1963,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'totalreclaw_recall':
-        return await handleRecall(client, args);
+        return await handleRecall(httpCtx, args);
 
       case 'totalreclaw_forget': {
-        const result = await handleForget(client, args);
+        const result = await handleForget(httpCtx, args);
         // Invalidate cache on forget too
         invalidateMemoryContextCache();
         server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch((err) => console.error('Failed to send resource update:', err));
@@ -1972,19 +1974,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'totalreclaw_export':
-        return await handleExport(client, args);
+        return await handleExport(httpCtx, args);
 
       case 'totalreclaw_import':
-        return await handleImport(client, args);
+        return await handleImport(httpCtx, args);
 
       case 'totalreclaw_import_from':
-        return await handleImportFrom(client, args);
+        return await handleImportFrom(httpCtx, args);
 
       case 'totalreclaw_import_batch':
-        return await handleImportBatch(args);
+        return await handleImportBatch(httpCtx, args);
 
       case 'totalreclaw_consolidate': {
-        const result = await handleConsolidate(client, args);
+        const result = await handleConsolidate(httpCtx, args);
         // Invalidate cache after consolidation (facts may have been deleted)
         invalidateMemoryContextCache();
         server.sendResourceUpdated({ uri: memoryContextResource.uri }).catch((err) => console.error('Failed to send resource update:', err));
@@ -1993,7 +1995,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'totalreclaw_debrief': {
         try {
-          const result = await handleDebrief(client, args);
+          const result = await handleDebrief(httpCtx, args);
           return result;
         } catch (error) {
           if (isQuotaExceededError(error)) {
@@ -2004,16 +2006,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'totalreclaw_pin':
-        return await handlePin(args);
+        return await handlePin(httpCtx, args);
 
       case 'totalreclaw_unpin':
-        return await handleUnpin(args);
+        return await handleUnpin(httpCtx, args);
 
       case 'totalreclaw_retype':
-        return await handleRetype(args);
+        return await handleRetype(httpCtx, args);
 
       case 'totalreclaw_set_scope':
-        return await handleSetScope(args);
+        return await handleSetScope(httpCtx, args);
 
       default:
         return {
