@@ -125,7 +125,7 @@ describe('handleRecall — source-weighting disabled (ranks by base score)', () 
     expect(body.memories[1].fact_id).toBe('b');
   });
 
-  test('surfaces v1 type + source + scope in output', async () => {
+  test('surfaces canonical short-key type + source + scope in output', async () => {
     const v1WithScope = {
       fact: {
         id: 'scoped',
@@ -153,7 +153,9 @@ describe('handleRecall — source-weighting disabled (ranks by base score)', () 
     const client = createMockClient() as any;
     const out = await handleRecall(client, { query: 'work' });
     const body = JSON.parse(out.content[0].text);
-    expect(body.memories[0].type).toBe('directive');
+    // Canonical decoder maps the v1 `directive` type to its short-key `rule`,
+    // matching the managed (subgraph) read path in handleRecallSubgraph.
+    expect(body.memories[0].type).toBe('rule');
     expect(body.memories[0].source).toBe('user');
     expect(body.memories[0].scope).toBe('work');
   });

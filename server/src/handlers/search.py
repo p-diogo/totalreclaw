@@ -11,7 +11,6 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 import uuid
 
-from ..auth import verify_auth_key, hash_auth_key, AuthError
 from ..db import get_db, Database
 from ..dependencies import get_current_user
 from ..search_telemetry import telemetry_store, SearchSample

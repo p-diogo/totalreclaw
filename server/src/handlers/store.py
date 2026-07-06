@@ -12,7 +12,6 @@ from typing import Optional, List
 import uuid
 from datetime import datetime
 
-from ..auth import verify_auth_key, hash_auth_key, AuthError
 from ..db import get_db, Database
 from ..dependencies import get_current_user
 

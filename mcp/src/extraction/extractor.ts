@@ -343,6 +343,7 @@ export function normalizeConfidence(raw: unknown): number {
 export interface ExtractorLogger {
   info?: (msg: string) => void;
   warn?: (msg: string) => void;
+  debug?: (msg: string) => void;
 }
 
 
