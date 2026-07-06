@@ -40,8 +40,9 @@ def test_v1_blob_roundtrips_import_metadata():
     assert meta.get("import_source") == "chatgpt"
     assert meta.get("session_id") == "sess-x"
 
-    # ...AND the typed/rebuilt fields are still present.
-    assert meta.get("type") == "fact"
+    # ...AND the typed/rebuilt fields are still present. ("fact" normalizes to
+    # the v1 canonical type "claim" on write.)
+    assert meta.get("type") == "claim"
     assert meta.get("source") == "external"
     assert meta.get("scope") == "personal"
 
