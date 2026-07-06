@@ -16,6 +16,8 @@
  * 5. Update local last_known_sequence
  */
 
+import { TotalReclawError, TotalReclawErrorCode } from '../types';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -147,7 +149,10 @@ export class SyncClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Sync failed: HTTP ${response.status}`);
+      throw new TotalReclawError(
+        TotalReclawErrorCode.NETWORK_ERROR,
+        `Sync failed: HTTP ${response.status}`
+      );
     }
 
     const data = await response.json() as {
@@ -158,7 +163,10 @@ export class SyncClient {
       error_message?: string;
     };
     if (!data.success) {
-      throw new Error(`Sync failed: ${data.error_message}`);
+      throw new TotalReclawError(
+        TotalReclawErrorCode.NETWORK_ERROR,
+        `Sync failed: ${data.error_message}`
+      );
     }
 
     return {

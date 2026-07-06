@@ -259,9 +259,9 @@ export async function openRemotePairSession(
   try {
     const text = typeof raw === 'string' ? raw : Buffer.from(raw as ArrayBuffer).toString('utf-8');
     msg = JSON.parse(text);
-  } catch {
+  } catch (err) {
     safeClose(ws);
-    throw new Error('pair-remote-client: opened frame not valid JSON');
+    throw new Error('pair-remote-client: opened frame not valid JSON', { cause: err });
   }
 
   if (msg.type === 'error') {
@@ -331,10 +331,10 @@ export async function awaitPhraseUpload(
   try {
     const text = typeof raw === 'string' ? raw : Buffer.from(raw as ArrayBuffer).toString('utf-8');
     msg = JSON.parse(text);
-  } catch {
+  } catch (err) {
     safeSend(ws, { type: 'nack', error: 'bad_json' });
     safeClose(ws);
-    throw new Error('pair-remote-client: forward frame not valid JSON');
+    throw new Error('pair-remote-client: forward frame not valid JSON', { cause: err });
   }
 
   if (msg.type !== 'forward') {

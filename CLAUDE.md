@@ -72,7 +72,7 @@ Smart Account addresses are deterministic (CREATE2) and byte-equal across chains
 │
 ├── server/                # FastAPI + PostgreSQL backend (self-hosted only; billing/relay moved to private totalreclaw-relay repo)
 ├── client/                # TypeScript client library (E2EE, LSH, embeddings)
-├── skill/                 # OpenClaw plugin (PoC v2: embedding, LSH, reranker)
+├── skill/                 # OpenClaw plugin (@totalreclaw/totalreclaw at skill/plugin/: automatic memory via lifecycle hooks)
 ├── skill-nanoclaw/        # NanoClaw skill package + MCP server
 │   ├── src/               # Hooks, extraction logic
 │   └── mcp/               # NanoClaw agent-runner (spawns @totalreclaw/mcp-server)

@@ -14,6 +14,8 @@ import {
   SearchResponse,
   EncryptedFact,
   EncryptedSearchResult,
+  TotalReclawError,
+  TotalReclawErrorCode,
 } from '../types';
 
 /**
@@ -111,8 +113,10 @@ export class ProtobufSerializer {
       this.root = protobuf.parse(PROTO_SCHEMA).root;
       this.initialized = true;
     } catch (error) {
-      throw new Error(
-        `Failed to parse protobuf schema: ${error instanceof Error ? error.message : 'Unknown error'}`
+      throw new TotalReclawError(
+        TotalReclawErrorCode.INVALID_INPUT,
+        `Failed to parse protobuf schema: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
       );
     }
   }
@@ -122,7 +126,10 @@ export class ProtobufSerializer {
    */
   private ensureInitialized(): void {
     if (!this.initialized || !this.root) {
-      throw new Error('ProtobufSerializer not initialized. Call init() first.');
+      throw new TotalReclawError(
+        TotalReclawErrorCode.INVALID_INPUT,
+        'ProtobufSerializer not initialized. Call init() first.'
+      );
     }
   }
 

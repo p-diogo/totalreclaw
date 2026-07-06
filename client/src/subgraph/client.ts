@@ -13,6 +13,7 @@ import {
   DELTA_SYNC_FACTS,
   COUNT_FACTS,
 } from "./queries";
+import { TotalReclawError, TotalReclawErrorCode } from "../types";
 
 export interface SubgraphFact {
   id: string;
@@ -150,12 +151,18 @@ export class SubgraphClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Subgraph query failed: ${response.status} ${response.statusText}`);
+      throw new TotalReclawError(
+        TotalReclawErrorCode.NETWORK_ERROR,
+        `Subgraph query failed: ${response.status} ${response.statusText}`
+      );
     }
 
     const json = (await response.json()) as { data?: T; errors?: Array<{ message: string }> };
     if (json.errors) {
-      throw new Error(`Subgraph query error: ${json.errors[0].message}`);
+      throw new TotalReclawError(
+        TotalReclawErrorCode.NETWORK_ERROR,
+        `Subgraph query error: ${json.errors[0].message}`
+      );
     }
 
     return json.data as T;

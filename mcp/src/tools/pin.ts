@@ -155,7 +155,7 @@ export function buildFeedbackFromDecision(
 }
 
 /** Append a feedback entry via the WASM core helpers. Best-effort; never throws. */
-export async function appendFeedbackLog(entry: FeedbackEntry): Promise<void> {
+export function appendFeedbackLog(entry: FeedbackEntry): void {
   try {
     const core = getWasm();
     const dir = ensureStateDir();
@@ -196,7 +196,7 @@ export async function maybeWriteFeedbackForPin(
   const action = targetStatus === 'pinned' ? 'pin_loser' : 'unpin_winner';
   const entry = buildFeedbackFromDecision(decision, action, nowUnixSeconds);
   if (!entry) return null;
-  await appendFeedbackLog(entry);
+  appendFeedbackLog(entry);
   return entry;
 }
 
