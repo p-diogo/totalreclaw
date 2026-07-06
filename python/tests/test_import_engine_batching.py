@@ -304,12 +304,16 @@ def test_gnosis_batch_409_dedup_is_silent() -> None:
     assert facts_stored == 0
 
 
-def test_gnosis_batch_partial_id_list_counts_only_returned_ids() -> None:
+def test_gnosis_batch_partial_id_list_counts_only_returned_ids(monkeypatch) -> None:
     """If remember_batch returns fewer ids than facts submitted (likely
     fingerprint dedup of a subset), only the returned count is credited.
 
-    Uses 5 facts so they form a single group (well under both caps) and the
-    ``len(ids) - 2`` short return maps to a deterministic stored count."""
+    Uses 5 no-embedding facts so they form a single group (well under both
+    caps) and the ``len(ids) - 2`` short return maps to a deterministic stored
+    count. (With embeddings, 5 realistic facts exceed the 32KB byte cap and
+    would split.)"""
+    import totalreclaw.embedding as _emb
+    monkeypatch.setattr(_emb, "get_embedding", lambda _t: None)
     client = _make_pro_client()
 
     async def _short_batch(facts, source="python-client"):

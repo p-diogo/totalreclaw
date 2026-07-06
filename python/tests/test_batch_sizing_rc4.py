@@ -152,6 +152,147 @@ def test_sim_revert_partial_floor_failure_stores_the_rest():
     assert client.calls == [4, 2, 2]
 
 
+def test_aa25_with_32500_code_does_not_halve():
+    """Review Finding 2: an AA25 that exhausted the userop-layer retry
+    propagates carrying a ``-32500`` code. That is NOT a size revert — it must
+    surface immediately (one remember_batch call, no halving)."""
+    client = _SimClient(fail_pred=lambda n: True)
+
+    async def _raise_aa25(payloads, source=None):
+        client.calls.append(len(payloads))
+        raise RuntimeError(
+            "UserOperation reverted during validation: AA25 invalid account "
+            "nonce (code -32500)"
+        )
+
+    client.remember_batch = _raise_aa25
+    engine = ImportEngine(client=client, llm_extract=None)
+    stored, errors, _ = asyncio.run(engine._store_facts_chunked(_facts(4)))
+    assert stored == 0
+    assert errors  # surfaced
+    assert client.calls == [4]  # exactly one attempt — NOT halved
+
+
+def test_sim_revert_without_code_still_halves():
+    """A "reverted during simulation" message with no -32500 code still
+    triggers halving (the phrase is sufficient)."""
+    calls = []
+
+    async def _rb(payloads, source=None):
+        calls.append(len(payloads))
+        if len(payloads) > 2:
+            raise RuntimeError("UserOperation reverted during simulation with reason: out of gas")
+        return [f"id{i}" for i in range(len(payloads))]
+
+    client = _SimClient(fail_pred=lambda n: False)
+    client.remember_batch = _rb
+    engine = ImportEngine(client=client, llm_extract=None)
+    stored, errors, _ = asyncio.run(engine._store_facts_chunked(_facts(4)))
+    assert stored == 4
+    assert errors == []
+    assert calls == [4, 2, 2]
+
+
+# ── (Finding 1) non-circular calibration: est ≥ REAL encode_fact_protobuf ──
+def _real_protobuf_bytes(text, embedding=None, extra_metadata=None):
+    """Build a fact the way operations.store_fact_batch does and measure its
+    actual on-chain protobuf byte length — the ground truth the estimate must
+    bound. Non-circular: measures encode_fact_protobuf, not the estimator."""
+    import base64
+    import os
+    from totalreclaw.protobuf import (
+        FactPayload, encode_fact_protobuf, PROTOBUF_VERSION_V4,
+    )
+    from totalreclaw.crypto import (
+        encrypt, encrypt_embedding, generate_blind_indices,
+        generate_content_fingerprint,
+    )
+    from totalreclaw.lsh import LSHHasher
+    from totalreclaw.claims_helper import build_canonical_claim_v1
+
+    key = os.urandom(32)
+    dedup = os.urandom(32)
+    claim = build_canonical_claim_v1(
+        {"text": text, "type": "fact", "source": "external", "scope": "personal"},
+        importance=8, claim_id="id-" + "x" * 32, extra_metadata=extra_metadata,
+    )
+    enc_hex = base64.b64decode(encrypt(claim, key)).hex()
+    indices = generate_blind_indices(text)
+    enc_emb = None
+    if embedding:
+        indices = indices + LSHHasher(os.urandom(32), len(embedding)).hash(embedding)
+        enc_emb = encrypt_embedding(embedding, key)
+    fp = FactPayload(
+        id="id-" + "x" * 32, timestamp="2026-05-14T09:21:03.512Z",
+        owner="0x" + "a" * 40, encrypted_blob=enc_hex, blind_indices=indices,
+        decay_score=0.8, source="import",
+        content_fp=generate_content_fingerprint(text, dedup),
+        agent_id="python-client", encrypted_embedding=enc_emb,
+        version=PROTOBUF_VERSION_V4,
+    )
+    return len(encode_fact_protobuf(fp))
+
+
+def _payload(text, embedding=None, extra_metadata=None):
+    p = {"text": text}
+    if embedding is not None:
+        p["embedding"] = embedding
+    if extra_metadata is not None:
+        p["extra_metadata"] = extra_metadata
+    return p
+
+
+@pytest.mark.parametrize("nchars", [300, 600, 900])
+@pytest.mark.parametrize("with_embedding", [False, True])
+def test_estimate_bounds_real_protobuf_bytes(nchars, with_embedding):
+    # Representative extracted-memory prose (natural word repetition).
+    base = (
+        "The user moved to Berlin in May 2026 for a new engineering role at a "
+        "startup. They are looking for an apartment in Prenzlauer Berg or Mitte "
+        "with a budget around 1500 euros per month and want good public transport."
+    )
+    text = base
+    while len(text) < nchars:
+        text += " " + base
+    text = text[:nchars]
+    embedding = [0.01 * i for i in range(640)] if with_embedding else None
+
+    real = _real_protobuf_bytes(text, embedding)
+    est = _estimate_payload_bytes(_payload(text, embedding))
+    assert est >= real, (
+        f"estimate {est} under-counts real {real} for {nchars} chars "
+        f"embedding={with_embedding}"
+    )
+
+
+def test_estimate_bounds_real_for_all_unique_tokens():
+    # Adversarial: every token unique → maximal blind-index count. A char-linear
+    # estimate under-counts this; the computed-index estimate must still bound it.
+    text = " ".join(f"tok{i}word" for i in range(120))
+    embedding = [0.01 * i for i in range(640)]
+    real = _real_protobuf_bytes(text, embedding)
+    est = _estimate_payload_bytes(_payload(text, embedding))
+    assert est >= real, f"estimate {est} under-counts real {real} for all-unique tokens"
+
+
+def test_estimate_bounds_real_for_crystal_metadata():
+    # Crystal-shaped fact: extra_metadata carries key_outcomes/open_threads/etc.
+    text = "Session summary about relocating to Berlin and finding housing."
+    meta = {
+        "key_outcomes": ["moved to Berlin", "signed a lease", "started job"],
+        "open_threads": ["find a school", "set up insurance"],
+        "topics_discussed": ["relocation", "housing", "work", "transport"],
+        "session_title": "Moving to Berlin for a new job",
+        "subtype": "session_crystal",
+        "import_source": "chatgpt",
+        "session_id": "s" * 36,
+    }
+    embedding = [0.01 * i for i in range(640)]
+    real = _real_protobuf_bytes(text, embedding, meta)
+    est = _estimate_payload_bytes(_payload(text, embedding, meta))
+    assert est >= real, f"estimate {est} under-counts real {real} for a Crystal fact"
+
+
 # ── (e) receipt-wait constant ─────────────────────────────────────────────
 def test_receipt_wait_constants_lifted():
     assert userop._BATCH_RECEIPT_TIMEOUT_S == 240.0

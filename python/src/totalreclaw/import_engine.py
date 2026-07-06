@@ -105,18 +105,62 @@ IMPORT_MAX_BATCH_SIZE = 15
 _MAX_BATCH_BYTES = 32_000
 
 
-def _estimate_payload_bytes(payload: dict) -> int:
-    """Estimate a single fact's on-chain UserOp calldata contribution.
+#: Per-blind-index wire cost: a 64-hex-char SHA-256 string field (key + len +
+#: 64 bytes ≈ 66; 68 for margin). Blind indices DOMINATE a fact's calldata and
+#: scale with the UNIQUE (stemmed) token count, not the char count — the review
+#: of PR #461 measured real ``encode_fact_protobuf`` output at ~2× a char-linear
+#: estimate for representative prose (~88 indices for a 300-char fact once stems
+#: are counted), so we bound the real term by COMPUTING the index count.
+_BYTES_PER_BLIND_INDEX = 68
+#: Encrypted 640-dim f32 embedding: 2560B packed → base64 (~3416) → XChaCha20
+#: ciphertext → base64 string ≈ 4608B on the wire (field 13). Plus 20 LSH
+#: bucket indices (one per table). Measured 4611 + 20×66 = 5931; 6060 for margin.
+_BYTES_PER_EMBEDDING = 4700 + 20 * _BYTES_PER_BLIND_INDEX
+#: Scalar-field + cipher overhead floor (id, timestamp, owner, content_fp,
+#: version, decay/is_active, XChaCha20 nonce+tag on the claim blob, ABI slop).
+_BYTES_FIXED_OVERHEAD = 620
 
-    ``1200`` bytes of protobuf-blob + per-call indices/overhead, ``1.1×`` the
-    UTF-8-ish text length, and ``2700`` bytes for an encrypted 640-dim f32
-    embedding when present. Deliberately a slight over-estimate — over-shooting
-    flushes a batch one fact early (safe), under-shooting risks the sim cliff.
+
+def _estimate_payload_bytes(payload: dict) -> int:
+    """Estimate a single fact's on-chain executeBatch calldata contribution.
+
+    Bounds the REAL ``encode_fact_protobuf`` output (verified measured-safe,
+    ``est ≥ real``, in ``test_batch_sizing_rc4.py``). Terms:
+
+      * fixed overhead (scalar fields + cipher nonce/tag) — ``_BYTES_FIXED_OVERHEAD``;
+      * the encrypted claim blob ≈ ciphertext of ``text`` + ``extra_metadata``;
+      * the blind indices — the dominant, entropy-dependent term — bounded by
+        the ACTUAL ``generate_blind_indices(text)`` count × per-index wire cost
+        (a char-linear estimate cannot bound this, hence the PR #461 review
+        NO-GO);
+      * the encrypted embedding + its LSH indices when an embedding is present.
+
+    ``generate_blind_indices`` is a fast pure Rust call and import is not a
+    latency-critical path (the same call happens again during the real store),
+    so recomputing it here is cheap. Falls back to a conservative char-based
+    index count if the core module is unavailable.
     """
+    import json as _json
+
     text = payload.get("text") or ""
-    est = 1200 + int(len(text) * 1.1)
+    est = _BYTES_FIXED_OVERHEAD + len(text)
+
+    meta = payload.get("extra_metadata")
+    if isinstance(meta, dict) and meta:
+        # Crystal facts carry key_outcomes / open_threads / topics in the
+        # encrypted blob — count them (1.5× for JSON + cipher slack).
+        est += int(len(_json.dumps(meta)) * 1.5)
+
+    try:
+        from totalreclaw.crypto import generate_blind_indices
+        n_indices = len(generate_blind_indices(text))
+    except Exception:
+        # Conservative fallback: ~2 stemmed indices per ~6-char word.
+        n_indices = int(len(text) / 3)
+    est += n_indices * _BYTES_PER_BLIND_INDEX
+
     if payload.get("embedding"):
-        est += 2700
+        est += _BYTES_PER_EMBEDDING
     return est
 
 
@@ -1629,6 +1673,16 @@ class ImportEngine:
         single-fact floor — is surfaced into the returned error list so the
         batch is counted FAILED, not stored.
 
+        Time bound (PR #461 review Finding 3): each successful send waits up to
+        ``userop._BATCH_RECEIPT_TIMEOUT_S`` (240s) for inclusion, under the
+        per-sender submission lock. A pathological cascade — a group that
+        halves all the way to N singletons that each SEND but time out on
+        inclusion — is bounded by N × 240s. We intentionally do NOT impose a
+        hard global budget: singletons normally mine in seconds, and a soft cap
+        risks failing a slow-but-valid import. Sim reverts (the common split
+        cause) return in milliseconds, so a halving cascade driven by size
+        reverts is fast.
+
         Returns ``(stored, errors)``.
         """
         try:
@@ -1639,8 +1693,14 @@ class ImportEngine:
             if '409' in msg or 'duplicate' in msg or 'fingerprint' in msg:
                 logger.debug("Batch of %d facts rejected as duplicate", len(group))
                 return 0, []
+            # A genuine executeBatch simulation-size revert. NOT an AA25 that
+            # merely exhausted the userop-layer retry and propagated with a
+            # ``-32500`` code (PR #461 review Finding 2) — halving that would be
+            # pointless, so exclude any AA25-tagged error from the size path.
+            msg_l = msg.lower()
             is_sim_revert = (
-                "-32500" in msg or "reverted during simulation" in msg.lower()
+                "reverted during simulation" in msg_l
+                or ("-32500" in msg and "AA25" not in msg)
             )
             if is_sim_revert and len(group) > 1:
                 mid = len(group) // 2
