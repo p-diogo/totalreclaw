@@ -27,6 +27,44 @@ import {
 } from '../contradiction/contradiction-sync.js';
 import type { SubgraphSearchFact } from '../subgraph/subgraph-search.js';
 import type { ExtractedFact } from '../extraction/extractor.js';
+import type { ConfirmIndexedOptions } from '../subgraph/confirm-indexed.js';
+
+// ---------------------------------------------------------------------------
+// Fast confirm-indexed stub
+// ---------------------------------------------------------------------------
+// executePinOperation ends with a read-after-write poll of the LIVE subgraph
+// (confirm-indexed.ts: default 1s poll / 30s timeout via a real network
+// request). In CI there is no reachable subgraph, so every successful pin
+// burned the full 30s timeout — this file previously clocked 481s (~16
+// successful pins × ~30s), which canceled the CI Plugin Build Check at ~51/89
+// files. The assertions below cover pin SEMANTICS (new_fact_id, reason,
+// status, trapdoors, supersession, decision-log) — none of them touch the
+// confirm `partial` flag — so stubbing the poster to resolve "indexed" on the
+// first poll is the correct happy-path shape and weakens no assertion. The
+// response matches the `{"data":{"fact":{...,"isActive":true}}}` shape
+// confirm.rs parses as active.
+const FAST_CONFIRM_OPTS: ConfirmIndexedOptions = {
+  pollIntervalMs: 0,
+  timeoutMs: 1_000, // backstop only — poster resolves on attempt #1
+  poster: async () => ({
+    ok: true,
+    status: 200,
+    text: async () =>
+      JSON.stringify({ data: { fact: { id: 'stub', isActive: true, blockNumber: '1' } } }),
+  }),
+};
+
+// Wrapper so every call site gets the fast confirm opts without repeating the
+// trailing positional arg 27 times. Signature mirrors executePinOperation
+// minus the dev-only confirmOpts parameter.
+async function pin(
+  factId: string,
+  targetStatus: 'pinned' | 'active',
+  deps: PinOpDeps,
+  reason?: string,
+) {
+  return executePinOperation(factId, targetStatus, deps, reason, FAST_CONFIRM_OPTS);
+}
 
 // Isolate the state dir so tests never touch the real ~/.totalreclaw/.
 const TEST_STATE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tr-pin-test-'));
@@ -248,7 +286,7 @@ async function runTests(): Promise<void> {
     seedFact(state, 'old-id-1', canonical);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('old-id-1', 'pinned', deps, 'user confirmed');
+    const result = await pin('old-id-1', 'pinned', deps, 'user confirmed');
 
     assertEq(result.success, true, 'pin canonical: success');
     assertEq(result.fact_id, 'old-id-1', 'pin canonical: returns original id');
@@ -276,7 +314,7 @@ async function runTests(): Promise<void> {
     seedFact(state, 'pinned-1', pinnedJson);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('pinned-1', 'pinned', deps);
+    const result = await pin('pinned-1', 'pinned', deps);
 
     assertEq(result.success, true, 'pin idempotent: success');
     assertEq(result.idempotent, true, 'pin idempotent: idempotent flag set');
@@ -308,7 +346,7 @@ async function runTests(): Promise<void> {
         return capturedEncryptedHex;
       },
     });
-    const result = await executePinOperation('pinned-2', 'active', deps);
+    const result = await pin('pinned-2', 'active', deps);
 
     assertEq(result.success, true, 'unpin pinned: success');
     assertEq(result.previous_status, 'pinned', 'unpin pinned: previous_status pinned');
@@ -338,7 +376,7 @@ async function runTests(): Promise<void> {
     seedFact(state, 'active-1', activeJson);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('active-1', 'active', deps);
+    const result = await pin('active-1', 'active', deps);
 
     assertEq(result.success, true, 'unpin active: success');
     assertEq(result.idempotent, true, 'unpin active: idempotent');
@@ -361,7 +399,7 @@ async function runTests(): Promise<void> {
         return Buffer.from(plaintext, 'utf8').toString('hex');
       },
     });
-    const result = await executePinOperation('legacy-1', 'pinned', deps);
+    const result = await pin('legacy-1', 'pinned', deps);
 
     assertEq(result.success, true, 'pin legacy: success');
     assertEq(result.previous_status, 'active', 'pin legacy: previous_status active (legacy default)');
@@ -380,7 +418,7 @@ async function runTests(): Promise<void> {
   {
     const state: MockState = { facts: new Map(), submittedBatches: [] };
     const deps = makeDeps(state);
-    const result = await executePinOperation('does-not-exist', 'pinned', deps);
+    const result = await pin('does-not-exist', 'pinned', deps);
     assertEq(result.success, false, 'pin missing: success=false');
     assert(typeof result.error === 'string' && result.error.includes('not found'), 'pin missing: clear error message');
     assertEq(state.submittedBatches.length, 0, 'pin missing: zero writes');
@@ -395,7 +433,7 @@ async function runTests(): Promise<void> {
     seedFact(state, 'will-fail', canonical);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('will-fail', 'pinned', deps);
+    const result = await pin('will-fail', 'pinned', deps);
     assertEq(result.success, false, 'pin submit-fail: success=false');
     assertEq(result.previous_status, 'active', 'pin submit-fail: previous_status preserved');
     assert(typeof result.error === 'string' && result.error.length > 0, 'pin submit-fail: error message set');
@@ -410,7 +448,7 @@ async function runTests(): Promise<void> {
     seedFact(state, 'will-throw', canonical);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('will-throw', 'pinned', deps);
+    const result = await pin('will-throw', 'pinned', deps);
     assertEq(result.success, false, 'pin submit-throw: success=false');
     assert(typeof result.error === 'string' && result.error.includes('submit'), 'pin submit-throw: error mentions submit');
   }
@@ -448,7 +486,7 @@ async function runTests(): Promise<void> {
       },
     });
 
-    const result = await executePinOperation('trap-1', 'pinned', deps);
+    const result = await pin('trap-1', 'pinned', deps);
     assertEq(result.success, true, 'trapdoor: pin succeeded');
     assert(capturedSecondPayload !== null, 'trapdoor: captured new fact payload');
 
@@ -491,7 +529,7 @@ async function runTests(): Promise<void> {
       },
     });
 
-    const result = await executePinOperation('trap-entity-1', 'pinned', deps);
+    const result = await pin('trap-entity-1', 'pinned', deps);
     assertEq(result.success, true, 'entity trapdoor: pin succeeded');
 
     const postgresEntityTrapdoor = computeEntityTrapdoor('PostgreSQL');
@@ -521,7 +559,7 @@ async function runTests(): Promise<void> {
         return { blindIndices: out, encryptedEmbedding: 'cafe' };
       },
     });
-    const result = await executePinOperation('trap-guard', 'pinned', deps);
+    const result = await pin('trap-guard', 'pinned', deps);
     assertEq(result.success, true, 'trap-guard: pin succeeded');
     assert(indicesCaptured !== null && indicesCaptured!.length === 3, 'trap-guard: three word trapdoors generated');
   }
@@ -539,7 +577,7 @@ async function runTests(): Promise<void> {
         throw new Error('embedding offline');
       },
     });
-    const result = await executePinOperation('trap-throws', 'pinned', deps);
+    const result = await pin('trap-throws', 'pinned', deps);
     assertEq(result.success, true, 'trap-throws: pin still succeeded');
     assertEq(state.submittedBatches.length, 1, 'trap-throws: batch still submitted');
   }
@@ -559,7 +597,7 @@ async function runTests(): Promise<void> {
         return Buffer.from(plaintext, 'utf8').toString('hex');
       },
     });
-    const result = await executePinOperation('sup-link-1', 'pinned', deps);
+    const result = await pin('sup-link-1', 'pinned', deps);
     assertEq(result.success, true, 'sup-link: success');
     assert(capturedPlaintext !== null, 'sup-link: plaintext captured');
     // v1.1: `sup` → `superseded_by`, `st` → `pin_status`, `ea` → `created_at`.
@@ -621,7 +659,7 @@ async function runTests(): Promise<void> {
     await appendDecisionLog(decision);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('vim-loser-id', 'pinned', deps);
+    const result = await pin('vim-loser-id', 'pinned', deps);
     assertEq(result.success, true, 'feedback-pin-loser: pin succeeded');
 
     const fbContent = fs.readFileSync(feedbackLogPath(), 'utf-8');
@@ -668,7 +706,7 @@ async function runTests(): Promise<void> {
     await appendDecisionLog(decision);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('teal-id', 'pinned', deps);
+    const result = await pin('teal-id', 'pinned', deps);
     assertEq(result.success, true, 'feedback-voluntary-pin: pin succeeded');
     assert(
       !fs.existsSync(feedbackLogPath()) || fs.readFileSync(feedbackLogPath(), 'utf-8').trim() === '',
@@ -708,7 +746,7 @@ async function runTests(): Promise<void> {
     await appendDecisionLog(decision);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('vscode-winner-id-2', 'active', deps);
+    const result = await pin('vscode-winner-id-2', 'active', deps);
     assertEq(result.success, true, 'feedback-unpin-winner: unpin succeeded');
 
     const fb = JSON.parse(
@@ -748,7 +786,7 @@ async function runTests(): Promise<void> {
     await appendDecisionLog(legacy);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('old-loser-id', 'pinned', deps);
+    const result = await pin('old-loser-id', 'pinned', deps);
     assertEq(result.success, true, 'feedback-legacy-row: pin succeeded');
     assert(
       !fs.existsSync(feedbackLogPath()) || fs.readFileSync(feedbackLogPath(), 'utf-8').trim() === '',
@@ -784,7 +822,7 @@ async function runTests(): Promise<void> {
     await appendDecisionLog(decision);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('already-pinned', 'pinned', deps);
+    const result = await pin('already-pinned', 'pinned', deps);
     assertEq(result.idempotent, true, 'feedback-idempotent: idempotent flag set');
     assert(
       !fs.existsSync(feedbackLogPath()) || fs.readFileSync(feedbackLogPath(), 'utf-8').trim() === '',
@@ -863,7 +901,7 @@ async function runTests(): Promise<void> {
       },
     });
 
-    const result = await executePinOperation('tombstoned-vim', 'pinned', deps, 'user override');
+    const result = await pin('tombstoned-vim', 'pinned', deps, 'user override');
     assertEq(result.success, true, 'pin-tombstone: recovery path succeeds');
     assertEq(result.fact_id, 'tombstoned-vim', 'pin-tombstone: returns original tombstoned id');
     assertEq(result.previous_status, 'active', 'pin-tombstone: previous_status forced to active after recovery');
@@ -924,7 +962,7 @@ async function runTests(): Promise<void> {
       },
     });
 
-    const result = await executePinOperation('orphan-tombstone', 'pinned', deps);
+    const result = await pin('orphan-tombstone', 'pinned', deps);
     assertEq(result.success, false, 'pin-tombstone-orphan: no recovery → success=false');
     assert(
       typeof result.error === 'string' && result.error!.includes('decisions.jsonl'),
@@ -977,7 +1015,7 @@ async function runTests(): Promise<void> {
       },
     });
 
-    const result = await executePinOperation('corrupted-fact', 'pinned', deps);
+    const result = await pin('corrupted-fact', 'pinned', deps);
     assertEq(result.success, false, 'pin-tombstone-real-corruption: success=false');
     assert(
       typeof result.error === 'string' && result.error!.includes('AEAD authentication failed'),
@@ -1016,7 +1054,7 @@ async function runTests(): Promise<void> {
         return Buffer.from(plaintext, 'utf8').toString('hex');
       },
     });
-    const result = await executePinOperation('v1-source-1', 'pinned', deps);
+    const result = await pin('v1-source-1', 'pinned', deps);
 
     assertEq(result.success, true, 'v1-pin: success');
     assert(capturedBlob !== null, 'v1-pin: plaintext captured');
@@ -1053,7 +1091,7 @@ async function runTests(): Promise<void> {
         return Buffer.from(plaintext, 'utf8').toString('hex');
       },
     });
-    const result = await executePinOperation('v1-pinned-1', 'active', deps);
+    const result = await pin('v1-pinned-1', 'active', deps);
 
     assertEq(result.success, true, 'v1-unpin: success');
     assertEq(result.previous_status, 'pinned', 'v1-unpin: previous_status=pinned detected via pin_status');
@@ -1079,7 +1117,7 @@ async function runTests(): Promise<void> {
     seedFact(state, 'v1-already-pinned', v1PinnedClaim);
 
     const deps = makeDeps(state);
-    const result = await executePinOperation('v1-already-pinned', 'pinned', deps);
+    const result = await pin('v1-already-pinned', 'pinned', deps);
 
     assertEq(result.success, true, 'v1-idempotent: success');
     assertEq(result.idempotent, true, 'v1-idempotent: idempotent flag set');
@@ -1108,7 +1146,7 @@ async function runTests(): Promise<void> {
         return Buffer.from(plaintext, 'utf8').toString('hex');
       },
     });
-    const result = await executePinOperation('parity-src', 'pinned', deps);
+    const result = await pin('parity-src', 'pinned', deps);
     assertEq(result.success, true, 'parity: success');
     assert(capturedBlob !== null, 'parity: plaintext captured');
     const parsed = JSON.parse(capturedBlob!);

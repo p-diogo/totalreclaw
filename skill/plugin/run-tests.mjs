@@ -1,4 +1,15 @@
 // scanner-sim: allow — dev-only test runner, not in the npm tarball ("files" allowlist in package.json excludes it) and never reaches the OpenClaw runtime sandbox. Spawning test files via child_process is this script's entire purpose; the import is test-infrastructure only and not shipped. Invoked only as `node run-tests.mjs` (see package.json "test"), so no shebang is needed.
+// ⚠️⚠️⚠️ DO NOT SHIP THIS FILE — read this before editing ⚠️⚠️⚠️
+// This dev-only test runner MUST stay out of the published npm tarball. It
+// imports `child_process` and spawns subprocesses — exactly what OpenClaw's
+// ClawHub install scanner refuses. The `// scanner-sim: allow` comment on the
+// FIRST line above only appeases OUR local `scripts/check-scanner.mjs`
+// simulation; the REAL ClawHub install scanner ignores that comment entirely
+// (the 3.3.1-rc.1 NO-GO scenario). If `run-tests.mjs` (or any `*.mjs` matching
+// the scanner rules) ever lands in package.json `"files"`, every ClawHub
+// install goes NO-GO. The runner asserts this invariant at startup (see
+// `assertNotShipped`) — keep the `scanner-sim: allow` line as line 1, since
+// the local scanner only scans the first 5 lines for the suppression marker.
 // Test runner for skill/plugin: discovers every *.test.ts under this package
 // (recursively, excluding node_modules/ and dist/) and runs each via `npx tsx`
 // sequentially, failing fast-free (runs all, reports every failure) with a
@@ -9,13 +20,38 @@
 //
 // Run a single file the same way it always worked: `npx tsx <file>.test.ts`.
 
-import { readdirSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
+
+// Per-file wall-clock budget. A hung await, a real-timer sleep, or a
+// pathological retry loop in a single test file would otherwise stall the
+// whole suite (and the CI job) with no signal — `memory/pin-unpin.test.ts`
+// previously clocked 481s here because it reached a live-subgraph poll loop.
+// Override locally with RUN_TESTS_TIMEOUT_MS=<ms>. Default 120s leaves ample
+// headroom under the CI job budget for any single legit file.
+const PER_FILE_TIMEOUT_MS = Number(process.env.RUN_TESTS_TIMEOUT_MS || 120_000);
+
+// Guard the shipping invariant described in the file-header warning: this
+// runner must NEVER appear in package.json "files". The real ClawHub scanner
+// ignores `// scanner-sim: allow`; a stray `*.mjs` entry would NO-GO installs.
+function assertNotShipped() {
+  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  const filesList = Array.isArray(pkg.files) ? pkg.files : [];
+  const leaked = filesList.filter((p) => typeof p === 'string' && /run-tests\.mjs/.test(p));
+  if (leaked.length) {
+    console.error(
+      `FATAL: package.json "files" includes ${leaked.map((f) => `"${f}"`).join(', ')} — ` +
+        'this dev-only test runner must NOT ship in the tarball (ClawHub scanner NO-GO). Remove it from "files".',
+    );
+    process.exit(1);
+  }
+}
+assertNotShipped();
 
 // Explicit, visible exclusions. Anything here is NOT run by `npm test`.
 // Each entry MUST carry a reason. These are files that require a build
@@ -73,12 +109,20 @@ for (let i = 0; i < toRun.length; i++) {
     cwd: ROOT,
     stdio: 'inherit',
     encoding: 'utf8',
+    timeout: PER_FILE_TIMEOUT_MS,
   });
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
-  if (res.status === 0) {
+  if (res.timedOut) {
+    console.log(
+      `FAIL ${label} (TIMED OUT after ${secs}s, limit ${PER_FILE_TIMEOUT_MS / 1000}s)`,
+    );
+    failures.push({ file, status: 'TIMEOUT' });
+  } else if (res.status === 0) {
     console.log(`PASS ${label} (${secs}s)`);
   } else {
-    console.log(`FAIL ${label} (exit ${res.status}, ${secs}s)`);
+    console.log(
+      `FAIL ${label} (exit ${res.status}${res.signal ? ` signal ${res.signal}` : ''}, ${secs}s)`,
+    );
     failures.push({ file, status: res.status });
   }
   console.log('');

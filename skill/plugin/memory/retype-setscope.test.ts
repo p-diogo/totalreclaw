@@ -29,6 +29,38 @@ import {
   readClaimFromBlob,
   readV1Blob,
 } from '../extraction/claims-helper.js';
+import type { ConfirmIndexedOptions } from '../subgraph/confirm-indexed.js';
+
+// Fast confirm-indexed stub — see memory/pin-unpin.test.ts for the full
+// rationale. executeRetype / executeSetScope both end with a read-after-write
+// poll of the LIVE subgraph (confirm-indexed.ts: default 1s poll / 30s timeout
+// via a real network request); in CI there is no reachable subgraph, so every
+// successful mutation burned the full 30s timeout and this file timed out the
+// CI per-file budget. The assertions below cover mutation SEMANTICS only
+// (new_fact_id, previous/new type+scope, tx_hash, payload counts) — none touch
+// the confirm `partial` flag — so stubbing the poster to resolve "indexed" on
+// the first poll weakens no assertion. Response matches the shape confirm.rs
+// parses as active.
+const FAST_CONFIRM_OPTS: ConfirmIndexedOptions = {
+  pollIntervalMs: 0,
+  timeoutMs: 1_000, // backstop only — poster resolves on attempt #1
+  poster: async () => ({
+    ok: true,
+    status: 200,
+    text: async () =>
+      JSON.stringify({ data: { fact: { id: 'stub', isActive: true, blockNumber: '1' } } }),
+  }),
+};
+
+// Wrappers so every call site gets the fast confirm opts without repeating the
+// trailing positional arg at each site. Signatures mirror the exports minus
+// the dev-only confirmOpts parameter.
+async function retype(factId: string, newType: unknown, deps: RetypeSetScopeDeps) {
+  return executeRetype(factId, newType as never, deps, FAST_CONFIRM_OPTS);
+}
+async function setScope(factId: string, newScope: unknown, deps: RetypeSetScopeDeps) {
+  return executeSetScope(factId, newScope as never, deps, FAST_CONFIRM_OPTS);
+}
 
 let passed = 0;
 let failed = 0;
@@ -164,7 +196,7 @@ function buildMockDeps(opts: {
     confidence: 0.9,
   });
   const deps = buildMockDeps({ existingV1Blob: v1Blob });
-  const r = await executeRetype('abc-123', 'preference', deps);
+  const r = await retype('abc-123', 'preference', deps);
   assert(r.success, 'executeRetype: success');
   assert(r.fact_id === 'abc-123', 'executeRetype: fact_id preserved');
   assert(r.new_fact_id !== undefined && r.new_fact_id !== 'abc-123', 'executeRetype: new_fact_id allocated');
@@ -186,7 +218,7 @@ function buildMockDeps(opts: {
     confidence: 0.9,
   });
   const deps = buildMockDeps({ existingV1Blob: v1Blob });
-  const r = await executeSetScope('abc-456', 'work', deps);
+  const r = await setScope('abc-456', 'work', deps);
   assert(r.success, 'executeSetScope: success');
   assert(r.new_scope === 'work', 'executeSetScope: new_scope set');
   // readV1Blob normalizes missing scope to 'unspecified' → that's what projectFromDecrypted reports.
@@ -204,7 +236,7 @@ function buildMockDeps(opts: {
     createdAt: new Date().toISOString(),
   });
   const deps = buildMockDeps({ existingV1Blob: v1Blob, fetchReturnsNull: true });
-  const r = await executeRetype('abc-789', 'preference', deps);
+  const r = await retype('abc-789', 'preference', deps);
   assert(!r.success, 'executeRetype: not-found → success=false');
   assert(r.error?.includes('not found') ?? false, 'executeRetype: error mentions not-found');
 }
@@ -219,7 +251,7 @@ function buildMockDeps(opts: {
     createdAt: new Date().toISOString(),
   });
   const deps = buildMockDeps({ existingV1Blob: v1Blob, submitShouldFail: true });
-  const r = await executeSetScope('abc-err', 'work', deps);
+  const r = await setScope('abc-err', 'work', deps);
   assert(!r.success, 'executeSetScope: submit-fails → success=false');
   assert(r.tx_hash === '0xfail', 'executeSetScope: failed tx hash surfaced');
 }
@@ -234,7 +266,7 @@ function buildMockDeps(opts: {
     createdAt: new Date().toISOString(),
   });
   const deps = buildMockDeps({ existingV1Blob: v1Blob });
-  const r = await executeRetype('abc-1', 'bogus' as unknown as 'claim', deps);
+  const r = await retype('abc-1', 'bogus' as unknown as 'claim', deps);
   assert(!r.success, 'executeRetype: invalid type → error');
 }
 
@@ -248,14 +280,14 @@ function buildMockDeps(opts: {
     createdAt: new Date().toISOString(),
   });
   const deps = buildMockDeps({ existingV1Blob: v1Blob });
-  const r = await executeSetScope('abc-2', 'bogus' as unknown as 'work', deps);
+  const r = await setScope('abc-2', 'bogus' as unknown as 'work', deps);
   assert(!r.success, 'executeSetScope: invalid scope → error');
 }
 
 // Malformed blob (not parseable)
 {
   const deps = buildMockDeps({ existingV1Blob: 'not json at all' });
-  const r = await executeRetype('abc-mal', 'preference', deps);
+  const r = await retype('abc-mal', 'preference', deps);
   assert(!r.success, 'executeRetype: malformed blob → success=false');
   assert(r.error?.toLowerCase().includes('blob') ?? false, 'executeRetype: error mentions blob');
 }
@@ -304,7 +336,7 @@ function decodePayload(payload: Buffer): string {
     confidence: 0.85,
   });
   const deps = buildMockDeps({ existingV1Blob: v1Blob });
-  const r = await executeSetScope('rt-1', 'health', deps);
+  const r = await setScope('rt-1', 'health', deps);
   assert(r.success, 'issue#117 R1: set_scope success');
 
   // The new (second) payload contains the new blob. Decode and verify with
@@ -337,7 +369,7 @@ function decodePayload(payload: Buffer): string {
     confidence: 0.9,
   });
   const deps = buildMockDeps({ existingV1Blob: v1Blob });
-  const r = await executeSetScope('rt-2', 'personal', deps);
+  const r = await setScope('rt-2', 'personal', deps);
   assert(r.success, 'issue#117 R2: set_scope success');
   assert(r.previous_scope === 'work', 'issue#117 R2: previous_scope=work surfaced');
 
@@ -363,7 +395,7 @@ function decodePayload(payload: Buffer): string {
     ea: new Date().toISOString(),
   });
   const deps = buildMockDeps({ existingV1Blob: v0Blob });
-  const r = await executeSetScope('rt-3', 'finance', deps);
+  const r = await setScope('rt-3', 'finance', deps);
   assert(r.success, 'issue#117 R3: set_scope on v0 blob succeeds');
 
   const newPayload = deps._captured.payloads?.[1];
@@ -396,7 +428,7 @@ function decodePayload(payload: Buffer): string {
     pinStatus: 'pinned',
   });
   const deps = buildMockDeps({ existingV1Blob: pinnedBlob });
-  const r = await executeSetScope('rt-4', 'health', deps);
+  const r = await setScope('rt-4', 'health', deps);
   assert(r.success, 'issue#117 R4: set_scope on pinned fact succeeds');
 
   const newPayload = deps._captured.payloads?.[1];
@@ -425,7 +457,7 @@ function decodePayload(payload: Buffer): string {
     pinStatus: 'pinned',
   });
   const deps = buildMockDeps({ existingV1Blob: pinnedBlob });
-  const r = await executeRetype('rt-5', 'commitment', deps);
+  const r = await retype('rt-5', 'commitment', deps);
   assert(r.success, 'issue#117 R5: retype on pinned fact succeeds');
 
   const newPayload = deps._captured.payloads?.[1];

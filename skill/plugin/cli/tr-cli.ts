@@ -31,8 +31,8 @@
  * --json flag: all agent-facing CLI calls MUST use --json for clean machine-parseable output.
  *              Plain text mode is for direct user CLI use only.
  *
- * Install: wired via package.json `bin.tr` → dist/tr-cli.js
- * Usage from container: `docker exec tr-openclaw node ~/.openclaw/extensions/totalreclaw/dist/tr-cli.js status --json`
+ * Install: wired via package.json `bin.tr` → dist/cli/tr-cli.js
+ * Usage from container: `docker exec tr-openclaw node ~/.openclaw/extensions/totalreclaw/dist/cli/tr-cli.js status --json`
  */
 
 import { randomUUID } from 'node:crypto';
@@ -124,7 +124,7 @@ interface CliContext {
 async function buildContext(): Promise<CliContext> {
   const creds = loadCredentialsJson(CREDENTIALS_PATH);
   if (!creds) {
-    die('TotalReclaw is not set up. Run: node ~/.openclaw/extensions/totalreclaw/dist/tr-cli.js pair --json');
+    die('TotalReclaw is not set up. Run: node ~/.openclaw/extensions/totalreclaw/dist/cli/tr-cli.js pair --json');
   }
 
   const mnemonic =
