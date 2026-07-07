@@ -51,6 +51,12 @@ from .claims_helper import (
     read_claim_from_blob,
 )
 from .entity_extract import extract_query_entities
+# Taxonomy vocabulary comes from the dependency-free leaf module, NOT
+# ``agent.extraction`` — importing the latter here would make the root package
+# (``operations`` loads during ``totalreclaw`` bootstrap via ``client``) depend
+# on the whole ``agent`` subpackage, the exact root<->agent cycle the leaf was
+# extracted to break.
+from .memory_types import V0_TO_V1_TYPE, VALID_MEMORY_TYPES
 
 # GraphQL queries — matching TypeScript search.ts
 SEARCH_QUERY = """
@@ -961,8 +967,6 @@ def _project_source_to_v1(
     Returns a dict with keys matching the :func:`build_canonical_claim_v1`
     attribute names.
     """
-    from .agent.extraction import V0_TO_V1_TYPE, VALID_MEMORY_TYPES
-
     # v1 source: schema_version "1.x" + long-form fields.
     schema_version = source_claim.get("schema_version")
     if (

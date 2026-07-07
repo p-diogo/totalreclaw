@@ -27,6 +27,7 @@
 //! - [`confirm`] — Read-after-write primitive for on-chain mutation tools (2.2.x)
 //! - [`secrets`] — API-key vault: detect + redact 14 secret pattern classes (am-6)
 //! - [`session_segmentation`] — Centroid-walk session segmentation for imports (#368)
+//! - [`kg_ffi`] — Shared JSON-in/JSON-out knowledge-graph marshalling helpers behind the WASM/PyO3 bindings
 
 pub mod blind;
 pub mod claims;
@@ -40,6 +41,7 @@ pub mod crypto;
 pub mod debrief;
 pub mod fingerprint;
 pub mod hotcache;
+pub mod kg_ffi;
 pub mod lsh;
 pub mod memory_types;
 pub mod pin_intent;
