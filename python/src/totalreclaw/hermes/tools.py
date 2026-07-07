@@ -181,8 +181,9 @@ async def remember(args: dict, state: "PluginState", **kwargs) -> str:
         try:
             from totalreclaw.embedding import get_embedding
             embedding = get_embedding(text)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("embed failed for remember %r: %s", text[:40], e)
+            # degrade: store without embedding (search falls back to blind indices)
 
         fact_id = await client.remember(
             text,
@@ -225,8 +226,9 @@ async def recall(args: dict, state: "PluginState", **kwargs) -> str:
         try:
             from totalreclaw.embedding import get_embedding
             query_embedding = get_embedding(query)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("embed failed for recall query %r: %s", query[:40], e)
+            # degrade: query on blind indices only (no cosine signal)
 
         results = await client.recall(
             query,

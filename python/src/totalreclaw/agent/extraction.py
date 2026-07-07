@@ -35,6 +35,9 @@ from .llm_client import (
     derive_extraction_config,
     detect_llm_config,
 )
+# Re-exported under its historical private name so existing callers
+# (hermes/extractor.py, hermes/tools.py, tests) keep importing it from here.
+from ._text import truncate_messages as _truncate_messages
 
 logger = logging.getLogger(__name__)
 
@@ -277,19 +280,6 @@ TotalReclaw clients by construction.
 # ---------------------------------------------------------------------------
 # Helpers — message formatting + response parsing
 # ---------------------------------------------------------------------------
-
-
-def _truncate_messages(messages: list[dict], max_chars: int = 12000) -> str:
-    """Format and truncate messages to fit token budget."""
-    lines = []
-    total = 0
-    for msg in messages:
-        line = f"[{msg.get('role', 'unknown')}]: {msg.get('content', '')}"
-        if total + len(line) > max_chars:
-            break
-        lines.append(line)
-        total += len(line)
-    return "\n\n".join(lines)
 
 
 def _build_fact(

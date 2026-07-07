@@ -93,7 +93,7 @@ def read_most_recent_active_import() -> Optional[ImportState]:
                 if state.status in ("running", "pending"):
                     candidates.append(state)
             except Exception:
-                pass
+                pass  # best-effort — skip a corrupt/unreadable state file
         if not candidates:
             return None
         return max(candidates, key=lambda s: s.started_at)
@@ -132,7 +132,7 @@ def read_most_recent_import(max_age_hours: int = 48) -> Optional[ImportState]:
                 if updated > cutoff:
                     candidates.append(state)
             except Exception:
-                pass
+                pass  # best-effort — skip a corrupt/unreadable state file
         if not candidates:
             return None
         return max(candidates, key=lambda s: s.last_updated)
@@ -154,9 +154,9 @@ def read_completed_unannounced_imports() -> List[ImportState]:
                 if state.status == "completed" and not state.announced:
                     out.append(state)
             except Exception:
-                pass
+                pass  # best-effort — skip a corrupt/unreadable state file
     except Exception:
-        pass
+        pass  # best-effort — state dir missing/unreadable yields no imports
     return sorted(out, key=lambda s: s.last_updated)
 
 
@@ -223,7 +223,7 @@ def load_imported_conversations(source: str) -> set:
         if isinstance(data, list):
             return {str(x) for x in data}
     except Exception:
-        pass
+        pass  # best-effort — missing/corrupt registry means "nothing imported yet"
     return set()
 
 

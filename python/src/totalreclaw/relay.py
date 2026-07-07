@@ -66,20 +66,6 @@ def _default_relay_url() -> str:
     return os.environ.get("TOTALRECLAW_SERVER_URL") or _HARDCODED_DEFAULT_URL
 
 
-# Backward-compat: preserve the old module attribute as a property-like
-# access via __getattr__ at import would complicate consumers, so we keep
-# it as a constant for direct reads but the client should prefer
-# _default_relay_url(). The constant resolves to whichever default the
-# build-time rewrite landed on.
-#
-# NOTE: this is a snapshot taken at import time. Do NOT use it as a default
-# parameter value — ``RelayClient.__init__`` resolves the URL via
-# ``_default_relay_url()`` at construction so a runtime change to
-# ``TOTALRECLAW_SERVER_URL`` (e.g. tests, dev sessions pinning staging after
-# import) is honored. Kept only for any external readers of the attribute.
-DEFAULT_RELAY_URL = _default_relay_url()
-
-
 def _detect_client_id() -> str:
     if os.environ.get("HERMES_HOME"):
         return "python-client:hermes-agent"
@@ -155,8 +141,8 @@ class RelayClient:
     ):
         # Resolve the default at construction (not import) so a runtime change
         # to ``TOTALRECLAW_SERVER_URL`` after this module is imported takes
-        # effect. Using the module-level ``DEFAULT_RELAY_URL`` snapshot as a
-        # default param would silently pin a stale URL.
+        # effect. An import-time snapshot as a default param would silently pin
+        # a stale URL.
         self._relay_url = (relay_url or _default_relay_url()).rstrip("/")
         self._auth_key_hex = auth_key_hex
         self._wallet_address = wallet_address

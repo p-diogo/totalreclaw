@@ -5,18 +5,36 @@
 //!
 //! # Modules
 //!
-//! - [`crypto`] — Key derivation (BIP-39 + HKDF-SHA256), XChaCha20-Poly1305 encrypt/decrypt
-//! - [`blind`] — Blind index generation (SHA-256 token hashing + Porter stemming)
-//! - [`fingerprint`] — Content fingerprint (HMAC-SHA256 with NFC normalization)
-//! - [`lsh`] — Locality-sensitive hashing (random hyperplane LSH)
+//! This crate is a thin ZeroClaw adapter over `totalreclaw-core`. Pure
+//! computation (crypto, indexing, ranking) lives in core; the backend-specific
+//! wiring (relay HTTP, ZeroClaw `Memory` trait, setup, caches) lives here.
+//!
+//! ## Owned by this crate (backend adapter)
+//!
 //! - [`embedding`] — Embedding pipeline (Local ONNX, Ollama, ZeroClaw, LLM provider)
-//! - [`reranker`] — BM25 + Cosine + RRF fusion reranker
 //! - [`relay`] — HTTP client for TotalReclaw relay server
-//! - [`protobuf`] — Minimal protobuf encoder for fact payloads
 //! - [`store`] — Encrypt → index → encode → submit pipeline (with Phase 2 KG contradiction check)
 //! - [`search`] — Subgraph query → decrypt → rerank pipeline
 //! - [`backend`] — ZeroClaw Memory trait implementation
 //! - [`setup`] — First-use setup wizard (credentials + embedding config)
+//! - [`billing`] — Billing cache (2h TTL) + relay feature-flag parsing
+//! - [`hotcache`] — In-memory hot cache wrapper over the generic core cache
+//! - [`userop`] — ERC-4337 UserOp construction and signing
+//! - [`wallet`] — Wallet / key material handling
+//!
+//! ## Re-exported from `totalreclaw-core` (thin `pub use` shims)
+//!
+//! These modules own no logic here; they re-export the canonical core
+//! implementation so downstream `totalreclaw_memory::<name>` paths keep working.
+//!
+//! - [`crypto`] — Key derivation (BIP-39 + HKDF-SHA256), XChaCha20-Poly1305 encrypt/decrypt
+//! - [`blind`] — Blind index generation (SHA-256 token hashing + Porter stemming)
+//! - [`fingerprint`] — Content fingerprint (HMAC-SHA256 with NFC normalization)
+//! - [`lsh`] — Locality-sensitive hashing (random hyperplane LSH)
+//! - [`protobuf`] — Minimal protobuf encoder for fact payloads
+//! - [`stemmer`] — Porter stemmer (Porter 1 algorithm)
+//! - [`debrief`] — Session debrief extraction + parsing
+//! - [`reranker`] — BM25 + Cosine + RRF fusion reranker (source-weighted Tier 1)
 
 pub mod backend;
 pub mod billing;
@@ -37,7 +55,9 @@ pub mod store;
 pub mod userop;
 pub mod wallet;
 
-pub use backend::{MemoryCategory, MemoryEntry, TotalReclawConfig, TotalReclawMemory};
+pub use backend::{
+    BatchStoreItem, MemoryCategory, MemoryEntry, TotalReclawConfig, TotalReclawMemory,
+};
 
 // Re-export core Phase 2 KG types for downstream consumers.
 pub use totalreclaw_core::claims::{

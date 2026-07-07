@@ -5,6 +5,15 @@
 //! Module name: `totalreclaw_core` (underscore, not hyphen).
 //!
 //! All byte arrays are returned as Python `bytes` objects.
+//!
+//! # Naming convention
+//!
+//! Every `#[pyfunction]` uses a `py_`-prefixed internal Rust name plus an
+//! explicit `#[pyo3(name = "...")]` giving the Python-visible name. This keeps
+//! the Rust wrapper unambiguously distinct from the same-named core function it
+//! delegates to (`py_encrypt` → `crypto::encrypt`) and makes the exported
+//! Python surface a single, greppable list of `#[pyo3(name = ...)]` attributes.
+//! When adding a binding, follow this convention rather than a bare fn name.
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -42,7 +51,8 @@ fn bytes_to_array32(b: &[u8]) -> PyResult<[u8; 32]> {
 ///
 /// Returns a dict with keys: salt, auth_key, encryption_key, dedup_key (all bytes).
 #[pyfunction]
-fn derive_keys_from_mnemonic(py: Python<'_>, mnemonic: &str) -> PyResult<PyObject> {
+#[pyo3(name = "derive_keys_from_mnemonic")]
+fn py_derive_keys_from_mnemonic(py: Python<'_>, mnemonic: &str) -> PyResult<PyObject> {
     let keys = crypto::derive_keys_from_mnemonic(mnemonic).map_err(to_pyerr)?;
     keys_to_dict(py, &keys)
 }
@@ -51,7 +61,8 @@ fn derive_keys_from_mnemonic(py: Python<'_>, mnemonic: &str) -> PyResult<PyObjec
 ///
 /// Returns a dict with keys: salt, auth_key, encryption_key, dedup_key (all bytes).
 #[pyfunction]
-fn derive_keys_from_mnemonic_lenient(py: Python<'_>, mnemonic: &str) -> PyResult<PyObject> {
+#[pyo3(name = "derive_keys_from_mnemonic_lenient")]
+fn py_derive_keys_from_mnemonic_lenient(py: Python<'_>, mnemonic: &str) -> PyResult<PyObject> {
     let keys = crypto::derive_keys_from_mnemonic_lenient(mnemonic).map_err(to_pyerr)?;
     keys_to_dict(py, &keys)
 }
@@ -70,7 +81,8 @@ fn keys_to_dict(py: Python<'_>, keys: &crypto::DerivedKeys) -> PyResult<PyObject
 ///
 /// Returns bytes (32 bytes).
 #[pyfunction]
-fn derive_lsh_seed<'py>(
+#[pyo3(name = "derive_lsh_seed")]
+fn py_derive_lsh_seed<'py>(
     py: Python<'py>,
     mnemonic: &str,
     salt: &[u8],
@@ -82,7 +94,8 @@ fn derive_lsh_seed<'py>(
 
 /// Compute SHA-256(authKey) as a hex string.
 #[pyfunction]
-fn compute_auth_key_hash(auth_key: &[u8]) -> PyResult<String> {
+#[pyo3(name = "compute_auth_key_hash")]
+fn py_compute_auth_key_hash(auth_key: &[u8]) -> PyResult<String> {
     let arr = bytes_to_array32(auth_key)?;
     Ok(crypto::compute_auth_key_hash(&arr))
 }
@@ -95,14 +108,16 @@ fn compute_auth_key_hash(auth_key: &[u8]) -> PyResult<String> {
 ///
 /// Returns base64-encoded ciphertext (wire format: nonce || tag || ciphertext).
 #[pyfunction]
-fn encrypt(plaintext: &str, encryption_key: &[u8]) -> PyResult<String> {
+#[pyo3(name = "encrypt")]
+fn py_encrypt(plaintext: &str, encryption_key: &[u8]) -> PyResult<String> {
     let key = bytes_to_array32(encryption_key)?;
     crypto::encrypt(plaintext, &key).map_err(to_pyerr)
 }
 
 /// Decrypt a base64-encoded XChaCha20-Poly1305 blob back to a UTF-8 string.
 #[pyfunction]
-fn decrypt(encrypted_base64: &str, encryption_key: &[u8]) -> PyResult<String> {
+#[pyo3(name = "decrypt")]
+fn py_decrypt(encrypted_base64: &str, encryption_key: &[u8]) -> PyResult<String> {
     let key = bytes_to_array32(encryption_key)?;
     crypto::decrypt(encrypted_base64, &key).map_err(to_pyerr)
 }
@@ -115,7 +130,8 @@ fn decrypt(encrypted_base64: &str, encryption_key: &[u8]) -> PyResult<String> {
 ///
 /// Returns a list of hex strings.
 #[pyfunction]
-fn generate_blind_indices(text: &str) -> Vec<String> {
+#[pyo3(name = "generate_blind_indices")]
+fn py_generate_blind_indices(text: &str) -> Vec<String> {
     blind::generate_blind_indices(text)
 }
 
@@ -125,14 +141,16 @@ fn generate_blind_indices(text: &str) -> Vec<String> {
 
 /// Compute HMAC-SHA256 content fingerprint. Returns 64-char hex string.
 #[pyfunction]
-fn generate_content_fingerprint(plaintext: &str, dedup_key: &[u8]) -> PyResult<String> {
+#[pyo3(name = "generate_content_fingerprint")]
+fn py_generate_content_fingerprint(plaintext: &str, dedup_key: &[u8]) -> PyResult<String> {
     let key = bytes_to_array32(dedup_key)?;
     Ok(fingerprint::generate_content_fingerprint(plaintext, &key))
 }
 
 /// Normalize text for deterministic fingerprinting (NFC, lowercase, collapse whitespace, trim).
 #[pyfunction]
-fn normalize_text(text: &str) -> String {
+#[pyo3(name = "normalize_text")]
+fn py_normalize_text(text: &str) -> String {
     fingerprint::normalize_text(text)
 }
 
@@ -209,7 +227,8 @@ impl PyLshHasher {
 /// Returns:
 ///     bytes (protobuf wire format).
 #[pyfunction]
-fn encode_fact_protobuf<'py>(py: Python<'py>, json_str: &str) -> PyResult<Bound<'py, PyBytes>> {
+#[pyo3(name = "encode_fact_protobuf")]
+fn py_encode_fact_protobuf<'py>(py: Python<'py>, json_str: &str) -> PyResult<Bound<'py, PyBytes>> {
     let value: serde_json::Value =
         serde_json::from_str(json_str).map_err(|e| PyValueError::new_err(e.to_string()))?;
 
@@ -293,7 +312,8 @@ fn encode_fact_protobuf<'py>(py: Python<'py>, json_str: &str) -> PyResult<Bound<
 ///     bytes (protobuf wire format).
 #[pyfunction]
 #[pyo3(signature = (fact_id, owner, version=None))]
-fn encode_tombstone_protobuf<'py>(
+#[pyo3(name = "encode_tombstone_protobuf")]
+fn py_encode_tombstone_protobuf<'py>(
     py: Python<'py>,
     fact_id: &str,
     owner: &str,
@@ -315,7 +335,8 @@ fn encode_tombstone_protobuf<'py>(
 ///
 /// Returns a list of dicts with keys: text, type, importance.
 #[pyfunction]
-fn parse_debrief_response(py: Python<'_>, response: &str) -> PyResult<PyObject> {
+#[pyo3(name = "parse_debrief_response")]
+fn py_parse_debrief_response(py: Python<'_>, response: &str) -> PyResult<PyObject> {
     let items = debrief::parse_debrief_response(response);
     let list = PyList::empty(py);
     for item in &items {
@@ -332,7 +353,8 @@ fn parse_debrief_response(py: Python<'_>, response: &str) -> PyResult<PyObject> 
 ///
 /// Contains ``{already_stored_facts}`` placeholder.
 #[pyfunction]
-fn get_debrief_system_prompt() -> &'static str {
+#[pyo3(name = "get_debrief_system_prompt")]
+fn py_get_debrief_system_prompt() -> &'static str {
     debrief::DEBRIEF_SYSTEM_PROMPT
 }
 
@@ -346,7 +368,8 @@ fn get_debrief_system_prompt() -> &'static str {
 /// (via the WASM binding `getExtractionSystemPrompt`), and Rust callers.
 /// The prompt includes the Rule 6 meta-request filter.
 #[pyfunction]
-fn get_extraction_system_prompt() -> &'static str {
+#[pyo3(name = "get_extraction_system_prompt")]
+fn py_get_extraction_system_prompt() -> &'static str {
     crate::prompts::get_extraction_system_prompt()
 }
 
@@ -354,7 +377,8 @@ fn get_extraction_system_prompt() -> &'static str {
 ///
 /// Used on the pre-compaction surface (importance floor 5, not 6).
 #[pyfunction]
-fn get_compaction_system_prompt() -> &'static str {
+#[pyo3(name = "get_compaction_system_prompt")]
+fn py_get_compaction_system_prompt() -> &'static str {
     crate::prompts::get_compaction_system_prompt()
 }
 
@@ -583,7 +607,8 @@ fn py_classify_pin_intent(text: &str) -> PyResult<Option<String>> {
 /// Path: m/44'/60'/0'/0/0 (standard Ethereum derivation path).
 /// Returns a JSON string: ``{"private_key": "hex...", "address": "0x..."}``.
 #[pyfunction]
-fn derive_eoa(mnemonic: &str) -> PyResult<String> {
+#[pyo3(name = "derive_eoa")]
+fn py_derive_eoa(mnemonic: &str) -> PyResult<String> {
     let w = crate::wallet::derive_eoa(mnemonic).map_err(to_pyerr)?;
     serde_json::to_string(&w).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))
 }
@@ -592,7 +617,8 @@ fn derive_eoa(mnemonic: &str) -> PyResult<String> {
 ///
 /// Returns: ``"0x..."`` (lowercase hex).
 #[pyfunction]
-fn derive_eoa_address(mnemonic: &str) -> PyResult<String> {
+#[pyo3(name = "derive_eoa_address")]
+fn py_derive_eoa_address(mnemonic: &str) -> PyResult<String> {
     crate::wallet::derive_eoa_address(mnemonic).map_err(to_pyerr)
 }
 
@@ -615,7 +641,8 @@ fn derive_eoa_address(mnemonic: &str) -> PyResult<String> {
 #[cfg(feature = "managed")]
 #[pyfunction]
 #[pyo3(signature = (protobuf_payload, data_edge_address=None))]
-fn encode_single_call<'py>(
+#[pyo3(name = "encode_single_call")]
+fn py_encode_single_call<'py>(
     py: Python<'py>,
     protobuf_payload: &[u8],
     data_edge_address: Option<&str>,
@@ -640,7 +667,8 @@ fn encode_single_call<'py>(
 #[cfg(feature = "managed")]
 #[pyfunction]
 #[pyo3(signature = (payloads, data_edge_address=None))]
-fn encode_batch_call<'py>(
+#[pyo3(name = "encode_batch_call")]
+fn py_encode_batch_call<'py>(
     py: Python<'py>,
     payloads: Vec<Vec<u8>>,
     data_edge_address: Option<&str>,
@@ -664,7 +692,8 @@ fn encode_batch_call<'py>(
 ///     bytes (32-byte hash).
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn hash_userop<'py>(
+#[pyo3(name = "hash_userop")]
+fn py_hash_userop<'py>(
     py: Python<'py>,
     userop_json: &str,
     entrypoint: &str,
@@ -687,7 +716,8 @@ fn hash_userop<'py>(
 ///     bytes (65-byte signature: r + s + v).
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn sign_userop<'py>(
+#[pyo3(name = "sign_userop")]
+fn py_sign_userop<'py>(
     py: Python<'py>,
     hash: &[u8],
     private_key: &[u8],
@@ -723,7 +753,8 @@ fn sign_userop<'py>(
 /// Returns:
 ///     JSON string of PreparedFact.
 #[pyfunction]
-fn prepare_fact(
+#[pyo3(name = "prepare_fact")]
+fn py_prepare_fact(
     text: &str,
     encryption_key: &[u8],
     dedup_key: &[u8],
@@ -758,7 +789,8 @@ fn prepare_fact(
 ///
 /// Same as `prepare_fact()` but takes a raw decay score.
 #[pyfunction]
-fn prepare_fact_with_decay_score(
+#[pyo3(name = "prepare_fact_with_decay_score")]
+fn py_prepare_fact_with_decay_score(
     text: &str,
     encryption_key: &[u8],
     dedup_key: &[u8],
@@ -798,7 +830,8 @@ fn prepare_fact_with_decay_score(
 ///     bytes (ABI-encoded calldata).
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn build_single_calldata_from_prepared<'py>(
+#[pyo3(name = "build_single_calldata_from_prepared")]
+fn py_build_single_calldata_from_prepared<'py>(
     py: Python<'py>,
     prepared_json: &str,
 ) -> PyResult<Bound<'py, PyBytes>> {
@@ -817,7 +850,8 @@ fn build_single_calldata_from_prepared<'py>(
 ///     bytes (ABI-encoded calldata).
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn build_batch_calldata_from_prepared<'py>(
+#[pyo3(name = "build_batch_calldata_from_prepared")]
+fn py_build_batch_calldata_from_prepared<'py>(
     py: Python<'py>,
     prepared_array_json: &str,
 ) -> PyResult<Bound<'py, PyBytes>> {
@@ -837,7 +871,8 @@ fn build_batch_calldata_from_prepared<'py>(
 /// Returns:
 ///     bytes (protobuf wire format).
 #[pyfunction]
-fn prepare_tombstone<'py>(py: Python<'py>, fact_id: &str, owner: &str) -> Bound<'py, PyBytes> {
+#[pyo3(name = "prepare_tombstone")]
+fn py_prepare_tombstone<'py>(py: Python<'py>, fact_id: &str, owner: &str) -> Bound<'py, PyBytes> {
     let bytes = store::prepare_tombstone(fact_id, owner);
     PyBytes::new(py, &bytes)
 }
@@ -857,7 +892,8 @@ fn prepare_tombstone<'py>(py: Python<'py>, fact_id: &str, owner: &str) -> Bound<
 ///     List of hex-encoded trapdoor strings.
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn generate_search_trapdoors(
+#[pyo3(name = "generate_search_trapdoors")]
+fn py_generate_search_trapdoors(
     query: &str,
     query_embedding: Vec<f32>,
     lsh_hasher: &PyLshHasher,
@@ -874,7 +910,8 @@ fn generate_search_trapdoors(
 ///     JSON string of SubgraphFact array.
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn parse_search_response(response_json: &str) -> PyResult<String> {
+#[pyo3(name = "parse_search_response")]
+fn py_parse_search_response(response_json: &str) -> PyResult<String> {
     let facts = search::parse_search_response(response_json).map_err(to_pyerr)?;
     serde_json::to_string(&facts)
         .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))
@@ -889,7 +926,8 @@ fn parse_search_response(response_json: &str) -> PyResult<String> {
 ///     JSON string of SubgraphFact array.
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn parse_broadened_response(response_json: &str) -> PyResult<String> {
+#[pyo3(name = "parse_broadened_response")]
+fn py_parse_broadened_response(response_json: &str) -> PyResult<String> {
     let facts = search::parse_broadened_response(response_json).map_err(to_pyerr)?;
     serde_json::to_string(&facts)
         .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))
@@ -908,7 +946,8 @@ fn parse_broadened_response(response_json: &str) -> PyResult<String> {
 ///     JSON string of ranked results.
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn decrypt_and_rerank(
+#[pyo3(name = "decrypt_and_rerank")]
+fn py_decrypt_and_rerank(
     facts_json: &str,
     query: &str,
     query_embedding: Vec<f32>,
@@ -927,21 +966,24 @@ fn decrypt_and_rerank(
 /// Get the GraphQL query string for blind index search.
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn get_search_query() -> &'static str {
+#[pyo3(name = "get_search_query")]
+fn py_get_search_query() -> &'static str {
     search::search_query()
 }
 
 /// Get the GraphQL query string for broadened (fallback) search.
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn get_broadened_search_query() -> &'static str {
+#[pyo3(name = "get_broadened_search_query")]
+fn py_get_broadened_search_query() -> &'static str {
     search::broadened_search_query()
 }
 
 /// Get the GraphQL query string for paginated export.
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn get_export_query() -> &'static str {
+#[pyo3(name = "get_export_query")]
+fn py_get_export_query() -> &'static str {
     search::export_query()
 }
 
@@ -954,7 +996,8 @@ fn get_export_query() -> &'static str {
 ///     Base64-encoded bytes, or None if the hex is invalid.
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn hex_blob_to_base64(hex_blob: &str) -> Option<String> {
+#[pyo3(name = "hex_blob_to_base64")]
+fn py_hex_blob_to_base64(hex_blob: &str) -> Option<String> {
     search::hex_blob_to_base64(hex_blob)
 }
 
@@ -969,7 +1012,8 @@ fn hex_blob_to_base64(hex_blob: &str) -> Option<String> {
 ///     List of trapdoor-string lists, one per query.
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn generate_expansion_trapdoors(
+#[pyo3(name = "generate_expansion_trapdoors")]
+fn py_generate_expansion_trapdoors(
     queries: Vec<String>,
     embeddings: Vec<Vec<f32>>,
     lsh_hasher: &PyLshHasher,
@@ -992,7 +1036,8 @@ fn generate_expansion_trapdoors(
 ///     descending RRF score.
 #[cfg(feature = "managed")]
 #[pyfunction]
-fn merge_expansion_results(fact_sets_json: &str, rrf_k: f64) -> PyResult<String> {
+#[pyo3(name = "merge_expansion_results")]
+fn py_merge_expansion_results(fact_sets_json: &str, rrf_k: f64) -> PyResult<String> {
     let fact_sets: Vec<Vec<search::SubgraphFact>> = serde_json::from_str(fact_sets_json)
         .map_err(|e| PyValueError::new_err(format!("Invalid fact_sets JSON: {}", e)))?;
     let set_refs: Vec<&[search::SubgraphFact]> = fact_sets.iter().map(|v| v.as_slice()).collect();
@@ -1702,27 +1747,31 @@ fn py_segment_sessions(
 /// blockNumber }`). Pair with `confirm_indexed_parse` in a host-side polling
 /// loop.
 #[pyfunction]
-fn confirm_indexed_query() -> &'static str {
+#[pyo3(name = "confirm_indexed_query")]
+fn py_confirm_indexed_query() -> &'static str {
     confirm::confirm_indexed_query()
 }
 
 /// Parse a subgraph response JSON for confirm_indexed and return whether the
 /// fact is indexed AND active.
 #[pyfunction]
-fn confirm_indexed_parse(response_json: &str) -> PyResult<bool> {
+#[pyo3(name = "confirm_indexed_parse")]
+fn py_confirm_indexed_parse(response_json: &str) -> PyResult<bool> {
     confirm::parse_indexed_response(response_json).map_err(PyValueError::new_err)
 }
 
 /// Default polling interval (ms) — exposed so Python adapters share the
 /// same default without re-declaring the constant.
 #[pyfunction]
-fn confirm_indexed_default_poll_ms() -> u64 {
+#[pyo3(name = "confirm_indexed_default_poll_ms")]
+fn py_confirm_indexed_default_poll_ms() -> u64 {
     confirm::DEFAULT_POLL_INTERVAL_MS
 }
 
 /// Default total timeout (ms) — exposed so Python adapters share the same default.
 #[pyfunction]
-fn confirm_indexed_default_timeout_ms() -> u64 {
+#[pyo3(name = "confirm_indexed_default_timeout_ms")]
+fn py_confirm_indexed_default_timeout_ms() -> u64 {
     confirm::DEFAULT_TIMEOUT_MS
 }
 
@@ -1735,34 +1784,34 @@ fn confirm_indexed_default_timeout_ms() -> u64 {
 #[pymodule]
 fn totalreclaw_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Key derivation
-    m.add_function(wrap_pyfunction!(derive_keys_from_mnemonic, m)?)?;
-    m.add_function(wrap_pyfunction!(derive_keys_from_mnemonic_lenient, m)?)?;
-    m.add_function(wrap_pyfunction!(derive_lsh_seed, m)?)?;
-    m.add_function(wrap_pyfunction!(compute_auth_key_hash, m)?)?;
+    m.add_function(wrap_pyfunction!(py_derive_keys_from_mnemonic, m)?)?;
+    m.add_function(wrap_pyfunction!(py_derive_keys_from_mnemonic_lenient, m)?)?;
+    m.add_function(wrap_pyfunction!(py_derive_lsh_seed, m)?)?;
+    m.add_function(wrap_pyfunction!(py_compute_auth_key_hash, m)?)?;
 
     // Encryption
-    m.add_function(wrap_pyfunction!(encrypt, m)?)?;
-    m.add_function(wrap_pyfunction!(decrypt, m)?)?;
+    m.add_function(wrap_pyfunction!(py_encrypt, m)?)?;
+    m.add_function(wrap_pyfunction!(py_decrypt, m)?)?;
 
     // Search
-    m.add_function(wrap_pyfunction!(generate_blind_indices, m)?)?;
-    m.add_function(wrap_pyfunction!(generate_content_fingerprint, m)?)?;
-    m.add_function(wrap_pyfunction!(normalize_text, m)?)?;
+    m.add_function(wrap_pyfunction!(py_generate_blind_indices, m)?)?;
+    m.add_function(wrap_pyfunction!(py_generate_content_fingerprint, m)?)?;
+    m.add_function(wrap_pyfunction!(py_normalize_text, m)?)?;
 
     // LSH
     m.add_class::<PyLshHasher>()?;
 
     // Protobuf
-    m.add_function(wrap_pyfunction!(encode_fact_protobuf, m)?)?;
-    m.add_function(wrap_pyfunction!(encode_tombstone_protobuf, m)?)?;
+    m.add_function(wrap_pyfunction!(py_encode_fact_protobuf, m)?)?;
+    m.add_function(wrap_pyfunction!(py_encode_tombstone_protobuf, m)?)?;
 
     // Debrief
-    m.add_function(wrap_pyfunction!(parse_debrief_response, m)?)?;
-    m.add_function(wrap_pyfunction!(get_debrief_system_prompt, m)?)?;
+    m.add_function(wrap_pyfunction!(py_parse_debrief_response, m)?)?;
+    m.add_function(wrap_pyfunction!(py_get_debrief_system_prompt, m)?)?;
 
     // Canonical extraction + compaction system prompts (core 2.2.0 hoist).
-    m.add_function(wrap_pyfunction!(get_extraction_system_prompt, m)?)?;
-    m.add_function(wrap_pyfunction!(get_compaction_system_prompt, m)?)?;
+    m.add_function(wrap_pyfunction!(py_get_extraction_system_prompt, m)?)?;
+    m.add_function(wrap_pyfunction!(py_get_compaction_system_prompt, m)?)?;
 
     // Reranker
     m.add_function(wrap_pyfunction!(py_rerank, m)?)?;
@@ -1780,38 +1829,38 @@ fn totalreclaw_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_classify_pin_intent, m)?)?;
 
     // Wallet derivation
-    m.add_function(wrap_pyfunction!(derive_eoa, m)?)?;
-    m.add_function(wrap_pyfunction!(derive_eoa_address, m)?)?;
+    m.add_function(wrap_pyfunction!(py_derive_eoa, m)?)?;
+    m.add_function(wrap_pyfunction!(py_derive_eoa_address, m)?)?;
 
     // Store pipeline
-    m.add_function(wrap_pyfunction!(prepare_fact, m)?)?;
-    m.add_function(wrap_pyfunction!(prepare_fact_with_decay_score, m)?)?;
-    m.add_function(wrap_pyfunction!(prepare_tombstone, m)?)?;
+    m.add_function(wrap_pyfunction!(py_prepare_fact, m)?)?;
+    m.add_function(wrap_pyfunction!(py_prepare_fact_with_decay_score, m)?)?;
+    m.add_function(wrap_pyfunction!(py_prepare_tombstone, m)?)?;
 
     // UserOp (ERC-4337) — feature-gated: managed
     #[cfg(feature = "managed")]
     {
-        m.add_function(wrap_pyfunction!(encode_single_call, m)?)?;
-        m.add_function(wrap_pyfunction!(encode_batch_call, m)?)?;
-        m.add_function(wrap_pyfunction!(hash_userop, m)?)?;
-        m.add_function(wrap_pyfunction!(sign_userop, m)?)?;
-        m.add_function(wrap_pyfunction!(build_single_calldata_from_prepared, m)?)?;
-        m.add_function(wrap_pyfunction!(build_batch_calldata_from_prepared, m)?)?;
+        m.add_function(wrap_pyfunction!(py_encode_single_call, m)?)?;
+        m.add_function(wrap_pyfunction!(py_encode_batch_call, m)?)?;
+        m.add_function(wrap_pyfunction!(py_hash_userop, m)?)?;
+        m.add_function(wrap_pyfunction!(py_sign_userop, m)?)?;
+        m.add_function(wrap_pyfunction!(py_build_single_calldata_from_prepared, m)?)?;
+        m.add_function(wrap_pyfunction!(py_build_batch_calldata_from_prepared, m)?)?;
     }
 
     // Search pipeline — feature-gated: managed
     #[cfg(feature = "managed")]
     {
-        m.add_function(wrap_pyfunction!(generate_search_trapdoors, m)?)?;
-        m.add_function(wrap_pyfunction!(parse_search_response, m)?)?;
-        m.add_function(wrap_pyfunction!(parse_broadened_response, m)?)?;
-        m.add_function(wrap_pyfunction!(decrypt_and_rerank, m)?)?;
-        m.add_function(wrap_pyfunction!(get_search_query, m)?)?;
-        m.add_function(wrap_pyfunction!(get_broadened_search_query, m)?)?;
-        m.add_function(wrap_pyfunction!(get_export_query, m)?)?;
-        m.add_function(wrap_pyfunction!(hex_blob_to_base64, m)?)?;
-        m.add_function(wrap_pyfunction!(generate_expansion_trapdoors, m)?)?;
-        m.add_function(wrap_pyfunction!(merge_expansion_results, m)?)?;
+        m.add_function(wrap_pyfunction!(py_generate_search_trapdoors, m)?)?;
+        m.add_function(wrap_pyfunction!(py_parse_search_response, m)?)?;
+        m.add_function(wrap_pyfunction!(py_parse_broadened_response, m)?)?;
+        m.add_function(wrap_pyfunction!(py_decrypt_and_rerank, m)?)?;
+        m.add_function(wrap_pyfunction!(py_get_search_query, m)?)?;
+        m.add_function(wrap_pyfunction!(py_get_broadened_search_query, m)?)?;
+        m.add_function(wrap_pyfunction!(py_get_export_query, m)?)?;
+        m.add_function(wrap_pyfunction!(py_hex_blob_to_base64, m)?)?;
+        m.add_function(wrap_pyfunction!(py_generate_expansion_trapdoors, m)?)?;
+        m.add_function(wrap_pyfunction!(py_merge_expansion_results, m)?)?;
     }
 
     // Knowledge Graph Phase 1
@@ -1867,10 +1916,10 @@ fn totalreclaw_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     crate::memory_types::register_python_functions(m)?;
 
     // Read-after-write (confirm_indexed)
-    m.add_function(wrap_pyfunction!(confirm_indexed_query, m)?)?;
-    m.add_function(wrap_pyfunction!(confirm_indexed_parse, m)?)?;
-    m.add_function(wrap_pyfunction!(confirm_indexed_default_poll_ms, m)?)?;
-    m.add_function(wrap_pyfunction!(confirm_indexed_default_timeout_ms, m)?)?;
+    m.add_function(wrap_pyfunction!(py_confirm_indexed_query, m)?)?;
+    m.add_function(wrap_pyfunction!(py_confirm_indexed_parse, m)?)?;
+    m.add_function(wrap_pyfunction!(py_confirm_indexed_default_poll_ms, m)?)?;
+    m.add_function(wrap_pyfunction!(py_confirm_indexed_default_timeout_ms, m)?)?;
 
     // Recall context formatter
     m.add_function(wrap_pyfunction!(py_format_memory_date, m)?)?;

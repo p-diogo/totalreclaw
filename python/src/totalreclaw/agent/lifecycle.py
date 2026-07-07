@@ -343,8 +343,9 @@ def _auto_extract_inner(
             try:
                 from totalreclaw.embedding import get_embedding
                 embedding = get_embedding(fact.text)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("embed failed for fact %r: %s", fact.text[:40], e)
+                # degrade: store without embedding, skip near-dup detection below
 
             # Store-time near-duplicate detection (skip if cosine sim >= threshold)
             # UPDATE actions always store (they supersede the old fact)

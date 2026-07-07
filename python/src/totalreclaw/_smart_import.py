@@ -58,16 +58,16 @@ class SmartImportContext:
     duration_ms: int = 0
 
 
-def is_chunk_skipped(chunk_index: int, decisions: list[dict]) -> tuple[bool, str]:
-    """Return ``(skipped, reason)`` for a chunk index.
+def chunk_skip_reason(chunk_index: int, decisions: list[dict]) -> Optional[str]:
+    """Return the SKIP reason for a chunk index, or ``None`` to extract it.
 
     Defaults to EXTRACT (safe default) when no decision exists for the
     chunk. Mirrors the plugin's ``isChunkSkipped``.
     """
     for d in decisions:
         if d.get("chunk_index") == chunk_index and d.get("decision") == "SKIP":
-            return True, str(d.get("reason") or "triage: skip")
-    return False, ""
+            return str(d.get("reason") or "triage: skip")
+    return None
 
 
 def _has_core_smart_import_support() -> bool:

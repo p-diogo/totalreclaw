@@ -337,7 +337,11 @@ fn parse_hex_u128(hex_str: &str) -> u128 {
     u128::from_str_radix(hex_str.trim_start_matches("0x"), 16).unwrap_or(0)
 }
 
-fn keccak256_hash(data: &[u8]) -> [u8; 32] {
+/// keccak256 over `data` (Ethereum's `Keccak::v256`, not SHA3-256).
+///
+/// Canonical definition shared across the workspace: `totalreclaw-memory`
+/// re-exports this rather than hand-rolling its own copy.
+pub fn keccak256_hash(data: &[u8]) -> [u8; 32] {
     use tiny_keccak::{Hasher, Keccak};
     let mut keccak = Keccak::v256();
     let mut hash = [0u8; 32];

@@ -33,7 +33,7 @@ import totalreclaw_core
 
 from totalreclaw._smart_import import (
     SmartImportContext,
-    is_chunk_skipped,
+    chunk_skip_reason,
     run_smart_import_pipeline,
 )
 from totalreclaw.import_adapters.types import ConversationChunk
@@ -100,32 +100,26 @@ def _make_triage_response(n: int, skip_indices: set[int]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# is_chunk_skipped — pure helper
+# chunk_skip_reason — pure helper
 # ---------------------------------------------------------------------------
 
 
-class TestIsChunkSkipped:
-    def test_returns_true_when_decision_is_skip(self) -> None:
+class TestChunkSkipReason:
+    def test_returns_reason_when_decision_is_skip(self) -> None:
         decisions = [{"chunk_index": 1, "decision": "SKIP", "reason": "trivial Q&A"}]
-        skipped, reason = is_chunk_skipped(1, decisions)
-        assert skipped is True
-        assert reason == "trivial Q&A"
+        assert chunk_skip_reason(1, decisions) == "trivial Q&A"
 
-    def test_returns_false_when_decision_is_extract(self) -> None:
+    def test_returns_none_when_decision_is_extract(self) -> None:
         decisions = [{"chunk_index": 0, "decision": "EXTRACT", "reason": ""}]
-        skipped, reason = is_chunk_skipped(0, decisions)
-        assert skipped is False
-        assert reason == ""
+        assert chunk_skip_reason(0, decisions) is None
 
     def test_defaults_to_extract_when_index_missing(self) -> None:
         """Safe default: a chunk with no decision should be extracted."""
-        skipped, _ = is_chunk_skipped(42, [{"chunk_index": 0, "decision": "SKIP"}])
-        assert skipped is False
+        assert chunk_skip_reason(42, [{"chunk_index": 0, "decision": "SKIP"}]) is None
 
     def test_returns_default_reason_when_skip_has_no_reason(self) -> None:
         decisions = [{"chunk_index": 0, "decision": "SKIP"}]
-        _, reason = is_chunk_skipped(0, decisions)
-        assert reason == "triage: skip"
+        assert chunk_skip_reason(0, decisions) == "triage: skip"
 
 
 # ---------------------------------------------------------------------------
@@ -181,8 +175,7 @@ class TestRunSmartImportPipeline:
         assert ctx.extract_count == 2
         assert ctx.skip_count == 1
         # Chunk index 1 should be marked SKIP.
-        skipped, _ = is_chunk_skipped(1, ctx.decisions)
-        assert skipped is True
+        assert chunk_skip_reason(1, ctx.decisions) is not None
         # The enriched prompt must include profile context AND the base.
         assert "BASE EXTRACTION PROMPT" in ctx.enriched_system_prompt
         assert "Kubernetes" in ctx.enriched_system_prompt
@@ -217,8 +210,7 @@ class TestRunSmartImportPipeline:
         assert ctx.extract_count == 3
         assert ctx.skip_count == 0
         for i in range(3):
-            skipped, _ = is_chunk_skipped(i, ctx.decisions)
-            assert skipped is False
+            assert chunk_skip_reason(i, ctx.decisions) is None
 
     def test_swallows_pipeline_exceptions(self) -> None:
         """Any uncaught exception inside the pipeline ⇒ None, no raise."""

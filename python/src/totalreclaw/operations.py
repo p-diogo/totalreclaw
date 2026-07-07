@@ -221,7 +221,10 @@ async def store_fact(
     fact_id = str(uuid.uuid4())
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-    importance_int = max(1, min(10, int(round(importance * 10)) if importance <= 1 else int(importance)))
+    # Accept either a 0-1 float (scaled to 1-10) or an already-1-10 value,
+    # then clamp into the 1-10 band.
+    importance_scaled = int(round(importance * 10)) if importance <= 1 else int(importance)
+    importance_int = max(1, min(10, importance_scaled))
 
     # v1 canonical claim (unconditional). source_agent is carried as
     # ``provenance`` — the v1 `source` field on the claim itself.
@@ -663,11 +666,11 @@ async def search_facts(
             if emb and len(emb) != get_embedding_dims():
                 try:
                     emb = get_embedding(text)
-                except Exception:
-                    emb = None
+                except Exception as e:
+                    logger.debug("re-embed failed for candidate text %r: %s", text[:40], e)
+                    emb = None  # degrade: candidate ranks on BM25 only
 
-            decay_str = fact.get("decayScore", "0.5")
-            decay = float(decay_str) if isinstance(decay_str, str) else float(decay_str)
+            decay = float(fact.get("decayScore", "0.5"))
 
             ts = fact.get("timestamp", "")
             created_at = 0.0

@@ -56,7 +56,7 @@ use crate::search;
 use crate::store;
 use crate::wallet;
 use crate::Result;
-use totalreclaw_core::claims::MemorySource;
+use totalreclaw_core::claims::{MemorySource, MemoryTypeV1};
 
 /// Default relay URL.
 const DEFAULT_RELAY_URL: &str = "https://api.totalreclaw.xyz";
@@ -93,11 +93,12 @@ fn parse_decrypted_envelope(decrypted: &str) -> DecryptedEnvelope {
                 .and_then(|v| v.as_str())
                 .unwrap_or(decrypted)
                 .to_string();
-            // v1 source field: literal enum string
+            // v1 source field: parse present strings via the core enum
+            // (absent → None so the reranker falls back to the legacy weight).
             let v1_source = obj
                 .get("source")
                 .and_then(|v| v.as_str())
-                .and_then(parse_v1_source);
+                .map(MemorySource::from_str_lossy);
             // v1 "type" → ZeroClaw category mapping
             let v1_type = obj
                 .get("type")
@@ -133,32 +134,22 @@ fn parse_decrypted_envelope(decrypted: &str) -> DecryptedEnvelope {
     }
 }
 
-/// Parse a v1 memory source literal to the core `MemorySource` enum.
-fn parse_v1_source(raw: &str) -> Option<MemorySource> {
-    match raw {
-        "user" => Some(MemorySource::User),
-        "user-inferred" => Some(MemorySource::UserInferred),
-        "assistant" => Some(MemorySource::Assistant),
-        "external" => Some(MemorySource::External),
-        "derived" => Some(MemorySource::Derived),
-        _ => None,
-    }
-}
-
 /// Map a v1 memory type to a ZeroClaw memory category.
 ///
-/// Category rules:
-///  * claim, preference, directive, commitment → Core (durable)
+/// Parses the raw type token through the core [`MemoryTypeV1`] enum (rather
+/// than re-matching taxonomy strings here) so the type vocabulary stays in
+/// one place. Category rules:
 ///  * episode → Conversation (7-day decay)
-///  * summary → Core (synthesis is high-value)
-///  * anything else → Core (safe default)
+///  * claim / preference / directive / commitment / summary → Core (durable)
+///  * unknown → Core (via the enum's lossy fallback to `Claim`)
 fn v1_type_to_category(v1_type: &str) -> MemoryCategory {
-    match v1_type {
-        "episode" => MemoryCategory::Conversation,
-        "claim" | "preference" | "directive" | "commitment" | "summary" => {
-            MemoryCategory::Core
-        }
-        _ => MemoryCategory::Core,
+    match MemoryTypeV1::from_str_lossy(v1_type) {
+        MemoryTypeV1::Episode => MemoryCategory::Conversation,
+        MemoryTypeV1::Claim
+        | MemoryTypeV1::Preference
+        | MemoryTypeV1::Directive
+        | MemoryTypeV1::Commitment
+        | MemoryTypeV1::Summary => MemoryCategory::Core,
     }
 }
 
@@ -200,6 +191,19 @@ impl std::fmt::Display for MemoryCategory {
             MemoryCategory::Custom(s) => write!(f, "{}", s),
         }
     }
+}
+
+/// A single item in a batched store.
+///
+/// Mirrors the typed shape of the single-item [`TotalReclawMemory::store`]
+/// path — plaintext content plus a typed [`MemoryCategory`] — rather than
+/// positional `(content, source)` strings. The category is mapped to the
+/// on-chain `zeroclaw_{category}` source tag internally, exactly as the
+/// single-item path does.
+#[derive(Debug, Clone)]
+pub struct BatchStoreItem {
+    pub content: String,
+    pub category: MemoryCategory,
 }
 
 /// A memory entry (matches ZeroClaw's `MemoryEntry`).
@@ -404,13 +408,26 @@ impl TotalReclawMemory {
 
     /// Store multiple memory entries as a single batched UserOp.
     ///
+    /// Each item carries a typed [`MemoryCategory`], matching the single-item
+    /// `store` path; the category is mapped to the `zeroclaw_{category}` source
+    /// tag before submission.
+    ///
     /// Gas savings: ~64% vs individual submissions for batch of 5.
-    pub async fn store_batch(
-        &self,
-        facts: &[(&str, &str)], // (content, source) pairs
-    ) -> Result<Vec<String>> {
+    pub async fn store_batch(&self, items: &[BatchStoreItem]) -> Result<Vec<String>> {
+        // Map each typed category to its on-chain source tag (same rule as the
+        // single-item path), then hand (content, source) pairs to the pipeline.
+        let sources: Vec<String> = items
+            .iter()
+            .map(|it| format!("zeroclaw_{}", it.category))
+            .collect();
+        let facts: Vec<(&str, &str)> = items
+            .iter()
+            .zip(sources.iter())
+            .map(|(it, src)| (it.content.as_str(), src.as_str()))
+            .collect();
+
         let result = store::store_fact_batch(
-            facts,
+            &facts,
             &self.keys,
             &self.lsh_hasher,
             self.embedding_provider.as_ref(),
@@ -464,7 +481,6 @@ impl TotalReclawMemory {
         // 7. Search subgraph
         let mut candidates = search::search_candidates(
             &self.relay,
-            self.relay.wallet_address(),
             &all_trapdoors,
             max_candidates,
         )
@@ -473,13 +489,9 @@ impl TotalReclawMemory {
         // Always run broadened search and merge — ensures vocabulary mismatches
         // (e.g., "preferences" vs "prefer") don't cause recall failures.
         // The reranker handles scoring; extra cost is ~1 GraphQL query per recall.
-        let broadened = search::search_broadened(
-            &self.relay,
-            self.relay.wallet_address(),
-            max_candidates,
-        )
-        .await
-        .unwrap_or_default();
+        let broadened = search::search_broadened(&self.relay, max_candidates)
+            .await
+            .unwrap_or_default();
 
         // Merge broadened results with existing candidates (deduplicate by ID)
         let mut seen: std::collections::HashSet<String> =
@@ -606,7 +618,7 @@ impl TotalReclawMemory {
         _category: Option<&MemoryCategory>,
         _session_id: Option<&str>,
     ) -> Result<Vec<MemoryEntry>> {
-        let facts = search::fetch_all_facts(&self.relay, self.relay.wallet_address()).await?;
+        let facts = search::fetch_all_facts(&self.relay).await?;
 
         let mut entries = Vec::new();
         for fact in facts {
@@ -704,7 +716,7 @@ impl TotalReclawMemory {
     pub async fn retype(
         &self,
         _memory_id: &str,
-        _new_type: MemorySource,
+        _new_type: MemoryTypeV1,
     ) -> Result<()> {
         Err(crate::Error::Crypto(
             "retype: not yet implemented in ZeroClaw — use the MCP \
@@ -731,7 +743,7 @@ impl TotalReclawMemory {
 
     /// Count active memories.
     pub async fn count(&self) -> Result<usize> {
-        search::count_facts(&self.relay, self.relay.wallet_address()).await
+        search::count_facts(&self.relay).await
     }
 
     /// Health check.

@@ -43,7 +43,7 @@ from .import_adapters import (
 )
 from ._smart_import import (
     SmartImportContext,
-    is_chunk_skipped,
+    chunk_skip_reason,
     run_smart_import_pipeline,
 )
 
@@ -581,8 +581,8 @@ class ImportEngine:
                 skipped_conv_ids.add(conv_id)
                 continue
             if smart_ctx is not None:
-                skipped, reason = is_chunk_skipped(global_index, smart_ctx.decisions)
-                if skipped:
+                reason = chunk_skip_reason(global_index, smart_ctx.decisions)
+                if reason is not None:
                     logger.info(
                         "import: skipping chunk %d/%d: '%s' (%s)",
                         global_index + 1, total_chunks, chunk.title, reason,
@@ -1169,7 +1169,9 @@ class ImportEngine:
             try:
                 from totalreclaw.embedding import get_embedding
                 emb = get_embedding(text) if text else [0.0] * 640
-            except Exception:
+            except Exception as e:
+                logger.debug("embed failed for turn text %r: %s", (text or "")[:40], e)
+                # degrade: placeholder vector so session segmentation still runs
                 emb = [1.0] + [0.0] * 639
             embeddings.append(emb)
 
@@ -1259,8 +1261,9 @@ class ImportEngine:
         try:
             from totalreclaw.embedding import get_embedding
             embedding = get_embedding(text)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("embed failed for imported fact %r: %s", text[:40], e)
+            # degrade: store without embedding (search falls back to blind indices)
 
         payload = {
             "text": text,
