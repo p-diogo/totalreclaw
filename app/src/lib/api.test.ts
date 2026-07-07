@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { decryptFacts } from "./api";
 import { buildTimeline } from "./vault/timeline";
 import { encryptBlob } from "./crypto";
-import { MemoryClaimV1, RawFact, SessionKeys } from "./types";
+import { RawFact, SessionKeys } from "./types";
 
 // Canonical enc key for the BIP-39 all-zeros test mnemonic (see crypto.test.ts).
 // decryptFacts only touches keys.encryptionKey, so the rest of SessionKeys is
