@@ -80,6 +80,19 @@ pub enum Error {
 
     #[error("reranker error: {0}")]
     Reranker(String),
+
+    /// A caller passed a malformed or out-of-range argument (bad address,
+    /// oversized batch, mismatched slice lengths, invalid hex, ...). Distinct
+    /// from [`Error::Crypto`], which is reserved for actual cryptographic
+    /// primitive failures.
+    #[error("invalid input: {0}")]
+    InvalidInput(String),
+
+    /// A serialized blob (LLM JSON response, weights file, subgraph payload)
+    /// could not be parsed. The message is already self-describing, so it is
+    /// surfaced verbatim (no prefix) to keep binding-visible strings stable.
+    #[error("{0}")]
+    Parse(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

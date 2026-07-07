@@ -108,6 +108,27 @@ pub enum Error {
 
     #[error("quota exceeded: {0}")]
     QuotaExceeded(String),
+
+    /// A caller passed a malformed or out-of-range argument. Mirrors
+    /// [`totalreclaw_core::Error::InvalidInput`]; distinct from [`Error::Crypto`].
+    #[error("invalid input: {0}")]
+    InvalidInput(String),
+
+    /// A feature exists in the trait surface but has no native ZeroClaw
+    /// implementation yet (pin / retype / set_scope route through the MCP
+    /// server instead). See CLAUDE.md Known Gaps.
+    #[error("not implemented: {0}")]
+    NotImplemented(String),
+
+    /// (De)serialization of a local blob (credentials file, v1 envelope) failed.
+    #[error("serialization error: {0}")]
+    Serialization(String),
+
+    /// A serialized blob could not be parsed. Mirrors
+    /// [`totalreclaw_core::Error::Parse`]; surfaced verbatim (no prefix) so
+    /// binding-visible strings stay stable.
+    #[error("{0}")]
+    Parse(String),
 }
 
 /// Bridge totalreclaw_core errors into this crate's Error type.
@@ -118,6 +139,8 @@ impl From<totalreclaw_core::Error> for Error {
             totalreclaw_core::Error::InvalidMnemonic(msg) => Error::InvalidMnemonic(msg),
             totalreclaw_core::Error::Lsh(msg) => Error::Lsh(msg),
             totalreclaw_core::Error::Reranker(msg) => Error::Reranker(msg),
+            totalreclaw_core::Error::InvalidInput(msg) => Error::InvalidInput(msg),
+            totalreclaw_core::Error::Parse(msg) => Error::Parse(msg),
         }
     }
 }

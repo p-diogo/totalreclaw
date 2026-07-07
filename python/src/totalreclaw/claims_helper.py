@@ -33,7 +33,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 import totalreclaw_core as _core
 
-from .agent.extraction import (
+from .memory_types import (
     LEGACY_V0_MEMORY_TYPES,
     V0_TO_V1_TYPE,
     VALID_MEMORY_SCOPES,

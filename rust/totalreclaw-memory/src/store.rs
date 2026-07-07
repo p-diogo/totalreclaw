@@ -108,8 +108,7 @@ pub async fn store_fact(
         source,
         relay.wallet_address(),
         "zeroclaw",
-    )
-    .map_err(|e| crate::Error::Crypto(e.to_string()))?;
+    )?;
 
     // 6. Submit
     submit_payload(relay, &prepared.protobuf_bytes, private_key).await?;
@@ -164,8 +163,7 @@ pub async fn store_fact_with_importance(
         source,
         relay.wallet_address(),
         "zeroclaw",
-    )
-    .map_err(|e| crate::Error::Crypto(e.to_string()))?;
+    )?;
 
     // Submit
     submit_payload(relay, &prepared.protobuf_bytes, private_key).await?;
@@ -202,8 +200,7 @@ pub async fn store_fact_batch(
             source,
             relay.wallet_address(),
             "zeroclaw",
-        )
-        .map_err(|e| crate::Error::Crypto(e.to_string()))?;
+        )?;
 
         prepared_facts.push(prepared);
     }
@@ -350,7 +347,7 @@ pub async fn store_fact_v1(
 
     // 2. Serialize envelope
     let envelope_json = serde_json::to_string(&claim)
-        .map_err(|e| crate::Error::Crypto(format!("v1 envelope serialize: {e}")))?;
+        .map_err(|e| crate::Error::Serialization(format!("v1 envelope serialize: {e}")))?;
 
     // 3. Exact-dedup via content fingerprint
     let content_fp = fingerprint::generate_content_fingerprint(&claim.text, &keys.dedup_key);
@@ -388,8 +385,7 @@ pub async fn store_fact_v1(
         &source_tag,
         relay.wallet_address(),
         "zeroclaw",
-    )
-    .map_err(|e| crate::Error::Crypto(e.to_string()))?;
+    )?;
 
     // 7. Submit
     submit_payload(relay, &prepared.protobuf_bytes, private_key).await?;
@@ -615,8 +611,7 @@ pub async fn store_claim_with_contradiction_check(
         source,
         relay.wallet_address(),
         "zeroclaw",
-    )
-    .map_err(|e| crate::Error::Crypto(e.to_string()))?;
+    )?;
 
     submit_payload(relay, &prepared.protobuf_bytes, private_key).await?;
 

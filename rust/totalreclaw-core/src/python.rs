@@ -1086,7 +1086,7 @@ fn kg_build_digest_prompt_inner(claims_json: &str) -> Result<String, String> {
 }
 
 fn kg_parse_digest_response_inner(raw: &str) -> Result<String, String> {
-    let parsed = digest::parse_digest_response(raw)?;
+    let parsed = digest::parse_digest_response(raw).map_err(|e| e.to_string())?;
     serde_json::to_string(&parsed).map_err(|e| e.to_string())
 }
 
@@ -1099,7 +1099,8 @@ fn kg_assemble_digest_from_llm_inner(
         .map_err(|e| format!("invalid ParsedDigestResponse JSON: {}", e))?;
     let source_claims: Vec<claims::Claim> =
         serde_json::from_str(claims_json).map_err(|e| format!("invalid claims JSON: {}", e))?;
-    let d = digest::assemble_digest_from_llm(&parsed, &source_claims, now_unix_seconds)?;
+    let d = digest::assemble_digest_from_llm(&parsed, &source_claims, now_unix_seconds)
+        .map_err(|e| e.to_string())?;
     serde_json::to_string(&d).map_err(|e| e.to_string())
 }
 
@@ -1283,7 +1284,7 @@ fn kg_serialize_weights_file_inner(file_json: &str) -> Result<String, String> {
 }
 
 fn kg_parse_weights_file_inner(content: &str) -> Result<String, String> {
-    let f = feedback_log::parse_weights_file(content)?;
+    let f = feedback_log::parse_weights_file(content).map_err(|e| e.to_string())?;
     serde_json::to_string(&f).map_err(|e| e.to_string())
 }
 
@@ -1757,7 +1758,7 @@ fn py_confirm_indexed_query() -> &'static str {
 #[pyfunction]
 #[pyo3(name = "confirm_indexed_parse")]
 fn py_confirm_indexed_parse(response_json: &str) -> PyResult<bool> {
-    confirm::parse_indexed_response(response_json).map_err(PyValueError::new_err)
+    confirm::parse_indexed_response(response_json).map_err(to_pyerr)
 }
 
 /// Default polling interval (ms) — exposed so Python adapters share the

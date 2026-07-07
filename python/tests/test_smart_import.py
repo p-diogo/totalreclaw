@@ -36,7 +36,7 @@ from totalreclaw._smart_import import (
     chunk_skip_reason,
     run_smart_import_pipeline,
 )
-from totalreclaw.import_adapters.types import ConversationChunk
+from totalreclaw.imports.adapters.types import ConversationChunk
 from totalreclaw.import_engine import ImportEngine
 
 
@@ -329,7 +329,7 @@ class TestImportEngineSmartImportIntegration:
         # Drive _process_chunk_batch through the public API. Build a fake
         # AdapterParseResult and call the private method directly so we
         # don't have to wire a full adapter for this unit test.
-        from totalreclaw.import_adapters.types import AdapterParseResult
+        from totalreclaw.imports.adapters.types import AdapterParseResult
 
         parsed = AdapterParseResult(
             facts=[], chunks=chunks, total_messages=8, warnings=[], errors=[],
@@ -366,7 +366,7 @@ class TestImportEngineSmartImportIntegration:
             base_extraction_prompt="BASE_PROMPT",
         )
 
-        from totalreclaw.import_adapters.types import AdapterParseResult
+        from totalreclaw.imports.adapters.types import AdapterParseResult
 
         parsed = AdapterParseResult(
             facts=[], chunks=_make_chunks(1), total_messages=3, warnings=[], errors=[],
@@ -401,7 +401,7 @@ class TestImportEngineSmartImportIntegration:
             base_extraction_prompt="BASE_PROMPT",
         )
 
-        from totalreclaw.import_adapters.types import AdapterParseResult
+        from totalreclaw.imports.adapters.types import AdapterParseResult
 
         parsed = AdapterParseResult(
             facts=[], chunks=_make_chunks(1), total_messages=2, warnings=[], errors=[],
@@ -426,7 +426,7 @@ class TestImportEngineSmartImportIntegration:
             # llm_completion intentionally omitted.
         )
 
-        from totalreclaw.import_adapters.types import AdapterParseResult
+        from totalreclaw.imports.adapters.types import AdapterParseResult
 
         parsed = AdapterParseResult(
             facts=[], chunks=_make_chunks(1), total_messages=3, warnings=[], errors=[],
@@ -456,7 +456,7 @@ class TestImportEngineSmartImportIntegration:
             enable_smart_import=False,
         )
 
-        from totalreclaw.import_adapters.types import AdapterParseResult
+        from totalreclaw.imports.adapters.types import AdapterParseResult
 
         parsed = AdapterParseResult(
             facts=[], chunks=_make_chunks(1), total_messages=3, warnings=[], errors=[],
@@ -487,7 +487,7 @@ class TestImportEngineSmartImportIntegration:
             base_extraction_prompt="BASE_PROMPT",
         )
 
-        from totalreclaw.import_adapters.types import AdapterParseResult
+        from totalreclaw.imports.adapters.types import AdapterParseResult
 
         parsed = AdapterParseResult(
             facts=[], chunks=_make_chunks(3), total_messages=8, warnings=[], errors=[],
@@ -511,7 +511,7 @@ class TestImportEngineSmartImportIntegration:
 class TestBatchImportResultSmartImportFields:
     def test_default_values_for_non_smart_import_paths(self) -> None:
         """Fact-only sources (Mem0, MCP) never run smart-import."""
-        from totalreclaw.import_adapters.types import BatchImportResult
+        from totalreclaw.imports.adapters.types import BatchImportResult
 
         r = BatchImportResult(
             success=True,

@@ -232,6 +232,50 @@ class RelayClient:
         else:
             self._http_per_loop[id(loop)] = value
 
+    # ------------------------------------------------------------------
+    # Public seam for the high-level client.
+    #
+    # ``TotalReclaw`` used to reach into these private attributes directly
+    # (reading ``_relay_url`` / ``_client_id`` / ``_session_id`` and
+    # *mutating* ``_wallet_address`` after lazy SA resolution). Exposing a
+    # small read API + an explicit ``set_wallet_address`` keeps that state
+    # transition inside ``RelayClient`` rather than smeared across the seam.
+    # ------------------------------------------------------------------
+    @property
+    def relay_url(self) -> str:
+        """The resolved relay base URL (trailing slash stripped)."""
+        return self._relay_url
+
+    @property
+    def client_id(self) -> str:
+        """The ``X-TotalReclaw-Client`` identity for this client."""
+        return self._client_id
+
+    @property
+    def session_id(self) -> Optional[str]:
+        """The optional Axiom session tag, or ``None`` if unset."""
+        return self._session_id
+
+    @property
+    def auth_key_hex(self) -> Optional[str]:
+        """The hex-encoded auth key used for the ``Authorization`` header."""
+        return self._auth_key_hex
+
+    @property
+    def wallet_address(self) -> Optional[str]:
+        """The Smart Account address the relay tags outgoing writes with."""
+        return self._wallet_address
+
+    def set_wallet_address(self, wallet_address: Optional[str]) -> None:
+        """Update the Smart Account address forwarded on writes.
+
+        Called by :class:`~totalreclaw.client.TotalReclaw` once the CREATE2
+        Smart Account address is resolved lazily (it is unknown at relay
+        construction time). Kept as an explicit method so the client does
+        not mutate ``self._relay._wallet_address`` across the seam.
+        """
+        self._wallet_address = wallet_address
+
     def _base_headers(self) -> dict[str, str]:
         headers = {
             "Content-Type": "application/json",

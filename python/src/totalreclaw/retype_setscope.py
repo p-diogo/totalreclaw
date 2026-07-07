@@ -54,7 +54,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional, TypedDict
 
-from .agent.extraction import (
+from .memory_types import (
     V0_TO_V1_TYPE,
     VALID_MEMORY_SCOPES,
     VALID_MEMORY_SOURCES,

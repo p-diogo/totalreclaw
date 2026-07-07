@@ -8,6 +8,7 @@ from __future__ import annotations
 import base64
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -159,20 +160,65 @@ DEFAULT_TRAPDOOR_BATCH_SIZE = 5
 DEFAULT_PAGE_SIZE = 1000
 
 
+@dataclass(frozen=True)
+class WalletContext:
+    """The stable wallet-identity cluster shared by every on-chain write.
+
+    Groups the credentials + routing that stay constant across all facts in
+    a store call — they identify the *wallet and chain*, not the fact
+    content: the derived crypto keys, the Smart Account ``owner``, the EOA
+    signing pair, an optional distinct ``sender`` Smart Account, and the
+    target ``chain_id``.
+
+    Passed as a single argument to :func:`store_fact` / :func:`store_fact_batch`
+    so those signatures carry the per-fact content/taxonomy fields
+    explicitly and the wallet identity as one cohesive unit, rather than
+    interleaving ~6 identity params among the content ones.
+    """
+
+    keys: DerivedKeys
+    owner: str
+    eoa_private_key: Optional[bytes] = None
+    eoa_address: Optional[str] = None
+    sender: Optional[str] = None
+    chain_id: int = 84532
+
+    @property
+    def smart_account(self) -> str:
+        """The Smart Account to submit the UserOp from.
+
+        Falls back to ``owner`` when a distinct ``sender`` is not set —
+        matches the ``sender or owner`` convention the store paths used
+        before this cluster was extracted.
+        """
+        return self.sender or self.owner
+
+
+class ForgetResult(dict):
+    """The result of :meth:`~totalreclaw.client.TotalReclaw.forget`.
+
+    Shares the ``{"success", "fact_id"}`` mapping shape of the sibling
+    mutations (``pin_fact`` / ``unpin_fact`` / ``retype`` / ``set_scope``,
+    which all return dicts) while staying truthiness-compatible with the
+    historic ``bool`` return: ``bool(result)`` is the success flag. Callers
+    doing ``if await client.forget(id): ...`` keep working, and new callers
+    can read ``result["success"]`` / ``result["fact_id"]`` like the
+    siblings.
+    """
+
+    def __bool__(self) -> bool:  # noqa: D401 - trivial
+        return bool(self.get("success", False))
+
+
 async def store_fact(
     text: str,
-    keys: DerivedKeys,
-    owner: str,
+    wallet: WalletContext,
     relay: RelayClient,
     lsh_hasher: Optional[LSHHasher] = None,
     embedding: Optional[list[float]] = None,
     importance: float = 0.5,
     source: str = "python-client",
     agent_id: str = "python-client",
-    eoa_private_key: Optional[bytes] = None,
-    eoa_address: Optional[str] = None,
-    sender: Optional[str] = None,
-    chain_id: int = 84532,
     fact_type: str = "claim",
     entities: Optional[list] = None,
     confidence: float = 0.85,
@@ -212,12 +258,14 @@ async def store_fact(
     str
         The UUID assigned to the stored fact.
     """
-    if eoa_private_key is None or eoa_address is None:
+    keys = wallet.keys
+    owner = wallet.owner
+    if wallet.eoa_private_key is None or wallet.eoa_address is None:
         raise ValueError(
             "eoa_private_key and eoa_address are required for UserOp signing"
         )
 
-    smart_account = sender or owner
+    smart_account = wallet.smart_account
     fact_id = str(uuid.uuid4())
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
@@ -287,15 +335,15 @@ async def store_fact(
     # Build and submit a proper ERC-4337 UserOperation
     await build_and_send_userop(
         sender=smart_account,
-        eoa_address=eoa_address,
-        eoa_private_key=eoa_private_key,
+        eoa_address=wallet.eoa_address,
+        eoa_private_key=wallet.eoa_private_key,
         protobuf_payload=protobuf_bytes,
-        relay_url=relay._relay_url,
-        auth_key_hex=relay._auth_key_hex or "",
+        relay_url=relay.relay_url,
+        auth_key_hex=relay.auth_key_hex or "",
         wallet_address=smart_account,
-        chain_id=chain_id,
-        client_id=relay._client_id,
-        session_id=getattr(relay, "_session_id", None),
+        chain_id=wallet.chain_id,
+        client_id=relay.client_id,
+        session_id=relay.session_id,
         data_edge_address=data_edge_address,
     )
 
@@ -309,14 +357,9 @@ async def store_fact(
 
 async def store_fact_batch(
     facts: list[dict],
-    keys: DerivedKeys,
-    owner: str,
+    wallet: WalletContext,
     relay: RelayClient,
     lsh_hasher: Optional[LSHHasher] = None,
-    eoa_private_key: Optional[bytes] = None,
-    eoa_address: Optional[str] = None,
-    sender: Optional[str] = None,
-    chain_id: int = 84532,
     source: str = "python-client",
     agent_id: str = "python-client",
     data_edge_address: Optional[str] = None,
@@ -352,11 +395,10 @@ async def store_fact_batch(
     facts : list[dict]
         1..``MAX_BATCH_SIZE`` (15) fact dicts. Empty or oversized lists
         raise ``ValueError``.
-    keys, owner, relay, lsh_hasher, eoa_private_key, eoa_address,
-    sender, chain_id, source, agent_id
-        Same semantics as :func:`store_fact`. All facts share signing
-        credentials, relay config, and chain — batches do not support
-        mixed owners.
+    wallet, relay, lsh_hasher, source, agent_id
+        Same semantics as :func:`store_fact`. All facts share the one
+        :class:`WalletContext` (signing credentials, owner, and chain),
+        relay config — batches do not support mixed owners.
 
     Returns
     -------
@@ -386,12 +428,14 @@ async def store_fact_batch(
             f"store_fact_batch: batch size {len(facts)} exceeds maximum "
             f"of {MAX_BATCH_SIZE}"
         )
-    if eoa_private_key is None or eoa_address is None:
+    if wallet.eoa_private_key is None or wallet.eoa_address is None:
         raise ValueError(
             "eoa_private_key and eoa_address are required for UserOp signing"
         )
 
-    smart_account = sender or owner
+    keys = wallet.keys
+    owner = wallet.owner
+    smart_account = wallet.smart_account
     shared_timestamp = datetime.now(timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%S.000Z"
     )
@@ -501,15 +545,15 @@ async def store_fact_batch(
     # sequential = 60s for the single-fact path.
     await build_and_send_userop_batch(
         sender=smart_account,
-        eoa_address=eoa_address,
-        eoa_private_key=eoa_private_key,
+        eoa_address=wallet.eoa_address,
+        eoa_private_key=wallet.eoa_private_key,
         protobuf_payloads=protobuf_payloads,
-        relay_url=relay._relay_url,
-        auth_key_hex=relay._auth_key_hex or "",
+        relay_url=relay.relay_url,
+        auth_key_hex=relay.auth_key_hex or "",
         wallet_address=smart_account,
-        chain_id=chain_id,
-        client_id=relay._client_id,
-        session_id=getattr(relay, "_session_id", None),
+        chain_id=wallet.chain_id,
+        client_id=relay.client_id,
+        session_id=relay.session_id,
         data_edge_address=data_edge_address,
     )
 
@@ -771,12 +815,12 @@ async def forget_fact(
             eoa_address=eoa_address,
             eoa_private_key=eoa_private_key,
             protobuf_payload=tombstone_bytes,
-            relay_url=relay._relay_url,
-            auth_key_hex=relay._auth_key_hex or "",
+            relay_url=relay.relay_url,
+            auth_key_hex=relay.auth_key_hex or "",
             wallet_address=smart_account,
             chain_id=chain_id,
-            client_id=relay._client_id,
-            session_id=getattr(relay, "_session_id", None),
+            client_id=relay.client_id,
+            session_id=relay.session_id,
             data_edge_address=data_edge_address,
         )
         # Read-after-write: wait until the subgraph has flipped the fact's
@@ -1317,12 +1361,12 @@ async def _change_claim_status(
         eoa_address=eoa_address,
         eoa_private_key=eoa_private_key,
         protobuf_payloads=[tombstone_bytes, new_protobuf],
-        relay_url=relay._relay_url,
-        auth_key_hex=relay._auth_key_hex or "",
+        relay_url=relay.relay_url,
+        auth_key_hex=relay.auth_key_hex or "",
         wallet_address=smart_account,
         chain_id=chain_id,
-        client_id=relay._client_id,
-        session_id=getattr(relay, "_session_id", None),
+        client_id=relay.client_id,
+        session_id=relay.session_id,
         data_edge_address=data_edge_address,
     )
 
