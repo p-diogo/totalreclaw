@@ -33,7 +33,9 @@ const KEYS: SessionKeys = {
 // source/scope, legacy type tokens) which the on-chain blob may legitimately
 // carry from older writers.
 function makeFact(
-  claim: Partial<MemoryClaimV1> & Record<string, unknown>,
+  // Deliberately wide: fixtures inject out-of-enum values a real on-chain
+  // blob may carry; type safety is asserted on the OUTPUT of decryptFacts.
+  claim: Record<string, unknown>,
   overrides: Partial<RawFact> = {},
 ): RawFact {
   const blob = encryptBlob(JSON.stringify(claim), ENC_KEY);
