@@ -207,12 +207,13 @@ async def test_import_batch_writes_state_for_import_status(tmp_path, monkeypatch
     _redirect_state_dir(tmp_path, monkeypatch)
     from totalreclaw.hermes import tools
     _patch_engine(monkeypatch)
+    _patch_provider(monkeypatch)
     state = _state_with_tier("pro")
 
     write_import_state(ImportState(
         import_id="consented", source="chatgpt", status="running",
         started_at="2026-07-05T00:00:00+00:00", last_updated="x",
-        disclosure_confirmed=True,
+        disclosure_confirmed=True, disclosure_provider="zai (glm-4.6)",
     ))
     await tools.import_batch(
         {"source": "chatgpt", "file_path": "/tmp/e.zip", "offset": 0}, state,
