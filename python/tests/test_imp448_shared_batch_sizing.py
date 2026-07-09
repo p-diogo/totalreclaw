@@ -211,10 +211,18 @@ class _SimClient:
         return [f"id{i}" for i in range(len(payloads))]
 
 
-def test_engine_delegation_reconciles_counts():
+def test_engine_delegation_reconciles_counts(monkeypatch):
     """The import engine now delegates grouping+adaptive to the shared path
     (via client.remember_batch as the per-group store). Its BatchImportResult
     accounting (facts_stored / errors / dups_skipped) must still reconcile."""
+    # Stub the embedding model so the 10 facts stay LIGHT → one group of 10
+    # (mirrors test_batch_sizing_rc4's _no_embedding fixture). Otherwise
+    # _prepare_fact_payload generates real ~4.5KB embeddings and the byte cap
+    # splits the group before the halving-on-sim-revert is observable.
+    import totalreclaw.embedding as emb
+
+    monkeypatch.setattr(emb, "get_embedding", lambda t: None)
+
     from totalreclaw.import_engine import ImportEngine
 
     client = _SimClient(fail_pred=lambda n: n > 5)
