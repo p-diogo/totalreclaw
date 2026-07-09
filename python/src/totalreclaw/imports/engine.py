@@ -98,6 +98,7 @@ from totalreclaw.operations import (  # noqa: E402,F401  (re-exports used by tes
     MAX_BATCH_BYTES as _MAX_BATCH_BYTES,
     MAX_BATCH_GROUP_COUNT as IMPORT_MAX_BATCH_SIZE,
     group_and_store_adaptive,
+    store_fact_batch,
 )
 
 # Gnosis mainnet chain ID — the Pro-tier chain where batched UserOps are
@@ -1737,17 +1738,45 @@ class ImportEngine:
         facts_stored = 0
 
         if chain_id == _GNOSIS_CHAIN_ID:
-            # internal#448: byte-capped grouping + halve-on-simfail now live in
-            # the SHARED operations.group_and_store_adaptive helper (the same one
-            # client.remember_batch uses), so this path and every other write
-            # caller inherit identical size protection. ``client.remember_batch``
-            # is the per-group store callable — this preserves the rc4 invariant
-            # contract (the halving invokes the client per half) and means an
-            # import IS just a remember_batch over the prepared payloads.
+            # internal#448 SINGLE-PASS: byte-capped grouping + halve-on-simfail
+            # happen EXACTLY ONCE here, over the REAL store (store_fact_batch).
+            # We deliberately do NOT wrap ``client.remember_batch``. Since #448
+            # hoisted the adaptive helper INTO remember_batch, wrapping it here
+            # would nest TWO halving cascades: remember_batch raises a
+            # RuntimeError wrapping the inner floor-1 ``-32500 … reverted during
+            # simulation …``, whose message the OUTER ``_store_group_adaptive``
+            # then mis-detects as a fresh sim-revert → re-halves → each half
+            # re-runs the FULL inner cascade → facts already stored by the inner
+            # pass get RE-STORED (on-chain duplicates) and ``facts_stored``
+            # mis-counts (re-import risk). Calling ``store_fact_batch`` directly
+            # — the SAME single layer remember_batch uses internally — means no
+            # fact can be submitted twice for one logical store, and the
+            # ``(ids, errors)`` tuple + 20-error safety valve preserve the rc4
+            # partial-success accounting contract.
+            client = self._client
+            # Mirror client.remember_batch's store setup: ensure the wallet +
+            # chain are resolved and the relay recognises the auth key, then
+            # assemble the WalletContext the real store signs with.
+            # ``_resolve_chain_id_safely`` already resolved the chain (and thus
+            # the Smart Account address) above; both calls are idempotent.
+            await client._ensure_address()
+            await client._ensure_registered()
             all_payloads = [self._prepare_fact_payload(f) for f in facts]
+            needs_lsh = any(
+                isinstance(p, dict) and p.get("embedding") for p in all_payloads
+            )
+            lsh = client._get_lsh_hasher() if needs_lsh else None
+            wallet = client._wallet_context(chain_id)
 
             async def _store_group(group: list) -> list[str]:
-                return await self._client.remember_batch(group, source="import")
+                return await store_fact_batch(
+                    facts=group,
+                    wallet=wallet,
+                    relay=client._relay,
+                    lsh_hasher=lsh,
+                    source="import",
+                    data_edge_address=client._data_edge_address,
+                )
 
             ids, errors = await group_and_store_adaptive(
                 _store_group,

@@ -187,34 +187,12 @@ async def test_duplicate_rejection_is_silent(mock_store):
 
 
 # ── (7) import engine delegates; BatchImportResult counts reconcile ─────────
-class _SimClient:
-    """Gnosis client mock: records every remember_batch group, optionally
-    fails by predicate (mirrors test_batch_sizing_rc4._SimClient)."""
-
-    def __init__(self, fail_pred=lambda n: False):
-        self.calls: list[int] = []
-        self._fail = fail_pred
-
-    async def _ensure_chain_id(self):
-        return 100
-
-    async def find_duplicate_texts(self, texts):
-        return [False] * len(texts)
-
-    async def remember_batch(self, payloads, source=None):
-        self.calls.append(len(payloads))
-        if self._fail(len(payloads)):
-            raise RuntimeError(
-                "UserOperation reverted during simulation with reason: -32500 "
-                "Sender does not implement validateUserOp"
-            )
-        return [f"id{i}" for i in range(len(payloads))]
-
-
 def test_engine_delegation_reconciles_counts(monkeypatch):
-    """The import engine now delegates grouping+adaptive to the shared path
-    (via client.remember_batch as the per-group store). Its BatchImportResult
-    accounting (facts_stored / errors / dups_skipped) must still reconcile."""
+    """The import engine runs grouping+adaptive ONCE over the real store
+    (store_fact_batch — NOT client.remember_batch; wrapping remember_batch
+    would nest two halving cascades and re-store already-stored facts). Its
+    BatchImportResult accounting (facts_stored / errors / dups_skipped) must
+    still reconcile."""
     # Stub the embedding model so the 10 facts stay LIGHT → one group of 10
     # (mirrors test_batch_sizing_rc4's _no_embedding fixture). Otherwise
     # _prepare_fact_payload generates real ~4.5KB embeddings and the byte cap
@@ -225,7 +203,23 @@ def test_engine_delegation_reconciles_counts(monkeypatch):
 
     from totalreclaw.import_engine import ImportEngine
 
-    client = _SimClient(fail_pred=lambda n: n > 5)
+    client = _make_client()
+    # No pre-write dedup (all facts are fresh).
+    client.find_duplicate_texts = AsyncMock(return_value=None)
+
+    calls: list[int] = []
+
+    async def _store(facts, *a, **kw):
+        calls.append(len(facts))
+        if len(facts) > 5:
+            raise RuntimeError(
+                "UserOperation reverted during simulation with reason: -32500 "
+                "Sender does not implement validateUserOp"
+            )
+        return [f"id{i}" for i in range(len(facts))]
+
+    monkeypatch.setattr("totalreclaw.import_engine.store_fact_batch", _store)
+
     engine = ImportEngine(client=client, llm_extract=None)
     facts = [
         {"text": f"distinct fact number {i} about something", "type": "fact", "importance": 8}
@@ -236,7 +230,7 @@ def test_engine_delegation_reconciles_counts(monkeypatch):
     assert stored == 10
     assert errors == []
     assert dups == 0
-    assert client.calls == [10, 5, 5]
+    assert calls == [10, 5, 5]
 
 
 # ── (8) recrystallize caller flows through the grouping ────────────────────
