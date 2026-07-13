@@ -45,9 +45,19 @@ The 12-word recovery phrase MUST NEVER enter chat or the agent's LLM context. Th
 ```
 openclaw plugins install @totalreclaw/totalreclaw
 openclaw skills install totalreclaw
+openclaw plugins enable totalreclaw
 ```
 
-Published on npm + ClawHub (`p-diogo`, GitHub-verified). For a release candidate, pin with `@rc`; stable resolves from `latest`. The plugin self-applies any gateway config it needs on load and auto-reloads (see Restart below) — no manual gateway restart.
+Published on npm + ClawHub (`p-diogo`, GitHub-verified). For a release candidate, pin with `@rc`; stable resolves from `latest`. Run `openclaw plugins enable totalreclaw` right after install, always — it binds the memory slot. On a clean install that's a no-op; on a **reinstall over a previous version** it's what stops the plugin from landing `Status: disabled` with the slot stuck at `memory-core` (a disabled plugin never registers its memory tools or pair routes, so pairing later fails with a 502). The plugin self-applies the rest of the gateway config it needs on load and auto-reloads (see Restart below) — no manual gateway restart.
+
+**Reinstall recovery.** If install reports `already exists` / `delete it first`, do **not** add `--force` (it writes a broken `version=None` record). Clean the leftover package dir and reinstall — this never touches your credentials, which live under `~/.totalreclaw/`:
+
+```
+openclaw plugins uninstall totalreclaw
+rm -rf ~/.openclaw/npm/projects/*totalreclaw-totalreclaw*
+openclaw plugins install @totalreclaw/totalreclaw
+openclaw plugins enable totalreclaw
+```
 
 ## Setup (pair — user-initiated QR)
 
