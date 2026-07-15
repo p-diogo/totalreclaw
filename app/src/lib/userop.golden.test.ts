@@ -3,8 +3,8 @@
  * bip39-parity spirit).
  *
  * These are PINNED constants, NOT a live core-vs-core comparison. They exercise
- * the exact VENDORED web-target `@totalreclaw/core` WASM the browser ships
- * (`src/vendor/core-wasm`), so a future core bump that shifts the wire format —
+ * the exact web-target `@totalreclaw/core` WASM the browser ships (the npm
+ * `./web` subpath export), so a future core bump that shifts the wire format —
  * ABI `execute`/`executeBatch` calldata, the tombstone shape, the ERC-4337 v0.7
  * UserOp hash, or the ECDSA signature — fails LOUDLY here in the SPA's own CI,
  * not silently at the paymaster. On an intentional wire change, regenerate with
@@ -12,21 +12,23 @@
  *
  * The hashUserOp + signUserOp vectors are independent viem-derived references
  * (verbatim from `rust/totalreclaw-core/src/userop.rs`), so they also cross-
- * check the vendored WASM against viem's `getUserOperationHash` / `signMessage`.
+ * check the shipped WASM against viem's `getUserOperationHash` / `signMessage`.
  * The signing key is the public "abandon…about" Hardhat test key — NOT a secret.
  */
 import { describe, it, expect, beforeAll } from "vitest";
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 
-// Vendored web-target core, initialized synchronously from disk bytes (node).
-type Core = typeof import("../vendor/core-wasm/totalreclaw_core.js");
+// npm web-target core (`./web` subpath), initialized synchronously from disk
+// bytes (node) — the browser's `default()` fetch init doesn't apply here.
+type Core = typeof import("@totalreclaw/core/web");
 let core: Core;
 
 beforeAll(async () => {
-  const dir = join(dirname(fileURLToPath(import.meta.url)), "../vendor/core-wasm");
-  core = (await import("../vendor/core-wasm/totalreclaw_core.js")) as unknown as Core;
+  const require = createRequire(import.meta.url);
+  const dir = dirname(require.resolve("@totalreclaw/core/web"));
+  core = (await import("@totalreclaw/core/web")) as unknown as Core;
   (core as unknown as { initSync: (m: { module: Uint8Array }) => void }).initSync({
     module: readFileSync(join(dir, "totalreclaw_core_bg.wasm")),
   });

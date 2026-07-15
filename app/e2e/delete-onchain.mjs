@@ -72,20 +72,9 @@ async function relayFetch(path, opts = {}, authKeyHex, wallet) {
   return { ok: res.ok, status: res.status, text };
 }
 
-// Node reads Pimlico won't serve (eth_call/eth_getCode) → public Gnosis RPC.
-// (The browser uses a CORS-enabled endpoint list in src/lib/chain.ts.)
-const GNOSIS_RPC = process.env.GNOSIS_RPC || "https://rpc.gnosischain.com";
-async function chainRpc(method, params) {
-  const res = await fetch(GNOSIS_RPC, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-  });
-  const json = await res.json();
-  if (json.error) throw new Error(`chain ${method}: ${JSON.stringify(json.error)}`);
-  return json.result;
-}
-
+// Node reads (eth_call nonce + eth_getCode) go through the relay `/v1/bundler`
+// too since relay#37 — same as the browser (src/lib/bundler.ts). No third-party
+// RPC is contacted anywhere in this harness.
 async function bundlerRpc(authKeyHex, wallet, method, params) {
   const res = await fetch(`${RELAY}/v1/bundler`, {
     method: "POST",
@@ -125,7 +114,7 @@ async function submitUserOp(calldataBytes, { authKeyHex, wallet, eoa, dataEdge, 
   let factory = null;
   let factoryData = null;
   if (needsInitCode) {
-    const code = await chainRpc("eth_getCode", [wallet, "latest"]);
+    const code = await bundlerRpc(authKeyHex, wallet, "eth_getCode", [wallet, "latest"]);
     if (!code || code === "0x" || code === "0x0") {
       factory = core.getSimpleAccountFactory();
       const ownerPadded = eoa.address.slice(2).toLowerCase().padStart(64, "0");
@@ -138,7 +127,7 @@ async function submitUserOp(calldataBytes, { authKeyHex, wallet, eoa, dataEdge, 
 
   const senderPadded = wallet.slice(2).toLowerCase().padStart(64, "0");
   const nonce =
-    (await chainRpc("eth_call", [
+    (await bundlerRpc(authKeyHex, wallet, "eth_call", [
       { to: entryPoint, data: `0x35567e1a${senderPadded}${"0".repeat(64)}` },
       "latest",
     ])) || "0x0";

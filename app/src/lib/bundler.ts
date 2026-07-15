@@ -5,10 +5,12 @@
  * API key — clients never hold a Pimlico key. Auth is the same Bearer + wallet
  * headers the read path already sends.
  *
- * Scope: ONLY the methods Pimlico actually serves (gas price, sponsor, estimate,
- * send, receipt). The two node reads ERC-4337 also needs — `eth_call` for the
- * nonce and `eth_getCode` for the deployment check — are rejected by Pimlico
- * (-32601), so they live in `chain.ts` against a CORS-enabled public Gnosis RPC.
+ * Scope: the bundler/paymaster methods (gas price, sponsor, estimate, send,
+ * receipt) PLUS the two node reads ERC-4337 needs — `eth_call` for the
+ * EntryPoint nonce and `eth_getCode` for the deployment check. Since relay#37
+ * the relay routes those two to the chain's node (tier-coherent, with an
+ * EntryPoint `to`-constraint on `eth_call`), so no third-party RPC is ever
+ * contacted and the Smart Account address never leaves the relay.
  *
  * This is a WRITE-path module — reached only via the lazy `userop.ts` chunk.
  */
@@ -111,6 +113,31 @@ export function sendUserOperation(
   entryPoint: string,
 ): Promise<string> {
   return bundlerRpc<string>(keys, "eth_sendUserOperation", [signedOp, entryPoint]);
+}
+
+/** EntryPoint.getNonce(address,uint192) selector. */
+const GET_NONCE_SELECTOR = "35567e1a";
+
+/** Read the EntryPoint nonce for `sender` (key = 0). Node read via the relay
+ *  (`eth_call` is `to`-constrained to the EntryPoint on the relay side). */
+export async function getNonce(
+  keys: SessionKeys,
+  entryPoint: string,
+  sender: string,
+): Promise<string> {
+  const senderPadded = sender.slice(2).toLowerCase().padStart(64, "0");
+  const calldata = `0x${GET_NONCE_SELECTOR}${senderPadded}${"0".repeat(64)}`;
+  const result = await bundlerRpc<string>(keys, "eth_call", [
+    { to: entryPoint, data: calldata },
+    "latest",
+  ]);
+  return result || "0x0";
+}
+
+/** Bytecode at `address` — `0x` / `0x0` means the Smart Account is undeployed.
+ *  Node read via the relay. */
+export function getCode(keys: SessionKeys, address: string): Promise<string> {
+  return bundlerRpc<string>(keys, "eth_getCode", [address, "latest"]);
 }
 
 export function getUserOperationReceipt(

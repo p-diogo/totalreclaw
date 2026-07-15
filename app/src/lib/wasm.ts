@@ -1,10 +1,11 @@
 /**
  * Lazy loader for the `@totalreclaw/core` WASM (browser / web target).
  *
- * The published npm `@totalreclaw/core` is a wasm-pack **nodejs** build
- * (`require('fs')` + `__dirname`), which cannot run in a browser bundle. The
- * SPA therefore ships a vendored **web**-target build of the SAME core version
- * (see `src/vendor/core-wasm/README.md`), lazy-loaded here.
+ * `@totalreclaw/core@2.5.6+` publishes a wasm-pack **web**-target build as the
+ * `./web` subpath export (#500) — same crate version, wasm binary byte-identical
+ * to the nodejs build. Its default-export init fetches the `.wasm` via
+ * `new URL('totalreclaw_core_bg.wasm', import.meta.url)`, which Vite rewrites
+ * to a hashed asset URL in its own chunk.
  *
  * IMPORTANT (bundle discipline): this module — and everything it pulls in
  * (`bundler.ts`, `userop.ts`, the 2.3 MB `.wasm`) — must be reached ONLY via a
@@ -13,23 +14,21 @@
  * the initial `index-*.js` chunk. Verified against the Vite chunk graph.
  */
 
-// `?url` gives Vite an asset URL for the wasm without inlining it into JS.
-import coreWasmUrl from "../vendor/core-wasm/totalreclaw_core_bg.wasm?url";
-
-export type Core = typeof import("../vendor/core-wasm/totalreclaw_core.js");
+export type Core = typeof import("@totalreclaw/core/web");
 
 let corePromise: Promise<Core> | null = null;
 
 /**
  * Initialize and return the core WASM module (memoized). First call fetches +
- * instantiates the vendored `.wasm`; subsequent calls resolve immediately.
+ * instantiates the `.wasm`; subsequent calls resolve immediately.
  */
 export function loadCore(): Promise<Core> {
   if (!corePromise) {
     corePromise = (async () => {
-      const mod = await import("../vendor/core-wasm/totalreclaw_core.js");
-      // Web-target init: `default(url)` fetches + instantiates the wasm.
-      await mod.default(coreWasmUrl);
+      const mod = await import("@totalreclaw/core/web");
+      // Web-target init: `default()` fetches + instantiates the wasm from the
+      // module-relative URL (Vite emits it as a hashed asset).
+      await mod.default();
       return mod as unknown as Core;
     })();
   }

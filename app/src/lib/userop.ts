@@ -20,9 +20,10 @@ import {
   sponsorUserOperation,
   sendUserOperation,
   getUserOperationReceipt,
+  // Node reads (eth_call nonce + eth_getCode) — served by the relay since relay#37.
+  getNonce,
+  getCode,
 } from "./bundler";
-// Node reads Pimlico won't serve — routed to a CORS-enabled public Gnosis RPC.
-import { getNonce, getCode } from "./chain";
 
 /** Memory Taxonomy v1 outer protobuf version — tombstones ride v4 like writes. */
 export const PROTOBUF_VERSION_V4 = 4;
@@ -91,16 +92,16 @@ export async function submitUserOp(
   const gas = await getUserOperationGasPrice(ctx.keys);
   const fast = gas.fast;
 
-  // 3. Require a deployed Smart Account (see doc comment). Chain read.
-  const code = await getCode(sender);
+  // 3. Require a deployed Smart Account (see doc comment). Node read via relay.
+  const code = await getCode(ctx.keys, sender);
   if (!code || code === "0x" || code === "0x0") {
     throw new Error(
       "This vault has no on-chain memories yet, so there is nothing to modify.",
     );
   }
 
-  // 4. Nonce (chain read).
-  const nonce = await getNonce(entryPoint, sender);
+  // 4. Nonce (node read via relay).
+  const nonce = await getNonce(ctx.keys, entryPoint, sender);
 
   // 5. Unsigned op (v0.7, camelCase for the Rust serde in hashUserOp).
   const unsignedOp: Record<string, unknown> = {
