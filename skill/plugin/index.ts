@@ -1876,6 +1876,13 @@ async function storeExtractedFacts(
       if (!submitResult.success) {
         batchError = `On-chain batch submission partially failed (${submitResult.batchSize}/${pendingPayloads.length} stored): ${submitResult.errors.join('; ')}`;
         logger.warn(batchError);
+        // A mid-batch 403/quota (earlier groups landed, a later one hit the
+        // cap) surfaces via `errors`, not a throw — invalidate the billing
+        // cache here too so the next session re-fetches and warns, matching
+        // the old per-fact loop's behavior (#531 review follow-up).
+        if (submitResult.errors.some((e) => e.includes('403') || e.toLowerCase().includes('quota'))) {
+          deleteFileIfExists(BILLING_CACHE_PATH);
+        }
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
