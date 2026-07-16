@@ -275,6 +275,31 @@ def _receipt_success(result: dict) -> Optional[bool]:
     return None
 
 
+class UserOpDroppedError(RuntimeError):
+    """The bundler accepted a UserOp but it never confirmed on-chain.
+
+    Raised by :func:`_await_batch_receipt` when no successful receipt arrives
+    within the timeout — the op was dropped on bundler restart, mempool
+    eviction, or paymaster-window expiry. The on-chain nonce did NOT advance,
+    so any accept-time nonce-cache record (#423) now points past a GAP: later
+    writes would queue silently behind the missing nonce. The batch submit
+    loop resets the per-sender cache on this error (#431 self-heal) so the
+    next submission targets chain truth. Subclasses :class:`RuntimeError` so
+    pre-#431 callers that catch ``RuntimeError`` keep working.
+    """
+
+
+class UserOpRevertedError(RuntimeError):
+    """A UserOp was mined but reverted (``receipt.success=false``).
+
+    ERC-4337 consumes the nonce even when an op reverts, so the on-chain nonce
+    DID advance and the accept-time nonce-cache record is still correct —
+    callers must NOT reset it. The facts were not stored; the error surfaces
+    so the import engine counts the batch as failed. Subclasses
+    :class:`RuntimeError` for back-compat.
+    """
+
+
 async def _await_batch_receipt(
     http: httpx.AsyncClient,
     relay_url: str,
@@ -285,9 +310,14 @@ async def _await_batch_receipt(
 ) -> None:
     """Poll ``eth_getUserOperationReceipt`` until success, or raise.
 
-    Raises :class:`RuntimeError` on an explicit ``success=false`` receipt or
-    on timeout — the import engine treats either as a FAILED batch (not
-    stored) so ``facts_stored`` reflects on-chain reality.
+    Raises :class:`UserOpRevertedError` on an explicit ``success=false``
+    receipt (the op mined but reverted — the on-chain nonce advanced) or
+    :class:`UserOpDroppedError` on timeout (the bundler dropped an accepted
+    op — the on-chain nonce did NOT advance, leaving a cache gap). The batch
+    submit loop uses the distinction (#431) to decide whether to reset the
+    nonce cache before resubmitting. Both subclass :class:`RuntimeError`, so
+    the import engine still treats either as a FAILED batch (not stored) and
+    ``facts_stored`` reflects on-chain reality.
     """
     import time as _time
     timeout = _BATCH_RECEIPT_TIMEOUT_S if timeout_s is None else timeout_s
@@ -307,12 +337,12 @@ async def _await_batch_receipt(
         if verdict is True:
             return
         if verdict is False:
-            raise RuntimeError(
+            raise UserOpRevertedError(
                 f"Batch UserOp {user_op_hash} reverted on-chain "
                 f"(receipt.success=false)"
             )
         if _time.monotonic() >= deadline:
-            raise RuntimeError(
+            raise UserOpDroppedError(
                 f"Batch UserOp {user_op_hash} not confirmed within "
                 f"{timeout:.0f}s (no successful receipt)"
             )
@@ -1132,15 +1162,48 @@ async def build_and_send_userop_batch(
                         f"Batch UserOp submission failed: {send_data['error']}"
                     )
 
-                # Record the accept-time nonce/deploy state, then CONFIRM the
-                # op mined before returning (#431). The nonce advance is
-                # recorded at accept time so a concurrent submission pipelines
-                # correctly; the receipt gate ensures ``facts_stored`` only
-                # counts on-chain-confirmed batches.
+                # Record the accept-time nonce so a CONCURRENT submission for
+                # the same sender pipelines past this one (#423). The receipt
+                # gate below then confirms the op mined before we count the
+                # batch as stored; if the bundler DROPS an accepted op (#431
+                # residual) the accept-time record becomes a gap and is reset
+                # before resubmitting at chain truth.
                 _record_submitted_nonce(sender, nonce)
-                _mark_sender_deployed(sender)  # #435: a confirmed send ⇒ deployed
+                _mark_sender_deployed(sender)  # #435: a send reached the bundler ⇒ deployed
                 batch_hash = send_data.get("result", "")
-                await _await_batch_receipt(http, relay_url, headers, batch_hash)
+
+                # #431: confirm the batch actually mined before counting it as
+                # stored. A DROP (bundler accepted then evicted/restarted/
+                # paymaster-window expired — no successful receipt within the
+                # timeout) leaves the on-chain nonce UNCHANGED, so the
+                # accept-time record above is now a gap that would silently
+                # queue up to ~10 later writes behind it. Reset the cache
+                # (self-heal to chain truth) and resubmit within the retry
+                # budget — the next loop iteration re-reads the chain nonce.
+                # A REVERT (success=false) mined and consumed the nonce, so the
+                # record is correct; let it propagate without resetting.
+                try:
+                    await _await_batch_receipt(
+                        http, relay_url, headers, batch_hash
+                    )
+                except UserOpDroppedError:
+                    _reset_sender_nonce(sender)
+                    if attempt < _MAX_NONCE_RETRIES - 1:
+                        logger.warning(
+                            "Batch %s dropped by bundler (attempt %d/%d, "
+                            "batch size %d) — nonce cache reset, "
+                            "resubmitting at chain truth",
+                            batch_hash, attempt + 1, _MAX_NONCE_RETRIES,
+                            len(protobuf_payloads),
+                        )
+                        continue
+                    logger.error(
+                        "Batch %s dropped by bundler after %d attempts; "
+                        "nonce cache reset so the next caller targets chain "
+                        "truth",
+                        batch_hash, _MAX_NONCE_RETRIES,
+                    )
+                    raise
                 return batch_hash
 
             except Exception as e:
