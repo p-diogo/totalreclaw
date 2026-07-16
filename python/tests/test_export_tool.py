@@ -185,6 +185,28 @@ class TestExportLargeVaultToFile:
         assert on_disk["summary"]["total_facts"] == 3
 
     @pytest.mark.asyncio
+    async def test_export_file_and_dir_permissions_locked_down(self, tmp_path, monkeypatch):
+        """The dump is the entire decrypted vault in cleartext — it must follow
+        the repo's sensitive-file convention (dir 0700, file 0600, no
+        world-readable window), mirroring credentials.json / session_store."""
+        import os as _os
+        import stat as _stat
+
+        monkeypatch.setattr(tools, "EXPORT_INLINE_MAX_BYTES", 4)
+        monkeypatch.setenv("TOTALRECLAW_STATE_DIR", str(tmp_path))
+        state = _make_state_with_facts([_fact("1"), _fact("2")])
+
+        result = json.loads(await tools.export_all({}, state))
+        export_path = Path(result["export_path"])
+
+        file_mode = _stat.S_IMODE(_os.stat(export_path).st_mode)
+        dir_mode = _stat.S_IMODE(_os.stat(export_path.parent).st_mode)
+        assert file_mode == 0o600, f"export file mode {oct(file_mode)} != 0600"
+        assert dir_mode == 0o700, f"exports dir mode {oct(dir_mode)} != 0700"
+        # No .tmp staging file left behind (atomic replace completed).
+        assert not list(export_path.parent.glob("*.tmp"))
+
+    @pytest.mark.asyncio
     async def test_file_write_failure_does_not_truncate_or_crash(self, tmp_path, monkeypatch):
         """If the dump can't be saved to disk, the tool must NOT fall back to
         dumping the whole vault inline (that re-introduces the truncation bug).

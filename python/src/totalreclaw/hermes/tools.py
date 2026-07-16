@@ -448,8 +448,9 @@ async def set_scope(args: dict, state: "PluginState", **kwargs) -> str:
 # agent never has to read the full payload to report provenance.
 _EXPORT_PROVENANCE_KEYS = ("source", "import_source", "session_id", "agent_name")
 
-# A tool result at/above this serialized size is written to a file instead of
-# returned inline. ~20 KiB keeps the result comfortably under agent
+# When the serialized FACTS ARRAY exceeds this size, the dump is written to a
+# file instead of returned inline (the returned envelope adds a small bounded
+# summary on top). ~20 KiB keeps the result comfortably under agent
 # context/output budgets; a 472-fact vault is ~119 KB and previously truncated
 # silently (internal#468). Tuned for "small vaults still inline, large vaults
 # go to disk" — explicit so the threshold is reviewable.
@@ -553,10 +554,18 @@ def _write_export_file(path: Path, payload: dict) -> None:
     Raises ``OSError`` on any disk failure so ``export_all`` can surface it
     instead of silently degrading. ``tmp.replace`` is atomic on the same
     filesystem, so a crash mid-write never leaves a partial dump.
+
+    The dump is the ENTIRE DECRYPTED VAULT in cleartext, so it follows the
+    repo's sensitive-file convention (credentials.json, pending queue,
+    session store): directory 0700, file created 0600 via ``os.open`` so
+    there is never a world-readable window — mirrors
+    ``pair/session_store.py``.
     """
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(payload), encoding="utf-8")
+    fd = os.open(str(tmp), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(payload))
     tmp.replace(path)
 
 
