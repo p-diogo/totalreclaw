@@ -309,3 +309,171 @@ class TestDroppedBatchSelfHealsGap:
         assert result == "0xhash"
         assert len(record["send_userops"]) == 1
         assert userop._sender_next_nonce.get(_SA.lower()) == 6
+
+
+# ---------------------------------------------------------------------------
+# 4. Review findings (#431 follow-up): false-drop must NOT double-store, and a
+#    first-deploy drop must re-attach the factory on resubmit
+# ---------------------------------------------------------------------------
+
+
+def _relay_dispatch_receipt_blackout(shared):
+    """Receipt returns None while ``shared['blackout']`` is True, else
+    success. Sponsor/gas/send are the standard answers; sends recorded."""
+    record = {"send_userops": []}
+
+    async def _mock(http, relay_url, headers, method, params, rpc_id=1):
+        if method == "pimlico_getUserOperationGasPrice":
+            return {
+                "result": {
+                    "fast": {
+                        "maxFeePerGas": "0x77359400",
+                        "maxPriorityFeePerGas": "0x59682f00",
+                    }
+                }
+            }
+        if method == "pm_sponsorUserOperation":
+            return _VALID_SPONSOR
+        if method == "eth_sendUserOperation":
+            record["send_userops"].append(dict(params[0]))
+            return {"result": "0xhash"}
+        if method == "eth_getUserOperationReceipt":
+            if shared.get("blackout", True):
+                return {"result": None}
+            return {"result": {"success": True}}
+        raise AssertionError(f"unexpected relay method {method}")
+
+    return _mock, record
+
+
+class TestFalseDropDoesNotDoubleStore:
+    """Review finding 1: a MINED op whose receipt is blacked out for the whole
+    window must NOT be resubmitted — that writes byte-identical payloads
+    on-chain twice. The drop handler re-reads chain truth first."""
+
+    @pytest.mark.asyncio
+    async def test_false_drop_with_late_receipt_returns_without_resubmit(
+        self, monkeypatch
+    ):
+        # Chain nonce: 5 at build time; 6 when the drop handler re-reads it
+        # (the op mined during the blackout). The receipt becomes readable
+        # exactly when the handler does its one-shot final check.
+        shared = {"blackout": True}
+        nonce_reads = {"n": 0}
+
+        async def _get_nonce(http, sender, chain_id):
+            nonce_reads["n"] += 1
+            if nonce_reads["n"] >= 2:
+                shared["blackout"] = False  # receipt visible from now on
+                return 6
+            return 5
+
+        monkeypatch.setattr(userop, "get_nonce", _get_nonce)
+        monkeypatch.setattr(userop, "_BATCH_RECEIPT_TIMEOUT_S", 0.02)
+        monkeypatch.setattr(userop, "_BATCH_RECEIPT_POLL_S", 0.01)
+        mock, record = _relay_dispatch_receipt_blackout(shared)
+        monkeypatch.setattr(userop, "_relay_rpc", mock)
+
+        result = await build_and_send_userop_batch(
+            sender=_SA,
+            eoa_address=_EOA,
+            eoa_private_key=_KEY,
+            protobuf_payloads=[b"f1", b"f2"],
+            relay_url="https://mock",
+            auth_key_hex="dead",
+            wallet_address=_SA,
+            chain_id=100,
+        )
+
+        assert result == "0xhash"
+        # THE invariant: exactly one send — no resubmit of a mined op.
+        assert len(record["send_userops"]) == 1
+        # Cache untouched (accept-time record 5+1 == chain truth 6).
+        assert userop._sender_next_nonce.get(_SA.lower()) == 6
+
+    @pytest.mark.asyncio
+    async def test_false_drop_with_receipt_still_dark_raises_ambiguous(
+        self, monkeypatch
+    ):
+        # Nonce advanced but the receipt NEVER becomes readable: surface
+        # UserOpAmbiguousError, no resubmit, cache not reset.
+        shared = {"blackout": True}  # stays dark forever
+        nonce_reads = {"n": 0}
+
+        async def _get_nonce(http, sender, chain_id):
+            nonce_reads["n"] += 1
+            return 5 if nonce_reads["n"] < 2 else 6
+
+        monkeypatch.setattr(userop, "get_nonce", _get_nonce)
+        monkeypatch.setattr(userop, "_BATCH_RECEIPT_TIMEOUT_S", 0.02)
+        monkeypatch.setattr(userop, "_BATCH_RECEIPT_POLL_S", 0.01)
+        mock, record = _relay_dispatch_receipt_blackout(shared)
+        monkeypatch.setattr(userop, "_relay_rpc", mock)
+
+        with pytest.raises(userop.UserOpAmbiguousError):
+            await build_and_send_userop_batch(
+                sender=_SA,
+                eoa_address=_EOA,
+                eoa_private_key=_KEY,
+                protobuf_payloads=[b"f1"],
+                relay_url="https://mock",
+                auth_key_hex="dead",
+                wallet_address=_SA,
+                chain_id=100,
+            )
+
+        assert len(record["send_userops"]) == 1, "ambiguous must not resubmit"
+        assert userop._sender_next_nonce.get(_SA.lower()) == 6, (
+            "cache must not be reset — accept-time record equals chain truth"
+        )
+
+    @pytest.mark.asyncio
+    async def test_ambiguous_error_is_runtime_error(self):
+        # Back-compat: the import engine catches bare RuntimeError.
+        assert issubclass(userop.UserOpAmbiguousError, RuntimeError)
+
+
+class TestFirstDeployDropReattachesFactory:
+    """Review finding 2: the accept-time deploy latch (#435) is premature for
+    a fresh account whose first (factory-carrying) op truly drops — the
+    resubmit must re-derive deploy state and re-attach the factory."""
+
+    @pytest.mark.asyncio
+    async def test_true_drop_of_first_deploy_op_keeps_factory_on_resubmit(
+        self, monkeypatch
+    ):
+        # Fresh account: chain nonce 0 forever (the op never mines), no code.
+        monkeypatch.setattr(userop, "get_nonce", AsyncMock(return_value=0))
+        monkeypatch.setattr(
+            userop, "_eth_get_code", AsyncMock(return_value="0x")
+        )
+        monkeypatch.setattr(userop, "_BATCH_RECEIPT_TIMEOUT_S", 0.02)
+        monkeypatch.setattr(userop, "_BATCH_RECEIPT_POLL_S", 0.01)
+        # send #1 dropped (true drop: nonce stays 0), send #2 mined.
+        mock, record = _relay_dispatch_with_receipts(
+            {1: "drop", 2: {"result": {"success": True}}}
+        )
+        monkeypatch.setattr(userop, "_relay_rpc", mock)
+
+        result = await build_and_send_userop_batch(
+            sender=_SA,
+            eoa_address=_EOA,
+            eoa_private_key=_KEY,
+            protobuf_payloads=[b"f1"],
+            relay_url="https://mock",
+            auth_key_hex="dead",
+            wallet_address=_SA,
+            chain_id=100,
+        )
+
+        assert result == "0xhash"
+        sends = record["send_userops"]
+        assert len(sends) == 2
+        # BOTH sends must carry the factory: the account never deployed, so
+        # the accept-time latch from send #1 must have been cleared before
+        # the resubmit (without the fix, send #2 omits it and AA20s forever).
+        assert sends[0].get("factory"), "first send must attach the factory"
+        assert sends[1].get("factory"), (
+            "resubmit must RE-attach the factory — stale accept-time deploy "
+            "latch not cleared"
+        )
