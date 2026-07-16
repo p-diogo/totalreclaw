@@ -27,7 +27,6 @@ import { rpcRequest, rpcWithRetry } from '../billing/relay.js';
 import { signUserOp } from '../crypto/vault-crypto.js';
 import {
   MAX_BATCH_BYTES,
-  MAX_BATCH_GROUP_COUNT,
   groupAndStoreAdaptive,
 } from './batch-sizing.js';
 
@@ -704,12 +703,17 @@ export async function submitFactBatchOnChain(
   // runtime via `getMaxBatchSize` so a group can never exceed what the installed
   // @totalreclaw/core accepts — stale cores (<2.5.5) enforce 15, current (≥2.5.5)
   // enforce 30 (#392 Part 2). The byte cap (MAX_BATCH_BYTES) is the real governor.
-  let maxCount = MAX_BATCH_GROUP_COUNT;
+  // Fallback is the CONSERVATIVE floor (15, the stale-core encodeBatchCall
+  // guard), not the current 30 (review #531 finding 4): if the binding were
+  // ever absent, a 30-count group would hit a 15-enforcing encodeBatchCall
+  // throw — which is not a sim revert, so it would surface as a failure
+  // instead of halving. 15 can never exceed any core's guard.
+  let maxCount = 15;
   try {
     const live = getWasm().getMaxBatchSize();
     if (typeof live === 'number' && live > 0) maxCount = live;
   } catch {
-    // Binding absent (very old core) — fall back to the documented default.
+    // Binding absent (very old core) — keep the conservative floor.
   }
 
   return withSenderLock(sender, async () => {

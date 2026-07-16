@@ -182,7 +182,9 @@ export function groupPayloadsBySize<T>(
 export function isSimRevertError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
   const msgL = msg.toLowerCase();
-  if (/aa25|invalid account nonce/.test(msgL)) return false;
+  // Token-bounded so an unrelated hex/id embedding "aa25" can't misclassify
+  // a genuine size revert as an AA25 (review #531 finding 3).
+  if (/\baa25\b|invalid account nonce/.test(msgL)) return false;
   return /reverted during simulation/.test(msgL) || msgL.includes('-32500');
 }
 
@@ -243,7 +245,14 @@ async function storeGroupAdaptive<T, R>(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     // Duplicate rejection — swallow (no ids, no error), matching python.
-    if (/409|duplicate|fingerprint/i.test(msg)) {
+    // ANCHORED (review #531 finding 2): requires a relay-shaped rejection —
+    // an HTTP 409 token AND a duplicate/fingerprint token together. A bare
+    // substring match ("duplicate"/"fingerprint" anywhere, e.g. inside an
+    // unrelated bundler error or a hex blob) must NOT silently drop a group.
+    // The on-chain bundler path has no duplicate failure mode today (dedup
+    // is client-side pre-submit), so this branch only matters for a future
+    // relay-store caller.
+    if (/\b409\b/.test(msg) && /duplicate|fingerprint/i.test(msg)) {
       return { results: [], errors: [] };
     }
     if (isSimRevertError(err) && group.length > 1) {

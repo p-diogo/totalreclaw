@@ -332,5 +332,37 @@ function tinyPayloads(n: number): string[] {
 }
 
 // ---------------------------------------------------------------------------
+// (E) Review #531 fixes — anchored duplicate swallow + token-bounded AA25
+// ---------------------------------------------------------------------------
+
+// A bare "duplicate"/"fingerprint" substring WITHOUT an HTTP 409 token must
+// NOT be swallowed — it surfaces as a group error (silent-drop guard).
+{
+  const fn = async () => {
+    throw new Error('bundler rejected op: duplicate userOp in mempool');
+  };
+  const { results, errors } = await groupAndStoreAdaptive(tinyPayloads(2), fn, MAX_BATCH_GROUP_COUNT, MAX_BATCH_BYTES, () => 10);
+  check(results.length === 0 && errors.length === 1, 'bare "duplicate" (no 409) surfaces as error, not swallowed');
+}
+// A 409 without any duplicate/fingerprint token is also NOT swallowed.
+{
+  const fn = async () => {
+    throw new Error('relay returned 409 conflict');
+  };
+  const { errors } = await groupAndStoreAdaptive(tinyPayloads(2), fn, MAX_BATCH_GROUP_COUNT, MAX_BATCH_BYTES, () => 10);
+  check(errors.length === 1, '409 without duplicate/fingerprint token surfaces as error');
+}
+// "aa25" embedded inside a hex blob has no token boundary — a genuine size
+// sim-revert whose payload happens to contain those hex chars still halves.
+check(
+  isSimRevertError(new Error('execution reverted during simulation, data=0xdeadaa25beef')) === true,
+  'hex-embedded aa25 does not misclassify a genuine sim revert',
+);
+check(
+  isSimRevertError(new Error('AA25 invalid account nonce')) === false,
+  'token-bounded AA25 still excluded',
+);
+
+// ---------------------------------------------------------------------------
 console.log(`\n# batch-sizing — ${passed} passed, ${failed} failed (of ${testNum})`);
 if (failed > 0) process.exit(1);
