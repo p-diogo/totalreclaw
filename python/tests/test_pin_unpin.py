@@ -19,6 +19,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 import totalreclaw_core
+from totalreclaw.claims_helper import build_canonical_claim_v1
 from totalreclaw.crypto import derive_keys_from_mnemonic, encrypt, decrypt
 from totalreclaw.operations import pin_fact, unpin_fact
 from totalreclaw.relay import RelayClient
@@ -885,3 +886,149 @@ def _extract_protobuf_bytes_field(payload: bytes, field_number: int) -> bytes | 
         else:
             raise ValueError(f"Unsupported wire type {wt}")
     return None
+
+
+# ---------------------------------------------------------------------------
+# Issue #470 — pin/unpin must preserve the #463 metadata.session_id stamp
+# ---------------------------------------------------------------------------
+
+
+def _v1_blob_with_session(*, fact_id: str, text: str, session_id: str, pin_status=None) -> str:
+    """v1.1 blob carrying ``metadata.session_id`` (the #463 stamp shape)."""
+
+    class _Fact:
+        pass
+
+    fact = _Fact()
+    fact.text = text
+    fact.type = "claim"
+    fact.source = "user"
+    fact.scope = None
+    fact.reasoning = None
+    fact.entities = None
+    fact.confidence = 0.9
+    fact.volatility = None
+    return build_canonical_claim_v1(
+        fact,
+        importance=7,
+        created_at="2026-04-25T10:00:00.000Z",
+        claim_id=fact_id,
+        pin_status=pin_status,
+        extra_metadata={"session_id": session_id},
+    )
+
+
+def _v1_relay_mock(keys, *, fact_id: str, blob: str) -> AsyncMock:
+    relay = AsyncMock(spec=RelayClient)
+    relay._relay_url = "https://api.totalreclaw.xyz"
+    relay._auth_key_hex = "deadbeef"
+    relay._client_id = "test"
+
+    async def query(query_str, variables, chain=None):
+        if "fact(id" in query_str or "id: $id" in query_str:
+            return {
+                "data": {
+                    "fact": {
+                        "id": fact_id,
+                        "owner": OWNER.lower(),
+                        "encryptedBlob": _encrypted_hex(blob, keys.encryption_key),
+                        "encryptedEmbedding": None,
+                        "decayScore": "0.7",
+                        "timestamp": "1760000000",
+                        "createdAt": "1760000000",
+                        "isActive": True,
+                        "contentFp": "abc123",
+                    }
+                }
+            }
+        return {"data": {}}
+
+    relay.query_subgraph = AsyncMock(side_effect=query)
+    return relay
+
+
+class TestIssue470PinPreservesSessionId:
+    """The #463 session_id stamp must survive a pin/unpin rewrite.
+
+    Before the fix, the pin path projected the source claim to v1 and
+    rebuilt the blob without carrying ``extra_metadata`` through, dropping
+    ``metadata.session_id`` so a curated fact lost its per-conversation
+    grouping in the vault reader.
+    """
+
+    @pytest.fixture
+    def keys(self):
+        return derive_keys_from_mnemonic(TEST_MNEMONIC)
+
+    def _decrypt_new(self, captured, keys):
+        new_payload = captured[0][1]
+        encrypted_blob_bytes = _extract_protobuf_bytes_field(new_payload, field_number=4)
+        plaintext = decrypt(
+            base64.b64encode(encrypted_blob_bytes).decode("ascii"), keys.encryption_key
+        )
+        return json.loads(plaintext)
+
+    @pytest.mark.asyncio
+    @patch("totalreclaw.operations.build_and_send_userop_batch", new_callable=AsyncMock)
+    async def test_issue_470_pin_preserves_session_id(self, mock_send, keys):
+        blob = _v1_blob_with_session(
+            fact_id="halibut-fact", text="Halibut is my favorite fish", session_id="sess-h-1"
+        )
+        relay = _v1_relay_mock(keys, fact_id="halibut-fact", blob=blob)
+        captured: list[list[bytes]] = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs["protobuf_payloads"])
+            return "0xok"
+
+        mock_send.side_effect = capture
+
+        await pin_fact(
+            fact_id="halibut-fact",
+            keys=keys,
+            owner=OWNER,
+            relay=relay,
+            eoa_private_key=EOA_PRIVATE_KEY,
+            eoa_address=EOA_ADDRESS,
+            sender=OWNER,
+        )
+
+        parsed = self._decrypt_new(captured, keys)
+        assert parsed["pin_status"] == "pinned"
+        assert parsed.get("metadata", {}).get("session_id") == "sess-h-1", (
+            "pin must preserve metadata.session_id — issue #470 regression"
+        )
+
+    @pytest.mark.asyncio
+    @patch("totalreclaw.operations.build_and_send_userop_batch", new_callable=AsyncMock)
+    async def test_issue_470_unpin_preserves_session_id(self, mock_send, keys):
+        blob = _v1_blob_with_session(
+            fact_id="porto-fact",
+            text="I visited Porto last spring",
+            session_id="sess-p-2",
+            pin_status="pinned",
+        )
+        relay = _v1_relay_mock(keys, fact_id="porto-fact", blob=blob)
+        captured: list[list[bytes]] = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs["protobuf_payloads"])
+            return "0xok"
+
+        mock_send.side_effect = capture
+
+        await unpin_fact(
+            fact_id="porto-fact",
+            keys=keys,
+            owner=OWNER,
+            relay=relay,
+            eoa_private_key=EOA_PRIVATE_KEY,
+            eoa_address=EOA_ADDRESS,
+            sender=OWNER,
+        )
+
+        parsed = self._decrypt_new(captured, keys)
+        assert parsed["pin_status"] == "unpinned"
+        assert parsed.get("metadata", {}).get("session_id") == "sess-p-2", (
+            "unpin must preserve metadata.session_id — issue #470 regression"
+        )

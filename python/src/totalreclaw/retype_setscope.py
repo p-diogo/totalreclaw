@@ -217,6 +217,14 @@ def _project_from_decrypted(decrypted: str) -> Optional[ProjectedFact]:
             "importance": importance,
             "confidence": confidence,
             "pin_status": pin_status,
+            # Preserve the additive metadata dict (session_id #463,
+            # import_source #356, …) so a retype/set_scope rewrite doesn't
+            # strip it. Issue #470: mutations dropped metadata.session_id.
+            "metadata": (
+                obj.get("metadata")
+                if isinstance(obj.get("metadata"), dict)
+                else None
+            ),
         }
 
     # 2. v0 short-key blob — upgrade to v1 shape on the fly.
@@ -269,6 +277,8 @@ def _project_from_decrypted(decrypted: str) -> Optional[ProjectedFact]:
             "confidence": confidence,
             # v0 short-key blobs may carry ``st: "p"`` — treat as pinned.
             "pin_status": "pinned" if obj.get("st") == "p" else None,
+            # v0 blobs predate the #463 metadata stamp — nothing to carry.
+            "metadata": None,
         }
 
     return None
@@ -423,6 +433,9 @@ async def _rewrite_with_mutation(
             superseded_by=fact_id,
             claim_id=new_fact_id,
             pin_status=next_state.get("pin_status"),
+            # Carry the source blob's metadata (session_id, …) across the
+            # rewrite so session-grouping survives retype/set_scope (#470).
+            extra_metadata=next_state.get("metadata"),
         )
     except Exception as exc:
         return {

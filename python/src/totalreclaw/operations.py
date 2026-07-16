@@ -1222,6 +1222,14 @@ def _project_source_to_v1(
             "entities": v1_entities,
             "importance": importance,
             "confidence": confidence,
+            # Preserve the additive metadata dict (session_id #463,
+            # import_source #356, …) so a pin/unpin rewrite doesn't strip
+            # it. Issue #470: mutations dropped metadata.session_id.
+            "metadata": (
+                source_claim.get("metadata")
+                if isinstance(source_claim.get("metadata"), dict)
+                else None
+            ),
         }
 
     # v0 short-key source: {t, c, cf, i, sa, ea, ...} → upgrade to v1.
@@ -1280,6 +1288,8 @@ def _project_source_to_v1(
         "entities": v1_entities or None,
         "importance": importance,
         "confidence": confidence,
+        # v0 blobs predate the #463 metadata stamp — nothing to carry.
+        "metadata": None,
     }
 
 
@@ -1474,6 +1484,9 @@ async def _change_claim_status(
         superseded_by=fact_id,
         claim_id=new_fact_id,
         pin_status=pin_status_wire,
+        # Carry the source blob's metadata (session_id, …) across the
+        # rewrite so session-grouping survives pin/unpin (#470).
+        extra_metadata=v1_view.get("metadata"),
     )
 
     # 5. Encrypt + build FactPayload at protobuf v=4.

@@ -991,3 +991,168 @@ class TestNaturalLanguageSurface:
         assert "work" in desc
         # "File that under" or "put that under" — the canonical NL hooks.
         assert "under" in desc
+
+
+def _build_v1_blob_with_session(
+    *,
+    fact_id: str,
+    text: str,
+    session_id: str,
+    fact_type: str = "claim",
+    pin_status: str | None = None,
+) -> str:
+    """v1.1 blob carrying ``metadata.session_id`` — the #463 stamp shape."""
+
+    class _Fact:
+        pass
+
+    fact = _Fact()
+    fact.text = text
+    fact.type = fact_type
+    fact.source = "user"
+    fact.scope = None
+    fact.reasoning = None
+    fact.entities = None
+    fact.confidence = 0.9
+    fact.volatility = None
+    return build_canonical_claim_v1(
+        fact,
+        importance=7,
+        created_at="2026-04-25T10:00:00.000Z",
+        claim_id=fact_id,
+        pin_status=pin_status,
+        extra_metadata={"session_id": session_id},
+    )
+
+
+class TestIssue470SessionIdPreservation:
+    """Regression shield for issue #470.
+
+    The #463 session_id stamp (``metadata.session_id`` on the encrypted
+    blob) must survive a retype / set_scope rewrite. Before the fix the
+    tool-rewrite path rebuilt the v1 blob without carrying ``extra_metadata``
+    through, silently dropping the stamp so a vault reader (SPA) lost the
+    per-conversation grouping for any fact the user later curated.
+    """
+
+    @pytest.fixture
+    def keys(self):
+        return derive_keys_from_mnemonic(TEST_MNEMONIC)
+
+    def _decrypt_new_blob(self, captured, keys):
+        encrypted_blob_bytes = _extract_protobuf_bytes_field(
+            captured[0][1], field_number=4
+        )
+        plaintext = decrypt(
+            base64.b64encode(encrypted_blob_bytes).decode("ascii"),
+            keys.encryption_key,
+        )
+        return json.loads(plaintext)
+
+    @pytest.mark.asyncio
+    @patch("totalreclaw.retype_setscope.build_and_send_userop_batch", new_callable=AsyncMock)
+    async def test_issue_470_retype_preserves_session_id(self, mock_send, keys):
+        existing_blob = _build_v1_blob_with_session(
+            fact_id="halibut-fact",
+            text="Halibut is my favorite fish",
+            session_id="sess-halibut-001",
+        )
+        # Sanity-check the fixture carries the stamp.
+        assert json.loads(existing_blob)["metadata"]["session_id"] == "sess-halibut-001"
+
+        relay = _build_relay_mock(keys, fact_id="halibut-fact", blob=existing_blob)
+        captured: list[list[bytes]] = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs["protobuf_payloads"])
+            return "0xok"
+
+        mock_send.side_effect = capture
+
+        await execute_retype(
+            fact_id="halibut-fact",
+            new_type="preference",
+            keys=keys,
+            owner=OWNER,
+            relay=relay,
+            eoa_private_key=EOA_PRIVATE_KEY,
+            eoa_address=EOA_ADDRESS,
+            sender=OWNER,
+        )
+
+        parsed = self._decrypt_new_blob(captured, keys)
+        assert parsed["type"] == "preference"
+        assert parsed["superseded_by"] == "halibut-fact"
+        assert parsed.get("metadata", {}).get("session_id") == "sess-halibut-001", (
+            "retype must preserve metadata.session_id — issue #470 regression"
+        )
+
+    @pytest.mark.asyncio
+    @patch("totalreclaw.retype_setscope.build_and_send_userop_batch", new_callable=AsyncMock)
+    async def test_issue_470_set_scope_preserves_session_id(self, mock_send, keys):
+        existing_blob = _build_v1_blob_with_session(
+            fact_id="porto-fact",
+            text="I visited Porto last spring",
+            session_id="sess-porto-002",
+        )
+        relay = _build_relay_mock(keys, fact_id="porto-fact", blob=existing_blob)
+        captured: list[list[bytes]] = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs["protobuf_payloads"])
+            return "0xok"
+
+        mock_send.side_effect = capture
+
+        await execute_set_scope(
+            fact_id="porto-fact",
+            new_scope="work",
+            keys=keys,
+            owner=OWNER,
+            relay=relay,
+            eoa_private_key=EOA_PRIVATE_KEY,
+            eoa_address=EOA_ADDRESS,
+            sender=OWNER,
+        )
+
+        parsed = self._decrypt_new_blob(captured, keys)
+        assert parsed["scope"] == "work"
+        assert parsed.get("metadata", {}).get("session_id") == "sess-porto-002", (
+            "set_scope must preserve metadata.session_id — issue #470 regression"
+        )
+
+    @pytest.mark.asyncio
+    @patch("totalreclaw.retype_setscope.build_and_send_userop_batch", new_callable=AsyncMock)
+    async def test_issue_470_retype_no_metadata_stays_clean(self, mock_send, keys):
+        """A source blob with no metadata must not gain a spurious key."""
+        existing_blob = _build_v1_blob(
+            fact_id="plain-fact",
+            text="No session stamp here",
+            fact_type="claim",
+        )
+        assert "metadata" not in json.loads(existing_blob)
+
+        relay = _build_relay_mock(keys, fact_id="plain-fact", blob=existing_blob)
+        captured: list[list[bytes]] = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs["protobuf_payloads"])
+            return "0xok"
+
+        mock_send.side_effect = capture
+
+        await execute_retype(
+            fact_id="plain-fact",
+            new_type="preference",
+            keys=keys,
+            owner=OWNER,
+            relay=relay,
+            eoa_private_key=EOA_PRIVATE_KEY,
+            eoa_address=EOA_ADDRESS,
+            sender=OWNER,
+        )
+
+        parsed = self._decrypt_new_blob(captured, keys)
+        assert "metadata" not in parsed, (
+            "no-metadata source must stay byte-clean (no empty metadata key)"
+        )
