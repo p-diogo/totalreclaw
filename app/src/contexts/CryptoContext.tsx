@@ -274,7 +274,14 @@ export function CryptoProvider({ children }: { children: ReactNode }) {
     const { prfSecret } = await getPrfSecret({ credentialId: credId });
     try {
       credIdRef.current = credId;
-      return await runWithMasterKey(rec.wrapped_master_key, prfSecret, fn);
+      const result = await runWithMasterKey(rec.wrapped_master_key, prfSecret, fn);
+      // #440 sliding TTL: this path is also a successful passkey unlock (fresh
+      // PRF assertion per call), and it's the only unlock a long-lived tab
+      // restored from sessionStorage ever performs — without the refresh here
+      // an active curator's record could age out mid-session. Best-effort,
+      // mirroring unlock().
+      refreshVaultRecordTtl(rec).catch(() => {});
+      return result;
     } finally {
       prfSecret.fill(0);
     }
