@@ -30,7 +30,13 @@ import { isPasskeyPrfAvailable } from "../lib/auth/prf-support";
 import { enrolPasskey, getPrfSecret, PrfUnsupportedError } from "../lib/auth/passkey";
 import { wrapKey, unwrapKey, deriveMasterWrapSecret } from "../lib/auth/wrap";
 import { runWithMasterKey } from "../lib/auth/master";
-import { saveVaultRecord, loadVaultRecord, hasAnyVault, clearVault } from "../lib/vault/idb";
+import {
+  saveVaultRecord,
+  loadVaultRecord,
+  hasAnyVault,
+  clearVault,
+  refreshVaultRecordTtl,
+} from "../lib/vault/idb";
 import { saveSessionKeys, loadSessionKeys, clearSessionKeys } from "../lib/vault/session-storage";
 import { registerSession } from "../lib/api";
 
@@ -205,6 +211,10 @@ export function CryptoProvider({ children }: { children: ReactNode }) {
     credIdRef.current = credId;
     // Idempotent: ensures the relay user row exists (cheap; needed on fresh relay state).
     await registerSession(sk).catch(() => {});
+    // Sliding TTL (#440): a successful unlock re-news created_at so an active
+    // vault never ages out. Best-effort — a write failure must not block unlock
+    // (the worst case is the record eventually expiring into re-bootstrap).
+    await refreshVaultRecordTtl(rec).catch(() => {});
     enterUnlocked(sk, rec.smart_account, rec.chain_id);
   }, [enterUnlocked]);
 
