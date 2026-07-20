@@ -371,6 +371,12 @@ def wrap_credentials(creds: dict, *, account: Optional[str] = None) -> dict:
     backend, store error — the input dict is returned **unchanged**
     (plaintext fallback) and nothing sensitive is recorded. Never raises.
     """
+    # #262 review finding 5: idempotence — if the field already carries the
+    # keychain marker there is nothing to wrap; re-running store_secret every
+    # boot would needlessly repeat the macOS subprocess argv-exposure window.
+    for _k in ("mnemonic", "recovery_phrase"):
+        if is_marker(creds.get(_k)):
+            return dict(creds)
     key, value = _extract_raw(creds)
     if not value:
         return creds

@@ -197,7 +197,11 @@ def run_doctor(credentials_path: Optional[Path] = None, relay_url: Optional[str]
                 Account.from_mnemonic(mnemonic.strip(), account_path="m/44'/60'/0'/0/0")
                 print(_ok("Recovery phrase is a valid BIP-39 12-word mnemonic"))
             except Exception as err:
-                print(_fail(f"Recovery phrase validation failed: {err}"))
+                # eth_account's ValidationError embeds raw phrase words verbatim
+                # ("Language not detected for word(s): ..."); never echo it
+                # (#262 review finding 4). Static message only.
+                del err
+                print(_fail("Recovery phrase validation failed (not a valid BIP-39 mnemonic)"))
                 issues += 1
 
     # --------------------------------------------------------------------
