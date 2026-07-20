@@ -181,6 +181,14 @@ export const CHEAP_MODEL_BY_PROVIDER: Record<string, string> = {
 /**
  * Derive a cheap/fast model suitable for fact extraction, given the user's
  * provider and primary (potentially expensive) model.
+ *
+ * LEGACY (internal#502): no longer on the live extraction path — the config
+ * builder now calls `resolveExtractionModel()`, which prefers the cheapest of
+ * the user's OWN configured OpenClaw models and only falls back to the
+ * hardcoded `CHEAP_MODEL_BY_PROVIDER` table as a last resort. Kept exported +
+ * unit-tested because it still exercises the shared `CHEAP_INDICATOR_RE`
+ * word-boundary logic and may be imported externally; prefer
+ * `resolveExtractionModel` for new callers.
  */
 export function deriveCheapModel(provider: string, primaryModel: string): string {
   // If already on a cheap model, use it as-is.
@@ -648,11 +656,15 @@ export function resolveLLMConfig(): LLMClientConfig | null {
 
 /**
  * Options for chatCompletion. `retry` controls the 429 + timeout backoff
- * loop. Defaults to 5 attempts with 2s → 4s → 8s → 16s → 32s backoff under
- * FULL jitter (AWS "full jitter": wait = random(0, min(cap, base*2^(n-1)))),
- * plus `Retry-After` honoring (internal#502). rc.1/rc.2 QA showed
- * multi-minute upstream outages that blew through the rc.2 7s budget.
- * Cumulative budget configurable via `TOTALRECLAW_LLM_RETRY_BUDGET_MS` env.
+ * loop. Defaults to 5 attempts, so 4 waits between them, with a per-attempt
+ * ceiling of 2s → 4s → 8s → 16s (the 5th attempt is the final try and does
+ * not wait) under FULL jitter (AWS "full jitter": wait =
+ * random(0, min(cap, base*2^(n-1)))) — worst case ~30s of backoff, capped by
+ * a 60s total budget — plus `Retry-After` honoring up to a 60s ceiling
+ * (internal#502). rc.1/rc.2 QA showed multi-minute upstream outages that blew
+ * through the rc.2 7s budget. Cumulative budget configurable via
+ * `TOTALRECLAW_LLM_RETRY_BUDGET_MS` env; on exhaustion (budget, or a
+ * Retry-After past the ceiling) chatCompletion throws LLMUpstreamOutageError.
  */
 export interface ChatCompletionOptions {
   maxTokens?: number;
@@ -708,8 +720,9 @@ export const DEFAULT_RETRY_CAP_MS = 60_000;
 /**
  * Default retry budget in ms. Configurable via
  * `TOTALRECLAW_LLM_RETRY_BUDGET_MS` env var — read by `config.ts`. Callers
- * can override per-call via `retry.budgetMs`. 60_000ms covers ~8 minutes
- * worth of upstream outages with the 2s→32s schedule.
+ * can override per-call via `retry.budgetMs`. 60_000ms comfortably covers the
+ * default 5-attempt schedule (worst case ~30s of exponential backoff) plus a
+ * single Retry-After wait up to the 60s ceiling.
  *
  * Scanner-isolation note: the env read lives in `config.ts` so this file
  * stays clean of env-harvesting triggers.
@@ -857,8 +870,9 @@ export function zaiFallbackBaseUrl(currentBaseUrl: string): string | null {
  * Supports both OpenAI-compatible format and Anthropic Messages API,
  * determined by `config.apiFormat`.
  *
- * 3.3.1-rc.3 — lifts the retry budget 5 attempts × (2s/4s/8s/16s/32s), total
- * ~62s. Configurable via `TOTALRECLAW_LLM_RETRY_BUDGET_MS`. Adds zai
+ * 3.3.1-rc.3 — lifts the retry budget to 5 attempts (4 waits, per-attempt
+ * ceiling 2s/4s/8s/16s → ~30s worst-case backoff) under a 60s total budget.
+ * Configurable via `TOTALRECLAW_LLM_RETRY_BUDGET_MS`. Adds zai
  * "Insufficient balance" auto-fallback: when a zai 429 carries the balance
  * error body AND we're on one of the two known zai endpoints, we flip to
  * the OTHER endpoint and retry ONCE (accounted for separately from the

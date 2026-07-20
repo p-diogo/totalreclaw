@@ -775,8 +775,10 @@ export async function extractFactsForCompaction(
       { role: 'user', content: userPrompt },
     ], {
       // #502: inherit chatCompletion's resilient default retry (5 attempts /
-      // 2->32s full-jitter / 60s budget, Retry-After honored) — the old
-      // {attempts:3, baseDelayMs:1000} override was a stale rc.2 leftover.
+      // full-jitter backoff, per-attempt ceiling 2/4/8/16s → ~30s worst-case
+      // over 4 waits, capped by a 60s total budget; Retry-After honored up to
+      // a 60s ceiling) — the old {attempts:3, baseDelayMs:1000} override was a
+      // stale rc.2 leftover that undercut the shared default.
       timeoutMs: 30_000,
       logger,
     });
@@ -934,8 +936,10 @@ export async function extractDebrief(
       { role: 'user', content: `Review this conversation and provide a debrief:\n\n${conversationText}` },
     ], {
       // #502: inherit chatCompletion's resilient default retry (5 attempts /
-      // 2->32s full-jitter / 60s budget, Retry-After honored) — the old
-      // {attempts:3, baseDelayMs:1000} override was a stale rc.2 leftover.
+      // full-jitter backoff, per-attempt ceiling 2/4/8/16s → ~30s worst-case
+      // over 4 waits, capped by a 60s total budget; Retry-After honored up to
+      // a 60s ceiling) — the old {attempts:3, baseDelayMs:1000} override was a
+      // stale rc.2 leftover that undercut the shared default.
       timeoutMs: 30_000,
     });
 
@@ -1085,8 +1089,10 @@ export async function extractCrystal(
       { role: 'user', content: `Crystallise this session:\n\n${conversationText}` },
     ], {
       // #502: inherit chatCompletion's resilient default retry (5 attempts /
-      // 2->32s full-jitter / 60s budget, Retry-After honored) — the old
-      // {attempts:3, baseDelayMs:1000} override was a stale rc.2 leftover.
+      // full-jitter backoff, per-attempt ceiling 2/4/8/16s → ~30s worst-case
+      // over 4 waits, capped by a 60s total budget; Retry-After honored up to
+      // a 60s ceiling) — the old {attempts:3, baseDelayMs:1000} override was a
+      // stale rc.2 leftover that undercut the shared default.
       timeoutMs: 30_000,
     });
 
@@ -1499,8 +1505,10 @@ export async function comparativeRescoreV1(
       // call after extractFacts — if extraction backs off successfully
       // the rescore usually also passes on first try, but keep symmetry).
       // #502: inherit chatCompletion's resilient default retry (5 attempts /
-      // 2->32s full-jitter / 60s budget, Retry-After honored) — the old
-      // {attempts:3, baseDelayMs:1000} override was a stale rc.2 leftover.
+      // full-jitter backoff, per-attempt ceiling 2/4/8/16s → ~30s worst-case
+      // over 4 waits, capped by a 60s total budget; Retry-After honored up to
+      // a 60s ceiling) — the old {attempts:3, baseDelayMs:1000} override was a
+      // stale rc.2 leftover that undercut the shared default.
       timeoutMs: 30_000,
       logger,
     });
@@ -1614,9 +1622,11 @@ export async function extractFacts(
       { role: 'user', content: userPrompt },
     ], {
       // #502: inherit chatCompletion's resilient default retry (5 attempts /
-      // 2s→32s FULL-jitter / 60s budget, Retry-After honored) — the old
-      // {attempts:3, baseDelayMs:1000} override was a stale rc.2 leftover that
-      // undercut the shared default and caused the rc.1/rc.2 429 data loss.
+      // full-jitter backoff, per-attempt ceiling 2/4/8/16s → ~30s worst-case
+      // over 4 waits, capped by a 60s total budget; Retry-After honored up to a
+      // 60s ceiling) — the old {attempts:3, baseDelayMs:1000} override was a
+      // stale rc.2 leftover that undercut the shared default and caused the
+      // rc.1/rc.2 429 data loss.
       timeoutMs: 30_000,
       logger,
     });
