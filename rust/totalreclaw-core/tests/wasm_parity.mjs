@@ -352,6 +352,26 @@ try {
   assert(true, 'rejects malformed JSON: ' + e.message.slice(0, 60));
 }
 
+// Fail-closed encode (#479 review): NaN / Infinity / finite-f16-overflow must
+// THROW at the WASM surface; the F16_MAX boundary (65504) must encode.
+function assertThrows(fn, message) {
+  try { fn(); assert(false, message + ' (did not throw)'); }
+  catch (e) { assert(true, message); }
+}
+{
+  const bad = new Float32Array(640).fill(0.5);
+  bad[3] = NaN;
+  assertThrows(() => wasm.encodeEmbeddingCanonical(bad), 'encode throws on NaN component');
+  bad[3] = Infinity;
+  assertThrows(() => wasm.encodeEmbeddingCanonical(bad), 'encode throws on Infinity component');
+  bad[3] = 1e10;
+  assertThrows(() => wasm.encodeEmbeddingCanonical(bad), 'encode throws on finite f16 overflow');
+  bad[3] = 65504;
+  const okB64 = wasm.encodeEmbeddingCanonical(bad);
+  const back = wasm.decodeEmbeddingUniversal(okB64);
+  assertEqual(back[3], 65504, 'F16_MAX boundary encodes and round-trips');
+}
+
 // ---------------------------------------------------------------------------
 // Summary
 // ---------------------------------------------------------------------------

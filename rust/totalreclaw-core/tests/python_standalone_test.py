@@ -349,6 +349,27 @@ def _cosine(a, b):
     return dot / (na * nb)
 
 
+def test_encode_embedding_canonical_fails_closed():
+    """#479 review: NaN/inf and finite f16 overflow must RAISE at the PyO3
+    surface (never a silently poisoned payload); F16_MAX boundary encodes."""
+    base = [0.5] * 640
+    for bad in (float("nan"), float("inf"), float("-inf"), 1e10, 65505.0):
+        v = list(base)
+        v[3] = bad
+        try:
+            totalreclaw_core.encode_embedding_canonical(v)
+            raise AssertionError(f"encode did not raise for component {bad!r}")
+        except AssertionError:
+            raise
+        except Exception:
+            pass  # expected: fail-closed
+    ok = list(base)
+    ok[3] = 65504.0
+    payload = totalreclaw_core.encode_embedding_canonical(ok)
+    back = totalreclaw_core.decode_embedding_universal(payload)
+    assert back[3] == 65504.0, "F16_MAX boundary must round-trip"
+
+
 def test_encode_embedding_canonical_matches_python_f16_base64():
     """PyO3 encode_embedding_canonical must match Python struct '<e' base64."""
     got = totalreclaw_core.encode_embedding_canonical(EMB["unit_vector"])
