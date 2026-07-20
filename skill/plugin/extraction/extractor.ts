@@ -774,8 +774,9 @@ export async function extractFactsForCompaction(
       { role: 'system', content: COMPACTION_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
     ], {
-      // 3.3.1-rc.2: retry transient 429 / timeout (same policy as extractFacts).
-      retry: { attempts: 3, baseDelayMs: 1000 },
+      // #502: inherit chatCompletion's resilient default retry (5 attempts /
+      // 2->32s full-jitter / 60s budget, Retry-After honored) — the old
+      // {attempts:3, baseDelayMs:1000} override was a stale rc.2 leftover.
       timeoutMs: 30_000,
       logger,
     });
@@ -932,8 +933,9 @@ export async function extractDebrief(
       { role: 'system', content: systemPrompt },
       { role: 'user', content: `Review this conversation and provide a debrief:\n\n${conversationText}` },
     ], {
-      // 3.3.1-rc.2: retry transient 429 / timeout.
-      retry: { attempts: 3, baseDelayMs: 1000 },
+      // #502: inherit chatCompletion's resilient default retry (5 attempts /
+      // 2->32s full-jitter / 60s budget, Retry-After honored) — the old
+      // {attempts:3, baseDelayMs:1000} override was a stale rc.2 leftover.
       timeoutMs: 30_000,
     });
 
@@ -1082,7 +1084,9 @@ export async function extractCrystal(
       { role: 'system', content: systemPrompt },
       { role: 'user', content: `Crystallise this session:\n\n${conversationText}` },
     ], {
-      retry: { attempts: 3, baseDelayMs: 1000 },
+      // #502: inherit chatCompletion's resilient default retry (5 attempts /
+      // 2->32s full-jitter / 60s budget, Retry-After honored) — the old
+      // {attempts:3, baseDelayMs:1000} override was a stale rc.2 leftover.
       timeoutMs: 30_000,
     });
 
@@ -1494,7 +1498,9 @@ export async function comparativeRescoreV1(
       // 3.3.1-rc.2: retry transient 429 / timeout (rescore is an inner
       // call after extractFacts — if extraction backs off successfully
       // the rescore usually also passes on first try, but keep symmetry).
-      retry: { attempts: 3, baseDelayMs: 1000 },
+      // #502: inherit chatCompletion's resilient default retry (5 attempts /
+      // 2->32s full-jitter / 60s budget, Retry-After honored) — the old
+      // {attempts:3, baseDelayMs:1000} override was a stale rc.2 leftover.
       timeoutMs: 30_000,
       logger,
     });
@@ -1607,11 +1613,10 @@ export async function extractFacts(
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ], {
-      // 3.3.1-rc.2: the headline fix for the rc.1 QA NO-GO — 5/6 extraction
-      // windows failed on zai 429 + timeouts with no retry. 3 attempts with
-      // 1s → 2s → 4s backoff recovers virtually all transient rate-limit
-      // hiccups. Graceful timeout: per-attempt 30s, total worst-case 30+1+30+2+30+4≈97s.
-      retry: { attempts: 3, baseDelayMs: 1000 },
+      // #502: inherit chatCompletion's resilient default retry (5 attempts /
+      // 2s→32s FULL-jitter / 60s budget, Retry-After honored) — the old
+      // {attempts:3, baseDelayMs:1000} override was a stale rc.2 leftover that
+      // undercut the shared default and caused the rc.1/rc.2 429 data loss.
       timeoutMs: 30_000,
       logger,
     });
