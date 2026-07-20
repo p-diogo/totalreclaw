@@ -57,6 +57,11 @@ use crate::{Error, Result};
 /// no central constant, so it lives here now).
 pub const EMBEDDING_DIMS: usize = 640;
 
+/// Maximum finite value representable in IEEE-754 binary16 (f16 max normal).
+/// Finite inputs beyond this would silently become ±inf under `f16::from_f32`;
+/// the encoder refuses them instead (see [`encode_embedding_canonical`]).
+pub const F16_MAX: f32 = 65504.0;
+
 /// Pack an embedding into the canonical pre-encryption payload string.
 ///
 /// - `embedding.len() == EMBEDDING_DIMS` (640) → little-endian `f16`.
@@ -66,8 +71,46 @@ pub const EMBEDDING_DIMS: usize = 640;
 /// returned as an ASCII string — the exact pre-encryption payload every client
 /// encrypts before storage. Matches the Python `struct '<Ne'` reference
 /// byte-for-byte for 640-d input.
-pub fn encode_embedding_canonical(embedding: &[f32]) -> String {
+///
+/// # Fail-closed input validation (#479 review)
+///
+/// The payload is written into an **immutable on-chain blob**: a NaN or ±inf
+/// component would silently poison cosine similarity for that fact forever.
+/// The encoder therefore rejects, with [`Error::InvalidInput`]:
+///
+/// - any non-finite component (NaN / ±inf), on BOTH the f16 and f32 paths;
+/// - any finite component with `|x| > F16_MAX` (65504) on the f16 path, which
+///   `f16::from_f32` would silently saturate to ±inf.
+///
+/// This is deliberately STRICTER than the Python `struct '<e'` reference
+/// (which raises only on finite overflow and happily packs NaN/±inf):
+/// fail-closed beats parity for permanent data, and Python adopts core.
+///
+/// # Precision precondition (byte-for-byte parity)
+///
+/// Inputs must be **f32-precision-exact** for the byte-for-byte Python-parity
+/// claim to hold: the bindings convert incoming f64 (JS numbers / Python
+/// floats) to `f32` first, so a genuinely double-precision value rounds
+/// f64→f32→f16 (double rounding) where Python's `struct '<e'` rounds f64→f16
+/// directly — measured divergence ~1/15k–20k random components (single-ULP,
+/// invisible to cosine, but a byte difference). Real Harrier embeddings are
+/// produced as f32, so the precondition holds for all production writes.
+pub fn encode_embedding_canonical(embedding: &[f32]) -> Result<String> {
     let use_f16 = embedding.len() == EMBEDDING_DIMS;
+    for (i, &v) in embedding.iter().enumerate() {
+        if !v.is_finite() {
+            return Err(Error::InvalidInput(format!(
+                "embedding[{i}] is {v} — non-finite components are not encodable \
+                 (they would permanently poison cosine similarity on-chain)"
+            )));
+        }
+        if use_f16 && v.abs() > F16_MAX {
+            return Err(Error::InvalidInput(format!(
+                "embedding[{i}] = {v} exceeds the f16 range (|x| <= {F16_MAX}); \
+                 refusing to silently saturate to ±inf"
+            )));
+        }
+    }
     let bytes_per_elem = if use_f16 { 2 } else { 4 };
     let mut buf = Vec::with_capacity(embedding.len().saturating_mul(bytes_per_elem));
     if use_f16 {
@@ -79,7 +122,7 @@ pub fn encode_embedding_canonical(embedding: &[f32]) -> String {
             buf.extend_from_slice(&v.to_le_bytes());
         }
     }
-    base64::engine::general_purpose::STANDARD.encode(&buf)
+    Ok(base64::engine::general_purpose::STANDARD.encode(&buf))
 }
 
 /// Decode any embedding payload — canonical or legacy — into `Vec<f32>`.
@@ -184,7 +227,7 @@ mod tests {
             .as_str()
             .unwrap()
             .to_string();
-        let got = encode_embedding_canonical(&unit_vector());
+        let got = encode_embedding_canonical(&unit_vector()).unwrap();
         assert_eq!(got, expected, "core f16 base64 must match Python struct '<e'");
     }
 
@@ -240,7 +283,7 @@ mod tests {
     #[test]
     fn encode_then_decode_640_round_trips_at_high_cosine() {
         let input = unit_vector();
-        let payload = encode_embedding_canonical(&input);
+        let payload = encode_embedding_canonical(&input).unwrap();
         assert!(payload.starts_with('[') == false, "canonical payload is base64, not JSON");
         let back = decode_embedding_universal(&payload).unwrap();
         let cos = cosine(&back, &input);
@@ -259,13 +302,13 @@ mod tests {
         let nc = &f["non_canonical"];
         let input: Vec<f32> = serde_json::from_value(nc["vector"].clone()).unwrap();
         assert_eq!(input.len(), 1024);
-        let payload = encode_embedding_canonical(&input);
+        let payload = encode_embedding_canonical(&input).unwrap();
         let back = decode_embedding_universal(&payload).unwrap();
         assert_eq!(back, input, "1024-d f32 round trip must be lossless");
 
         // Small non-640 vector also takes the f32 path and round-trips exactly.
         let small = vec![0.125, -0.75, 3.5, 0.0, 1.0];
-        let s_payload = encode_embedding_canonical(&small);
+        let s_payload = encode_embedding_canonical(&small).unwrap();
         assert_ne!(s_payload, "");
         assert_eq!(decode_embedding_universal(&s_payload).unwrap(), small);
     }
@@ -321,11 +364,60 @@ mod tests {
         assert_eq!(decode_embedding_universal("[]").unwrap(), Vec::<f32>::new());
     }
 
+    // -------------------------------------------------------------------------
+    // Fail-closed encode validation (#479 review finding 1) — permanent data
+    // must never carry NaN/inf, and finite f16 overflow must not saturate.
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn encode_rejects_non_finite_on_f16_path() {
+        let mut v = unit_vector();
+        v[7] = f32::NAN;
+        assert!(matches!(encode_embedding_canonical(&v).unwrap_err(), Error::InvalidInput(_)));
+        v[7] = f32::INFINITY;
+        assert!(matches!(encode_embedding_canonical(&v).unwrap_err(), Error::InvalidInput(_)));
+        v[7] = f32::NEG_INFINITY;
+        assert!(matches!(encode_embedding_canonical(&v).unwrap_err(), Error::InvalidInput(_)));
+    }
+
+    #[test]
+    fn encode_rejects_non_finite_on_f32_path() {
+        // Non-640 dim takes the f32 path; NaN is representable there but still
+        // rejected — a NaN component is an invalid embedding, period.
+        let v = vec![0.5, f32::NAN, 0.25];
+        assert!(matches!(encode_embedding_canonical(&v).unwrap_err(), Error::InvalidInput(_)));
+    }
+
+    #[test]
+    fn encode_rejects_finite_f16_overflow_and_accepts_f16_max() {
+        // |x| > 65504 would silently saturate to ±inf under f16::from_f32 —
+        // the exact case Python's struct '<e' raises OverflowError on.
+        let mut v = unit_vector();
+        v[0] = 65505.0;
+        assert!(matches!(encode_embedding_canonical(&v).unwrap_err(), Error::InvalidInput(_)));
+        v[0] = -1.0e10;
+        assert!(matches!(encode_embedding_canonical(&v).unwrap_err(), Error::InvalidInput(_)));
+        // Boundary: exactly F16_MAX is representable and must encode.
+        v[0] = F16_MAX;
+        let payload = encode_embedding_canonical(&v).unwrap();
+        let back = decode_embedding_universal(&payload).unwrap();
+        assert_eq!(back[0], F16_MAX);
+    }
+
+    #[test]
+    fn encode_allows_large_finite_on_f32_path() {
+        // The f32 path has no f16 range limit — 1e10 is finite and packs
+        // losslessly as f32 for non-canonical dims.
+        let v = vec![1.0e10, -2.5];
+        let payload = encode_embedding_canonical(&v).unwrap();
+        assert_eq!(decode_embedding_universal(&payload).unwrap(), v);
+    }
+
     #[test]
     fn encode_empty_returns_empty_string() {
         // 0 bytes -> empty base64. 0 != 640 so the f32 path is taken, packing
         // nothing. The decoder reads the empty payload back as an empty vector.
-        assert_eq!(encode_embedding_canonical(&[]), "");
+        assert_eq!(encode_embedding_canonical(&[]).unwrap(), "");
         assert_eq!(decode_embedding_universal("").unwrap(), Vec::<f32>::new());
     }
 }

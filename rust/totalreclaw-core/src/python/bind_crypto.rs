@@ -128,8 +128,13 @@ pub(crate) fn py_normalize_text(text: &str) -> String {
 /// the client encrypts before storage.
 #[pyfunction]
 #[pyo3(name = "encode_embedding_canonical")]
-pub(crate) fn py_encode_embedding_canonical(embedding: Vec<f32>) -> String {
-    crate::embedding_codec::encode_embedding_canonical(&embedding)
+pub(crate) fn py_encode_embedding_canonical(embedding: Vec<f32>) -> PyResult<String> {
+    // Fallible (#479 review): rejects NaN/±inf and finite f16 overflow —
+    // stricter than struct '<e' (which packs NaN/inf); fail-closed for
+    // immutable on-chain data. Precondition: f32-precision-exact inputs
+    // (Python floats are f64; this boundary rounds f64→f32 first — see the
+    // core doc comment on double rounding).
+    crate::embedding_codec::encode_embedding_canonical(&embedding).map_err(to_pyerr)
 }
 
 /// Decode any embedding payload into a ``list[float]`` (the forever-reader).
