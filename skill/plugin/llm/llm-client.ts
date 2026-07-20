@@ -451,6 +451,11 @@ export function initLLMClient(options: {
         baseUrlOverride: llmOverride.baseUrl,
         modelOverride: llmOverride.model ?? modelOverride,
         primaryModelHint: modelFromPrimary,
+        // #502: even for an explicit provider+key override, honor the user's
+        // configured models[] when the override omits a model — keeps
+        // cheapest-configured selection consistent across every tier (moot when
+        // the override sets a model, since that wins outright).
+        configuredModels: openclawProviders?.[provider]?.models,
       });
       if (resolved) {
         _cachedConfig = resolved.config;
