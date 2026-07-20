@@ -14,8 +14,15 @@ class TestWrapAwareBackupGuidance:
 
         monkeypatch.setenv("TOTALRECLAW_STATE_DIR", str(tmp_path))
         monkeypatch.delenv("TOTALRECLAW_NO_KEYCHAIN", raising=False)
-        # Mock backend: store succeeds → the file gets the marker.
+        # Mock backend: store succeeds → the file gets the marker. Also pin
+        # detect_backend — wrap_credentials short-circuits to plaintext when
+        # no backend exists (the CI/Linux case), which made this test pass
+        # locally (macOS `security` present) but fail in CI. Deterministic
+        # either way now.
         stored = {}
+        monkeypatch.setattr(
+            "totalreclaw.credentials_wrap.detect_backend", lambda: "mock"
+        )
         monkeypatch.setattr(
             "totalreclaw.credentials_wrap.store_secret",
             lambda account, secret: stored.__setitem__(account, secret),
