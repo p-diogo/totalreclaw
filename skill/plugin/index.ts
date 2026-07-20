@@ -2261,7 +2261,72 @@ function buildRecallDeps(logger: OpenClawPluginApi['logger']): TrNativeMemoryDep
   const quota: TrQuotaState | undefined = undefined;
   const pinned: TrPinnedFact[] | undefined = undefined;
 
-  return { recall, getById, quota, pinned };
+  // -------------------------------------------------------------------
+  // store(): the WRITE closure (internal#499). Routes ONE explicitly
+  // remembered fact through storeExtractedFacts — the SAME pipeline
+  // auto-extraction + smart-import use — so memory_save does NOT become a
+  // parallel write path. When #498 fixes executeBatch INSIDE
+  // storeExtractedFacts, this tool gets batching for free (one store entry
+  // point, shared by extraction + import + the write tool).
+  //
+  // Returns a truthful ok/stored the agent reports verbatim:
+  //   - ok:false  -> not paired / store threw (agent relays the error)
+  //   - ok:true, stored:0 -> dedup/skip (agent says "duplicate", NOT "Saved")
+  //   - ok:true, stored>=1 -> persisted (agent says "Saved")
+  // This truthfulness is the fix: the agent can no longer report "Saved" on a
+  // no-op the way it did when it shelled out to `tr remember` (GNU coreutils
+  // tr) and saw no output.
+  // -------------------------------------------------------------------
+  const store: TrNativeMemoryDeps['store'] = async (input) => {
+    // Lazy-init: resolve the paired-account context on first write. If init
+    // throws, surface ok:false so the agent tells the user instead of
+    // silently dropping the fact.
+    try {
+      await ensureInitialized(logger);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return { ok: false, stored: 0, error: `setup incomplete: ${msg}` };
+    }
+    // Mirror storeExtractedFacts' own precondition exactly (index.ts l.1506):
+    // if any of these are missing the store returns 0 silently — we convert
+    // that into an explicit ok:false so the agent surfaces "not paired"
+    // rather than a fabricated "Saved".
+    if (needsSetup || !encryptionKey || !dedupKey || !authKeyHex || !userId || !apiClient) {
+      return { ok: false, stored: 0, error: 'not paired — complete TotalReclaw setup first' };
+    }
+
+    // Build the canonical ExtractedFact the write path expects. Defaults
+    // mirror the historic totalreclaw_remember -> storeExtractedFacts wiring
+    // (Phase 2 fix; regression-guarded by extraction/store-dedup-wiring.test.ts
+    // scenario 6): action='ADD', confidence=1.0, importance=8 (the explicit-
+    // remember weight — above auto-extraction's 6-7 so an explicit remember
+    // wins a collision), type='claim', source='user'.
+    const fact: ExtractedFact = {
+      text: input.text,
+      type: input.type ?? 'claim',
+      importance: input.importance ?? 8,
+      action: 'ADD',
+      confidence: 1.0,
+      source: 'user',
+      ...(input.entities ? { entities: input.entities } : {}),
+      ...(input.scope ? { scope: input.scope } : {}),
+      ...(input.reasoning ? { reasoning: input.reasoning } : {}),
+    };
+
+    try {
+      const stored = await storeExtractedFacts([fact], logger, 'explicit');
+      // storeExtractedFacts returns the count of NEWLY persisted facts. A 0
+      // after a successful init means the fact was a near-duplicate / skipped
+      // by dedup — ok stays true; the tool tells the agent "duplicate, not
+      // stored" so it never says "Saved" on a dedup no-op.
+      return { ok: true, stored };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return { ok: false, stored: 0, error: msg };
+    }
+  };
+
+  return { recall, getById, store, quota, pinned };
 }
 
 // ---------------------------------------------------------------------------
