@@ -184,14 +184,22 @@ def _generate_mnemonic() -> str:
 
 
 def _write_credentials(credentials_path: Path, mnemonic: str) -> None:
-    """Write ``{"mnemonic": ...}`` at mode 0600.
+    """Write credentials.json at mode 0600, keychain-wrapping the mnemonic.
 
     Canonical shape — matches plugin 3.2.0+ and Python 2.2.2+. This is
     the write path every fresh setup lands on (legacy ``recovery_phrase``
     key is read-compatible but never newly written).
+
+    cred-2 (internal#262): ``wrap_credentials`` stores the phrase in the
+    OS keychain and replaces the mnemonic field with a non-secret marker
+    on success; on any failure (kill-switch, headless/container with no
+    backend) it returns plaintext ``{"mnemonic": ...}`` unchanged, so
+    this path keeps working everywhere and records nothing sensitive.
     """
+    from totalreclaw.credentials_wrap import wrap_credentials
+
     credentials_path.parent.mkdir(parents=True, exist_ok=True)
-    credentials_path.write_text(json.dumps({"mnemonic": mnemonic}))
+    credentials_path.write_text(json.dumps(wrap_credentials({"mnemonic": mnemonic})))
     try:
         credentials_path.chmod(0o600)
     except OSError:
@@ -222,14 +230,21 @@ def _try_eager_resolve_scope_address(credentials_path: Path, mnemonic: str, io: 
                 loop.close()
         if not sa:
             return
-        # Merge into existing JSON, preserving any other fields.
+        # Merge ``scope_address`` into the existing JSON, preserving every
+        # other field. cred-2 (#262): when the file is keychain-wrapped the
+        # mnemonic field holds a marker — we must NOT clobber it with the
+        # real phrase. Only ``scope_address`` is touched below.
         try:
             raw = credentials_path.read_text(encoding="utf-8")
             data = json.loads(raw) if raw.strip() else {}
         except Exception:
-            data = {"mnemonic": mnemonic}
+            # Best-effort merge: if the file we just wrote doesn't parse,
+            # leave it untouched rather than risk rewriting it with the
+            # real mnemonic (phrase-safety). The address resolves lazily
+            # on the first remember/recall call instead.
+            return
         if not isinstance(data, dict):
-            data = {"mnemonic": mnemonic}
+            return
         data["scope_address"] = sa
         credentials_path.write_text(json.dumps(data, indent=2))
         try:
