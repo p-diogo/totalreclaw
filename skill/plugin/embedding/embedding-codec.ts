@@ -170,6 +170,10 @@ function f16LeBytesToNumber(lo: number, hi: number): number {
 // floats instead of erroring. Core (Rust) and Python both REJECT invalid
 // base64; the local fallback must match that contract. Standard alphabet,
 // padded, whole-string.
+// Note: this validates alphabet + padding shape but not trailing-bit
+// canonicality (core's Rust engine also rejects non-zero trailing bits in
+// the final block) — slightly more lenient in the SAFE direction only; no
+// real encoder emits non-canonical trailing bits.
 const BASE64_STRICT = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 
 export function decodeEmbeddingLocal(payload: string): number[] {
