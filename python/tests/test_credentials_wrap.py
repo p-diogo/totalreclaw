@@ -568,7 +568,10 @@ def test_store_secret_never_shells_out_when_backend_resolves_macos(monkeypatch) 
 
 def test_load_macos_read_path_still_present() -> None:
     """The READ fallback (``_load_macos``, uses ``-w`` as a stdout flag —
-    no argv exposure) is kept; only the WRITE path is retired."""
+    no argv exposure) is kept; only the WRITE path is retired. Note this
+    is a narrow legacy-compat path (entries written by the now-removed
+    ``_store_macos`` subprocess), not a general recovery net for
+    keyring-written entries — see the module docstring."""
     assert hasattr(cw, "_load_macos")
 
 
@@ -581,7 +584,15 @@ def test_pyproject_declares_keyring_as_base_dependency_on_darwin() -> None:
     """``keyring>=24`` must appear in ``[project].dependencies`` (not just
     the optional ``[keychain]`` extra) gated by a ``sys_platform ==
     'darwin'`` environment marker, so a plain ``pip install totalreclaw``
-    on macOS always gets the zero-argv-exposure keychain backend."""
+    on macOS always gets the zero-argv-exposure keychain backend.
+
+    Asserts the actual ``>=24`` version floor, not just presence of a
+    darwin-marked ``keyring`` dependency — a regression that dropped or
+    lowered the floor (e.g. an unpinned ``keyring`` or ``keyring>=1``)
+    would satisfy a presence-only check while installing a version that
+    predates the API this module relies on.
+    """
+    import re
     import tomllib
     from pathlib import Path
 
@@ -600,5 +611,10 @@ def test_pyproject_declares_keyring_as_base_dependency_on_darwin() -> None:
         "expected a base dependency like "
         "\"keyring>=24; sys_platform == 'darwin'\" in [project].dependencies, "
         f"got: {base_deps}"
+    )
+    floor_pattern = re.compile(r"keyring\s*>=\s*24\b")
+    assert any(floor_pattern.search(dep) for dep in darwin_keyring_deps), (
+        "expected the darwin-marked keyring dependency to declare a "
+        f"`>=24` floor (regex {floor_pattern.pattern!r}), got: {darwin_keyring_deps}"
     )
 
