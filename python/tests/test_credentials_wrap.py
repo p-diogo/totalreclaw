@@ -30,6 +30,7 @@ from totalreclaw.credentials_wrap import (
     KeychainEntryMissing,
     KeychainUnavailable,
     account_for_mnemonic,
+    delete_secret,
     is_marker,
     is_marker_v2,
     marker_for,
@@ -63,9 +64,10 @@ VALID_MNEMONIC_2 = (
 def fake_keychain(monkeypatch):
     """In-memory keychain. Returns the backing dict for inspection.
 
-    Patches ``detect_backend`` → a non-None backend, ``store_secret`` and
-    ``load_secret`` → the in-memory impl, and deletes the kill-switch env
-    so the wrap/resolve code paths are live.
+    Patches ``detect_backend`` → a non-None backend, ``store_secret``,
+    ``load_secret``, and ``delete_secret`` → the in-memory impl, and
+    deletes the kill-switch env so the wrap/resolve/delete code paths are
+    live.
     """
     monkeypatch.delenv(cw.ENV_NO_KEYCHAIN, raising=False)
     store: dict[str, str] = {}
@@ -78,9 +80,13 @@ def fake_keychain(monkeypatch):
             raise KeychainEntryMissing(cw.MISSING_MESSAGE)
         return store[account]
 
+    def _delete(account: str) -> None:
+        store.pop(account, None)
+
     monkeypatch.setattr(cw, "detect_backend", lambda: "test-fake")
     monkeypatch.setattr(cw, "store_secret", _store)
     monkeypatch.setattr(cw, "load_secret", _load)
+    monkeypatch.setattr(cw, "delete_secret", _delete)
     return store
 
 
@@ -751,6 +757,52 @@ def test_unwrap_bundle_raises_when_no_backend(monkeypatch) -> None:
     monkeypatch.setattr(cw, "detect_backend", lambda: None)
     with pytest.raises(KeychainEntryMissing):
         unwrap_bundle(SAMPLE_SMART_ACCOUNT)
+
+
+# ---------------------------------------------------------------------------
+# delete_secret — added for hermes/auto_migrate.py (Option E Phase 2 / #581)
+# ---------------------------------------------------------------------------
+
+
+def test_delete_secret_removes_a_stored_entry(fake_keychain) -> None:
+    wrap_bundle(SAMPLE_SMART_ACCOUNT, SAMPLE_SECRET_SUBTREE)
+    assert marker_for_v2(SAMPLE_SMART_ACCOUNT) in fake_keychain
+
+    # Module-qualified — fake_keychain patches `cw.delete_secret` itself
+    # (a directly-substituted in-memory fake, mirroring store/load, rather
+    # than exercising the real function's backend dispatch against a
+    # "test-fake" backend id it doesn't recognise). The bare imported name
+    # would bypass the patch (frozen at import time), so tests that want
+    # the FAKE must call through the module.
+    cw.delete_secret(marker_for_v2(SAMPLE_SMART_ACCOUNT))
+
+    with pytest.raises(KeychainEntryMissing):
+        unwrap_bundle(SAMPLE_SMART_ACCOUNT)
+
+
+def test_delete_secret_never_raises_when_entry_absent(fake_keychain) -> None:
+    cw.delete_secret(marker_for_v2(SAMPLE_SMART_ACCOUNT))  # must not raise
+
+
+def test_delete_secret_never_raises_when_no_backend(monkeypatch) -> None:
+    # No fake_keychain here — exercises the REAL delete_secret directly
+    # (the bare imported name IS the real function; nothing patches it in
+    # this test's scope).
+    monkeypatch.delenv(cw.ENV_NO_KEYCHAIN, raising=False)
+    monkeypatch.setattr(cw, "detect_backend", lambda: None)
+    delete_secret(marker_for_v2(SAMPLE_SMART_ACCOUNT))  # must not raise
+
+
+def test_delete_secret_never_raises_on_backend_error(monkeypatch) -> None:
+    monkeypatch.delenv(cw.ENV_NO_KEYCHAIN, raising=False)
+    monkeypatch.setattr(cw, "detect_backend", lambda: "keyring")
+
+    class _BoomKeyring:
+        def delete_password(self, service, account):
+            raise RuntimeError("simulated delete failure")
+
+    monkeypatch.setattr(cw, "_try_keyring", lambda: _BoomKeyring())
+    delete_secret(marker_for_v2(SAMPLE_SMART_ACCOUNT))  # must not raise
 
 
 # ---------------------------------------------------------------------------
