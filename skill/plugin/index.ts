@@ -164,6 +164,7 @@ import {
 import { PluginHotCache, type HotFact } from './memory/hot-cache-wrapper.js';
 import { buildNativeStore } from './memory/native-store.js';
 import { CONFIG, setRecoveryPhraseOverride } from './config.js';
+import { isKeychainMarker, KEYCHAIN_MARKER_SETUP_MSG } from './keychain-marker.js';
 import { buildRelayHeaders } from './billing/relay-headers.js';
 import {
   readBillingCache,
@@ -570,6 +571,15 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
   const serverUrl = CONFIG.serverUrl || 'https://api.totalreclaw.xyz';
   let masterPassword = CONFIG.recoveryPhrase;
 
+  // #545: masterPassword can also arrive here already marker-shaped via
+  // attemptHotReload() re-invoking initialize() after setRecoveryPhraseOverride()
+  // — catch that re-entry path too, not just the candidate read below.
+  if (masterPassword && isKeychainMarker(masterPassword)) {
+    needsSetup = true;
+    logger.warn(KEYCHAIN_MARKER_SETUP_MSG);
+    return;
+  }
+
   // 3.2.0: if the env var is unset, probe credentials.json for a
   // pre-existing mnemonic (written either by the CLI wizard on this machine
   // or ported in from another client). We do NOT generate a phrase here —
@@ -581,6 +591,18 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
       (typeof existing?.mnemonic === 'string' && existing.mnemonic.trim()) ||
       (typeof existing?.recovery_phrase === 'string' && existing.recovery_phrase.trim()) ||
       '';
+    // #545: a co-installed Hermes client (#546) may have wrapped the phrase
+    // in the OS keychain and left only a non-secret marker in
+    // credentials.json. This plugin can't read OS-keychain-wrapped secrets —
+    // catch the marker here, BEFORE it becomes masterPassword / reaches
+    // deriveKeys() (which would otherwise throw an unhandled "invalid
+    // mnemonic" error). Fail soft instead: needsSetup + a clear message.
+    // NEVER log/echo the marker's payload — only the fixed guidance string.
+    if (candidate && isKeychainMarker(candidate)) {
+      needsSetup = true;
+      logger.warn(KEYCHAIN_MARKER_SETUP_MSG);
+      return;
+    }
     if (candidate) {
       masterPassword = candidate;
       setRecoveryPhraseOverride(candidate);
@@ -828,6 +850,16 @@ async function attemptHotReload(logger: OpenClawPluginApi['logger']): Promise<vo
   try {
     const creds = loadCredentialsJson(CREDENTIALS_PATH);
     if (!creds || typeof creds.mnemonic !== 'string' || !creds.mnemonic) return;
+
+    // #545: a co-installed Hermes client may have wrapped the phrase since
+    // the last check — don't hot-reload a marker, initialize() would catch
+    // it anyway but bail here first to skip the misleading "hot-reloading"
+    // log line and the pointless override.
+    if (isKeychainMarker(creds.mnemonic)) {
+      needsSetup = true;
+      logger.warn(KEYCHAIN_MARKER_SETUP_MSG);
+      return;
+    }
 
     logger.info('Hot-reloading credentials from credentials.json (no restart needed)');
 
