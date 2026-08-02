@@ -328,6 +328,41 @@ def load_secret(account: str) -> str:
         raise KeychainUnavailable(UNAVAILABLE_MESSAGE)
 
 
+def delete_secret(account: str) -> None:
+    """Best-effort delete of the secret stored under *account*.
+
+    Never raises. A deletion failure (locked keychain, backend error,
+    entry already gone) is not a reason to fail whatever cleanup called
+    this — an orphaned stale entry is harmless once its marker no longer
+    exists anywhere referencing it (nothing reads it once
+    ``credentials.json`` has moved on). Added for Option E Phase 2 / #581
+    (``hermes/auto_migrate.py`` drops the v1 entry after a v2 migration
+    reads back correctly).
+
+    The legacy macOS subprocess write path (``_store_macos``) is retired
+    (#558) and never had a corresponding delete; on that degenerate
+    ``backend == "macos"`` path this is a no-op.
+    """
+    backend = detect_backend()
+    try:
+        if backend == "keyring":
+            kr = _try_keyring()
+            if kr is not None:
+                kr.delete_password(SERVICE_NAME, account)
+        elif backend == "linux_ss":
+            ss = _try_secretstorage()
+            if ss is not None:
+                bus = ss.dbus_init()
+                col = ss.get_default_collection(bus)
+                if col.is_locked():
+                    col.unlock()
+                for item in col.search_items({"service": SERVICE_NAME, "account": account}):
+                    item.delete()
+        # backend in (None, "macos"): nothing to delete through this module.
+    except Exception:  # noqa: BLE001 — best-effort, never raise
+        logger.debug("credentials_wrap: delete_secret failed (backend=%s)", backend)
+
+
 def _store_keyring(account: str, secret: str) -> None:
     kr = _try_keyring()
     assert kr is not None  # narrow for type-checkers; detect_backend guards
