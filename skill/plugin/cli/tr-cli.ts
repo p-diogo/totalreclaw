@@ -39,6 +39,7 @@ import { randomUUID } from 'node:crypto';
 
 import { CONFIG, setRecoveryPhraseOverride } from '../config.js';
 import { loadCredentialsJson } from '../fs-helpers.js';
+import { isKeychainMarker, KEYCHAIN_MARKER_SETUP_MSG } from '../keychain-marker.js';
 import { printStatus } from '../pairing/onboarding-cli.js';
 import {
   deriveKeys,
@@ -134,6 +135,17 @@ async function buildContext(): Promise<CliContext> {
 
   if (!mnemonic) {
     die('No recovery phrase in credentials.json. Run: tr pair --json');
+  }
+
+  // #545: a co-installed Hermes client (#546) may have wrapped the phrase in
+  // the OS keychain, leaving only a non-secret marker in credentials.json.
+  // This CLI can't read OS-keychain-wrapped secrets — catch it here, BEFORE
+  // it becomes the override / reaches deriveKeys() (which would otherwise
+  // throw an unhandled "invalid mnemonic" error on every `tr` command that
+  // calls buildContext(): remember/forget/export). Fail with a clear,
+  // actionable message instead. NEVER echo the marker's payload.
+  if (isKeychainMarker(mnemonic)) {
+    die(KEYCHAIN_MARKER_SETUP_MSG);
   }
 
   // Make the mnemonic visible to subgraph-store helpers (getSubgraphConfig

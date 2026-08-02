@@ -571,9 +571,15 @@ async function initialize(logger: OpenClawPluginApi['logger']): Promise<void> {
   const serverUrl = CONFIG.serverUrl || 'https://api.totalreclaw.xyz';
   let masterPassword = CONFIG.recoveryPhrase;
 
-  // #545: masterPassword can also arrive here already marker-shaped via
-  // attemptHotReload() re-invoking initialize() after setRecoveryPhraseOverride()
-  // — catch that re-entry path too, not just the candidate read below.
+  // #545: defense-in-depth for the CONFIG.recoveryPhrase / env-var path
+  // (TOTALRECLAW_RECOVERY_PHRASE set directly to a marker, or any future
+  // caller of setRecoveryPhraseOverride() with an unvalidated value).
+  // attemptHotReload()'s own guard (below) already short-circuits BEFORE
+  // calling setRecoveryPhraseOverride() on its re-entry path, so this check
+  // is not load-bearing for that specific caller today — kept because
+  // masterPassword can still reach this line already marker-shaped from
+  // CONFIG.recoveryPhrase itself, and because catching it here (before the
+  // candidate read below) is the primary, first-line guard.
   if (masterPassword && isKeychainMarker(masterPassword)) {
     needsSetup = true;
     logger.warn(KEYCHAIN_MARKER_SETUP_MSG);
