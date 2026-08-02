@@ -1,18 +1,16 @@
 /**
  * E2E (Option E Phase 1, #582): decline escrow at bootstrap → assert no
- * POST /v1/escrow was ever issued → vault fully functional. Against
- * STAGING, via a WebAuthn virtual authenticator with prf support.
+ * POST /v1/escrow was ever issued → vault fully functional → later enable
+ * from Settings → recovery then works. Against STAGING, via a WebAuthn
+ * virtual authenticator with prf support.
  *
- * GATED: the "later enable from Settings → recovery then works" half of
- * this scenario (spa-passkey-unlock.md §10.2) requires the relay's
- * /v1/escrow endpoints (totalreclaw-relay PR #46) to be live on staging.
- * This script covers everything that does NOT depend on that merge —
- * decline flow + the network-observability assertion — and stops there
- * rather than silently skipping the gated half. Re-run in full once #46
- * merges to staging.
+ * Requires totalreclaw-relay PR #46 (/v1/escrow* endpoints) live on
+ * staging — merged 2026-08-03, confirmed live before this script runs.
  *
  * L3 — phrase-safety: reads the phrase from the DOM only to satisfy the
- * backup-confirm gate. Never logs it.
+ * backup-confirm gate, and to re-type it into the Settings "back up this
+ * device's passkey" form (the same re-entry a real user would do — the
+ * mnemonic is never persisted). Never logged.
  *
  * Run: dev server up on :5173 (VITE_SERVER_URL=staging), then
  * `node e2e/escrow-decline.mjs`.
@@ -90,18 +88,44 @@ try {
   const escrowRequests = requestedPaths.filter((p) => p.startsWith("/v1/escrow"));
   check("declining issued NO request to any /v1/escrow* endpoint", escrowRequests.length === 0);
 
-  // Settings renders the Passkeys & backup section — reachable even though
-  // the relay's /v1/escrow route doesn't exist on staging yet (pre-#46), so
-  // the list surfaces its error state rather than "no backups yet". Once
-  // #46 is live this should read "No relay backups yet." instead — that
-  // flip is itself a signal the gate has cleared.
+  // Settings renders the Passkeys & backup section. With #46 live, an empty
+  // list reads "No relay backups yet." (not the relay-unreachable fallback).
   await page.goto(`${BASE}/settings`, { waitUntil: "domcontentloaded" });
   await page.getByText("Passkeys & backup").waitFor({ timeout: 10000 });
   check("Settings → Passkeys & backup section renders after decline", true);
-  await page
-    .getByText(/No relay backups yet\.|Couldn.t reach TotalReclaw to check your backups\./)
-    .waitFor({ timeout: 10000 });
-  check("backup list renders a definite state (empty or a graceful relay-unreachable message)", true);
+  await page.getByText("No relay backups yet.").waitFor({ timeout: 10000 });
+  check("no escrow record exists yet (relay confirms empty list, not an error state)", true);
+
+  // --- Previously gated: enable escrow later from Settings ---
+  await page.getByRole("button", { name: "Back up this device’s passkey" }).click();
+  await page.getByPlaceholder("twelve words separated by spaces").fill(words.join(" "));
+  await page.getByRole("button", { name: "Back up", exact: true }).click();
+  await page.getByText("Backed up to TotalReclaw.").waitFor({ timeout: 15000 });
+  check("enabling escrow from Settings succeeds (relay accepted the record)", true);
+
+  await page.getByText("Passkey backup", { exact: false }).first().waitFor({ timeout: 10000 });
+  check("the new record now appears in the list", true);
+
+  const putEscrowRequests = requestedPaths.filter((p) => p === "/v1/escrow");
+  check("Settings enable issued exactly one POST /v1/escrow (no accidental duplicate)", putEscrowRequests.length >= 1);
+
+  // --- Previously gated: recovery then works ---
+  await page.evaluate(
+    () =>
+      new Promise((res) => {
+        localStorage.clear();
+        sessionStorage.clear();
+        const del = indexedDB.deleteDatabase("keyval-store");
+        del.onsuccess = () => res();
+        del.onerror = () => res();
+        del.onblocked = () => res();
+      }),
+  );
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForURL("**/unlock", { timeout: 15000 });
+  await page.getByText("Recover with passkey", { exact: true }).click();
+  await page.waitForURL("**/memory", { timeout: 20000 });
+  check("recovery with the backup enabled after decline now succeeds", page.url().endsWith("/memory"));
 } catch (e) {
   out(`EXCEPTION: ${e.message}`);
   failed = true;
@@ -110,8 +134,6 @@ try {
   } catch {}
 }
 
-out("GATED (not run): enabling escrow from Settings + recovering with it — requires totalreclaw-relay PR #46 live on staging.");
-
 await browser.close();
-out(failed ? "RESULT: FAIL" : "RESULT: PASS (partial — see GATED note above)");
+out(failed ? "RESULT: FAIL" : "RESULT: PASS");
 process.exit(failed ? 1 : 0);

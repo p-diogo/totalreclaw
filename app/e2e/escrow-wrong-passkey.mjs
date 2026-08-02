@@ -99,10 +99,14 @@ try {
 
   // --- Authenticator B: bootstrap a SEPARATE vault (gives B its own resident credential on this rp.id) ---
   await wipeLocalStorage();
-  const authB = await addAuthenticator();
-  // Two authenticators now attached — remove A so a discoverable
-  // assertion below can only resolve to B's credential, deterministically.
+  // Chrome only supports one "internal"-transport virtual authenticator at a
+  // time — remove A BEFORE adding B, not after (an earlier version of this
+  // script had them attached simultaneously and hit
+  // "WebAuthn.addVirtualAuthenticator: Chrome only supports one internal
+  // authenticator per environment"). This also serves the test's own intent:
+  // it must resolve unambiguously to B's credential.
   await cdp.send("WebAuthn.removeVirtualAuthenticator", { authenticatorId: authA });
+  const authB = await addAuthenticator();
   await bootstrapVault({ escrow: false }); // vault B declines escrow — irrelevant here
   check("vault B bootstrapped with its own passkey (authenticator B)", page.url().endsWith("/memory"));
 
