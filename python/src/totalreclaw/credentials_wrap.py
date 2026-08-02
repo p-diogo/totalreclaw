@@ -19,11 +19,12 @@ Backend selection (first match wins)
 ------------------------------------
 1. ``keyring`` (lazy import) — native OS API via the Security framework /
    Secret Service / Credential Manager. **No argv exposure** of the
-   secret. Recommended; install ``keyring`` to use it.
-2. macOS ``security add-generic-password`` / ``find-generic-password``
-   subprocess (the cred-2 issue's prescribed direct backend).
-3. Linux Secret Service via ``secretstorage`` (lazy import).
-4. None of the above, or the kill-switch armed → **plaintext fallback**
+   secret. **Mandatory on macOS** (see "macOS keyring is a hard
+   dependency" below) — installed automatically by ``pip install
+   totalreclaw`` on darwin; optional elsewhere via the ``[keychain]``
+   extra.
+2. Linux Secret Service via ``secretstorage`` (lazy import).
+3. None of the above, or the kill-switch armed → **plaintext fallback**
    (the exact pre-cred-2 behaviour).
 
 Phrase-safety rails (hard)
@@ -52,15 +53,24 @@ at every consumer** — verified empirically against:
 So no consumer — including one that skips pre-validation — can silently
 derive a *different* wallet from the marker. See ``test_credentials_wrap``.
 
-macOS subprocess note
----------------------
-``security add-generic-password -w <secret>`` passes the secret as an
-argument, so it is briefly visible in the process list. On macOS the
-login keychain is per-user and the same user can already read any of
-their own keychain items at will (``security find-generic-password``),
-so this millisecond argv visibility adds no incremental leak; install
-``keyring`` to route through the native Security framework and avoid the
-subprocess entirely.
+macOS keyring is a hard dependency (fast-follow #558)
+------------------------------------------------------
+Earlier versions of this module fell back to the ``security
+add-generic-password -w <secret>`` subprocess on macOS when ``keyring``
+wasn't installed. That command passes the secret as an argument, so it
+was briefly visible in the local process list during the one-time wrap
+(the login keychain is per-user and the same user can already read any
+of their own keychain items at will via ``security find-generic-password``,
+so the incremental risk was small and local-attacker-only — but it was
+cheap to eliminate). ``keyring>=24`` is now a **mandatory** dependency on
+darwin (``sys_platform == 'darwin'`` marker in ``pyproject.toml``), so
+``detect_backend()`` always resolves to ``"keyring"`` there and the
+subprocess WRITE path (``_store_macos``) has been removed entirely — see
+``test_credentials_wrap.py``. The READ fallback (``_load_macos``, which
+uses ``-w`` as a *stdout* flag — no argv exposure) is kept for the
+degenerate case where the mandatory dependency somehow failed to import
+(e.g. a corrupted install); it is otherwise unreachable, since
+``detect_backend()`` checks ``keyring`` first.
 """
 
 from __future__ import annotations
@@ -226,11 +236,15 @@ def store_secret(account: str, secret: str) -> None:
     try:
         if backend == "keyring":
             _store_keyring(account, secret)
-        elif backend == "macos":
-            _store_macos(account, secret)
         elif backend == "linux_ss":
             _store_linux(account, secret)
         else:
+            # #558: the macOS `security add-generic-password -w` WRITE path
+            # is retired (argv exposure). `keyring` is a mandatory darwin
+            # dependency, so `backend == "macos"` should never happen in
+            # normal operation — detect_backend() checks keyring first. If
+            # it somehow does (corrupted install), fall back to plaintext
+            # rather than shelling out with the secret in argv.
             raise KeychainUnavailable(UNAVAILABLE_MESSAGE)
     except KeychainUnavailable:
         raise
@@ -275,21 +289,6 @@ def _load_keyring(account: str) -> str:
     if val is None:
         raise KeychainEntryMissing(MISSING_MESSAGE)
     return val
-
-
-def _store_macos(account: str, secret: str) -> None:
-    # capture_output=True keeps the secret off the parent's stdout/stderr.
-    # See the module docstring for the argv-visibility note.
-    res = subprocess.run(
-        [
-            "security", "add-generic-password",
-            "-s", SERVICE_NAME, "-a", account,
-            "-w", secret, "-U",
-        ],
-        capture_output=True,
-    )
-    if res.returncode != 0:
-        raise KeychainUnavailable(UNAVAILABLE_MESSAGE)
 
 
 def _load_macos(account: str) -> str:
