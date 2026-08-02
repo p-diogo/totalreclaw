@@ -148,6 +148,7 @@ fn addresses_equal_ignoring_case(a: &str, b: &str) -> bool {
 /// and index one immutable on-chain corpus and cannot be scoped, rotated, or
 /// made per-host.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct VaultKeys {
     #[serde(with = "hex32")]
     pub encryption_key: [u8; 32],
@@ -215,6 +216,7 @@ impl SigningMaterial {
 
 /// The on-chain identity this bundle authenticates writes/reads for.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AccountRef {
     /// CREATE2 Smart Account address — facts are indexed by this.
     /// `0x`-prefixed, EIP-55 checksummed.
@@ -229,6 +231,15 @@ pub struct AccountRef {
 /// `schema` are not struct fields: they are wire-protocol constants injected
 /// by [`bundle_to_json`] and checked by [`parse_bundle_v1`], not business
 /// data a caller can vary.
+///
+/// **[`parse_bundle_v1`] is the only validated constructor.** This type
+/// derives `Deserialize`, so `serde_json::from_str::<DerivedBundleV1>(..)`
+/// compiles and will happily accept a syntactically well-formed but
+/// semantically invalid bundle (mismatched address/private_key, an
+/// `owner-eoa` carrying a stray `grant`, …) — it runs none of
+/// [`validate_bundle_v1`]'s checks. Every binding in this crate (PyO3, WASM)
+/// is confirmed to route through [`parse_bundle_v1`], never a bare
+/// deserialize; a future binding or internal caller MUST do the same.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DerivedBundleV1 {
     pub vault: VaultKeys,
@@ -238,7 +249,10 @@ pub struct DerivedBundleV1 {
     pub provisioned_at: String,
     /// `"spa"` | `"local-migration"` | `"external"`. Informational only —
     /// not validated against a closed enum here, so a future provisioning
-    /// origin string round-trips without a core release.
+    /// origin string round-trips without a core release. It IS bounded to
+    /// `^[a-z0-9-]{1,32}$` by [`validate_bundle_v1`] (a short lowercase
+    /// slug shape) — free-form-but-unbounded would make this field an
+    /// undocumented carrier for smuggled secret material.
     pub provisioned_by: String,
 }
 
@@ -248,7 +262,18 @@ const BUNDLE_SCHEMA: &str = "derived-bundle-v1";
 /// The wire envelope — adds `version`/`schema` and pins field order to the
 /// derived-bundle-v1.md §4.1 listing. Never constructed by a caller directly;
 /// only [`bundle_to_json`] and [`parse_bundle_v1`] touch this type.
+///
+/// `deny_unknown_fields` is load-bearing here (and on [`VaultKeys`] /
+/// [`AccountRef`] / both [`SigningMaterial`] variants): without it, serde
+/// silently *drops* any unrecognised top-level or nested field instead of
+/// erroring, so `{...valid bundle..., "mnemonic": "<phrase>", "seed":
+/// "<hex>"}` would parse as `Ok` with the injected fields discarded — a
+/// consumer that persists the raw JSON it received (rather than only
+/// `bundle_to_json`'s own re-serialisation) would silently write root
+/// material to disk under a "validated bundle" label. See
+/// `test_reject_injected_mnemonic_field_top_level` and the nested variants.
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct BundleWire {
     version: u32,
     schema: String,
@@ -288,6 +313,11 @@ pub fn derive_bundle_from_mnemonic(
     provisioned_by: &str,
     smart_account: &str,
 ) -> Result<DerivedBundleV1> {
+    // Fail fast on a malformed provisioned_by rather than returning a bundle
+    // that would later fail validate_bundle_v1 on its first round-trip
+    // through parse_bundle_v1 (bundle_to_json -> parse_bundle_v1).
+    require_bounded_provisioned_by(provisioned_by)?;
+
     let keys = crypto::derive_keys_from_mnemonic(mnemonic)?;
     let lsh_seed = crypto::derive_lsh_seed(mnemonic, &keys.salt)?;
     let eth_wallet = wallet::derive_eoa(mnemonic)?;
@@ -416,6 +446,23 @@ pub fn validate_bundle_v1(bundle: &DerivedBundleV1) -> Result<()> {
     require_valid_address(&bundle.account.smart_account, "account.smart_account")?;
     require_valid_address(bundle.signing.address(), "signing.address")?;
 
+    // Both addresses must carry EIP-55 checksum casing — not just be
+    // case-insensitively valid. Without this, a correct-but-lowercase
+    // address parses and round-trips lowercase, silently breaking the
+    // cross-client byte-equality parity checksum casing exists for (see
+    // to_eip55_checksum's doc comment and the parity fixture). Runs AFTER
+    // the address/private-key mismatch check above so a mismatched address
+    // still reports as a mismatch, not a casing error.
+    require_eip55_checksum(&bundle.account.smart_account, "account.smart_account")?;
+    require_eip55_checksum(bundle.signing.address(), "signing.address")?;
+
+    // provisioned_by is informational (not a closed enum — see
+    // DerivedBundleV1::provisioned_by), but it is still an unauthenticated
+    // free-form string a malicious or buggy provisioner controls. Bound its
+    // shape so it cannot smuggle root material (a mnemonic, a seed, or any
+    // other secret-shaped payload) under a field nobody expects to hold one.
+    require_bounded_provisioned_by(&bundle.provisioned_by)?;
+
     if let SigningMaterial::SessionKey { grant, address, .. } = &bundle.signing {
         let grant_account = grant.get("account").and_then(|v| v.as_str()).ok_or_else(|| {
             Error::InvalidInput("session-key grant is missing required field \"account\"".into())
@@ -463,6 +510,40 @@ fn require_valid_address(address: &str, field: &str) -> Result<()> {
     if stripped.len() != 40 || !stripped.bytes().all(|b| b.is_ascii_hexdigit()) {
         return Err(Error::InvalidInput(format!(
             "{field} is not a valid 20-byte hex address: {address:?}"
+        )));
+    }
+    Ok(())
+}
+
+/// Require `address` to already carry correct EIP-55 checksum casing.
+/// Caller must have already run [`require_valid_address`] — this assumes
+/// well-formed 20-byte hex.
+fn require_eip55_checksum(address: &str, field: &str) -> Result<()> {
+    let checksummed = to_eip55_checksum(address)?;
+    if checksummed != address {
+        return Err(Error::InvalidInput(format!(
+            "{field} is not EIP-55 checksummed (expected {checksummed}, got {address}) — \
+             load-bearing for cross-client byte-equality parity, see derived-bundle-v1.md §4.1"
+        )));
+    }
+    Ok(())
+}
+
+/// `provisioned_by` is informational only (not a closed enum — new
+/// provisioning origins round-trip without a core release), but it is still
+/// attacker/provisioner-controlled input. Bound it to a short lowercase
+/// slug shape so it cannot carry a smuggled mnemonic, seed, or other
+/// secret-shaped payload: `^[a-z0-9-]{1,32}$`.
+fn require_bounded_provisioned_by(value: &str) -> Result<()> {
+    let len_ok = !value.is_empty() && value.len() <= 32;
+    let chars_ok = value
+        .bytes()
+        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
+    if !len_ok || !chars_ok {
+        return Err(Error::InvalidInput(format!(
+            "provisioned_by must match ^[a-z0-9-]{{1,32}}$ (a short lowercase slug — \
+             \"spa\" | \"local-migration\" | \"external\" today, others may be added later), \
+             got {value:?}"
         )));
     }
     Ok(())
@@ -823,5 +904,228 @@ mod tests {
         assert!(enc_pos < dedup_pos);
         assert!(dedup_pos < auth_pos);
         assert!(auth_pos < lsh_pos);
+    }
+
+    // -- Adversarial review findings (PR #587 REQUEST-CHANGES) ---------------
+    //
+    // MAJOR: without `deny_unknown_fields` on BundleWire/VaultKeys/AccountRef,
+    // serde silently DROPS unrecognised fields instead of erroring, so a
+    // bundle carrying an injected "mnemonic" or "seed" field alongside
+    // otherwise-valid data would parse as Ok() with the injected field
+    // discarded. A consumer that persists the RAW JSON it received (rather
+    // than only ever re-serialising through bundle_to_json) would then
+    // silently write root material to disk under a "validated bundle" label.
+    // These tests assert the injection is rejected outright, not silently
+    // stripped.
+
+    #[test]
+    fn test_reject_injected_mnemonic_field_top_level() {
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let bad = json.replacen(
+            "\"provisioned_by\":\"local-migration\"",
+            &format!(
+                "\"provisioned_by\":\"local-migration\",\"mnemonic\":\"{TEST_MNEMONIC}\""
+            ),
+            1,
+        );
+        assert_ne!(bad, json, "sanity: replacement must have taken effect");
+        let result = parse_bundle_v1(&bad);
+        assert!(
+            result.is_err(),
+            "a bundle with an injected top-level mnemonic field must be rejected outright, \
+             never silently accepted with the field dropped"
+        );
+    }
+
+    #[test]
+    fn test_reject_injected_seed_field_nested_in_vault() {
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let seed_hex = hex::encode(crypto::mnemonic_to_seed_bytes(TEST_MNEMONIC).unwrap());
+        let lsh_field = format!("\"lsh_seed\":\"{}\"", hex::encode(bundle.vault.lsh_seed));
+        let bad = json.replacen(
+            &lsh_field,
+            &format!("{lsh_field},\"seed\":\"{seed_hex}\""),
+            1,
+        );
+        assert_ne!(bad, json);
+        let result = parse_bundle_v1(&bad);
+        assert!(
+            result.is_err(),
+            "an injected seed field nested inside vault must be rejected"
+        );
+    }
+
+    #[test]
+    fn test_reject_injected_mnemonic_field_nested_in_account() {
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let chain_id_field = format!("\"chain_id\":{}", bundle.account.chain_id);
+        let bad = json.replacen(
+            &chain_id_field,
+            &format!("{chain_id_field},\"mnemonic\":\"{TEST_MNEMONIC}\""),
+            1,
+        );
+        assert_ne!(bad, json);
+        let result = parse_bundle_v1(&bad);
+        assert!(
+            result.is_err(),
+            "an injected mnemonic field nested inside account must be rejected"
+        );
+    }
+
+    #[test]
+    fn test_reject_injected_field_nested_in_owner_eoa_signing() {
+        // SigningMaterial already had deny_unknown_fields pre-review — this
+        // is a regression guard, not a new gap, but it belongs alongside the
+        // other injection tests for a complete adversarial table.
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let address_field = format!("\"address\":\"{}\"", bundle.signing.address());
+        let bad = json.replacen(
+            &address_field,
+            &format!("{address_field},\"seed\":\"{}\"", "aa".repeat(64)),
+            1,
+        );
+        assert_ne!(bad, json);
+        assert!(parse_bundle_v1(&bad).is_err());
+    }
+
+    // MINOR: provisioned_by is unauthenticated, provisioner-controlled input.
+    // Bound its shape so it cannot smuggle a phrase or other secret-shaped
+    // payload under a field nobody expects to hold one.
+
+    #[test]
+    fn test_reject_provisioned_by_smuggling_a_phrase() {
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let bad = json.replacen(
+            "\"provisioned_by\":\"local-migration\"",
+            &format!("\"provisioned_by\":\"{TEST_MNEMONIC}\""),
+            1,
+        );
+        assert_ne!(bad, json);
+        let result = parse_bundle_v1(&bad);
+        assert!(
+            result.is_err(),
+            "provisioned_by must not accept a smuggled phrase-shaped value (spaces, length > 32)"
+        );
+    }
+
+    #[test]
+    fn test_reject_provisioned_by_uppercase() {
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let bad = json.replacen(
+            "\"provisioned_by\":\"local-migration\"",
+            "\"provisioned_by\":\"Local-Migration\"",
+            1,
+        );
+        assert!(parse_bundle_v1(&bad).is_err());
+    }
+
+    #[test]
+    fn test_reject_provisioned_by_empty() {
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let bad = json.replacen("\"provisioned_by\":\"local-migration\"", "\"provisioned_by\":\"\"", 1);
+        assert!(parse_bundle_v1(&bad).is_err());
+    }
+
+    #[test]
+    fn test_reject_provisioned_by_too_long() {
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let too_long = "a".repeat(33);
+        let bad = json.replacen(
+            "\"provisioned_by\":\"local-migration\"",
+            &format!("\"provisioned_by\":\"{too_long}\""),
+            1,
+        );
+        assert!(parse_bundle_v1(&bad).is_err());
+    }
+
+    #[test]
+    fn test_accept_provisioned_by_documented_values() {
+        for value in ["spa", "local-migration", "external"] {
+            let result =
+                derive_bundle_from_mnemonic(TEST_MNEMONIC, 100, value, TEST_SMART_ACCOUNT);
+            assert!(result.is_ok(), "provisioned_by={value:?} must be accepted");
+        }
+    }
+
+    #[test]
+    fn test_derive_bundle_rejects_malformed_provisioned_by() {
+        let result =
+            derive_bundle_from_mnemonic(TEST_MNEMONIC, 100, "not a valid slug!", TEST_SMART_ACCOUNT);
+        assert!(
+            result.is_err(),
+            "derive_bundle_from_mnemonic must fail fast on a malformed provisioned_by rather \
+             than returning a bundle that fails to round-trip through parse_bundle_v1 later"
+        );
+    }
+
+    // MINOR: correct-but-lowercase addresses must not silently validate —
+    // EIP-55 casing is load-bearing for cross-client byte-equality parity
+    // (derived-bundle-v1.md §4.1), so a bundle carrying a non-checksummed
+    // (but otherwise valid) address must be rejected, not accepted-as-is.
+
+    #[test]
+    fn test_reject_lowercase_signing_address() {
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let lowercase_address = bundle.signing.address().to_ascii_lowercase();
+        assert_ne!(
+            lowercase_address,
+            bundle.signing.address(),
+            "sanity: the canonical address must contain at least one letter EIP-55 would case"
+        );
+        // Case-insensitive equality means this still passes the
+        // address-matches-private-key check, so it isolates the NEW
+        // checksum-casing check.
+        let bad = json.replacen(bundle.signing.address(), &lowercase_address, 1);
+        assert_ne!(bad, json);
+        let result = parse_bundle_v1(&bad);
+        assert!(
+            result.is_err(),
+            "a correct-but-lowercase signing.address must be rejected, not silently accepted"
+        );
+        assert!(result.unwrap_err().to_string().contains("EIP-55"));
+    }
+
+    #[test]
+    fn test_reject_lowercase_smart_account() {
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let lowercase_smart_account = bundle.account.smart_account.to_ascii_lowercase();
+        assert_ne!(lowercase_smart_account, bundle.account.smart_account);
+        let bad = json.replacen(&bundle.account.smart_account, &lowercase_smart_account, 1);
+        assert_ne!(bad, json);
+        let result = parse_bundle_v1(&bad);
+        assert!(
+            result.is_err(),
+            "a correct-but-lowercase account.smart_account must be rejected"
+        );
+        assert!(result.unwrap_err().to_string().contains("EIP-55"));
+    }
+
+    #[test]
+    fn test_validate_bundle_v1_still_reports_mismatch_before_casing_for_wrong_address() {
+        // Regression guard for check ORDER: an address that is BOTH the
+        // wrong address AND not checksummed must still surface as a
+        // "does not match" error (checked first), not an EIP-55 error —
+        // otherwise test_reject_address_mismatch's assertion on the error
+        // text would be accidentally coupled to casing.
+        let bundle = derive_test_bundle();
+        let json = bundle_to_json(&bundle).unwrap();
+        let bad = json.replacen(
+            bundle.signing.address(),
+            "0x000000000000000000000000000000000000dd",
+            1,
+        );
+        let result = parse_bundle_v1(&bad);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("does not match"));
     }
 }
