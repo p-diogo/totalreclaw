@@ -570,10 +570,16 @@ async def _drive_full_pair_session(
             )
             return {"state": "active", "account_id": address}
         except Exception as err:
+            # Exception-class-only logging (2026-08-03 fix, coordinator
+            # review on #592) — never %r/exc_info here. This branch
+            # handles a derived-bundle-v1 payload; a ValueError from
+            # bundle parsing/validation, keychain wrap, or credential
+            # persistence can echo fragments of the hex/JSON it was
+            # handling, and %r would print the full exception message.
             logger.error(
-                "pair.sidecar: state.configure_from_bundle failed token=%s… err=%r",
+                "pair.sidecar: state.configure_from_bundle failed token=%s… err_type=%s",
                 token_tag,
-                err,
+                type(err).__name__,
             )
             return {"state": "error", "error": str(err)}
 
@@ -589,10 +595,14 @@ async def _drive_full_pair_session(
             result.get("state") if isinstance(result, dict) else "unknown",
         )
     except Exception as err:
+        # Exception-class-only logging (2026-08-03 fix) — this branch
+        # catches failures from EITHER the legacy-mnemonic or the
+        # derived-bundle-v1 path uniformly; the latter can carry a
+        # bundle-JSON-derived error message.
         logger.warning(
-            "pair.sidecar: completion done token=%s… outcome=error err=%r",
+            "pair.sidecar: completion done token=%s… outcome=error err_type=%s",
             token_tag,
-            err,
+            type(err).__name__,
         )
 
 

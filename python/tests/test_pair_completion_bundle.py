@@ -386,3 +386,64 @@ async def test_wrong_chain_rejects_without_persisting_anything(
     creds_path = isolated_home / ".totalreclaw" / "credentials.json"
     assert not creds_path.exists()
     assert len(fake_keychain) == 0  # wrap_bundle never called
+
+
+@pytest.mark.asyncio
+async def test_sidecar_completed_client_never_eagerly_resolves_data_edge(
+    isolated_home: Path, fake_keychain, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression for major-1 (coordinator review, 2026-08-03): #592's
+    loopback-fixture suite originally only asserted on the on-disk
+    credential shape, which could not catch a bug in
+    TotalReclaw.from_bundle's chain/data-edge resolution timing (that bug
+    lived entirely in in-memory client state the other sidecar tests never
+    inspected). This test drives the SAME sidecar completion path and then
+    asserts on the resulting client's data-edge source directly.
+
+    A client configured via ANY code path that terminates in
+    TotalReclaw.from_bundle — sidecar pair-completion (P2-10) included —
+    must NOT have _chain_id_resolved eagerly set True with
+    _data_edge_address left None, because that combination causes the
+    write path to fall through to core's hardcoded PRODUCTION
+    DATA_EDGE_ADDRESS regardless of which relay environment the client is
+    actually configured against (confirmed live on staging, 2026-08-03:
+    tx 0xa70c3402b7e2f338a17212d2acfc5a9bf843689aaea237df5572f4ef637ae447
+    landed on the production subgraph from what was meant to be an
+    isolated staging E2E run).
+    """
+    from totalreclaw.pair.completion_sidecar import run_sidecar_inline
+
+    relay = _BundleRelayStub(token="tok-data-edge-source")
+    relay.set_bundle_payload("derived-bundle-v1", _canonical_bundle_json().encode("utf-8"))
+    await relay.start()
+    monkeypatch.setenv("TOTALRECLAW_PAIR_RELAY_URL", relay.url)
+    try:
+        await asyncio.to_thread(
+            run_sidecar_inline,
+            handshake_id="sidecar-data-edge-source",
+            mode="either",
+            relay_url=None,
+        )
+    finally:
+        await relay.stop()
+
+    # A fresh AgentState() in the SAME process, auto-configuring from the
+    # v2 credentials the sidecar just wrote — exactly what the NEXT
+    # session (a real subsequent Hermes boot) does. This is the client
+    # whose data-edge resolution behaviour matters, not the sidecar's own
+    # short-lived internal one.
+    from totalreclaw.agent.state import AgentState
+
+    state = AgentState()
+    assert state.is_configured()
+    client = state.get_client()
+
+    assert client._mnemonic is None  # genuinely bundle-configured
+    assert client._data_edge_address is None  # not yet resolved — correct so far
+    assert client._chain_id_resolved is False, (
+        "a bundle-configured client must NOT start with chain_id eagerly "
+        "marked resolved — that skips the billing lookup that populates "
+        "_data_edge_address, and the write path silently falls through to "
+        "core's hardcoded PRODUCTION DataEdge default regardless of which "
+        "relay the client is actually configured against"
+    )
