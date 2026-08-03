@@ -144,8 +144,29 @@ def test_wallet_address_matches_bundle_smart_account():
     assert client.resolved_wallet_address == bundle.account.smart_account.lower()
 
 
-def test_chain_id_resolves_without_network(bundle_client):
-    assert bundle_client.chain_id == 100
+def test_chain_id_is_seeded_from_bundle_but_not_eagerly_resolved(bundle_client):
+    """Regression test for a live E2E-discovered bug (2026-08-03, staging
+    S1): chain_id must NOT be eagerly marked resolved from the bundle —
+    that skipped the billing lookup entirely, so _data_edge_address stayed
+    None and every write silently targeted core's built-in PRODUCTION
+    DataEdge default even while running against the staging relay (a
+    bundle client has no other source for the environment-specific
+    DataEdge override /v1/billing/status carries). chain_id IS seeded from
+    bundle.account.chain_id (a safe, correct fallback value, and the value
+    _chain_id_fallback returns if the billing lookup fails) but resolution
+    must still go through the normal lazy resolve_chain_id() path so
+    _data_edge_address gets populated on a live relay.
+    """
+    # Not yet "resolved" — the .chain_id property raises until a real
+    # remember/recall/resolve_chain_id() call has run, exactly like
+    # mnemonic-mode clients.
+    assert bundle_client._chain_id_resolved is False
+    with pytest.raises(RuntimeError, match="not yet resolved"):
+        _ = bundle_client.chain_id
+
+    # But the SEED is already correct and available without network —
+    # this is what _chain_id_fallback falls back to if billing fails.
+    assert bundle_client._chain_id == 100
 
 
 # ---------------------------------------------------------------------------
@@ -206,3 +227,116 @@ def test_from_bundle_rejects_session_key_kind():
 
     with pytest.raises(ValueError, match="session-key"):
         TotalReclaw.from_bundle(session_key_bundle, server_url=TEST_SERVER_URL)
+
+
+# ---------------------------------------------------------------------------
+# 6. REGRESSION (2026-08-03, live staging E2E S1) — a bundle-mode client
+# must never write against the prod-default DataEdge while pointed at a
+# non-prod relay. This was a real bug: from_bundle originally set
+# _chain_id_resolved = True eagerly (from bundle.account.chain_id) with
+# _data_edge_address left None. resolve_chain_id() early-returns when
+# _chain_id_resolved is already True, so the billing lookup that populates
+# _data_edge_address never ran — every first write silently fell through
+# to core's hardcoded production DATA_EDGE_ADDRESS
+# (0xC445af1D4EB9fce4e1E61fE96ea7B8feBF03c5ca) even while configured
+# against the staging relay. Confirmed live: a staging E2E write landed on
+# the production subgraph (tx 0xa70c3402b7e2f338a17212d2acfc5a9bf843689aaea237df5572f4ef637ae447).
+#
+# Fix: from_bundle now seeds _chain_id from the bundle but leaves
+# _chain_id_resolved = False, so the normal lazy resolve_chain_id() path
+# (identical mechanism mnemonic-mode already relies on) runs on first
+# write and populates _data_edge_address from the relay's own billing
+# response. _chain_id_fallback() ensures a billing-lookup FAILURE still
+# doesn't clobber the bundle's own known-correct chain_id with the
+# free-tier default.
+# ---------------------------------------------------------------------------
+
+import httpx  # noqa: E402
+from unittest.mock import patch  # noqa: E402
+
+
+def _patch_billing(response_body: dict | None, status_code: int = 200, raise_exc: Exception | None = None):
+    """Mirrors test_chain_id_autodetect.py's helper — mocks the billing
+    endpoint via httpx.MockTransport so no real network call is made."""
+    captured: list[httpx.Request] = []
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        if raise_exc is not None:
+            raise raise_exc
+        if response_body is None:
+            return httpx.Response(status_code, text="")
+        return httpx.Response(status_code, json=response_body)
+
+    transport = httpx.MockTransport(_handler)
+
+    class _PatchedAsyncClient(httpx.AsyncClient):
+        def __init__(self, *args, **kw):
+            kw.pop("transport", None)
+            super().__init__(*args, transport=transport, **kw)
+
+    return patch("totalreclaw.client._httpx.AsyncClient", _PatchedAsyncClient), captured
+
+
+FAKE_STAGING_DATA_EDGE = "0xE7a4D2677B686e13775Ba9092631089e35F0BB91"
+PROD_DATA_EDGE_DEFAULT = "0xC445af1D4EB9fce4e1E61fE96ea7B8feBF03c5ca"
+
+
+@pytest.mark.asyncio
+async def test_bundle_client_resolves_data_edge_from_billing_not_prod_default(bundle_client):
+    """The billing-supplied data_edge_address must be used — never the
+    core default — for a bundle-configured client."""
+    assert bundle_client._data_edge_address is None  # not yet resolved
+
+    patch_ctx, captured = _patch_billing(
+        {"tier": "free", "chain_id": 100, "data_edge_address": FAKE_STAGING_DATA_EDGE}
+    )
+    with patch_ctx:
+        chain_id = await bundle_client.resolve_chain_id()
+
+    assert len(captured) == 1, "resolve_chain_id must actually call the billing endpoint"
+    assert chain_id == 100
+    assert bundle_client._data_edge_address == FAKE_STAGING_DATA_EDGE
+    assert bundle_client._data_edge_address != PROD_DATA_EDGE_DEFAULT
+
+
+@pytest.mark.asyncio
+async def test_bundle_client_remember_never_encodes_prod_default_when_billing_succeeds(bundle_client):
+    """Full remember() path — asserts data_edge_address=None never reaches
+    the write encoder when a relay is configured and billing succeeds."""
+    import totalreclaw.client as client_module
+
+    patch_ctx, _captured = _patch_billing(
+        {"tier": "free", "chain_id": 100, "data_edge_address": FAKE_STAGING_DATA_EDGE}
+    )
+
+    captured_kwargs: dict = {}
+
+    async def _fake_store_fact(**kwargs):
+        captured_kwargs.update(kwargs)
+        return "fake-fact-id"
+
+    with patch_ctx, patch.object(client_module, "store_fact", _fake_store_fact):
+        # _ensure_registered is a no-op in bundle mode (see test above) —
+        # no relay call needed for that step.
+        await bundle_client.remember("regression test fact")
+
+    assert "data_edge_address" in captured_kwargs
+    assert captured_kwargs["data_edge_address"] is not None
+    assert captured_kwargs["data_edge_address"] == FAKE_STAGING_DATA_EDGE
+    assert captured_kwargs["data_edge_address"] != PROD_DATA_EDGE_DEFAULT
+
+
+@pytest.mark.asyncio
+async def test_bundle_client_chain_id_fallback_preserves_bundle_value_on_billing_failure(bundle_client):
+    """A billing-lookup failure (network error, non-200) must NOT clobber
+    the bundle's own authoritative chain_id with the free-tier default —
+    that would target the WRONG CHAIN outright, not just the wrong
+    environment's DataEdge."""
+    patch_ctx, _captured = _patch_billing(None, status_code=500)
+
+    with patch_ctx:
+        chain_id = await bundle_client.resolve_chain_id()
+
+    assert chain_id == 100  # the bundle's own account.chain_id, preserved
+    assert chain_id != 84532  # DEFAULT_CHAIN_ID_FREE — must not clobber

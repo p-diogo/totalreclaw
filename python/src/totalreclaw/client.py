@@ -318,17 +318,31 @@ class TotalReclaw:
         this constructor populates those directly from ``bundle.vault``
         rather than re-deriving them.
 
-        ``wallet_address`` and ``chain_id`` resolve immediately from
-        ``bundle.account`` — no RPC round-trip, no billing call — since the
-        bundle already carries provisioning-time-authoritative values for
-        both (§4.6 point 3: never re-derive from an owner EOA that may be
-        absent under ``session-key``). Known trade-off: unlike
-        mnemonic-mode's ``resolve_chain_id()``, a bundle-configured client
-        will NOT pick up a relay-advertised environment-specific
-        ``data_edge_address`` override (e.g. the isolated staging DataEdge)
-        automatically on first write, because ``_chain_id_resolved`` is
-        already ``True`` — call ``await client.resolve_chain_id()``
-        explicitly if that matters for your deployment.
+        ``wallet_address`` resolves immediately from ``bundle.account`` — no
+        RPC round-trip — since the bundle already carries a
+        provisioning-time-authoritative Smart Account address (§4.6 point
+        3: never re-derive from an owner EOA that may be absent under
+        ``session-key``).
+
+        ``chain_id`` is **seeded** (not eagerly resolved) from
+        ``bundle.account.chain_id`` and left for the normal lazy
+        ``resolve_chain_id()`` path (same mechanism mnemonic-mode already
+        uses, triggered on the first ``remember``/``recall``/etc. via
+        ``_ensure_chain_id``) to confirm on first write. This was
+        eager-resolved in an earlier revision of this method — found to be
+        a live bug in Option E Phase 2 staging E2E (2026-08-03, S1): a
+        bundle client never called the billing endpoint, so
+        ``_data_edge_address`` stayed ``None`` and every write silently
+        targeted core's built-in **production** DataEdge default even
+        while running against the staging relay, because a bundle client
+        has no other source for the environment-specific DataEdge override
+        the relay's ``/v1/billing/status`` response carries. The billing
+        call's own fallback path (``_chain_id_fallback``) now returns
+        whatever ``self._chain_id`` already is — the bundle's own
+        authoritative value — rather than unconditionally overwriting it
+        with the free-tier default, so a bundle client degrades gracefully
+        (network-resilient, same as mnemonic mode) rather than picking a
+        wrong DEFAULT on a billing-endpoint failure.
 
         Only ``signing.kind == "owner-eoa"`` is supported — Phase 2's
         shipping configuration. ``session-key`` bundles are parsed and
@@ -386,10 +400,12 @@ class TotalReclaw:
         )
         self._registered = False
 
-        # account.chain_id is already resolved — see the docstring's
-        # trade-off note above.
+        # account.chain_id is only a SEED, not a resolved value — see the
+        # docstring above. resolve_chain_id() runs the normal billing
+        # lookup lazily on first write, which is what populates
+        # _data_edge_address (never known from the bundle itself).
         self._chain_id: int = bundle.account.chain_id
-        self._chain_id_resolved: bool = True
+        self._chain_id_resolved: bool = False
         self._data_edge_address: Optional[str] = None
 
         return self
@@ -500,14 +516,33 @@ class TotalReclaw:
                 self._chain_id = _chain_id_from_billing(payload)
                 self._data_edge_address = _data_edge_from_billing(payload)
             else:
-                self._chain_id = DEFAULT_CHAIN_ID_FREE
+                self._chain_id = self._chain_id_fallback()
         except Exception:
             # Best-effort — network, timeout, or auth issues all fall back
-            # to the free-tier chain. Matches the MCP "silently default"
-            # contract (mcp/src/index.ts line ~371).
-            self._chain_id = DEFAULT_CHAIN_ID_FREE
+            # to a safe default. Matches the MCP "silently default" contract
+            # (mcp/src/index.ts line ~371) for mnemonic-mode clients, whose
+            # fallback IS DEFAULT_CHAIN_ID_FREE (the __init__-seeded value —
+            # see _chain_id_fallback). A bundle-configured client (P2-7,
+            # #581) falls back to the bundle's own account.chain_id instead:
+            # it already carries authoritative knowledge of which chain its
+            # facts are addressed on, and defaulting THAT away to Base
+            # Sepolia would target the wrong chain outright, not just the
+            # wrong environment's DataEdge.
+            self._chain_id = self._chain_id_fallback()
 
         self._chain_id_resolved = True
+        return self._chain_id
+
+    def _chain_id_fallback(self) -> int:
+        """Chain id to use when the billing lookup fails or returns a
+        non-200. Mnemonic-mode clients have no better source than
+        DEFAULT_CHAIN_ID_FREE (their __init__-seeded value, preserved here
+        rather than re-asserted, so this is a no-op for them). A
+        bundle-configured client seeds ``self._chain_id`` from
+        ``bundle.account.chain_id`` at construction and never had it
+        overwritten before this lookup ran — this returns that value
+        unchanged rather than clobbering it with the free-tier default.
+        """
         return self._chain_id
 
     async def _ensure_chain_id(self) -> int:

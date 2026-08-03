@@ -156,26 +156,135 @@ def test_env_opt_out_skips(isolated_home: Path, monkeypatch: pytest.MonkeyPatch,
     assert creds_path.read_text() == original
 
 
-def test_v1_keychain_entry_dropped_after_successful_migration(
+def test_v1_keychain_entry_is_retained_after_successful_migration(
     isolated_home: Path, fake_keychain
 ) -> None:
+    """2026-08-03 fix (major-2): the v1 keychain entry must NEVER be
+    deleted by auto_migrate. For a keychain-sourced install, .bak (the
+    renamed old credentials.json) contains only the __keychain__:v1:<eoa>
+    marker, never the phrase — deleting the v1 entry after migration
+    destroyed the ONLY remaining copy of the root. The entry is retained
+    on the same one-release-cycle policy as .bak, gated on the same #579
+    sunset decision (not automated here)."""
     _write_legacy_v1_keychain(isolated_home, fake_keychain)
     v1_account = cw.account_for_mnemonic(TEST_MNEMONIC)
     assert v1_account in fake_keychain
 
-    auto_migrate.maybe_migrate()
+    migrated = auto_migrate.maybe_migrate()
 
-    assert v1_account not in fake_keychain  # dropped post-verification
+    assert migrated is True
+    assert v1_account in fake_keychain, (
+        "the v1 keychain entry must be RETAINED — deleting it destroys the "
+        "only remaining copy of the phrase for a keychain-sourced install, "
+        "since .bak never held the phrase to begin with"
+    )
+    # And the entry still resolves to the real phrase, proving it wasn't
+    # just left present-but-corrupted.
+    assert fake_keychain[v1_account] == TEST_MNEMONIC
 
 
-def test_one_time_notice_printed(isolated_home: Path, fake_keychain, capsys) -> None:
+def test_one_time_notice_printed_for_plaintext_source(isolated_home: Path, fake_keychain, capsys) -> None:
     _write_legacy_plaintext(isolated_home)
 
     auto_migrate.maybe_migrate()
 
     out = capsys.readouterr().out
     assert auto_migrate.ONE_TIME_NOTICE in out
+    assert auto_migrate.ONE_TIME_NOTICE_KEYCHAIN_SOURCE not in out
     assert TEST_MNEMONIC not in out
+
+
+def test_one_time_notice_printed_for_keychain_source_is_source_aware(
+    isolated_home: Path, fake_keychain, capsys
+) -> None:
+    """2026-08-03 fix (major-2): a keychain-sourced migration must show
+    the keychain-aware notice, not the plaintext-source one — the
+    plaintext-source notice's claim that ".bak" holds the phrase is FALSE
+    for this population (.bak here holds only the v1 marker)."""
+    _write_legacy_v1_keychain(isolated_home, fake_keychain)
+
+    auto_migrate.maybe_migrate()
+
+    out = capsys.readouterr().out
+    assert auto_migrate.ONE_TIME_NOTICE_KEYCHAIN_SOURCE in out
+    assert auto_migrate.ONE_TIME_NOTICE not in out
+    assert TEST_MNEMONIC not in out
+    assert "keychain" in auto_migrate.ONE_TIME_NOTICE_KEYCHAIN_SOURCE.lower()
+
+
+def test_read_back_verification_failure_reports_failure_not_success(
+    isolated_home: Path, fake_keychain, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """Minor fix (2026-08-03): a read-back verification failure must be
+    reported as a FAILURE — no success notice, maybe_migrate() returns
+    False — even though the v2 file was already written. Both .bak and
+    (if applicable) the v1 keychain entry stay in place."""
+    creds_path = _write_legacy_plaintext(isolated_home)
+
+    from totalreclaw import bundle as bundle_module
+
+    # parse_bundle_v1 is called twice in a clean run: once INTERNALLY by
+    # derive_bundle_from_mnemonic (step 4 — must succeed, or migration
+    # never reaches the write at all) and once explicitly for read-back
+    # verification (step 8 — this is the call we want to fail). A
+    # blanket patch breaks step 4 too (bundle.py's own
+    # derive_bundle_from_mnemonic calls the module-level parse_bundle_v1
+    # unqualified, so patching the module attribute affects it as well) —
+    # only fail from the second call onward.
+    real_parse_bundle_v1 = bundle_module.parse_bundle_v1
+    call_count = {"n": 0}
+
+    def _boom_after_first_call(json_str):
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            return real_parse_bundle_v1(json_str)
+        raise ValueError("simulated read-back corruption")
+
+    monkeypatch.setattr(bundle_module, "parse_bundle_v1", _boom_after_first_call)
+
+    migrated = auto_migrate.maybe_migrate()
+
+    assert migrated is False
+    out = capsys.readouterr().out
+    assert auto_migrate.ONE_TIME_NOTICE not in out
+    assert auto_migrate.ONE_TIME_NOTICE_KEYCHAIN_SOURCE not in out
+    # The v2 file WAS written (step 7 succeeded before the read-back check
+    # in step 8 failed) — but nothing claims success.
+    v2 = json.loads(creds_path.read_text())
+    assert v2.get("version") == 2
+    bak_path = creds_path.parent / "credentials.json.bak"
+    assert bak_path.exists()
+
+
+def test_v2_file_created_with_0600_from_the_start_no_window(
+    isolated_home: Path, fake_keychain, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Minor fix (2026-08-03): the tmp file (and therefore the final
+    credentials.json, whose mode os.replace() inherits from it) must be
+    created with mode 0600 via O_CREAT|O_WRONLY|O_TRUNC from the very
+    first byte — no default-umask window before a later chmod."""
+    import stat
+
+    creds_path = _write_legacy_plaintext(isolated_home)
+
+    real_open = os.open
+    observed_modes: list[int] = []
+
+    def _spy_open(path, flags, mode=0o777):
+        if str(path).endswith(".tmp"):
+            observed_modes.append(mode)
+        return real_open(path, flags, mode)
+
+    monkeypatch.setattr(os, "open", _spy_open)
+
+    migrated = auto_migrate.maybe_migrate()
+    assert migrated is True
+
+    assert observed_modes == [0o600], (
+        f"tmp file must be os.open()'d with mode 0o600 from creation, got {observed_modes}"
+    )
+    actual_mode = stat.S_IMODE(creds_path.stat().st_mode)
+    assert actual_mode == 0o600
 
 
 # ---------------------------------------------------------------------------
@@ -235,14 +344,17 @@ def test_write_failure_between_backup_and_v2_write_restores_from_bak(
     creds_path = _write_legacy_plaintext(isolated_home)
     original = creds_path.read_text()
 
-    real_open = open
+    # The v2 file is now created via os.open(O_CREAT|O_WRONLY|O_TRUNC, 0o600)
+    # (2026-08-03 fix — no 0644 window), not the builtins.open() the
+    # previous revision of this module used — patch the actual mechanism.
+    real_os_open = os.open
 
-    def _boom_open(path, *a, **kw):
+    def _boom_open(path, flags, mode=0o777):
         if str(path).endswith(".tmp"):
             raise OSError("simulated disk failure")
-        return real_open(path, *a, **kw)
+        return real_os_open(path, flags, mode)
 
-    monkeypatch.setattr("builtins.open", _boom_open)
+    monkeypatch.setattr(os, "open", _boom_open)
 
     migrated = auto_migrate.maybe_migrate()
 
