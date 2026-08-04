@@ -840,24 +840,31 @@ async function executeCurate(
 }
 
 /**
- * The pinned-memory guarantee, restated identically across pin/unpin/retype/
- * set_scope descriptions: this is an on-chain supersession (NOT a memory_save),
- * the id must come from memory_search first, results are reported truthfully,
- * and storing at high importance is NOT a substitute. This is the §6 control
+ * The pinned-memory guarantee, restated across pin/unpin/retype/set_scope
+ * descriptions: this is an on-chain supersession (NOT a memory_save), the id
+ * must come from memory_search first, results are reported truthfully, and
+ * storing at high importance is NOT a substitute. This is the §6 control
  * surface — the same rule that failed to hold as SKILL.md prose has held as
  * tool-description prose since 3.4.0.
+ *
+ * `whatThisChanges` is interpolated per-tool so the agent sees the SPECIFIC
+ * field this op moves (STATUS for pin/unpin, TYPE for retype, SCOPE for
+ * set_scope) — not a generic "STATUS/TYPE/SCOPE" that could read as "all three."
  */
-const CURATION_SUPERSESSION_NOTE =
-  'This performs an ON-CHAIN SUPERSESSION, not a store: the existing fact is ' +
-  'tombstoned and a replacement is written with the changed field, so the ' +
-  'response carries a NEW `fact_id` + `tx_hash` and the ORIGINAL id is no ' +
-  'longer active. Always look up the memory first with `memory_search` and ' +
-  'pass a real result id; never invent or guess an id. Report the result ' +
-  'truthfully — if `ok` is false, tell the user it failed and relay the ' +
-  'error; never claim a curation op succeeded that did not. Storing a fact ' +
-  'at high importance with `memory_save` is NOT a substitute — importance ' +
-  'affects RANKING; this op changes STATUS/TYPE/SCOPE. There is no need to ' +
-  'shell out to a CLI for this; use this tool.';
+function curationNote(whatThisChanges: string): string {
+  return (
+    'This performs an ON-CHAIN SUPERSESSION, not a store: the existing fact is ' +
+    'tombstoned and a replacement is written with the changed field, so the ' +
+    'response carries a NEW `fact_id` + `tx_hash` and the ORIGINAL id is no ' +
+    'longer active. Always look up the memory first with `memory_search` and ' +
+    'pass a real result id; never invent or guess an id. Report the result ' +
+    'truthfully — if `ok` is false, tell the user it failed and relay the ' +
+    'error; never claim a curation op succeeded that did not. Storing a fact ' +
+    'at high importance with `memory_save` is NOT a substitute — importance ' +
+    `affects RANKING; this op changes ${whatThisChanges}. Do NOT shell out to ` +
+    'a CLI (`tr` is GNU coreutils, not TotalReclaw); use this tool.'
+  );
+}
 
 /**
  * memory_pin — lock a memory against auto-supersession. Captures the curate
@@ -876,7 +883,7 @@ export function createMemoryPinTool(curate: TrCurationFn): AgentToolLike {
       'asks to pin / lock / protect / make permanent / never-overwrite a ' +
       'specific memory they already have ("pin that", "lock this one", "make ' +
       'sure X never gets overwritten"). ' +
-      CURATION_SUPERSESSION_NOTE,
+      curationNote('STATUS (pin/active)'),
     parameters: {
       type: 'object',
       properties: {
@@ -921,7 +928,7 @@ export function createMemoryUnpinTool(curate: TrCurationFn): AgentToolLike {
       'unpin / unlock / unprotect a specific memory ("unpin that", "you can ' +
       'overwrite X again now"). Unpinning a memory that is not currently pinned ' +
       'is a no-op (idempotent). ' +
-      CURATION_SUPERSESSION_NOTE,
+      curationNote('STATUS (back to active)'),
     parameters: {
       type: 'object',
       properties: {
@@ -959,7 +966,7 @@ export function createMemoryRetypeTool(curate: TrCurationFn): AgentToolLike {
       're-categorize / reclassify / change the type of a specific memory they ' +
       'already have ("make that a directive instead", "reclassify X"). The text ' +
       'and every other field are unchanged; only the type moves. ' +
-      CURATION_SUPERSESSION_NOTE,
+      curationNote('TYPE'),
     parameters: {
       type: 'object',
       properties: {
@@ -1006,7 +1013,7 @@ export function createMemorySetScopeTool(curate: TrCurationFn): AgentToolLike {
       're-scope / move / re-bucket a specific memory they already have ("put ' +
       'that in my finance scope", "move X to personal"). The text and every ' +
       'other field are unchanged; only the scope moves. ' +
-      CURATION_SUPERSESSION_NOTE,
+      curationNote('SCOPE'),
     parameters: {
       type: 'object',
       properties: {
