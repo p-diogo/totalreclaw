@@ -84,6 +84,29 @@ export function resolveManagedCredential(
   // 1. TOTALRECLAW_RECOVERY_PHRASE env — retained, deprecated.
   const envPhrase = env.TOTALRECLAW_RECOVERY_PHRASE;
   if (envPhrase && envPhrase.trim().length > 0) {
+    // #618 adversarial-review NIT (mirrors
+    // python/src/totalreclaw/agent/state.py's equivalent env-branch
+    // logging): the env phrase wins the precedence race unconditionally,
+    // which silently shadows a v2 bundle if one also happens to exist at
+    // the same path — a state an operator mid-migration (env var not yet
+    // unset after provisioning a bundle) could easily land in without
+    // noticing. Best-effort, plain JSON peek only (no parseBundleV1 — this
+    // is a diagnostic, not a validation path); never throws.
+    try {
+      const credentialsPath = opts.credentialsPath ?? CREDENTIALS_PATH;
+      const raw = fs.readFileSync(credentialsPath, 'utf-8');
+      const parsed = JSON.parse(raw) as { version?: unknown };
+      if (parsed.version === 2) {
+        console.error(
+          'TotalReclaw: TOTALRECLAW_RECOVERY_PHRASE is set and takes precedence over the ' +
+            `derived-bundle-v1 bundle at ${credentialsPath} (version: 2), which is being ` +
+            'shadowed. Unset the env var to use the bundle, or remove the bundle file if the ' +
+            'env-var phrase is the intended credential.',
+        );
+      }
+    } catch {
+      // No file, unreadable, or not JSON — nothing to shadow, stay silent.
+    }
     return { kind: 'mnemonic', mnemonic: envPhrase.trim() };
   }
 
@@ -143,4 +166,35 @@ export function resolveManagedCredential(
   }
 
   return undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Self-hosted diagnostic (#618 adversarial-review item 2). Lives here
+// (rather than inline in `index.ts`) so it has direct test coverage —
+// `index.ts` cannot be unit-tested (importing it executes `main()`).
+// ---------------------------------------------------------------------------
+
+/**
+ * Diagnostic-only check: does the credentials file at `credentialsPath`
+ * look like a `derived-bundle-v1` `version: 2` file? Plain `JSON.parse`,
+ * no WASM, no `parseBundleV1` — the only caller
+ * (`index.ts`'s `TOTALRECLAW_SELF_HOSTED` branch in `main()`) must never
+ * touch bundle parsing/validation at all; self-hosted mode is a wholly
+ * separate credential system (derived-bundle-v1.md §4.5.1) and this
+ * function exists purely to produce a more accurate diagnostic message —
+ * "is the `version` field present and `2`" — when self-hosted mode finds
+ * no usable mnemonic and would otherwise tell the operator to "set
+ * TOTALRECLAW_RECOVERY_PHRASE", which is actively wrong when a
+ * valid-but-wrong-mode bundle credential is already present.
+ *
+ * Never throws; a missing/corrupt/non-bundle file is simply `false`.
+ */
+export function isV2BundleCredentialsFile(credentialsPath: string): boolean {
+  try {
+    const raw = fs.readFileSync(credentialsPath, 'utf-8');
+    const parsed = JSON.parse(raw) as { version?: unknown };
+    return parsed.version === 2;
+  } catch {
+    return false;
+  }
 }

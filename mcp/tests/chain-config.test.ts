@@ -21,8 +21,9 @@ import {
   resolveChainConfig,
   buildSubgraphOverrides,
   fetchChainConfig,
+  assertDataEdgeResolvable,
 } from '../src/subgraph/chain-config.js';
-import { getSubgraphConfig, resolveOwnerAccount } from '../src/subgraph/store.js';
+import { getSubgraphConfig, resolveOwnerAccount, DEFAULT_DATA_EDGE_ADDRESS as STORE_DEFAULT_DATA_EDGE } from '../src/subgraph/store.js';
 
 const STAGING_DATA_EDGE = '0xE7a4D2677B686e13775Ba9092631089e35F0BB91';
 const PROD_DATA_EDGE = '0xC445af1D4EB9fce4e1E61fE96ea7B8feBF03c5ca';
@@ -232,4 +233,147 @@ describe('fetchChainConfig — the single billing-fetch path shared by mnemonic-
     expect(requestInit.headers.Authorization).toBe('Bearer deadbeef');
     expect(requestInit.headers['X-TotalReclaw-Client']).toBe('test-client');
   });
+
+  it('onBillingUnavailable fires with a reason on network failure, not on success', async () => {
+    const onBillingUnavailable = jest.fn();
+    await fetchChainConfig({
+      serverUrl: 'https://api-staging.totalreclaw.xyz',
+      smartAccountAddress: '0x2c0CF74B2b76110708CA431796367779e3738250',
+      authKeyHex: 'aa',
+      fallbackChainId: 100,
+      fetchImpl: mockFetchUnreachable(),
+      onBillingUnavailable,
+    });
+    expect(onBillingUnavailable).toHaveBeenCalledTimes(1);
+    expect(onBillingUnavailable.mock.calls[0][0]).toMatch(/billing fetch failed/);
+  });
+
+  it('onBillingUnavailable fires on a non-200 response with the HTTP status', async () => {
+    const onBillingUnavailable = jest.fn();
+    const fetchImpl = jest.fn().mockResolvedValue({ ok: false, status: 503 }) as unknown as typeof fetch;
+    await fetchChainConfig({
+      serverUrl: 'https://api-staging.totalreclaw.xyz',
+      smartAccountAddress: '0x2c0CF74B2b76110708CA431796367779e3738250',
+      authKeyHex: 'aa',
+      fallbackChainId: 100,
+      fetchImpl,
+      onBillingUnavailable,
+    });
+    expect(onBillingUnavailable).toHaveBeenCalledWith(expect.stringContaining('503'));
+  });
+
+  it('billingResolved is true on success, false on any failure mode', async () => {
+    const ok = await fetchChainConfig({
+      serverUrl: 'https://api-staging.totalreclaw.xyz',
+      smartAccountAddress: '0x2c0CF74B2b76110708CA431796367779e3738250',
+      authKeyHex: 'aa',
+      fallbackChainId: 100,
+      fetchImpl: mockFetchOk({ tier: 'free', chain_id: 100 }),
+    });
+    expect(ok.billingResolved).toBe(true);
+
+    const networkFail = await fetchChainConfig({
+      serverUrl: 'https://api-staging.totalreclaw.xyz',
+      smartAccountAddress: '0x2c0CF74B2b76110708CA431796367779e3738250',
+      authKeyHex: 'aa',
+      fallbackChainId: 100,
+      fetchImpl: mockFetchUnreachable(),
+    });
+    expect(networkFail.billingResolved).toBe(false);
+
+    const nonOk = await fetchChainConfig({
+      serverUrl: 'https://api-staging.totalreclaw.xyz',
+      smartAccountAddress: '0x2c0CF74B2b76110708CA431796367779e3738250',
+      authKeyHex: 'aa',
+      fallbackChainId: 100,
+      fetchImpl: jest.fn().mockResolvedValue({ ok: false, status: 500 }) as unknown as typeof fetch,
+    });
+    expect(nonOk.billingResolved).toBe(false);
+  });
 });
+
+describe('resolveChainConfig — malformed data_edge_address logs loudly instead of dropping silently (#618 item 3)', () => {
+  it('calls onMalformedDataEdge when data_edge_address is present but garbage', () => {
+    const onMalformedDataEdge = jest.fn();
+    const resolved = resolveChainConfig({ chain_id: 100, data_edge_address: 'not-an-address' }, onMalformedDataEdge);
+    expect(resolved.dataEdgeAddress).toBeUndefined();
+    expect(onMalformedDataEdge).toHaveBeenCalledWith('not-an-address');
+  });
+
+  it('does NOT call onMalformedDataEdge when data_edge_address is simply absent (legitimate)', () => {
+    const onMalformedDataEdge = jest.fn();
+    resolveChainConfig({ chain_id: 100 }, onMalformedDataEdge);
+    expect(onMalformedDataEdge).not.toHaveBeenCalled();
+  });
+
+  it('does NOT call onMalformedDataEdge on a valid address', () => {
+    const onMalformedDataEdge = jest.fn();
+    resolveChainConfig({ chain_id: 100, data_edge_address: STAGING_DATA_EDGE }, onMalformedDataEdge);
+    expect(onMalformedDataEdge).not.toHaveBeenCalled();
+  });
+
+  it('fetchChainConfig logs a console.error naming the malformed value on a 200 response', async () => {
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const fetchImpl = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ tier: 'free', chain_id: 100, data_edge_address: 'garbage' }),
+      }) as unknown as typeof fetch;
+      await fetchChainConfig({
+        serverUrl: 'https://api-staging.totalreclaw.xyz',
+        smartAccountAddress: '0x2c0CF74B2b76110708CA431796367779e3738250',
+        authKeyHex: 'aa',
+        fallbackChainId: 100,
+        fetchImpl,
+      });
+      expect(errSpy.mock.calls.some((c) => String(c[0]).includes('malformed data_edge_address'))).toBe(true);
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+});
+
+describe(
+  'assertDataEdgeResolvable — fail-closed guard (Option E Phase 2 / #581, P2-13, #618 item 1 — ' +
+    'REGRESSION: bundle mode + failed billing + no env must throw, never silently reach the prod default)',
+  () => {
+    it('REGRESSION: throws when billing failed AND no env override — 0xC445… never reaches an encode', () => {
+      expect(() =>
+        assertDataEdgeResolvable({
+          billingResolved: false,
+          envDataEdgeOverride: undefined,
+          serverUrl: 'https://api-staging.totalreclaw.xyz',
+        }),
+      ).toThrow(new RegExp(`cannot resolve environment DataEdge.*${STORE_DEFAULT_DATA_EDGE}`, 's'));
+      // The message NAMES the prod default (so an operator immediately
+      // knows what was almost written to) but the function's whole POINT
+      // is that this address is what did NOT get threaded into an encode —
+      // confirmed by the fact that this call throws before any
+      // getSubgraphConfig/encodeFactProtobuf call could ever run.
+    });
+
+    it('does NOT throw when billing failed but an env override IS set', () => {
+      expect(() =>
+        assertDataEdgeResolvable({
+          billingResolved: false,
+          envDataEdgeOverride: STAGING_DATA_EDGE,
+          serverUrl: 'https://api-staging.totalreclaw.xyz',
+        }),
+      ).not.toThrow();
+    });
+
+    it('does NOT throw when billing succeeded, regardless of env override', () => {
+      expect(() =>
+        assertDataEdgeResolvable({
+          billingResolved: true,
+          envDataEdgeOverride: undefined,
+          serverUrl: 'https://api-staging.totalreclaw.xyz',
+        }),
+      ).not.toThrow();
+    });
+
+    it('the thrown error never contains PROD_DATA_EDGE as anything other than the named default (sanity: constants match)', () => {
+      expect(STORE_DEFAULT_DATA_EDGE).toBe(PROD_DATA_EDGE);
+    });
+  },
+);

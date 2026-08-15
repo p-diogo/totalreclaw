@@ -27,8 +27,14 @@ import { createPimlicoClient } from 'permissionless/clients/pimlico';
 // Types
 // ---------------------------------------------------------------------------
 
-/** Default EventfulDataEdge contract address on Gnosis mainnet */
-const DEFAULT_DATA_EDGE_ADDRESS = '0xC445af1D4EB9fce4e1E61fE96ea7B8feBF03c5ca';
+/**
+ * Default EventfulDataEdge contract address on Gnosis mainnet — the
+ * PRODUCTION DataEdge. Exported (not just a local const) so callers that
+ * need to name it in a diagnostic/warning log (e.g. `index.ts`'s
+ * mnemonic-mode billing-unavailable fallback, #618 adversarial-review
+ * fixup) don't duplicate the literal and risk it drifting.
+ */
+export const DEFAULT_DATA_EDGE_ADDRESS = '0xC445af1D4EB9fce4e1E61fE96ea7B8feBF03c5ca';
 
 /** Well-known ERC-4337 EntryPoint v0.7 address (same on all chains) */
 const DEFAULT_ENTRYPOINT_ADDRESS = '0x0000000071727De22E5E9d8BAf0edAc6f37da032';

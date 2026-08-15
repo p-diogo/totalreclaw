@@ -354,6 +354,24 @@ export async function awaitPhraseUpload(
   let result: RelayCompletionResult;
 
   if (payloadType === 'derived-bundle-v1') {
+    if (!opts.completePairingBundle) {
+      // This caller only handles phrases — never silently mishandle a
+      // bundle payload as one. Checked BEFORE `parseBundleV1` (#618
+      // adversarial-review NIT) so a call site with no bundle handler
+      // always gets `unsupported_payload_type` — the accurate diagnosis —
+      // rather than `invalid_bundle` in the case where the (never-parsed)
+      // payload also happens to be malformed. Which nack fires should
+      // reflect "this call site can't handle bundles at all", not
+      // incidentally depend on payload validity it never got to check.
+      plaintext.fill(0);
+      safeSend(ws, { type: 'nack', error: 'unsupported_payload_type' });
+      safeClose(ws);
+      throw new Error(
+        'pair-remote-client: received payload_type=derived-bundle-v1 but this call site ' +
+          'has no completePairingBundle handler',
+      );
+    }
+
     // The inner plaintext IS the bundle JSON itself (not a phrase) — see
     // derived-bundle-v1.md §5.
     let bundleJson: string;
@@ -378,17 +396,6 @@ export async function awaitPhraseUpload(
       throw err instanceof Error ? err : new Error(String(err));
     } finally {
       bundleJson = '';
-    }
-
-    if (!opts.completePairingBundle) {
-      // This caller only handles phrases — never silently mishandle a
-      // bundle payload as one.
-      safeSend(ws, { type: 'nack', error: 'unsupported_payload_type' });
-      safeClose(ws);
-      throw new Error(
-        'pair-remote-client: received payload_type=derived-bundle-v1 but this call site ' +
-          'has no completePairingBundle handler',
-      );
     }
 
     try {

@@ -17,7 +17,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
-import { resolveManagedCredential } from '../src/subgraph/credentials.js';
+import { resolveManagedCredential, isV2BundleCredentialsFile } from '../src/subgraph/credentials.js';
 import { deriveBundleFromMnemonic, hasBundleBindings } from '../src/subgraph/bundle.js';
 
 const TEST_MNEMONIC =
@@ -135,5 +135,91 @@ maybeDescribe('resolveManagedCredential — a malformed v2 bundle rejects loudly
     bundleJson.vault.auth_key = 'not-hex';
     fs.writeFileSync(credentialsPath, JSON.stringify(bundleJson), 'utf-8');
     expect(() => resolveManagedCredential({ credentialsPath, env: {} })).toThrow();
+  });
+});
+
+describe('isV2BundleCredentialsFile — self-hosted diagnostic (#618 item 2)', () => {
+  it('returns true for a version: 2 file', () => {
+    const credentialsPath = tmpCredentialsPath();
+    writeJson(credentialsPath, { version: 2, schema: 'derived-bundle-v1' });
+    expect(isV2BundleCredentialsFile(credentialsPath)).toBe(true);
+  });
+
+  it('returns false for a legacy plaintext mnemonic file', () => {
+    const credentialsPath = tmpCredentialsPath();
+    writeJson(credentialsPath, { mnemonic: TEST_MNEMONIC });
+    expect(isV2BundleCredentialsFile(credentialsPath)).toBe(false);
+  });
+
+  it('returns false for a missing file', () => {
+    const credentialsPath = tmpCredentialsPath(); // never written
+    expect(isV2BundleCredentialsFile(credentialsPath)).toBe(false);
+  });
+
+  it('returns false for unparsable JSON (never throws)', () => {
+    const credentialsPath = tmpCredentialsPath();
+    fs.writeFileSync(credentialsPath, '{not json', 'utf-8');
+    expect(() => isV2BundleCredentialsFile(credentialsPath)).not.toThrow();
+    expect(isV2BundleCredentialsFile(credentialsPath)).toBe(false);
+  });
+
+  it('returns false for an unrelated version number', () => {
+    const credentialsPath = tmpCredentialsPath();
+    writeJson(credentialsPath, { version: 1 });
+    expect(isV2BundleCredentialsFile(credentialsPath)).toBe(false);
+  });
+});
+
+describe('resolveManagedCredential — env-phrase-shadows-bundle logging (#618 item 4)', () => {
+  it('logs a console.error when TOTALRECLAW_RECOVERY_PHRASE wins over a v2 bundle also present on disk', () => {
+    const credentialsPath = tmpCredentialsPath();
+    writeJson(credentialsPath, {
+      version: 2,
+      schema: 'derived-bundle-v1',
+      account: { smart_account: TEST_SMART_ACCOUNT, chain_id: 100 },
+    });
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const result = resolveManagedCredential({
+        credentialsPath,
+        env: { TOTALRECLAW_RECOVERY_PHRASE: TEST_MNEMONIC },
+      });
+      expect(result).toEqual({ kind: 'mnemonic', mnemonic: TEST_MNEMONIC });
+      expect(errSpy).toHaveBeenCalledTimes(1);
+      const [msg] = errSpy.mock.calls[0];
+      expect(String(msg)).toContain('shadow');
+      expect(String(msg)).toContain(credentialsPath);
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+
+  it('does NOT log when TOTALRECLAW_RECOVERY_PHRASE is used and no bundle file exists', () => {
+    const credentialsPath = tmpCredentialsPath(); // never written
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      resolveManagedCredential({
+        credentialsPath,
+        env: { TOTALRECLAW_RECOVERY_PHRASE: TEST_MNEMONIC },
+      });
+      expect(errSpy).not.toHaveBeenCalled();
+    } finally {
+      errSpy.mockRestore();
+    }
+  });
+
+  it('does NOT log when the on-disk file is legacy (not a v2 bundle)', () => {
+    const credentialsPath = tmpCredentialsPath();
+    writeJson(credentialsPath, { mnemonic: 'some other stored phrase' });
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      resolveManagedCredential({
+        credentialsPath,
+        env: { TOTALRECLAW_RECOVERY_PHRASE: TEST_MNEMONIC },
+      });
+      expect(errSpy).not.toHaveBeenCalled();
+    } finally {
+      errSpy.mockRestore();
+    }
   });
 });

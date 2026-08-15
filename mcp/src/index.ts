@@ -64,11 +64,21 @@ import {
   encodeFactProtobuf,
   getSubgraphConfig,
   isSubgraphMode,
+  DEFAULT_DATA_EDGE_ADDRESS,
   type FactPayload,
   type SubgraphStoreConfig,
 } from './subgraph/store.js';
-import { resolveChainConfig, buildSubgraphOverrides, fetchChainConfig } from './subgraph/chain-config.js';
-import { resolveManagedCredential, type ResolvedCredential } from './subgraph/credentials.js';
+import {
+  resolveChainConfig,
+  buildSubgraphOverrides,
+  fetchChainConfig,
+  assertDataEdgeResolvable,
+} from './subgraph/chain-config.js';
+import {
+  resolveManagedCredential,
+  isV2BundleCredentialsFile,
+  type ResolvedCredential,
+} from './subgraph/credentials.js';
 import { bundleVaultToBuffers, redactedBundleSummary, type DerivedBundleV1 } from './subgraph/bundle.js';
 import { searchSubgraph, searchSubgraphBroadened, getOwnerFactCount, fetchFactById } from './subgraph/search.js';
 import { confirmIndexed } from './subgraph/confirm-indexed.js';
@@ -225,6 +235,7 @@ function resolveMnemonic(): string | undefined {
 
   return undefined;
 }
+
 
 let currentMode: ServerMode = 'unconfigured';
 
@@ -416,7 +427,17 @@ async function initSubgraphState(mnemonic: string): Promise<SubgraphState> {
   // #581 P2-13: this is now `fetchChainConfig` (subgraph/chain-config.ts) —
   // the SAME function `initSubgraphStateFromBundle` below calls, so there is
   // no code path that can independently "forget" to make this call.
-  const { chainId, dataEdgeAddress } = await fetchChainConfig({
+  //
+  // Mnemonic mode keeps the pre-existing #439 behaviour on a failed billing
+  // lookup: fall back to the Gnosis default / no DataEdge override (the
+  // store then falls to env / its own PROD default) rather than blocking
+  // startup. #618 adversarial-review fixup: that silent fallback used to
+  // have NO log line at all when the billing call failed outright — add
+  // one, naming the prod default explicitly, so a mnemonic-mode write that
+  // silently lands on production (e.g. a staging run with an unreachable
+  // relay and no TOTALRECLAW_DATA_EDGE_ADDRESS override) leaves a trace in
+  // stderr instead of looking identical to a normal write.
+  const { chainId, dataEdgeAddress, billingResolved } = await fetchChainConfig({
     serverUrl: SERVER_URL,
     smartAccountAddress,
     authKeyHex,
@@ -428,7 +449,17 @@ async function initSubgraphState(mnemonic: string): Promise<SubgraphState> {
           (resolved.dataEdgeAddress ? `, dataEdge=${resolved.dataEdgeAddress}` : '') + '.',
       );
     },
+    onBillingUnavailable: (reason) => {
+      console.error(`TotalReclaw: billing lookup failed (${reason}).`);
+    },
   });
+  if (!billingResolved && !process.env.TOTALRECLAW_DATA_EDGE_ADDRESS) {
+    console.error(
+      `TotalReclaw: proceeding without a confirmed DataEdge — writes will target the ` +
+        `PRODUCTION default (${DEFAULT_DATA_EDGE_ADDRESS}) unless TOTALRECLAW_DATA_EDGE_ADDRESS ` +
+        'is set. Retry once the relay is reachable if this is not the intended environment.',
+    );
+  }
 
   // Register auth key with relay (idempotent — relay returns 200 for existing users).
   // Without this, all relay queries return 401 when using env var mnemonic path
@@ -488,17 +519,32 @@ async function initSubgraphState(mnemonic: string): Promise<SubgraphState> {
  *   4. Chain/DataEdge resolution still calls `fetchChainConfig` — the exact
  *      same function `initSubgraphState` calls above — with `fallbackChainId`
  *      seeded from `bundle.account.chain_id` rather than the free-tier
- *      default 100. THIS IS THE FIX FOR THE BUG FOUND IN THE HERMES ROUND
- *      (2026-08-03, S1): an earlier revision treated the bundle's own
- *      `chain_id` as sufficient and skipped the billing call entirely,
- *      which left `dataEdgeAddress` unset and silently defaulted every
- *      write to core's PRODUCTION DataEdge — even when running against a
- *      staging relay. The bundle has no `data_edge_address` field at all;
- *      that value ONLY ever comes from `/v1/billing/status`. See
+ *      default 100. This closes the SKIPPED-BILLING-CALL variant of the bug
+ *      found in the Hermes round (2026-08-03, S1): an earlier revision
+ *      treated the bundle's own `chain_id` as sufficient and skipped the
+ *      billing call entirely, which left `dataEdgeAddress` unset and
+ *      silently defaulted every write to core's PRODUCTION DataEdge — even
+ *      when running against a staging relay. The bundle has no
+ *      `data_edge_address` field at all; that value ONLY ever comes from
+ *      `/v1/billing/status`. See
  *      `python/src/totalreclaw/client.py::from_bundle`'s docstring for the
  *      identical bug + fix on the Python side, and
  *      `mcp/tests/chain-config.test.ts`'s "REGRESSION (Lesson 1)" test for
  *      the automated check.
+ *
+ *      A SIBLING variant survived that fix (#618 adversarial review): the
+ *      billing call being MADE but FAILING (network error, timeout,
+ *      non-200) still fell through to the same silent PROD-default outcome,
+ *      because `fetchChainConfig`'s failure branch always returned
+ *      `dataEdgeAddress: undefined` with no signal that the fetch itself
+ *      never succeeded. Below, `billingResolved === false` with no
+ *      `TOTALRECLAW_DATA_EDGE_ADDRESS` override now throws rather than
+ *      proceeding — bundle mode has no other way to learn which DataEdge
+ *      belongs to this environment, so guessing "production" is never
+ *      acceptable. Mnemonic mode (`initSubgraphState` above) deliberately
+ *      keeps the pre-existing #439 fallback instead of throwing — a
+ *      scoped, reviewed decision (loud `console.error` naming the prod
+ *      default, no throw), not an oversight.
  *
  * Only `signing.kind === "owner-eoa"` is supported (Phase 2's shipping
  * configuration). A `session-key` bundle is parsed and validated fine at
@@ -526,7 +572,7 @@ async function initSubgraphStateFromBundle(bundle: DerivedBundleV1): Promise<Sub
   const authKeyHex = vault.authKey.toString('hex');
 
   // See the docstring above, point 4 — the load-bearing fix.
-  const { chainId, dataEdgeAddress } = await fetchChainConfig({
+  const { chainId, dataEdgeAddress, billingResolved } = await fetchChainConfig({
     serverUrl: SERVER_URL,
     smartAccountAddress,
     authKeyHex,
@@ -538,6 +584,26 @@ async function initSubgraphStateFromBundle(bundle: DerivedBundleV1): Promise<Sub
           (resolved.dataEdgeAddress ? `, dataEdge=${resolved.dataEdgeAddress}` : '') + '.',
       );
     },
+    onBillingUnavailable: (reason) => {
+      console.error(`TotalReclaw: bundle-mode billing lookup failed (${reason}).`);
+    },
+  });
+
+  // FAIL CLOSED (#618 adversarial review — the sibling variant of the S1
+  // bug, see the docstring above, point 4). A bundle carries no
+  // `data_edge_address` of its own — the ONLY source is this billing call.
+  // If the call failed outright and no explicit env override exists, this
+  // process has literally no confirmed environment to write to. Proceeding
+  // would silently fall through to `getSubgraphConfig`'s
+  // DEFAULT_DATA_EDGE_ADDRESS, which is the PRODUCTION contract — exactly
+  // the outcome this whole function exists to prevent. Refuse to guess.
+  // Extracted to `assertDataEdgeResolvable` (chain-config.ts) so this exact
+  // decision is directly unit-tested — see the regression test named for
+  // it in mcp/tests/chain-config.test.ts.
+  assertDataEdgeResolvable({
+    billingResolved,
+    envDataEdgeOverride: process.env.TOTALRECLAW_DATA_EDGE_ADDRESS,
+    serverUrl: SERVER_URL,
   });
 
   console.error(
@@ -1970,11 +2036,32 @@ async function main(): Promise<void> {
   if (process.env.TOTALRECLAW_SELF_HOSTED === 'true') {
     const mnemonic = resolveMnemonic();
     currentMode = detectServerMode(mnemonic);
-    console.error(
-      currentMode === 'http'
-        ? 'TotalReclaw MCP server started (self-hosted mode)'
-        : 'TotalReclaw MCP server started (unconfigured — set TOTALRECLAW_RECOVERY_PHRASE in the MCP host config; see docs/guides/claude-code-setup.md)',
-    );
+    if (currentMode === 'http') {
+      console.error('TotalReclaw MCP server started (self-hosted mode)');
+    } else if (isV2BundleCredentialsFile(CREDENTIALS_PATH)) {
+      // #618 adversarial review, item 2: a bundle credentials.json under
+      // TOTALRECLAW_SELF_HOSTED=true is not "unconfigured" — it's
+      // misconfigured. `derived-bundle-v1` is a managed-mode-only credential
+      // (derived-bundle-v1.md §4.5.1: self-hosted has no BIP-39 root to
+      // derive from at all), and `resolveMnemonic()` correctly finds no
+      // usable mnemonic in it (a v2 file has no top-level `mnemonic` field)
+      // — but telling the operator to "set TOTALRECLAW_RECOVERY_PHRASE" is
+      // actively misleading when the real fix is "unset
+      // TOTALRECLAW_SELF_HOSTED", since the credential they already have IS
+      // valid, just for the other mode. Plain JSON read only — no WASM, no
+      // parseBundleV1 — self-hosted mode must never touch bundle parsing.
+      console.error(
+        'TotalReclaw MCP server started (unconfigured) — ~/.totalreclaw/credentials.json is a ' +
+          'derived-bundle-v1 bundle (version: 2), which is managed-service-only ' +
+          '(docs/specs/totalreclaw/client-consistency.md, "Credential Material"). Self-hosted mode ' +
+          'has no use for it. Unset TOTALRECLAW_SELF_HOSTED to use this bundle, or configure ' +
+          'self-hosted mode with its own master password / credentials.',
+      );
+    } else {
+      console.error(
+        'TotalReclaw MCP server started (unconfigured — set TOTALRECLAW_RECOVERY_PHRASE in the MCP host config; see docs/guides/claude-code-setup.md)',
+      );
+    }
   } else {
     // Managed-service (subgraph) mode: resolve either a mnemonic OR a
     // derived-bundle-v1 bundle, per the four-state precedence in

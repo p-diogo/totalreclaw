@@ -139,13 +139,20 @@ describe('awaitPhraseUpload — payload_type: derived-bundle-v1 (Option E Phase 
     expect(ws.closed).toBe(true);
   });
 
-  maybeIt('nacks unsupported_payload_type and throws when the call site has no completePairingBundle handler' + skipSuffix, async () => {
+  // No `maybeIt`/bindings gate here (#618 adversarial-review NIT): the
+  // handler-existence check in pair-remote-client.ts now runs BEFORE
+  // parseBundleV1, so this path never touches a bundle binding at all — an
+  // arbitrary plaintext payload proves the point (if parseBundleV1 ran
+  // first, non-bundle plaintext would fail validation and this test would
+  // need a real bundle + bindings, defeating the purpose of the reorder).
+  it('nacks unsupported_payload_type — checked BEFORE parseBundleV1, never invalid_bundle — when the call site has no completePairingBundle handler', async () => {
     const gatewayKeypair = generateGatewayKeypair();
     const ws = new FakeWebSocket();
     const session = makeSession(ws, gatewayKeypair);
 
-    const bundleJson = deriveBundleFromMnemonic(TEST_MNEMONIC, 100, 'local-migration', TEST_SMART_ACCOUNT);
-    const frame = buildBundleForwardFrame(gatewayKeypair, bundleJson);
+    // Deliberately NOT a valid (or even parseable-as-JSON) bundle — proves
+    // the handler-existence check fires without ever calling parseBundleV1.
+    const frame = buildBundleForwardFrame(gatewayKeypair, 'not even json, let alone a bundle');
 
     const resultPromise = awaitPhraseUpload(session, {
       completePairing: jest.fn(),
@@ -156,6 +163,8 @@ describe('awaitPhraseUpload — payload_type: derived-bundle-v1 (Option E Phase 
     ws.pushMessage(frame);
     await expect(resultPromise).rejects.toThrow(/completePairingBundle/);
     expect(ws.sent).toContainEqual({ type: 'nack', error: 'unsupported_payload_type' });
+    // The specific negative this NIT fixed: never invalid_bundle here.
+    expect(ws.sent).not.toContainEqual({ type: 'nack', error: 'invalid_bundle' });
   });
 
   maybeIt('nacks invalid_bundle and rejects when the decrypted payload fails parseBundleV1 validation' + skipSuffix, async () => {
