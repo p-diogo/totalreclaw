@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **`derived-bundle-v1` credential bundle support (Option E Phase 2 — [#581](https://github.com/p-diogo/totalreclaw/issues/581), P2-13).** The MCP server is the second client (after Hermes) to configure from a bundle instead of a BIP-39 recovery phrase: the four HKDF-derived vault keys plus a signing key, never the phrase or the 64-byte seed. `~/.totalreclaw/credentials.json` `"version": 2` is detected alongside the existing plaintext-mnemonic shape (precedence: env phrase → `version: 2` bundle → legacy mnemonic; an unrecognised `version` is a loud startup error, never a silent downgrade). New modules: `src/subgraph/bundle.ts` (thin WASM adapter over `@totalreclaw/core`'s `parseBundleV1`/`validateBundleV1`), `src/subgraph/credentials.ts` (the precedence resolver). `src/subgraph/chain-config.ts` gained `fetchChainConfig` — the single billing-fetch path both mnemonic-mode and bundle-mode state construction now share, closing a bug class found in the Hermes round where a bundle client could skip the billing call (which is the ONLY source of the environment's DataEdge address) and silently write to core's production default even against a staging relay. `src/subgraph/store.ts` gained `resolveOwnerAccount`, threading either a mnemonic-derived or bundle-supplied signing key into every ERC-4337 UserOp signer. Bundle-mode `totalreclaw_pair` completion (`payload_type: "derived-bundle-v1"`) is implemented in `pair-remote-client.ts` + `tools/pair.ts` and fixture-tested, but inert until the relay forwards a `payload_type` field (tracked separately, P2-11). Self-hosted mode is unaffected — it is a wholly separate credential system with no BIP-39 root. **No OS-keychain unwrap and no `TOTALRECLAW_CREDENTIALS_PROVIDER` external-secret-manager support** (both Python/Hermes-only for now) — see README's "Credential Material" section for the tracked gaps.
+
+### Release gate
+- **Requires an `@totalreclaw/core` release exposing `parseBundleV1` / `validateBundleV1` / `deriveBundleFromMnemonic`.** No published npm version carries them as of this writing (checked `2.6.0-rc.1`). Developed and tested against a WASM package built locally from `rust/totalreclaw-core` (already merged on `origin/main`, PR #587) — `mcp/package.json`'s `@totalreclaw/core` dependency range must be bumped once the real release publishes, before this can build in CI or be published itself.
+
 ## [3.4.0] - 2026-07-09
 
 Minor release. Bundles the code-health restructure (from the repo-wide desloppify sweep) with the #439 managed-service chain/DataEdge correctness fix. Minor, not major, despite a tool removal — the removed tool was already deprecated + non-functional (see Removed).

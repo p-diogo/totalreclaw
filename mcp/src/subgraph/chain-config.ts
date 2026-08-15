@@ -51,7 +51,19 @@ export function resolveChainConfig(
 
 export interface WriteConfigInput {
   relayUrl: string;
-  mnemonic: string;
+  /**
+   * Exactly one of `mnemonic` / `ownerPrivateKeyHex` must be set (Option E
+   * Phase 2 / #581, P2-13). Mnemonic-mode clients set `mnemonic`;
+   * bundle-mode clients (no mnemonic anywhere in the process — derived-
+   * bundle-v1.md §4.6 point 1) set `ownerPrivateKeyHex` from
+   * `bundle.signing.private_key` instead. `store.ts`'s
+   * `resolveOwnerAccount` prefers `ownerPrivateKeyHex` when both happen to
+   * be present (never expected in practice, but privateKey is the more
+   * direct source of truth so it wins rather than erroring).
+   */
+  mnemonic?: string;
+  /** Bundle-mode signing key — 64 lowercase hex chars, no `0x` prefix. */
+  ownerPrivateKeyHex?: string;
   authKeyHex: string;
   walletAddress: string;
   chainId: number;
@@ -73,10 +85,18 @@ export function buildSubgraphOverrides(
 ): Partial<SubgraphStoreConfig> {
   const overrides: Partial<SubgraphStoreConfig> = {
     relayUrl: input.relayUrl,
-    mnemonic: input.mnemonic,
     authKeyHex: input.authKeyHex,
     walletAddress: input.walletAddress,
   };
+
+  // Exactly one signing source is threaded through — never both, and never
+  // neither (store.ts's resolveOwnerAccount throws an actionable error if
+  // neither ends up present on the final merged config).
+  if (input.ownerPrivateKeyHex) {
+    overrides.ownerPrivateKeyHex = input.ownerPrivateKeyHex;
+  } else if (input.mnemonic) {
+    overrides.mnemonic = input.mnemonic;
+  }
 
   // Only thread a finite chainId — never let an undefined clobber the store's
   // Gnosis (100) default via the spread merge.
@@ -89,4 +109,68 @@ export function buildSubgraphOverrides(
   }
 
   return overrides;
+}
+
+// ---------------------------------------------------------------------------
+// Billing fetch — the SINGLE code path both mnemonic-mode and bundle-mode
+// state construction call to resolve chain + DataEdge (Option E Phase 2 /
+// #581, P2-13, "Lesson 1" from the Hermes round: a bundle-configured client
+// MUST NOT skip this call and assume chain resolution is complete just
+// because the bundle carries `account.chain_id`. The bundle has no
+// `data_edge_address` field at all — that value ONLY ever comes from the
+// relay's `/v1/billing/status` response. Factoring the fetch into one
+// function that every init path calls means there is no code path that can
+// "forget" to call it — the mnemonic path and the bundle path share this
+// exact function, not a copy of it.
+//
+// `fallbackChainId` is what to return if the billing call fails or is
+// unreachable: mnemonic-mode passes 100 (Gnosis, the __init__-seeded
+// default); bundle-mode passes `bundle.account.chain_id` (the bundle's own
+// authoritative value — falling back to the free-tier default would target
+// the WRONG CHAIN outright, not just the wrong environment's DataEdge; see
+// `python/src/totalreclaw/client.py::_chain_id_fallback`'s docstring for the
+// identical rationale on the Python side).
+// ---------------------------------------------------------------------------
+
+export interface FetchChainConfigOptions {
+  serverUrl: string;
+  smartAccountAddress: string;
+  authKeyHex: string;
+  /** Extra headers (client id, session tag, …) merged with Authorization. */
+  headers?: Record<string, string>;
+  /** Chain id to return when the billing call fails/is unreachable. */
+  fallbackChainId: number;
+  timeoutMs?: number;
+  /** Injectable for tests; defaults to the global `fetch`. */
+  fetchImpl?: typeof fetch;
+  /** Best-effort logger for the tier/chain line other init paths already print. */
+  onResolved?: (billing: Record<string, unknown>, resolved: ResolvedChainConfig) => void;
+}
+
+const DEFAULT_BILLING_TIMEOUT_MS = 5000;
+
+export async function fetchChainConfig(
+  opts: FetchChainConfigOptions,
+): Promise<ResolvedChainConfig> {
+  const doFetch = opts.fetchImpl ?? fetch;
+  try {
+    const billingUrl = `${opts.serverUrl.replace(/\/+$/, '')}/v1/billing/status?wallet_address=${encodeURIComponent(opts.smartAccountAddress)}`;
+    const resp = await doFetch(billingUrl, {
+      method: 'GET',
+      headers: {
+        ...(opts.headers ?? {}),
+        Authorization: `Bearer ${opts.authKeyHex}`,
+      },
+      signal: AbortSignal.timeout(opts.timeoutMs ?? DEFAULT_BILLING_TIMEOUT_MS),
+    });
+    if (resp.ok) {
+      const billing = (await resp.json()) as Record<string, unknown>;
+      const resolved = resolveChainConfig(billing);
+      opts.onResolved?.(billing, resolved);
+      return resolved;
+    }
+  } catch {
+    // Best-effort — network, timeout, or auth issues all fall back below.
+  }
+  return { chainId: opts.fallbackChainId, dataEdgeAddress: undefined };
 }

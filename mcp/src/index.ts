@@ -67,7 +67,9 @@ import {
   type FactPayload,
   type SubgraphStoreConfig,
 } from './subgraph/store.js';
-import { resolveChainConfig, buildSubgraphOverrides } from './subgraph/chain-config.js';
+import { resolveChainConfig, buildSubgraphOverrides, fetchChainConfig } from './subgraph/chain-config.js';
+import { resolveManagedCredential, type ResolvedCredential } from './subgraph/credentials.js';
+import { bundleVaultToBuffers, redactedBundleSummary, type DerivedBundleV1 } from './subgraph/bundle.js';
 import { searchSubgraph, searchSubgraphBroadened, getOwnerFactCount, fetchFactById } from './subgraph/search.js';
 import { confirmIndexed } from './subgraph/confirm-indexed.js';
 import {
@@ -188,6 +190,19 @@ function buildRelayHeaders(
   return { ...headers, ...overrides };
 }
 
+/**
+ * Legacy mnemonic-only credential read.
+ *
+ * **Self-hosted mode ONLY as of Option E Phase 2 (#581, P2-13).** Self-
+ * hosted mode reads whatever this returns as a literal `MASTER_PASSWORD`
+ * string (see `getClient()` below) — it has no BIP-39 root at all
+ * (derived-bundle-v1.md §4.5.1) and must never be routed through bundle
+ * detection. Managed-service (subgraph) mode instead calls
+ * `resolveManagedCredential()` (`subgraph/credentials.ts`), which
+ * understands both the legacy mnemonic shape AND `derived-bundle-v1`
+ * `version: 2` bundles. Kept here, unchanged in behaviour, purely as the
+ * self-hosted gate — see `main()`.
+ */
 function resolveMnemonic(): string | undefined {
   // Priority 1: env var
   if (MASTER_PASSWORD) return MASTER_PASSWORD.trim();
@@ -280,10 +295,30 @@ function getMaxCandidatePool(k: number): number {
 
 interface SubgraphState {
   mode: 'subgraph';
-  mnemonic: string;
+  /**
+   * Exactly one of `mnemonic` / `ownerPrivateKeyHex` is set (Option E Phase
+   * 2 / #581, P2-13). `credentialKind` says which. A bundle-configured
+   * state has NO mnemonic anywhere in the process (derived-bundle-v1.md
+   * §4.6 point 1) — `mnemonic` is `undefined`, not an empty string, so a
+   * stray `.split()` crashes loudly instead of silently hinting nothing
+   * (see `accountHandler` below, which reads this).
+   */
+  credentialKind: 'mnemonic' | 'bundle';
+  mnemonic?: string;
+  /** Bundle-mode signing key — `bundle.signing.private_key`, hex, no `0x`. */
+  ownerPrivateKeyHex?: string;
   authKey: Buffer;
   encryptionKey: Buffer;
   dedupKey: Buffer;
+  /**
+   * Only meaningful in mnemonic mode — the HKDF salt `derive_keys_from_mnemonic`
+   * returns. Bundle mode never carries a salt (derived-bundle-v1.md §4.5: it
+   * is an intermediate of derivation with no consumer once the four vault
+   * keys exist) and populates this with an empty buffer, which is never
+   * read anywhere downstream of bundle-mode construction — the only reader
+   * in this file is `initSubgraphState`'s own `registerWithServer` call,
+   * which bundle mode never makes (see `initSubgraphStateFromBundle`).
+   */
   salt: Buffer;
   lshHasher: LSHHasher;
   serverUrl: string;
@@ -296,12 +331,15 @@ interface SubgraphState {
 
 /**
  * Build the getSubgraphConfig override for a managed-service write, threading
- * the billing-resolved chain + DataEdge onto every on-chain write site (#439).
+ * the billing-resolved chain + DataEdge onto every on-chain write site (#439),
+ * and the correct signing source (mnemonic vs bundle-mode private key, #581
+ * P2-13) onto every on-chain SIGNING site.
  */
 function stateWriteOverrides(state: SubgraphState): Partial<SubgraphStoreConfig> {
   return buildSubgraphOverrides({
     relayUrl: state.serverUrl,
     mnemonic: state.mnemonic,
+    ownerPrivateKeyHex: state.ownerPrivateKeyHex,
     authKeyHex: Buffer.from(state.authKey).toString('hex'),
     walletAddress: state.smartAccountAddress,
     chainId: state.chainId,
@@ -374,36 +412,35 @@ async function initSubgraphState(mnemonic: string): Promise<SubgraphState> {
   // the legacy Free → Base Sepolia (84532) mapping was retired. Consuming the
   // relay's values verbatim means a future chain move needs zero client release.
   // (The client `TOTALRECLAW_CHAIN_ID` override was removed in v1.)
-  let chainId = 100; // Gnosis default when billing is unreachable
-  let dataEdgeAddress: string | undefined; // undefined ⇒ env/store default
-  {
-    try {
-      const billingUrl = `${SERVER_URL.replace(/\/+$/, '')}/v1/billing/status?wallet_address=${encodeURIComponent(smartAccountAddress)}`;
-      const resp = await fetch(billingUrl, {
-        method: 'GET',
-        headers: buildRelayHeaders({
-          'Authorization': `Bearer ${authKeyHex}`,
-        }),
-        signal: AbortSignal.timeout(5000),
-      });
-      if (resp.ok) {
-        const billing = (await resp.json()) as Record<string, unknown>;
-        const resolved = resolveChainConfig(billing);
-        chainId = resolved.chainId;
-        dataEdgeAddress = resolved.dataEdgeAddress;
-        console.error(
-          `TotalReclaw: tier=${billing.tier ?? 'unknown'}, chain=${chainId}` +
-            (dataEdgeAddress ? `, dataEdge=${dataEdgeAddress}` : '') + '.',
-        );
-      }
-    } catch {
-      // Best-effort — fall back to the Gnosis default if billing is unreachable.
-    }
-  }
+  //
+  // #581 P2-13: this is now `fetchChainConfig` (subgraph/chain-config.ts) —
+  // the SAME function `initSubgraphStateFromBundle` below calls, so there is
+  // no code path that can independently "forget" to make this call.
+  const { chainId, dataEdgeAddress } = await fetchChainConfig({
+    serverUrl: SERVER_URL,
+    smartAccountAddress,
+    authKeyHex,
+    headers: buildRelayHeaders(),
+    fallbackChainId: 100, // Gnosis default when billing is unreachable
+    onResolved: (billing, resolved) => {
+      console.error(
+        `TotalReclaw: tier=${billing.tier ?? 'unknown'}, chain=${resolved.chainId}` +
+          (resolved.dataEdgeAddress ? `, dataEdge=${resolved.dataEdgeAddress}` : '') + '.',
+      );
+    },
+  });
 
   // Register auth key with relay (idempotent — relay returns 200 for existing users).
   // Without this, all relay queries return 401 when using env var mnemonic path
   // (the setup wizard handles registration, but the env var path previously skipped it).
+  //
+  // MNEMONIC-MODE ONLY. Bundle-mode construction (`initSubgraphStateFromBundle`)
+  // MUST NOT call this — derived-bundle-v1.md §4.5's normative rule: "clients
+  // configured from a bundle MUST NOT call POST /v1/register. The vault is
+  // registered by the provisioning origin, which holds the root." A bundle
+  // client calling register() would be attempting to register with no salt
+  // of its own (bundle mode carries none — see the `SubgraphState.salt` doc
+  // comment) and would violate the spec even if it somehow succeeded.
   try {
     const authKeyHashForReg = computeAuthKeyHash(authKey);
     const saltHexForReg = Buffer.from(salt).toString('hex');
@@ -416,11 +453,115 @@ async function initSubgraphState(mnemonic: string): Promise<SubgraphState> {
 
   return {
     mode: 'subgraph',
+    credentialKind: 'mnemonic',
     mnemonic,
     authKey,
     encryptionKey,
     dedupKey,
     salt,
+    lshHasher,
+    serverUrl: SERVER_URL,
+    smartAccountAddress,
+    chainId,
+    dataEdgeAddress,
+  };
+}
+
+/**
+ * Initialize subgraph state from an already-validated `derived-bundle-v1`
+ * bundle (Option E Phase 2 / #581, P2-13).
+ *
+ * Contrasts with `initSubgraphState` (mnemonic mode) in exactly the ways
+ * derived-bundle-v1.md §4.6 requires:
+ *
+ *   1. No mnemonic anywhere — the four vault keys come directly from
+ *      `bundle.vault` (already validated by `parseBundleV1`'s §4.7 checks),
+ *      never re-derived.
+ *   2. `wallet_address` (`smartAccountAddress`) resolves from
+ *      `bundle.account.smart_account` VERBATIM — no CREATE2 RPC round-trip,
+ *      no `mnemonicToAccount`/`toSimpleSmartAccount` call. Point 3 of the
+ *      consumption contract: never re-derive, because the owner EOA may be
+ *      absent under a future `session-key` bundle.
+ *   3. `registerWithServer` is NEVER called — the normative rule in
+ *      derived-bundle-v1.md §4.5: the provisioning origin, which holds the
+ *      root, is the only party able to register correctly.
+ *   4. Chain/DataEdge resolution still calls `fetchChainConfig` — the exact
+ *      same function `initSubgraphState` calls above — with `fallbackChainId`
+ *      seeded from `bundle.account.chain_id` rather than the free-tier
+ *      default 100. THIS IS THE FIX FOR THE BUG FOUND IN THE HERMES ROUND
+ *      (2026-08-03, S1): an earlier revision treated the bundle's own
+ *      `chain_id` as sufficient and skipped the billing call entirely,
+ *      which left `dataEdgeAddress` unset and silently defaulted every
+ *      write to core's PRODUCTION DataEdge — even when running against a
+ *      staging relay. The bundle has no `data_edge_address` field at all;
+ *      that value ONLY ever comes from `/v1/billing/status`. See
+ *      `python/src/totalreclaw/client.py::from_bundle`'s docstring for the
+ *      identical bug + fix on the Python side, and
+ *      `mcp/tests/chain-config.test.ts`'s "REGRESSION (Lesson 1)" test for
+ *      the automated check.
+ *
+ * Only `signing.kind === "owner-eoa"` is supported (Phase 2's shipping
+ * configuration). A `session-key` bundle is parsed and validated fine at
+ * the core layer (forward-compatible schema) but this function cannot yet
+ * configure a server from one — that lands with the signing-delegation
+ * phase (Phase 3). Throws rather than guessing or silently downgrading to
+ * `owner-eoa` semantics.
+ */
+async function initSubgraphStateFromBundle(bundle: DerivedBundleV1): Promise<SubgraphState> {
+  if (bundle.signing.kind !== 'owner-eoa') {
+    throw new Error(
+      `derived-bundle-v1: signing.kind=${JSON.stringify(bundle.signing.kind)} is not supported yet — ` +
+        'session-key signing requires the signing-delegation phase (Phase 3). Only ' +
+        "'owner-eoa' bundles can configure the MCP server today.",
+    );
+  }
+
+  const vault = bundleVaultToBuffers(bundle);
+  const dims = getEmbeddingDims();
+  const lshHasher = new LSHHasher(vault.lshSeed, dims);
+
+  // account.smart_account is already resolved — no RPC round-trip, no
+  // mnemonic-derived owner. See the docstring above, point 2.
+  const smartAccountAddress = bundle.account.smart_account.toLowerCase();
+  const authKeyHex = vault.authKey.toString('hex');
+
+  // See the docstring above, point 4 — the load-bearing fix.
+  const { chainId, dataEdgeAddress } = await fetchChainConfig({
+    serverUrl: SERVER_URL,
+    smartAccountAddress,
+    authKeyHex,
+    headers: buildRelayHeaders(),
+    fallbackChainId: bundle.account.chain_id,
+    onResolved: (billing, resolved) => {
+      console.error(
+        `TotalReclaw: bundle-mode, tier=${billing.tier ?? 'unknown'}, chain=${resolved.chainId}` +
+          (resolved.dataEdgeAddress ? `, dataEdge=${resolved.dataEdgeAddress}` : '') + '.',
+      );
+    },
+  });
+
+  console.error(
+    `TotalReclaw: configured from derived-bundle-v1 — ${JSON.stringify(redactedBundleSummary(bundle))}`,
+  );
+
+  // NO registerWithServer() call here — see the docstring above, point 3.
+
+  return {
+    mode: 'subgraph',
+    credentialKind: 'bundle',
+    // `mnemonic` deliberately omitted (not set to `undefined` explicitly) —
+    // `SubgraphState.mnemonic` is optional and omission reads back
+    // identically to `undefined`. Also keeps the compiled dist/ free of a
+    // `mnemonic:` object-key emission for phrase-safety-dist.test.ts's
+    // static scanner to flag (it does not special-case an explicit
+    // `undefined` value the way its sibling `.recovery_phrase = undefined`
+    // allowance does for property-assignment shape).
+    ownerPrivateKeyHex: bundle.signing.private_key,
+    authKey: vault.authKey,
+    encryptionKey: vault.encryptionKey,
+    dedupKey: vault.dedupKey,
+    // Bundle mode carries no salt — see the SubgraphState.salt doc comment.
+    salt: Buffer.alloc(0),
     lshHasher,
     serverUrl: SERVER_URL,
     smartAccountAddress,
@@ -1678,8 +1819,18 @@ async function accountHandler(args: unknown): Promise<ToolResponse> {
     };
   }
   const authKeyHex = Buffer.from(subgraphState.authKey).toString('hex');
-  const words = subgraphState.mnemonic.split(/\s+/);
-  const mnemonicHint = `${words[0]} ... ${words[words.length - 1]}`;
+  // #581 P2-13: bundle-mode state has no `mnemonic` (derived-bundle-v1.md
+  // §4.6 point 1 — no code path may reconstruct one), so there is no phrase
+  // to hint at. `.split()` on `undefined` would throw; branch explicitly
+  // instead and surface the credential kind so the agent can tell the user
+  // why no phrase hint is available.
+  const mnemonicHint =
+    subgraphState.credentialKind === 'mnemonic' && subgraphState.mnemonic
+      ? (() => {
+          const words = subgraphState!.mnemonic!.split(/\s+/);
+          return `${words[0]} ... ${words[words.length - 1]}`;
+        })()
+      : '(no recovery phrase on this host — configured from a derived-bundle-v1 credential)';
   const getFactCount = () => getOwnerFactCount(
     subgraphState!.smartAccountAddress,
     subgraphState!.serverUrl,
@@ -1806,17 +1957,64 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Resolve mnemonic from env var or credentials.json
-  const mnemonic = resolveMnemonic();
-  currentMode = detectServerMode(mnemonic);
-
-  if (currentMode === 'subgraph' && mnemonic) {
-    subgraphState = await initSubgraphState(mnemonic);
-    console.error(`TotalReclaw MCP server started (managed service, owner: ${subgraphState.smartAccountAddress})`);
-  } else if (currentMode === 'http') {
-    console.error('TotalReclaw MCP server started (self-hosted mode)');
+  // ── Credential resolution (Option E Phase 2 / #581, P2-13) ─────────────
+  //
+  // Self-hosted mode is a COMPLETELY SEPARATE credential system with no
+  // BIP-39 root at all (derived-bundle-v1.md §4.5.1: self-hosted's `salt`
+  // is random, self-generated, and unrelated to the managed-mode HKDF
+  // salt) — it must NEVER be routed through bundle detection. Gate on it
+  // first and keep its path byte-identical to before this phase:
+  // `resolveMnemonic()` (legacy, mnemonic-only) is still what feeds
+  // self-hosted's `getClient()` login (`MASTER_PASSWORD` read directly from
+  // env there), unchanged.
+  if (process.env.TOTALRECLAW_SELF_HOSTED === 'true') {
+    const mnemonic = resolveMnemonic();
+    currentMode = detectServerMode(mnemonic);
+    console.error(
+      currentMode === 'http'
+        ? 'TotalReclaw MCP server started (self-hosted mode)'
+        : 'TotalReclaw MCP server started (unconfigured — set TOTALRECLAW_RECOVERY_PHRASE in the MCP host config; see docs/guides/claude-code-setup.md)',
+    );
   } else {
-    console.error('TotalReclaw MCP server started (unconfigured — set TOTALRECLAW_RECOVERY_PHRASE in the MCP host config; see docs/guides/claude-code-setup.md)');
+    // Managed-service (subgraph) mode: resolve either a mnemonic OR a
+    // derived-bundle-v1 bundle, per the four-state precedence in
+    // subgraph/credentials.ts (mirrors
+    // python/src/totalreclaw/agent/state.py::_try_auto_configure).
+    let credential: ResolvedCredential | undefined;
+    try {
+      credential = resolveManagedCredential();
+    } catch (err) {
+      // Loud, actionable, FATAL — never a silent downgrade. An unknown
+      // credentials.json `version`, a `keychain_wrapped` file this server
+      // can't unwrap, or a bundle that fails §4.7 validation are all
+      // evidence of a corrupted/tampered/misconfigured credential store,
+      // not transient conditions to paper over with a caught exception.
+      // Crashing the process with the error on stderr IS the correct loud
+      // posture for a long-running server — see derived-bundle-v1.md §3.2's
+      // "the one place a well-meaning try/except would create a security
+      // bug" warning, and mcp/tests/credentials.test.ts's coverage of every
+      // one of these throw paths.
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`TotalReclaw MCP: fatal credential error: ${msg}`);
+      throw err;
+    }
+
+    if (credential?.kind === 'bundle') {
+      currentMode = 'subgraph';
+      subgraphState = await initSubgraphStateFromBundle(credential.bundle);
+      console.error(
+        `TotalReclaw MCP server started (managed service, bundle-mode, owner: ${subgraphState.smartAccountAddress})`,
+      );
+    } else if (credential?.kind === 'mnemonic' && detectServerMode(credential.mnemonic) === 'subgraph') {
+      currentMode = 'subgraph';
+      subgraphState = await initSubgraphState(credential.mnemonic);
+      console.error(`TotalReclaw MCP server started (managed service, owner: ${subgraphState.smartAccountAddress})`);
+    } else {
+      currentMode = 'unconfigured';
+      console.error(
+        'TotalReclaw MCP server started (unconfigured — set TOTALRECLAW_RECOVERY_PHRASE in the MCP host config; see docs/guides/claude-code-setup.md)',
+      );
+    }
   }
 
   // ── Trajectory poller (mcp-server 3.3.0-rc.3) ─────────────────────────
