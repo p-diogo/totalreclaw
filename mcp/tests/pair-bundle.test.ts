@@ -10,6 +10,13 @@
  * message), never live traffic. Mirrors
  * `python/tests/test_pair_completion_bundle.py`'s approach on the Hermes
  * side.
+ *
+ * The first three tests below build a real bundle via
+ * `deriveBundleFromMnemonic`, so they're gated on `hasBundleBindings()`
+ * (same pattern as `tests/bundle.test.ts`) — the published
+ * `@totalreclaw/core` doesn't carry the bundle WASM bindings yet. The last
+ * two tests (unrecognised `payload_type`, legacy-mnemonic) never touch a
+ * bundle and run unconditionally.
  */
 
 import { EventEmitter } from 'node:events';
@@ -24,12 +31,18 @@ import {
   encryptPairingPayload,
   type GatewayKeypair,
 } from '../src/pair-crypto.js';
-import { deriveBundleFromMnemonic, type DerivedBundleV1 } from '../src/subgraph/bundle.js';
+import { deriveBundleFromMnemonic, hasBundleBindings, type DerivedBundleV1 } from '../src/subgraph/bundle.js';
 
 const TEST_MNEMONIC =
   'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 const TEST_SMART_ACCOUNT = '0x2c0CF74B2b76110708CA431796367779e3738250';
 const TEST_TOKEN = 'test-token-1234';
+
+const bindingsAvailable = hasBundleBindings();
+const maybeIt = bindingsAvailable ? it : it.skip;
+const skipSuffix = bindingsAvailable
+  ? ''
+  : ' — SKIPPED: installed @totalreclaw/core lacks bundle bindings (see subgraph/bundle.ts)';
 
 /**
  * A minimal fake WebSocket sufficient for `awaitPhraseUpload`'s needs:
@@ -92,7 +105,7 @@ function buildBundleForwardFrame(gatewayKeypair: GatewayKeypair, bundleJson: str
 }
 
 describe('awaitPhraseUpload — payload_type: derived-bundle-v1 (Option E Phase 2 / #581, P2-13)', () => {
-  it('decrypts + validates a bundle payload and hands it to completePairingBundle', async () => {
+  maybeIt('decrypts + validates a bundle payload and hands it to completePairingBundle' + skipSuffix, async () => {
     const gatewayKeypair = generateGatewayKeypair();
     const ws = new FakeWebSocket();
     const session = makeSession(ws, gatewayKeypair);
@@ -126,7 +139,7 @@ describe('awaitPhraseUpload — payload_type: derived-bundle-v1 (Option E Phase 
     expect(ws.closed).toBe(true);
   });
 
-  it('nacks unsupported_payload_type and throws when the call site has no completePairingBundle handler', async () => {
+  maybeIt('nacks unsupported_payload_type and throws when the call site has no completePairingBundle handler' + skipSuffix, async () => {
     const gatewayKeypair = generateGatewayKeypair();
     const ws = new FakeWebSocket();
     const session = makeSession(ws, gatewayKeypair);
@@ -145,7 +158,7 @@ describe('awaitPhraseUpload — payload_type: derived-bundle-v1 (Option E Phase 
     expect(ws.sent).toContainEqual({ type: 'nack', error: 'unsupported_payload_type' });
   });
 
-  it('nacks invalid_bundle and rejects when the decrypted payload fails parseBundleV1 validation', async () => {
+  maybeIt('nacks invalid_bundle and rejects when the decrypted payload fails parseBundleV1 validation' + skipSuffix, async () => {
     const gatewayKeypair = generateGatewayKeypair();
     const ws = new FakeWebSocket();
     const session = makeSession(ws, gatewayKeypair);

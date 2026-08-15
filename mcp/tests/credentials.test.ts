@@ -1,6 +1,16 @@
 /**
  * Tests for `subgraph/credentials.ts` — the MCP managed-mode credential
  * precedence (Option E Phase 2 / #581, P2-13).
+ *
+ * Two tests below (marked inline) construct a bundle via
+ * `deriveBundleFromMnemonic`, which requires `@totalreclaw/core` to expose
+ * the bundle WASM bindings — gated on `hasBundleBindings()`, same pattern
+ * as `tests/bundle.test.ts`. Everything else in this file (precedence,
+ * unknown-version, keychain_wrapped) never touches a binding — the
+ * `keychain_wrapped: true` throw and the unknown-`version` throw both fire
+ * BEFORE `resolveManagedCredential` would call into `bundle.ts` at all — so
+ * those run unconditionally, including against the published core with no
+ * bundle bindings.
  */
 
 import * as fs from 'node:fs';
@@ -8,7 +18,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 
 import { resolveManagedCredential } from '../src/subgraph/credentials.js';
-import { deriveBundleFromMnemonic } from '../src/subgraph/bundle.js';
+import { deriveBundleFromMnemonic, hasBundleBindings } from '../src/subgraph/bundle.js';
 
 const TEST_MNEMONIC =
   'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
@@ -21,6 +31,13 @@ function tmpCredentialsPath(): string {
 function writeJson(p: string, obj: unknown): void {
   fs.writeFileSync(p, JSON.stringify(obj), 'utf-8');
 }
+
+const bindingsAvailable = hasBundleBindings();
+const maybeIt = bindingsAvailable ? it : it.skip;
+const maybeDescribe = bindingsAvailable ? describe : describe.skip;
+const skipSuffix = bindingsAvailable
+  ? ''
+  : ' — SKIPPED: installed @totalreclaw/core lacks bundle bindings (see subgraph/bundle.ts)';
 
 describe('resolveManagedCredential — precedence (client-consistency.md "Credential states a client MUST read")', () => {
   it('returns undefined when nothing is configured', () => {
@@ -39,7 +56,7 @@ describe('resolveManagedCredential — precedence (client-consistency.md "Creden
     expect(result).toEqual({ kind: 'mnemonic', mnemonic: TEST_MNEMONIC });
   });
 
-  it('3. credentials.json version:2 resolves to a bundle', () => {
+  maybeIt('3. credentials.json version:2 resolves to a bundle' + skipSuffix, () => {
     const credentialsPath = tmpCredentialsPath();
     const bundleJson = deriveBundleFromMnemonic(TEST_MNEMONIC, 100, 'local-migration', TEST_SMART_ACCOUNT);
     fs.writeFileSync(credentialsPath, bundleJson, 'utf-8');
@@ -109,7 +126,7 @@ describe('resolveManagedCredential — keychain_wrapped is a known MCP gap, loud
   });
 });
 
-describe('resolveManagedCredential — a malformed v2 bundle rejects loudly via parseBundleV1', () => {
+maybeDescribe('resolveManagedCredential — a malformed v2 bundle rejects loudly via parseBundleV1' + skipSuffix, () => {
   it('propagates parseBundleV1 validation errors (e.g. bad hex)', () => {
     const credentialsPath = tmpCredentialsPath();
     const bundleJson = JSON.parse(

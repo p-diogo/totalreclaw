@@ -5,6 +5,17 @@
  * Uses the canonical parity mnemonic + fixture from
  * `tests/parity/fixtures/derived-bundle-v1.json` so this suite doubles as
  * this client's parity-fixture check (client-consistency.md Patch 3, step 7).
+ *
+ * **Gated on `hasBundleBindings()`.** As of this writing no PUBLISHED
+ * `@totalreclaw/core` release exposes the bundle WASM bindings (see
+ * `subgraph/bundle.ts`'s header comment) — every test in this file needs a
+ * real bundle to parse/derive, so the whole suite is skipped (with a
+ * visible reason in the describe title) when the installed core lacks
+ * them, and runs fully against a core build that has them (e.g. the
+ * locally-built WASM used for development — see mcp/README.md). The
+ * feature-detection contract itself (the actionable error + mnemonic-mode
+ * being unaffected when bindings are absent) is covered unconditionally by
+ * `tests/bundle-feature-detection.test.ts`.
  */
 
 import * as fs from 'node:fs';
@@ -16,6 +27,7 @@ import {
   deriveBundleFromMnemonic,
   bundleVaultToBuffers,
   redactedBundleSummary,
+  hasBundleBindings,
 } from '../src/subgraph/bundle.js';
 
 const TEST_MNEMONIC =
@@ -36,7 +48,16 @@ function loadFixture(): { expected: Record<string, unknown>; example_full_bundle
   return JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf-8'));
 }
 
-describe('deriveBundleFromMnemonic — parity fixture (client-consistency.md Patch 3 step 7)', () => {
+// Every describe block below needs a real parse/derive, so gate the whole
+// suite on one flag, computed once. `maybeDescribe` skips (with the reason
+// baked into the visible title) rather than silently omitting the block.
+const bindingsAvailable = hasBundleBindings();
+const maybeDescribe = bindingsAvailable ? describe : describe.skip;
+const skipSuffix = bindingsAvailable
+  ? ''
+  : ' — SKIPPED: installed @totalreclaw/core lacks bundle bindings (see subgraph/bundle.ts)';
+
+maybeDescribe('deriveBundleFromMnemonic — parity fixture (client-consistency.md Patch 3 step 7)' + skipSuffix, () => {
   it('is byte-equal (minus provisioned_at) to tests/parity/fixtures/derived-bundle-v1.json', () => {
     const fixture = loadFixture();
     const json = deriveBundleFromMnemonic(TEST_MNEMONIC, 100, 'local-migration', TEST_SMART_ACCOUNT);
@@ -52,7 +73,7 @@ describe('deriveBundleFromMnemonic — parity fixture (client-consistency.md Pat
   });
 });
 
-describe('parseBundleV1 — round-trip + §4.7 validation', () => {
+maybeDescribe('parseBundleV1 — round-trip + §4.7 validation' + skipSuffix, () => {
   it('parses the checked-in example_full_bundle fixture', () => {
     const fixture = loadFixture();
     const json = JSON.stringify(fixture.example_full_bundle);
@@ -129,7 +150,7 @@ describe('parseBundleV1 — round-trip + §4.7 validation', () => {
   });
 });
 
-describe('validateBundleV1', () => {
+maybeDescribe('validateBundleV1' + skipSuffix, () => {
   it('is a no-op on a valid bundle', () => {
     const fixture = loadFixture();
     expect(() => validateBundleV1(JSON.stringify(fixture.example_full_bundle))).not.toThrow();
@@ -140,7 +161,7 @@ describe('validateBundleV1', () => {
   });
 });
 
-describe('bundleVaultToBuffers', () => {
+maybeDescribe('bundleVaultToBuffers' + skipSuffix, () => {
   it('converts hex vault fields to 32-byte Buffers', () => {
     const fixture = loadFixture();
     const bundle = parseBundleV1(JSON.stringify(fixture.example_full_bundle));
@@ -154,7 +175,7 @@ describe('bundleVaultToBuffers', () => {
   });
 });
 
-describe('redactedBundleSummary — phrase-safety (derived-bundle-v1.md §4.6 point 5)', () => {
+maybeDescribe('redactedBundleSummary — phrase-safety (derived-bundle-v1.md §4.6 point 5)' + skipSuffix, () => {
   it('never includes vault key material or the signing private key', () => {
     const fixture = loadFixture();
     const bundle = parseBundleV1(JSON.stringify(fixture.example_full_bundle));
