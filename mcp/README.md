@@ -225,12 +225,14 @@ explicitly, not silently unsupported:
 separate credential system (`MASTER_PASSWORD` + a random, server-issued
 salt — no BIP-39 root at all) and never consults bundle detection.
 
-**Dependency note (release gate):** bundle support requires an
-`@totalreclaw/core` release that exposes `parseBundleV1` /
-`validateBundleV1` / `deriveBundleFromMnemonic`. As of this writing no
-published npm release carries them (checked: `2.6.0-rc.1` does not) — see
-`src/subgraph/bundle.ts`'s header comment for how this was developed and
-tested against a locally-built WASM in the meantime.
+**Dependency note:** bundle support requires an `@totalreclaw/core` release
+exposing `parseBundleV1` / `validateBundleV1` / `deriveBundleFromMnemonic`.
+That gate is **cleared** — `@totalreclaw/core` **2.6.0** (published
+2026-08-16) carries all three in both the `nodejs` and `./web` builds, and
+`package.json` requires `^2.6.0`. (The earlier `2.6.0-rc.1` predated #587 and
+did **not** carry them; it is superseded by 2.6.0.) The runtime
+feature-detection in `src/subgraph/bundle.ts` is retained deliberately — it
+keeps a stale-install downgrade loud rather than a crash.
 
 ## Free Tier & Pricing
 
