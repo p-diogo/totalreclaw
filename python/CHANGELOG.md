@@ -22,7 +22,43 @@ Hermes client stable (2.4.5 → 2.4.6): session-isolation + import-fidelity + pr
 
 - **ChatGPT import line.** Conversations become import sessions (#430) with byte-capped batching + halve-on-sim-revert + 240s receipt wait (#461), hashed disclosure tokens + orphan reaping + accounting (#468), an import fix wave — deploy-state/receipt, re-import registry, provider label (#454) — and ledger hardening (#470, #480).
 
-## [Unreleased]
+## [2.5.0] — 2026-08-16
+
+Option E Phase 2 lands on Hermes: a host can be configured from a
+`derived-bundle-v1` bundle instead of the BIP-39 recovery phrase, and existing
+phrase-configured installs migrate to one transparently on plugin load.
+
+**Minor, not patch.** This adds a new credential state. The four legacy
+credential states keep working (`derived-bundle-v1.md` §6), so it is not major
+— but `2.4.7` (the open-line patch bump left after the 2.4.6 promote) would
+have understated a change to how key material is held at rest.
+
+**Requires `totalreclaw-core>=2.6.0`** — a hard floor, newly raised from
+`>=2.5.5`. `totalreclaw.bundle` delegates entirely to core's
+`derive_bundle_from_mnemonic`/`parse_bundle_v1`/`validate_bundle_v1`, which
+landed in core 2.6.0, and it does so with no feature-detection and no local
+fallback. An older core does not fail loudly — `auto_migrate.maybe_migrate()`
+catches bare `Exception` at DEBUG so plugin load can never break — so a stale
+core would make the migration silently no-op forever. Hence the floor.
+
+**Claim discipline** (design memo §3 — these travel with every Phase 2
+release note):
+
+1. *Phase 2 removes the recovery phrase from agent hosts. It does not improve
+   memory confidentiality at a compromised host — the encryption key still
+   materialises in RAM on every recall, and ciphertext is public on the Gnosis
+   subgraph.*
+2. *Until Phase 3, the provisioned signing key carries full Smart Account owner
+   authority and is not revocable. Treat a leaked bundle as you would a leaked
+   phrase, minus its portability.*
+3. *Your recovery phrase remains your root and your only recovery path. After
+   migration it no longer exists on this machine.*
+
+**Rollback.** `pip install totalreclaw==2.4.6`, then
+`mv ~/.totalreclaw/credentials.json.bak ~/.totalreclaw/credentials.json`. An
+install that has already migrated to v2 is **not** readable by 2.4.6 without
+that restore. `.bak` is retained unconditionally this release; its removal is
+gated on #579 and is a deliberate, evidence-gated decision — never automated.
 
 ### Added
 
@@ -31,8 +67,13 @@ Hermes client stable (2.4.5 → 2.4.6): session-isolation + import-fidelity + pr
 - **[internal#262] OS keychain wrap for the mnemonic at rest (cred-2).** On pair/generate/restore, desktop installs store the recovery phrase in the OS keychain (keyring, mandatory on macOS as of #558 below → Secret Service on Linux) and `credentials.json` carries only a `__keychain__:v1:<eoa>` marker — verified to fail BIP-39 validation loudly at every consumer including the Rust core, so no client can misread it as a phrase. Headless/container deploys fall back to today's plaintext behavior unchanged (`TOTALRECLAW_NO_KEYCHAIN=1` forces it); legacy plaintext files upgrade opportunistically on read (keychain store confirmed before the plaintext is replaced). Post-setup backup guidance is wrap-aware (the old `jq -r .mnemonic` advice would have backed up the marker).
 - **[internal#273/#275 / cred-3] External credential provider — secret-manager injection.** `AgentState._try_auto_configure` routes credential discovery through `get_credential_provider()`, so on a headless/server host the recovery phrase can be supplied by a secret manager instead of a plaintext `credentials.json`: set `TOTALRECLAW_CREDENTIALS_PROVIDER=external` and either `TOTALRECLAW_EXTERNAL_CREDENTIALS_PATH` (a mounted JSON file — Docker Compose `secrets:`, Kubernetes Secret `volumeMount`, systemd `LoadCredential`, HashiCorp Vault / AWS / GCP Secrets Manager) or `TOTALRECLAW_EXTERNAL_CREDENTIALS_JSON` (inline env, for Railway / Kubernetes `envFrom` / Docker `--env-file`). Read-only by design; never silently falls back to file mode, so a misconfigured deploy fails loudly. The file-mount transport keeps the phrase out of `/proc/<pid>/environ`. Worked examples + threat model in `docs/guides/headless-deployment.md` (Phase 4 / internal#512). *(Backfilled — shipped 2026-05-28, #273/#275; the module docstring's "not yet rewired" was stale — `agent/state.py` wires it.)*
 
+### Fixed
+
+- **[#619, release blocker] Bundle-mode fail-closed on a billing-fetch FAILURE — the failed-call twin of #591.** #591 closed the *skipped-call* variant of the S1 junk-fact class (`from_bundle()` eagerly marking `chain_id` resolved so the billing lookup never even ran). This closes the *failed-call* variant: `resolve_chain_id()` DOES call `/v1/billing/status`, but the call itself fails (network error, timeout, non-200) — `_chain_id_fallback()` correctly preserves the bundle's own `chain_id`, but `_data_edge_address` stayed `None` regardless, and every write helper in `userop.py` treats `data_edge_address=None` as "use `totalreclaw_core`'s hardcoded default", which is the **production** DataEdge (`0xC445af1D4EB9fce4e1E61fE96ea7B8feBF03c5ca`) — silently writing a staging/self-hosted bundle-mode host's facts onto the production vault. `resolve_chain_id()` now fails CLOSED for bundle mode (`self._mnemonic is None`) on a billing-fetch failure with no DataEdge known: it raises the new `totalreclaw.client.BundleDataEdgeUnresolvedError` (naming the risk and both remediations — make the relay reachable, or set the new `TOTALRECLAW_DATA_EDGE_ADDRESS` env override) rather than silently proceeding, and does so *before* marking `_chain_id_resolved`, so a later retry gets a clean second attempt. `TOTALRECLAW_DATA_EDGE_ADDRESS` is a new capability for the Python client (mirroring the TS clients' operator escape hatch) — scoped narrowly to this failure path for now, not a general env > billing > default precedence. Mnemonic-mode behavior is intentionally **unchanged** (pre-existing #439 best-effort semantics — proceed with the core's default DataEdge) except it now logs a loud `logger.warning` naming the production default whenever that fallback engages, so the risk is visible instead of silent. 9 new regression tests (`test_client_bundle_mode.py`: raises before any encode with the prod default never appearing in an encoded payload; raises directly from `resolve_chain_id()`; proceeds via the env override; an empty/whitespace override does not count; `test_chain_id_autodetect.py`: mnemonic mode keeps its existing fallback + logs exactly one warning naming the prod default, on both the exception and non-200 branches; no warning fires on a legitimate "successful billing response, older relay, no `data_edge_address` field" response; the env override is deliberately NOT consumed in mnemonic mode).
+
 ### Changed
 
+- **`totalreclaw-core` floor raised `>=2.5.5` → `>=2.6.0`.** Not a preference — `totalreclaw.bundle` calls `totalreclaw_core.derive_bundle_from_mnemonic` / `parse_bundle_v1` / `validate_bundle_v1` directly, with no feature-detection and no local fallback (unlike `segment_sessions` / `parse_gemini`, which degrade gracefully to a local implementation when the installed core predates the hoist). Those three bindings ship in core 2.6.0 (#587). Because `hermes/auto_migrate.maybe_migrate()` catches bare `Exception` and logs at DEBUG so plugin load can never break, resolving an older core would not surface an error — the transparent phrase→bundle migration would simply never happen, indefinitely, with nothing above debug level to indicate it. The floor is what makes the failure impossible rather than invisible.
 - **Import session segmentation: per-turn straddle-splitting (#368 Part 2,
   fact-attribution fidelity).** Building on the flat per-turn view (#466), each
   `ParsedTurn` now also carries its message-index range within its chunk
