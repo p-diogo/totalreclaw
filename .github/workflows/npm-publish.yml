@@ -192,7 +192,7 @@ jobs:
           fi
           echo "OK: $NAME@$VERSION not yet published, proceeding"
 
-      - name: Upgrade npm to latest (required for tokenless OIDC publish)
+      - name: Pin npm to 11 (required for tokenless OIDC publish)
         if: inputs.dry-run == false
         # npm 10.x (Node 22) signs provenance with OIDC but still PUTs with a
         # legacy token → E404 after NPM_TOKEN expired (the 2026-06-07 core run).
@@ -366,7 +366,7 @@ jobs:
           fi
           echo "OK: $NAME@$VERSION not yet published, proceeding"
 
-      - name: Upgrade npm to latest (required for tokenless OIDC publish)
+      - name: Pin npm to 11 (required for tokenless OIDC publish)
         if: inputs.dry-run == false
         # The npm CLI shipped with Node 22 (npm 10.x) signs provenance with
         # OIDC but still expects a legacy auth token for the actual PUT.
@@ -461,7 +461,7 @@ jobs:
           fi
           echo "OK: $NAME@$VERSION not yet published, proceeding"
 
-      - name: Upgrade npm to latest (defense-in-depth, #577)
+      - name: Pin npm to 11 (defense-in-depth, #577)
         if: inputs.dry-run == false
         # @totalreclaw/skill-nanoclaw currently has NO README on npm
         # (`npm view @totalreclaw/skill-nanoclaw readme` returns empty),
@@ -640,7 +640,7 @@ jobs:
           fi
           echo "OK: $NAME@$VERSION not yet published, proceeding"
 
-      - name: Upgrade npm to latest (required for tokenless OIDC publish)
+      - name: Pin npm to 11 (required for tokenless OIDC publish)
         if: inputs.dry-run == false
         # npm 10.x (Node 22) signs provenance with OIDC but still PUTs with a
         # legacy token → E404 after NPM_TOKEN expired (the 2026-06-07 core run).
