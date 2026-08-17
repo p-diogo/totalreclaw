@@ -104,10 +104,35 @@ contract TotalReclawAccountTest is Test {
         );
     }
 
+    /// @dev This assertion is only meaningful if `creationCode` is
+    ///      REPRODUCIBLE. It is not reproducible by default: foundry's
+    ///      default `bytecode_hash = "ipfs"` appends a hash of the solc
+    ///      metadata JSON to the deployed bytecode, and that JSON varies
+    ///      with toolchain details beyond the pinned `solc_version` — so
+    ///      the same source compiled on two machines yields two different
+    ///      `creationCode` values and therefore two different CREATE2
+    ///      addresses. Caught exactly that way: this test passed locally
+    ///      and failed in CI with a different predicted address
+    ///      (0x7D12D9f0… vs the then-pinned 0x25D4E718…).
+    ///
+    ///      `foundry.toml` now sets `bytecode_hash = "none"` +
+    ///      `cbor_metadata = false`, which strips the trailer and makes
+    ///      `creationCode` a pure function of (source, solc version,
+    ///      optimizer settings). The address below is the post-fix value.
+    ///
+    ///      This matters well beyond the test: the deployment plan pins a
+    ///      CREATE2 address, and a pin that depends on WHO compiled the
+    ///      contract is not a pin at all — nobody could independently
+    ///      reproduce or verify the deployed implementation.
+    ///
+    ///      Trade-off accepted: stripping the metadata hash makes
+    ///      block-explorer source verification marginally less automatic
+    ///      (no metadata-hash match). Exact-settings verification still
+    ///      works, and determinism is worth more here.
     function test_pinned_implementation_create2_address() public pure {
         assertEq(
             _predictImplAddress(TOTAL_RECLAW_ACCOUNT_SALT_V1),
-            0x25D4E71865E8A47F010219526A618f950a8f86B4,
+            0x6d17938F29072B3b7E883d410076B0D73676Cf34,
             "TotalReclawAccount predicted implementation address drifted - update the deployment plan's pinned value if intentional"
         );
     }
